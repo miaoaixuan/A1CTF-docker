@@ -1,0 +1,264 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    /* transition-property: opacity, transform, filter, background;
+    transition-timing-function: ease-in-out;
+    transition-duration: 4000ms; */
+}
+
+.page-transition {
+    opacity: 0;
+    /* background: hsl(var(--primary)); */
+    /* transform: translateY(40px); */
+    filter: blur(12px);
+    overflow: hidden;
+}
+
+.transition-colors-custom {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, transform, filter, background;
+    transition-timing-function: cubic-bezier(.4, 0, .2, 1);
+    transition-duration: var(--color-duration-time);
+
+    /* transition: 
+        color var(--color-duration-time) cubic-bezier(.4,0,.2,1),
+        background-color var(--color-duration-time) cubic-bezier(.4,0,.2,1),
+        border-color var(--color-duration-time) cubic-bezier(.4,0,.2,1),
+        text-decoration-color var(--color-duration-time) cubic-bezier(.4,0,.2,1),
+        fill var(--color-duration-time) cubic-bezier(.4,0,.2,1),
+        stroke var(--color-duration-time) cubic-bezier(.4,0,.2,1),
+        opacity var(--page-change-duration-time) cubic-bezier(.4,0,.2,1),
+        transform var(--page-change-duration-time) cubic-bezier(.4,0,.2,1),
+        filter var(--page-change-duration-time) cubic-bezier(.4,0,.2,1),
+        background var(--page-change-duration-time) cubic-bezier(.4,0,.2,1); */
+
+    /* transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms; */
+}
+
+@layer utilities {
+    .text-balance {
+        text-wrap: balance;
+    }
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+
+    transition: border-color var(--color-duration-time) cubic-bezier(.4, 0, .2, 1),
+        stroke var(--color-duration-time) cubic-bezier(.4, 0, .2, 1);
+}
+
+@layer base {
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 0 0% 3.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 3.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 0 0% 3.9%;
+        --primary: 0 0% 9%;
+        --primary-foreground: 0 0% 98%;
+        --secondary: 0 0% 96.1%;
+        --secondary-foreground: 0 0% 9%;
+        --muted: 0 0% 96.1%;
+        --muted-foreground: 0 0% 45.1%;
+        --accent: 0 0% 96.1%;
+        --accent-foreground: 0 0% 9%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 0 0% 89.8%;
+        --input: 0 0% 89.8%;
+        --ring: 0 0% 3.9%;
+        --chart-1: 12 76% 61%;
+        --chart-2: 173 58% 39%;
+        --chart-3: 197 37% 24%;
+        --chart-4: 43 74% 66%;
+        --chart-5: 27 87% 67%;
+        --radius: 0.5rem;
+        --color-duration-time: 300ms;
+        --page-change-duration-time: 500ms;
+        --sidebar-background: 0 0% 98%;
+        --sidebar-foreground: 240 5.3% 26.1%;
+        --sidebar-primary: 240 5.9% 10%;
+        --sidebar-primary-foreground: 0 0% 98%;
+        --sidebar-accent: 240 4.8% 95.9%;
+        --sidebar-accent-foreground: 240 5.9% 10%;
+        --sidebar-border: 220 13% 91%;
+        --sidebar-ring: 217.2 91.2% 59.8%;
+    }
+
+    .dark {
+        --background: 0 0% 3.9%;
+        --foreground: 0 0% 98%;
+        --card: 0 0% 3.9%;
+        --card-foreground: 0 0% 98%;
+        --popover: 0 0% 3.9%;
+        --popover-foreground: 0 0% 98%;
+        --primary: 0 0% 98%;
+        --primary-foreground: 0 0% 9%;
+        --secondary: 0 0% 14.9%;
+        --secondary-foreground: 0 0% 98%;
+        --muted: 0 0% 14.9%;
+        --muted-foreground: 0 0% 63.9%;
+        --accent: 0 0% 14.9%;
+        --accent-foreground: 0 0% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 0 0% 14.9%;
+        --input: 0 0% 14.9%;
+        --ring: 0 0% 83.1%;
+        --chart-1: 220 70% 50%;
+        --chart-2: 160 60% 45%;
+        --chart-3: 30 80% 55%;
+        --chart-4: 280 65% 60%;
+        --chart-5: 340 75% 55%;
+        --sidebar-background: 240 5.9% 10%;
+        --sidebar-foreground: 240 4.8% 95.9%;
+        --sidebar-primary: 224.3 76.3% 48%;
+        --sidebar-primary-foreground: 0 0% 100%;
+        --sidebar-accent: 240 3.7% 15.9%;
+        --sidebar-accent-foreground: 240 4.8% 95.9%;
+        --sidebar-border: 240 3.7% 15.9%;
+        --sidebar-ring: 217.2 91.2% 59.8%;
+    }
+}
+
+#a1logo {
+    transform: scaleX(-1);
+}
+
+#a1path {
+    fill: none;
+    stroke: hsl(var(--primary));
+    /* 线条颜色 */
+    stroke-width: 20;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 0;
+    /* 设定虚线长度，这里是路径的估算长度 */
+    stroke-dashoffset: 0;
+    /* 初始路径不可见 */
+    animation: draw 5s cubic-bezier(0.42, 0, 0.58, 1) forwards;
+    filter: url(#glow);
+    /* 应用炫光效果 */
+}
+
+/* 定义路径绘制的动画 */
+@keyframes draw {
+    from {
+        stroke-dashoffset: 3000;
+        /* 从完全不可见开始 */
+    }
+
+    to {
+        stroke-dashoffset: 0;
+        /* 结束时路径完全绘制出来 */
+    }
+}
+
+@keyframes glow {
+    0% {
+        stroke: #3498db;
+    }
+
+    50% {
+        stroke: #1abc9c;
+    }
+
+    100% {
+        stroke: #e74c3c;
+    }
+}
+
+.header-theme {
+    background-color: var(--background);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1em;
+    padding-right: 1em;
+    max-width: 1300px;
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+    }
+}
+
+/* 删除多余的 ` 符号 */
+[data-rehype-pretty-code-figure] code::before {
+    content: none;
+}
+
+[data-rehype-pretty-code-figure] code::after {
+    content: none
+}
+
+figure[data-rehype-pretty-code-figure] pre {
+    @apply py-4 overflow-x-auto rounded-lg leading-7;
+}
+
+/* 代码块边距 */
+pre [data-line] {
+    @apply px-4
+}
+
+/* title */
+[data-rehype-pretty-code-title] {
+    @apply ml-1
+}
+
+/* Group 高亮 */
+
+[data-highlighted-chars] {
+    @apply border-b-2 rounded p-1 font-bold border-red-700 text-red-300 bg-red-950
+}
+
+[data-chars-id="1"] {
+    @apply border-b-2 rounded p-1 font-bold border-red-600 text-red-300 bg-red-900
+}
+
+[data-chars-id="2"] {
+    @apply border-b-2 rounded p-1 font-bold border-green-600 text-green-300 bg-green-900
+}
+
+[data-chars-id="3"] {
+    @apply border-b-2 rounded p-1 font-bold border-cyan-600 text-cyan-300 bg-cyan-900
+}
+
+[data-chars-id="4"] {
+    @apply border-b-2 rounded p-1 font-bold border-blue-600 text-blue-300 bg-blue-900
+}
+
+/* 行号实现 */
+[data-line-numbers] {
+    counter-reset: line;
+}
+
+[data-line-numbers] [data-line]::before {
+    counter-increment: line;
+    content: counter(line);
+    display: inline-block;
+    width: 1rem;
+    margin-right: 1rem;
+    text-align: right;
+    @apply text-sm text-gray-600;
+}
+
+/* inline */
+span[data-rehype-pretty-code-figure] code {
+    @apply bg-gray-200 text-black text-sm font-normal px-2 py-1 mx-1 rounded !important
+}
+
+span[data-highlighted-line] {
+    @apply bg-slate-300 bg-opacity-10;
+}
