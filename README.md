@@ -5,4 +5,4 @@ npm i
 npm run dev
 ```
 
-There is nothing more.... Haha
+There is nothing more....
