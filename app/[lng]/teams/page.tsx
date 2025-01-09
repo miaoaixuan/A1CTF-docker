@@ -9,9 +9,9 @@ export default async function Teams({ params }: { params: Promise<{ lng: string 
     const { t } = await useTranslation(lng);
 
     return (
-        <div className="p-0 font-[family-name:var(--font-geist-sans)] h-screen grid grid-rows-[theme(spacing.16)_1fr_theme(spacing.14)]">
+        <div className="p-0 font-[family-name:var(--font-geist-sans)] h-screen flex flex-col">
             <PageHeader lng={ lng }/>
-            <main className="flex items-center justify-center p-10">
+            <main className="flex items-center justify-center p-10 flex-1 overflow-y-auto">
                 Teasm page..
             </main>
             <A1Footer/>
