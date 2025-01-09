@@ -10,10 +10,10 @@ export default async function Home({ params }: { params: Promise<{ lng: string }
     const source = fs.readFileSync("app/md/about.mdx").toString("utf-8");
 
     return (
-        <div className="p-0 font-[family-name:var(--font-geist-sans)] h-screen grid grid-rows-[theme(spacing.16)_1fr_theme(spacing.14)]">
+        <div className="p-0 font-[family-name:var(--font-geist-sans)] h-screen flex flex-col">
             <PageHeader lng={lng} />
-            <main className="flex p-10 pl-20">
-                <div>
+            <main className="flex p-10 pl-20 flex-1 overflow-y-auto">
+                <div className="w-full">
                     <Mdx source={source} />
                 </div>
             </main>
