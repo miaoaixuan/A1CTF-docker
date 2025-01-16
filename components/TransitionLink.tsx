@@ -1,17 +1,15 @@
 "use client";
+
 import Link, { LinkProps } from "next/link";
 import React from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
+import { useTransitionContext } from "@/contexts/TransitionContext";
 
 interface TransitionLinkProps extends LinkProps {
     children: React.ReactNode;
     className?: string;
     href: string;
-}
-
-function sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export const TransitionLink: React.FC<TransitionLinkProps> = ({
@@ -22,22 +20,17 @@ export const TransitionLink: React.FC<TransitionLinkProps> = ({
 }) => {
     const router = useRouter();
     const currentURL = usePathname();
+    const { startTransition } = useTransitionContext();
 
     const handleTransition = async (
         e: React.MouseEvent<HTMLAnchorElement, MouseEvent>
     ) => {
         e.preventDefault();
-        if (currentURL == href) return;
+        if (currentURL === href) return;
 
-        const body = document.querySelector("body");
-
-        body?.classList.add("page-transition");
-
-        await sleep(200);
-        router.push(href);
-        await sleep(200);
-
-        body?.classList.remove("page-transition");
+        startTransition(() => {
+            router.push(href);
+        });
     };
 
     return (
@@ -45,4 +38,5 @@ export const TransitionLink: React.FC<TransitionLinkProps> = ({
             {children}
         </Link>
     );
-}
+};
+

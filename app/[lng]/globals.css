@@ -9,14 +9,6 @@ body {
     transition-duration: 4000ms; */
 }
 
-.page-transition {
-    opacity: 0;
-    /* background: hsl(var(--primary)); */
-    /* transform: translateY(40px); */
-    filter: blur(12px);
-    overflow: hidden;
-}
-
 .transition-colors-custom {
     transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, transform, filter, background;
     transition-timing-function: cubic-bezier(.4, 0, .2, 1);

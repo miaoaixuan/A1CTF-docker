@@ -42,6 +42,9 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
     }
 
     const toggleTheme = () => {
+        // console.log("added!")
+        const body = document.querySelector("body");
+        body?.classList.add("transition-colors-custom");
         setTheme(theme === 'light' ? 'dark' : 'light')
     }
     
@@ -99,7 +102,7 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
                                 )}
                             </motion.div>
                         </motion.button>
-                        <div className='w-full flex justify-center p-1 hidden lg:flex mt-[0.5px]'>
+                        <div className='w-full justify-center p-1 hidden lg:flex mt-[0.5px]'>
                             <Button variant="ghost" className="w-full p-2 rounded-[10px]" >
                                 <div className='flex justify-between w-full '>
                                     <Label className='font-bold'>{t("system_color")}</Label>
