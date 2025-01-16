@@ -42,6 +42,9 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
     }
 
     const toggleTheme = () => {
+        // console.log("added!")
+        const body = document.querySelector("body");
+        body?.classList.add("transition-colors-custom");
         setTheme(theme === 'light' ? 'dark' : 'light')
     }
     
@@ -54,21 +57,25 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
                     <span className="sr-only">Toggle theme</span>
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className='p-0 bg-transparent mt-1 w-44 grid gap-[5px] shadow-none mr-4 md:mr-0'
+            <DropdownMenuContent className='p-6 bg-transparent mt-[-10px] w-50 grid gap-[5px] shadow-none mr-4 md:mr-0'
                 style={{ border: 'none' }}
             >
-                <div className="flex justify-left items-center w-full">
-                    <motion.div className='flex-col justify-center w-44 h-[46px] border-[1.5px] rounded-[12px] overflow-hidden'
+                <motion.div className="flex justify-left items-center w-full"
+                    whileHover={{
+                        scale: 1.05
+                    }}
+                    whileTap={{
+                        scale: 1.05
+                    }}
+                    transition={{
+                        type: "spring", // 使用弹性动画
+                        stiffness: 400, // 动画弹性
+                        duration: 100,
+                        damping: 20, // 动画阻尼
+                    }}
+                >
+                    <motion.div className='flex-col justify-center shadow-md w-44 h-[46px] border-[1.5px] rounded-[12px] overflow-hidden'
                         style={{ "backgroundColor": "hsl(var(--background))" }}
-                        whileHover={{
-                            height: "91px"
-                        }}
-                        transition={{
-                            type: "spring", // 使用弹性动画
-                            stiffness: 400, // 动画弹性
-                            duration: 100,
-                            damping: 20, // 动画阻尼
-                        }}
                     >
                         <motion.button
                             className="transition-all ease-in-out duration-400 relative w-44 h-11 rounded-[10px] hover:rounded-[0px] bg-gray-300 dark:bg-gray-600 flex items-center justify-center focus:outline-none overflow-hidden"
@@ -95,7 +102,7 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
                                 )}
                             </motion.div>
                         </motion.button>
-                        <div className='w-full flex justify-center p-1 hidden lg:flex mt-[0.5px]'>
+                        <div className='w-full justify-center p-1 hidden lg:flex mt-[0.5px]'>
                             <Button variant="ghost" className="w-full p-2 rounded-[10px]" >
                                 <div className='flex justify-between w-full '>
                                     <Label className='font-bold'>{t("system_color")}</Label>
@@ -104,9 +111,21 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
                             </Button>
                         </div>
                     </motion.div>
-                </div>
-                <div className='flex border-[1.5px] rounded-[10px] w-44'
+                </motion.div>
+                <motion.div className='flex border-[1.5px] rounded-[10px] w-44 shadow-md'
                     style={{ "backgroundColor": "hsl(var(--background))" }}
+                    whileHover={{
+                        scale: 1.05
+                    }}
+                    whileTap={{
+                        scale: 1.05
+                    }}
+                    transition={{
+                        type: "spring", // 使用弹性动画
+                        stiffness: 400, // 动画弹性
+                        duration: 100,
+                        damping: 20, // 动画阻尼
+                    }}
                 >
                     <div className='flex justify-center w-full gap-1 py-1'>
                         <Button asChild variant="ghost" size="icon">
@@ -122,9 +141,21 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
                             <Label className='font-bold'>日</Label>
                         </Button>
                     </div>
-                </div>
-                <div className='flex border-[1.5px] rounded-[10px] w-44 lg:hidden p-1'
+                </motion.div>
+                <motion.div className='flex border-[1.5px] rounded-[10px] w-44 p-1 shadow-md'
                     style={{ "backgroundColor": "hsl(var(--background))" }}
+                    whileHover={{
+                        scale: 1.05
+                    }}
+                    whileTap={{
+                        scale: 1.05
+                    }}
+                    transition={{
+                        type: "spring", // 使用弹性动画
+                        stiffness: 400, // 动画弹性
+                        duration: 100,
+                        damping: 20, // 动画阻尼
+                    }}
                 >
                     <Button variant="ghost" className="w-full p-2" >
                         <div className='flex justify-between w-full '>
@@ -132,7 +163,7 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
                             <MonitorCog />
                         </div>
                     </Button>
-                </div>
+                </motion.div>
             </DropdownMenuContent>
         </DropdownMenu>
     )

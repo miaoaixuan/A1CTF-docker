@@ -6,6 +6,8 @@ import "./globals.css";
 // import { ThemeProvider } from "@/components/ThemeProvider"
 
 import {ThemeProvider} from "next-themes";
+import { TransitionProvider } from '@/contexts/TransitionContext'
+import { TransitionLayout } from '@/components/TransitionLayout'
 
 
 import { dir } from 'i18next'
@@ -52,7 +54,7 @@ export default async function RootLayout({
     return (
         <html lang={lng} dir={dir(lng)} suppressHydrationWarning>
             <body
-                className={`${geistSans.variable} ${geistMono.variable} antialiased transition-colors-custom`}
+                className={`${geistSans.variable} ${geistMono.variable} antialiased`}
             >
                  <ThemeProvider
                     attribute="class"
@@ -60,7 +62,11 @@ export default async function RootLayout({
                     enableSystem
                 >
                     <Suspense fallback={<LoadingPage />}>
-                        {children}
+                    <TransitionProvider>
+                        <TransitionLayout>
+                            {children}
+                        </TransitionLayout>
+                    </TransitionProvider>
                     </Suspense>
                 </ThemeProvider>
             </body>

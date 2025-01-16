@@ -14,9 +14,6 @@ export default async function Games({ params }: { params: Promise<{ lng: string 
             <PageHeader lng={ lng }/>
             <main className="flex p-10 flex-1 overflow-y-auto">
                 <div className="bg-red-200 w-full h-80 overflow-x-auto">
-                    <div className="bg-blue-200 w-[800px] h-20">
-
-                    </div>
                 </div>
             </main>
             <A1Footer/>
