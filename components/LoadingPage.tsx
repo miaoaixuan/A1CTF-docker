@@ -1,16 +1,25 @@
 "use client";
 
 import { Label } from "@radix-ui/react-label";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export const LoadingPage = () => {
 
+    const [visible, setvisible] = useState(true);
+
     useEffect(() => {
         console.log("Loading....")
+        const timer = setTimeout(() => {
+            console.log("OK")
+            setvisible(false)
+        }, 500);
+        return () => clearTimeout(timer);
     });
 
     return (
-        <div className="w-screen h-screen flex justify-center items-center z-50 absolute backdrop-blur-xl transition-opacity duration-300 ease-in-out">
+        <div className={`w-screen h-screen flex justify-center items-center z-50 absolute backdrop-blur-xl transition-opacity duration-300 ease-in-out ${
+            visible ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}>
             <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
