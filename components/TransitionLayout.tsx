@@ -14,7 +14,7 @@ export const TransitionLayout: React.FC<{ children: React.ReactNode }> = ({ chil
     }, [isTransitioning, children]);
 
     return (
-        <div className={`transition-opacity duration-[150] ${isTransitioning ? "opacity-0" : "opacity-100"}`}>
+        <div className={`transition-opacity duration-150 ${isTransitioning ? "opacity-0" : "opacity-100"}`}>
             {displayChildren}
         </div>
     );
