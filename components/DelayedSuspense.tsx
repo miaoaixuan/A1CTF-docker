@@ -6,7 +6,7 @@ import { LoadingPage } from './LoadingPage';
 function DelayedSuspense({ children }: { children: React.ReactNode }) {
     return (
         <>
-            <LoadingPage />
+            {/* <LoadingPage /> */}
             <Suspense fallback={<LoadingPage />}>
                 {children}
             </Suspense>
