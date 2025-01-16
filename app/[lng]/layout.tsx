@@ -1,6 +1,6 @@
 // "use client";
 
-import { DelayedSuspense } from '@/components/DelayedSuspense';
+import DelayedSuspense from '@/components/DelayedSuspense';
 import { Suspense } from 'react';
 import localFont from "next/font/local";
 import "./globals.css";
@@ -62,13 +62,13 @@ export default async function RootLayout({
                     defaultTheme="system"
                     enableSystem
                 >
-                    <TransitionProvider>
-                        <TransitionLayout>
-                            {/* <DelayedSuspense fallback={<LoadingPage />}> */}
-                                {children}
-                            {/* </DelayedSuspense> */}
-                        </TransitionLayout>
-                    </TransitionProvider>
+                    <DelayedSuspense>
+                        <TransitionProvider>
+                            <TransitionLayout>
+                                    {children}
+                            </TransitionLayout>
+                        </TransitionProvider>
+                    </DelayedSuspense>
                 </ThemeProvider>
             </body>
         </html>

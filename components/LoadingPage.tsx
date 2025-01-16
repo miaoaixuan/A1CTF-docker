@@ -1,10 +1,16 @@
 "use client";
 
 import { Label } from "@radix-ui/react-label";
+import { useEffect } from "react";
 
 export const LoadingPage = () => {
+
+    useEffect(() => {
+        console.log("Loading....")
+    });
+
     return (
-        <div className="w-screen h-screen flex justify-center items-center z-50 absolute backdrop-blur-lg transition-opacity duration-150">
+        <div className="w-screen h-screen flex justify-center items-center z-50 absolute backdrop-blur-xl transition-opacity duration-300 ease-in-out">
             <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"

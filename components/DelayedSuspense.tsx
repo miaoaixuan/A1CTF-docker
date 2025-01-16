@@ -1,27 +1,30 @@
-"use client";
+'use client'; // 必须添加这行声明为客户端组件
 
-import React, { Suspense, useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { LoadingPage } from './LoadingPage';
 
-interface DelayedSuspenseProps {
-    children: React.ReactNode;
-    fallback: React.ReactNode;
-    delay?: number;
-}
-
-export function DelayedSuspense({ children, fallback, delay = 150 }: DelayedSuspenseProps) {
-    const [showFallback, setShowFallback] = useState(false);
+function DelayedSuspense({ children }: { children: React.ReactNode }) {
+    const [showFallback, setShowFallback] = useState(true);
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setShowFallback(true);
-        }, delay);
-
-        return () => clearTimeout(timer);
-    }, [delay]);
+        const timer = setTimeout(() => setShowFallback(false), 500); // 最小延迟时间为 500ms
+        return () => clearTimeout(timer); // 清理定时器
+    }, []);
 
     return (
-        <Suspense fallback={showFallback ? fallback : null}>
-            {children}
-        </Suspense>
+        <>
+            {showFallback ? (
+                <div>
+                    <LoadingPage />
+                    {children}
+                </div>
+            ) : (
+                <Suspense fallback={<LoadingPage />}>
+                    {children}
+                </Suspense>
+            )}
+        </>
     );
 }
+
+export default DelayedSuspense;
