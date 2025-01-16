@@ -4,7 +4,7 @@ import { Label } from "@radix-ui/react-label";
 
 export const LoadingPage = () => {
     return (
-        <div className="w-screen h-screen flex justify-center items-center z-50 absolute backdrop-blur-lg">
+        <div className="w-screen h-screen flex justify-center items-center z-50 absolute backdrop-blur-lg transition-opacity duration-[150]">
             <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
