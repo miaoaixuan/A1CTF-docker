@@ -23,7 +23,7 @@ export function GameTerminal() {
 
     const welcomeMessage = (
         <span>
-          [A1CTF] Weclome! Type "help" for all available commands. <br /><br />
+          [A1CTF] Weclome! Type &quot;help&quot; for all available commands. <br /><br />
         </span>
     );
 
