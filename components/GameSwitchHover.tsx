@@ -10,31 +10,40 @@ import { Label } from '@radix-ui/react-label';
 
 import { useTransitionContext } from "@/contexts/TransitionContext";
 
-export default function GameSwitchHover({ x, y } : { x: number, y: number }) {
+export default function GameSwitchHover({ x, y, id } : { x: number, y: number, id: number }) {
 
     const [showContent, setShowContent] = useState(false);
     const [scale, setscale] = useState(0);
+
     const [durationTime, setDurationTime] = useState(1.2);
     const [durationTime2, setDurationTime2] = useState(0.5);
+
+    const [fromY, setFromY] = useState(10);
+
     const { theme } = useTheme();
     const { startTransition } = useTransitionContext();
     const router = useRouter();
+
+    const screenHeight = window.innerHeight; // 获取屏幕高度
 
     const bgColor =
         theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
 
     useEffect(() => {
 
-        setscale(150)
+        // 优化弹出位置，符合直觉
+        if (y > screenHeight / 2) setFromY(10)
+            else setFromY(-10)
 
-        console.log("setted")
+        // 展开遮罩
+        setscale(150)
 
         // 延迟显示介绍信息
         setTimeout(() => {
             setShowContent(true);
         }, 500);
 
-        // 延迟页面跳转
+        // 收回遮罩
         setTimeout(() => {
             setDurationTime(0.5)
             setShowContent(false)
@@ -42,7 +51,7 @@ export default function GameSwitchHover({ x, y } : { x: number, y: number }) {
 
             setTimeout(() => {
                 startTransition(() => {
-                    router.push('/teams');
+                    router.push(`/games/${id}`);
                 })
             }, 500)
         }, 3000);
@@ -54,14 +63,14 @@ export default function GameSwitchHover({ x, y } : { x: number, y: number }) {
             <AnimatePresence>
                 <motion.div
                     className={"absolute w-10 h-10 rounded-full backdrop-blur-lg"}
-                    style={{ left: `${x}px`, top: `${y}px`, backgroundColor: bgColor }}
+                    style={{ left: `${x}px`, top: `${y}px`, backgroundColor: bgColor, willChange: "backdrop-filter" }}
                     initial={{
                         scale: 0,
-                        opacity: 1,
+                        backdropFilter: "blur(1px)"
                     }}
                     animate={{
-                        scale: scale, // 放大到足以覆盖整个屏幕
-                        opacity: 1,
+                        scale: scale,
+                        backdropFilter: "blur(16px)"
                     }}
                     // exit={{
                     //     scale: 0,
@@ -80,9 +89,9 @@ export default function GameSwitchHover({ x, y } : { x: number, y: number }) {
                 <AnimatePresence>
                     {showContent && (
                         <motion.div
-                            initial={{ opacity: 0, scale: 1, translateY: 10 }}
+                            initial={{ opacity: 0, scale: 1, translateY: fromY }}
                             animate={{ opacity: 1, scale: 1, translateY: 0 }}
-                            exit={{ opacity: 0, scale: 1, translateY: 10 }}
+                            exit={{ opacity: 0, scale: 1, translateY: fromY }}
                             transition={{
                                 duration: durationTime2,
                                 ease: 'easeInOut',

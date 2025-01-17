@@ -45,6 +45,33 @@ body {
         stroke var(--color-duration-time) cubic-bezier(.4, 0, .2, 1);
 }
 
+.fake-bg::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(10px);
+}
+
+@layer utilities {
+    /*
+      Chromium browsers don't render nested backdrop filters.
+      As a workaround, add 'before:' to the outer filter, along with 'before:backdrop-hack':
+  
+        <div class="before:backdrop-blur-md before:backdrop-hack>
+          <div class="backdrop-blur-md"></div>
+        </div>
+  
+      See https://stackoverflow.com/a/76207141.
+    */
+    .backdrop-hack {
+      @apply absolute inset-0 -z-10;
+    }
+}
+
 @layer base {
     :root {
         --background: 0 0% 100%;
@@ -253,4 +280,9 @@ span[data-rehype-pretty-code-figure] code {
 
 span[data-highlighted-line] {
     @apply bg-slate-300 bg-opacity-10;
+}
+
+/* 自定义终端主题 */
+#terminalEditor {
+    border-radius: 0!important;
 }
