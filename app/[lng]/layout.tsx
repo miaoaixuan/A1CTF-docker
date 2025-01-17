@@ -16,6 +16,8 @@ import { languages, fallbackLng } from '../i18n/settings'
 import { useTranslation } from '../i18n'
 import { LoadingPage } from "@/components/LoadingPage";
 
+import { Toaster } from "react-hot-toast"
+
 const geistSans = localFont({
     src: "../fonts/GeistVF.woff",
     variable: "--font-geist-sans",
@@ -62,6 +64,12 @@ export default async function RootLayout({
                     defaultTheme="system"
                     enableSystem
                 >
+                    <div>
+                        <Toaster
+                            // position="top-right"
+                            reverseOrder={false}
+                        />
+                    </div>
                     <DelayedSuspense>
                         <TransitionProvider>
                             <TransitionLayout>
