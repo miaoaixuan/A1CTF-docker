@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/resizable"
 
 import { ResizableScrollablePanel } from "@/components/ResizableScrollablePanel"
+import { A1LogoWithOutAnime } from "@/components/A1LogoWithoutAnime";
 
 export default async function Games({ params }: { params: Promise<{ lng: string, id: string }>}) {
     
@@ -41,37 +42,43 @@ export default async function Games({ params }: { params: Promise<{ lng: string,
 
     return (
         <div className="p-0 font-[family-name:var(--font-geist-sans)] h-screen relative">
-            <div className="absolute overflow-y-auto flex items-center pl-3 pt-3 pr-3 pb-2 w-screen z-20 pointer-events-none">
-                <div className="flex items-center">
-                    {/* <Label className="font-bold ml-[15px] text-lg">A1CTF 2025</Label> */}
+            <div className="absolute top-0 left-0 w-screen h-screen z-[-19] overflow-hidden">
+                <div className="w-[400px] h-[400px] absolute bottom-[-120px] right-[-120px] rotate-[-20deg]">
+                    <A1LogoWithOutAnime />
                 </div>
-                <div className="flex-1" />
-                <div id="rightArea" className="justify-end flex h-ful gap-[10px] items-center pointer-events-auto">
-                    <div className="bg-black bg-opacity-10 pl-4 pr-4 pt-1 pb-1 rounded-2xl relative overflow-hidden select-none dark:invert">
-                        <div
-                            className="absolute top-0 left-0 bg-black mix-blend-difference"
-                            style={{ width: '50%', height: '100%' }}
-                        />
-                        <Label className="text-white mix-blend-difference z-20">Left time: 245:11:33</Label>
-                    </div>
-
-                    <ToggleTheme lng={lng} />
-                    <Avatar>
-                        <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-                        <AvatarFallback>CN</AvatarFallback>
-                    </Avatar>
-                </div>
+                {/* <div className="absolute w-[calc(100vw-2px)] h-[calc(100vh-2px)] top-[0px] left-[0px] border-2 z-[-20] dark:border-white">
+                </div> */}
             </div>
             <SidebarProvider>
+                <div className="z-20">
                 <AppSidebar />
-                <main className="flex flex-col top-0 left-0 h-screen w-screen overflow-hidden">
-                    <div className="h-[40px] flex items-center pl-4 pt-3 pr-3">
-                        <SidebarTrigger />
-                        <Label className="font-bold ml-3">Game - ez_VM</Label>
+                </div>
+                <main className="flex flex-col top-0 left-0 h-screen w-screen overflow-hidden backdrop-blur-sm">
+                    <div className="h-[60px] flex items-center pl-4 pr-3 z-20 w-full">
+                        <div className="h-[32px] flex items-center mt-[8px]">
+                            <SidebarTrigger />
+                            <Label className="font-bold ml-3">Game - ez_VM</Label>
+                        </div>
+                        <div className="flex-1" />
+                        <div id="rightArea" className="justify-end flex h-ful gap-[10px] items-center pointer-events-auto">
+                            <div className="bg-black bg-opacity-10 pl-4 pr-4 pt-1 pb-1 rounded-2xl relative overflow-hidden select-none dark:invert">
+                                <div
+                                    className="absolute top-0 left-0 bg-black mix-blend-difference"
+                                    style={{ width: '50%', height: '100%' }}
+                                />
+                                <Label className="text-white mix-blend-difference z-20">Left time: 245:11:33</Label>
+                            </div>
+
+                            <ToggleTheme lng={lng} />
+                            <Avatar>
+                                <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
+                                <AvatarFallback>CN</AvatarFallback>
+                            </Avatar>
+                        </div>
                     </div>
                     <ResizablePanelGroup direction="vertical">
                         <ResizableScrollablePanel defaultSize={60} minSize={20} className="overflow-auto">
-                            <div className="pl-7 pr-5 pb-5 flex-1 mt-2">
+                            <div className="pl-7 pr-5 pb-5 flex-1">
                                 <Mdx source={source} />
                             </div>
                         </ResizableScrollablePanel>
