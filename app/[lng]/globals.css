@@ -284,5 +284,25 @@ span[data-highlighted-line] {
 
 /* 自定义终端主题 */
 #terminalEditor {
+    /* @apply backdrop-blur-sm; */
     border-radius: 0!important;
 }
+
+@layer components {
+    .sidebar-transparent {
+        background-color: transparent!important;
+    }
+}
+
+.hide-scrollbar {
+    -ms-overflow-style: none; /* IE 11 */
+    scrollbar-width: none; /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
+}
+
+/* .index_terminal__teubZ {
+    background-color: transparent!important;
+} */
