@@ -101,7 +101,7 @@ export default function GameSwitchHover({ x, y, id } : { x: number, y: number, i
                         >
                             <Image
                                 className="mb-10"
-                                src="/images/123691039_p0.png"
+                                src="/images/123691039_p0.jpg"
                                 alt="game-cover"
                                 width={700}
                                 height={100}
