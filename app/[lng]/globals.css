@@ -41,8 +41,12 @@ body {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--border)) transparent;
 
-    transition: border-color var(--color-duration-time) cubic-bezier(.4, 0, .2, 1),
-        stroke var(--color-duration-time) cubic-bezier(.4, 0, .2, 1);
+    /* transition: border-color var(--color-duration-time) cubic-bezier(.4, 0, .2, 1),
+        stroke var(--color-duration-time) cubic-bezier(.4, 0, .2, 1); */
+}
+
+::-webkit-scrollbar-thumb {
+    transition: background-color 0.3s ease-in-out; /* 设置颜色变化的过渡动画 */
 }
 
 .fake-bg::before {

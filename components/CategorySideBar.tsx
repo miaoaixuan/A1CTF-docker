@@ -26,7 +26,7 @@ const OnceSWRConfig: SWRConfiguration = {
 }
 
 import { AxiosError } from 'axios';
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 
 export function AppSidebar({ gameid, setChallenge, setGameDetail } : { 
     gameid: string, 
@@ -38,10 +38,47 @@ export function AppSidebar({ gameid, setChallenge, setGameDetail } : {
     const [ challenges, setChallenges ] = useState<Record<string, ChallengeInfo[]>> ()
     const [ CurChallenge, setCurChallenge ] = useState<ChallengeDetailModel>({})
 
+    const observerRef = useRef<IntersectionObserver | null>(null);
+    const [visibleItems, setVisibleItems] = useState<Record<string, Record<string, boolean>>>({});
+
     useEffect(() => {
         api.game.gameChallengesWithTeamInfo(gmid).then((response) => {
             setChallenges(response.data.challenges)
             setGameDetail(response.data)
+
+            observerRef.current = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    const target = entry.target as HTMLElement; 
+                    
+                    const id = target.dataset.id as string;
+                    const category = target.dataset.category as string;
+
+
+                    if (entry.isIntersecting) {
+                        setVisibleItems((prev) => ({
+                            ...prev,
+                            [category]: {
+                                ...(prev[category] || {}),
+                                [id]: true, // 标记为可见
+                            },
+                        }));
+                    } else {
+                        setVisibleItems((prev) => ({
+                            ...prev,
+                            [category]: {
+                                ...(prev[category] || {}),
+                                [id]: false, // 标记为不可见
+                            },
+                        }));
+                    }
+                }
+            );
+            },
+            {
+                rootMargin: "200px 0px",
+            });
+
+
         }).catch((error: AxiosError) => {
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -56,9 +93,17 @@ export function AppSidebar({ gameid, setChallenge, setGameDetail } : {
             }).catch((error: AxiosError) => {})
         };
     };
+
+    const observeItem = (el: HTMLElement, category: string, id: string) => {
+        if (el && observerRef.current) {
+            el.dataset.id = id;
+            el.dataset.category = category;
+            observerRef.current.observe(el);
+        }
+    };
     
     return (
-        <Sidebar className="backdrop-blur-sm hide-scrollbar select-none">
+        <Sidebar className="backdrop-blur-sm hide-scrollbar select-none transition-all duration-200">
             <SidebarContent>
                 <SidebarGroup>
                     <div className="flex justify-center w-full items-center pl-2 pr-2 pt-2">
@@ -68,7 +113,7 @@ export function AppSidebar({ gameid, setChallenge, setGameDetail } : {
                                 src="/images/A1natas.svg"
                                 alt="A1natas"
                                 width={40}
-                                height={30}
+                                height={40}
                                 priority
                             />
                             <Label className="font-bold text-xl">A1CTF</Label>
@@ -91,16 +136,24 @@ export function AppSidebar({ gameid, setChallenge, setGameDetail } : {
                                     <div className="flex flex-col pl-2 pr-2 pb-2 gap-3">
                                         {/* Render all ChallengeItems for this category */}
                                         {challengeList.map((challenge, index) => (
-                                        <ChallengeItem
-                                            key={index}
-                                            type={challenge.category?.toLocaleLowerCase() || "None"}
-                                            name={challenge.title || "None"}
-                                            solved={challenge.solved || 0}
-                                            score={challenge.score || 0}
-                                            rank={3}
-                                            choiced={ CurChallenge.id == challenge.id }
-                                            onClick={handleChangeChallenge(challenge.id || 0)}
-                                        />
+                                            <div
+                                                key={index}
+                                                ref={(el) => observeItem(el!, category, challenge.id?.toString() || "")}
+                                            >
+                                                {visibleItems[category]?.[challenge.id || 0] ? (
+                                                    <ChallengeItem
+                                                        type={challenge.category?.toLocaleLowerCase() || "None"}
+                                                        name={challenge.title || "None"}
+                                                        solved={challenge.solved || 0}
+                                                        score={challenge.score || 0}
+                                                        rank={3}
+                                                        choiced={CurChallenge.id == challenge.id}
+                                                        onClick={handleChangeChallenge(challenge.id || 0)}
+                                                    />
+                                                ) : (
+                                                    <div className="h-[100px]"></div>
+                                                )}
+                                            </div>
                                         ))}
                                     </div>
                                     </SidebarMenu>

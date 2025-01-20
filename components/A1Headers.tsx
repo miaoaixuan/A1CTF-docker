@@ -48,7 +48,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
                                 src="/images/A1natas.svg"
                                 alt="A1natas"
                                 width={40}
-                                height={30}
+                                height={40}
                                 priority
                             />
                         </TransitionLink>
@@ -104,7 +104,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
                                 src="/images/A1natas.svg"
                                 alt="A1natas"
                                 width={34}
-                                height={30}
+                                height={34}
                                 priority
                             />
                             <Label className="font-bold ml-2">A1CTF</Label>

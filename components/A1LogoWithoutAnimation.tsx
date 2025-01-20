@@ -1,4 +1,4 @@
-export function A1LogoWithOutAnime() {
+export function A1LogoWithoutAnimation() {
     return (
         <svg xmlns="http://www.w3.org/2000/svg" id="a1logo" viewBox="0 0 4000 4000" preserveAspectRatio="xMidYMid meet">
             <defs>

@@ -1,7 +1,7 @@
 import PageHeader from "@/components/A1Headers"
 
 import A1Footer from "@/components/A1Footer";
-import A1Anime from "@/components/A1Anime";
+import A1Animation from "@/components/A1Animation";
 
 import React from "react";
 
@@ -17,7 +17,7 @@ export default async function Home({ params }: { params: Promise<{ lng: string }
                     <h1>Welcome to A1CTF!</h1>
                 </div> */}
                 <div className="w-full h-full flex justify-center items-center">
-                    <A1Anime />
+                    <A1Animation />
                 </div>
             </main>
             <A1Footer/>
