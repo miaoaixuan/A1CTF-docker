@@ -17,7 +17,7 @@ import {
 
 import { House, Flag, UsersRound, Info, NotebookText, KeyRound } from 'lucide-react'
 
-import { useTranslation } from '@/app/i18n/client'
+import {useTranslations} from 'next-intl';
 import { TransitionLink } from "./TransitionLink";
 
 // import { cookies } from "next/headers";
@@ -26,7 +26,7 @@ import { useState } from "react";
 
 const PageHeader = ({ lng } : { lng: string }) => {
 
-    const { t } = useTranslation(lng);
+    const t = useTranslations();
     const [isOpen, setIsOpen] = useState(false);
 
     let path = (usePathname() || "/zh").slice(lng.length + 2);

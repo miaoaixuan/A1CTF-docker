@@ -4,13 +4,11 @@ import AnimatedButton from "@/components/AnimatedButton"
 import GameSwitchHover from "@/components/GameSwitchHover"
 
 // i18n 多语言
-import { useTranslation } from '@/app/i18n'
 import { Button } from "@/components/ui/button";
 
 export default async function Games({ params }: { params: Promise<{ lng: string }>}) {
     
     const { lng } = await params;
-    const { t } = await useTranslation(lng);
 
     return (
         <div className="p-0 font-[family-name:var(--font-geist-sans)] h-screen flex flex-col">

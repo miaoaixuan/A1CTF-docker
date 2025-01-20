@@ -18,12 +18,12 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link";
 import { usePathname, useSearchParams } from 'next/navigation'
 
-import { useTranslation } from '@/app/i18n/client';
+import {useTranslations} from 'next-intl';
 
 const ThemeSwitcher = ({ lng } : { lng: string }) => {
     const [mounted, setMounted] = useState(false)
     const { theme, setTheme } = useTheme()
-    const { t } = useTranslation(lng);
+    const t = useTranslations();
 
     const asPath = usePathname() + ( useSearchParams().size ? "?" + useSearchParams() : ""); // 获取当前路径
 

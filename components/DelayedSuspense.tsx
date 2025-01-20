@@ -7,7 +7,7 @@ function DelayedSuspense({ children }: { children: React.ReactNode }) {
     return (
         <>
             {/* <LoadingPage /> */}
-            <Suspense fallback={<LoadingPage />}>
+            <Suspense fallback={<LoadingPage visible={true} />}>
                 {children}
             </Suspense>
         </>

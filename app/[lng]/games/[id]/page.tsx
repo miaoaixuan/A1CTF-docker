@@ -1,5 +1,3 @@
-// i18n 多语言
-import { useTranslation } from '@/app/i18n'
 import { A1LogoWithOutAnime } from "@/components/A1LogoWithoutAnime";
 
 import { ChallengesView } from '@/components/ChallengesView';
@@ -7,7 +5,6 @@ import { ChallengesView } from '@/components/ChallengesView';
 export default async function Games({ params }: { params: Promise<{ lng: string, id: string }>}) {
     
     const { lng, id } = await params;
-    const { t } = await useTranslation(lng);
 
     return (
         <div className="p-0 font-[family-name:var(--font-geist-sans)] h-screen relative">

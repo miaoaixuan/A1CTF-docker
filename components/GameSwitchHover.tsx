@@ -55,6 +55,7 @@ export default function GameSwitchHover({ x, y, id } : { x: number, y: number, i
                 })
             }, 500)
         }, 3000);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
 

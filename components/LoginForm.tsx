@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-import { useTranslation } from '@/app/i18n/client'
+import {useTranslations} from 'next-intl';
 import { FormEventHandler, useRef, useState } from "react";
 import { LoaderCircle } from 'lucide-react';
 
@@ -25,7 +25,7 @@ export function LoginForm({
     className,
     ...props
 }: React.ComponentPropsWithoutRef<"form">) {
-    const { t } = useTranslation(props.lang)
+    const t = useTranslations();
 
     const userNameRef = useRef<HTMLInputElement>(null)
     const passwordRef = useRef<HTMLInputElement>(null)
