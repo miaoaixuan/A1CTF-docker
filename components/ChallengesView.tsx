@@ -80,7 +80,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
         api.game.gameGame(parseInt(id, 10)).then((res) => {
             setGameInfo(res.data)
 
-            let totalTime = dayjs(res.data.end).diff(dayjs(res.data.start)) / 1000
+            const totalTime = dayjs(res.data.end).diff(dayjs(res.data.start)) / 1000
 
             const iter = setInterval(() => {
                 const curLeft = dayjs(res.data.end).diff(dayjs()) / 1000

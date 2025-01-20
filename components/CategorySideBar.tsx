@@ -36,7 +36,6 @@ export function AppSidebar({ gameid, setChallenge, setGameDetail } : {
 
     const gmid = parseInt(gameid, 10)
     const [ challenges, setChallenges ] = useState<Record<string, ChallengeInfo[]>> ()
-
     const [ CurChallenge, setCurChallenge ] = useState<ChallengeDetailModel>({})
 
     useEffect(() => {
@@ -45,7 +44,7 @@ export function AppSidebar({ gameid, setChallenge, setGameDetail } : {
             setGameDetail(response.data)
         }).catch((error: AxiosError) => {
         })
-        console.log("sended")
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [gmid])
 
     const handleChangeChallenge = (id: number) => {
