@@ -9,10 +9,12 @@ import { useTranslation } from '@/app/i18n/client'
 import { FormEventHandler, useRef, useState } from "react";
 import { LoaderCircle } from 'lucide-react';
 
-import { toastError } from "@/utils/ToastUtil"
+import { toastError, toastSuccess } from "@/utils/ToastUtil"
 
 import axios, { AxiosError } from 'axios';
 import { useTheme } from "next-themes";
+
+import api from "@/utils/GZApi";
 
 interface ErrorLoginResponse {
     title: string;
@@ -40,7 +42,7 @@ export function LoginForm({
             "userName": userNameRef.current!.value,
             "password": passwordRef.current!.value
         }).then(response => {
-
+            toastSuccess({ title: "登录成功", theme: theme || "dark"})
         }).catch((error: AxiosError) => {
             if (error.response?.status == 401) {
                 const response = error.response.data as ErrorLoginResponse

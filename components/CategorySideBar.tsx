@@ -1,3 +1,5 @@
+"use client";
+
 import { Calendar, CircleArrowLeft, Home, Inbox, Search, Settings } from "lucide-react"
 
 import Image from "next/image";
@@ -15,37 +17,47 @@ import { Button } from "./ui/button"
 import { Label } from "@radix-ui/react-label"
 
 import { ChallengeItem } from "./ChallengeItem";
+import { Cache, SWRConfiguration } from 'swr'
+import api, { ChallengeInfo, ChallengeDetailModel, GameDetailModel } from '@/utils/GZApi'
 
-// Menu items.
-const items = [
-    {
-        title: "Home",
-        url: "#",
-        icon: Home,
-    },
-    {
-        title: "Inbox",
-        url: "#",
-        icon: Inbox,
-    },
-    {
-        title: "Calendar",
-        url: "#",
-        icon: Calendar,
-    },
-    {
-        title: "Search",
-        url: "#",
-        icon: Search,
-    },
-    {
-        title: "Settings",
-        url: "#",
-        icon: Settings,
-    },
-]
+const OnceSWRConfig: SWRConfiguration = {
+    refreshInterval: 0,
+    revalidateOnFocus: false,
+}
 
-export function AppSidebar() {
+import { AxiosError } from 'axios';
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
+
+export function AppSidebar({ gameid, setChallenge, setGameDetail } : { 
+    gameid: string, 
+    setChallenge: Dispatch<SetStateAction<ChallengeDetailModel>>,
+    setGameDetail: Dispatch<SetStateAction<GameDetailModel>>
+}) {
+
+    const gmid = parseInt(gameid, 10)
+    const [ challenges, setChallenges ] = useState<Record<string, ChallengeInfo[]>> ()
+
+    const [ CurChallenge, setCurChallenge ] = useState<ChallengeDetailModel>({})
+
+    useEffect(() => {
+        api.game.gameChallengesWithTeamInfo(gmid).then((response) => {
+            setChallenges(response.data.challenges)
+            setGameDetail(response.data)
+        }).catch((error: AxiosError) => {
+        })
+        console.log("sended")
+    }, [gmid])
+
+    const handleChangeChallenge = (id: number) => {
+        return (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+            api.game.gameGetChallenge(gmid, id).then((response) => {
+                console.log(response)
+                setChallenge(response.data || {})
+                setCurChallenge(response.data || {})
+            }).catch((error: AxiosError) => {})
+        };
+    };
+    
     return (
         <Sidebar className="backdrop-blur-sm hide-scrollbar select-none">
             <SidebarContent>
@@ -71,80 +83,32 @@ export function AppSidebar() {
                         </div>
                     </div>
                     <div className="pl-[7px] pr-[7px]">
-                        <SidebarGroupLabel className="text-[0.9em]">Reverse</SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <SidebarMenu>
-                                <div className="flex flex-col pl-2 pr-2 pb-2 gap-3">
-                                    <ChallengeItem 
-                                        type="reverse"
-                                        name="ez_vm"
-                                        solved={14}
-                                        score={100}
-                                        rank={5}
-                                    />
-                                </div>
-                            </SidebarMenu>
-                        </SidebarGroupContent>
+                        {Object.entries(challenges ?? {}).map(([category, challengeList]) => (
+                            <div key={category}>
+                                {/* Sidebar Group Label */}
+                                <SidebarGroupLabel className="text-[0.9em]">{category}</SidebarGroupLabel>
+                                <SidebarGroupContent>
+                                    <SidebarMenu>
+                                    <div className="flex flex-col pl-2 pr-2 pb-2 gap-3">
+                                        {/* Render all ChallengeItems for this category */}
+                                        {challengeList.map((challenge, index) => (
+                                        <ChallengeItem
+                                            key={index}
+                                            type={challenge.category?.toLocaleLowerCase() || "None"}
+                                            name={challenge.title || "None"}
+                                            solved={challenge.solved || 0}
+                                            score={challenge.score || 0}
+                                            rank={3}
+                                            choiced={ CurChallenge.id == challenge.id }
+                                            onClick={handleChangeChallenge(challenge.id || 0)}
+                                        />
+                                        ))}
+                                    </div>
+                                    </SidebarMenu>
+                                </SidebarGroupContent>
+                            </div>
+                        ))}
 
-                        <SidebarGroupLabel className="text-[0.9em]">Web</SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <SidebarMenu>
-                                <div className="flex flex-col pl-2 pr-2 pb-2 gap-3">
-                                    <ChallengeItem 
-                                        type="web"
-                                        name="flask"
-                                        solved={14}
-                                        score={100}
-                                        rank={3}
-                                    />
-                                </div>
-                            </SidebarMenu>
-                        </SidebarGroupContent>
-
-                        <SidebarGroupLabel className="text-[0.9em]">Mobile</SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <SidebarMenu>
-                                <div className="flex flex-col pl-2 pr-2 pb-2 gap-3">
-                                    <ChallengeItem 
-                                        type="mobile"
-                                        name="ezAPP"
-                                        solved={14}
-                                        score={100}
-                                        rank={3}
-                                    />
-                                </div>
-                            </SidebarMenu>
-                        </SidebarGroupContent>
-
-                        <SidebarGroupLabel className="text-[0.9em]">Crypto</SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <SidebarMenu>
-                                <div className="flex flex-col pl-2 pr-2 pb-2 gap-3">
-                                    <ChallengeItem 
-                                        type="crypto"
-                                        name="rsa"
-                                        solved={14}
-                                        score={100}
-                                        rank={3}
-                                    />
-                                </div>
-                            </SidebarMenu>
-                        </SidebarGroupContent>
-
-                        <SidebarGroupLabel className="text-[0.9em]">AI</SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <SidebarMenu>
-                                <div className="flex flex-col pl-2 pr-2 pb-2 gap-3">
-                                    <ChallengeItem 
-                                        type="ai"
-                                        name="丰川祥子机器人"
-                                        solved={14}
-                                        score={100}
-                                        rank={3}
-                                    />
-                                </div>
-                            </SidebarMenu>
-                        </SidebarGroupContent>
                     </div>
                 </SidebarGroup>
             </SidebarContent>

@@ -7,6 +7,9 @@ import { SkeletonCard } from "@/components/SkeletonCard";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 
+import api, { ChallengeDetailModel, AnswerResult } from '@/utils/GZApi'
+import { AxiosError } from "axios";
+
 // 使用 dynamic 懒加载 ReactTerminal，并禁用服务器端渲染
 const ReactTerminal = dynamic(
     () => import("react-terminal").then((mod) => mod.ReactTerminal),
@@ -20,11 +23,12 @@ const ReactTerminal = dynamic(
     }
 );
 
-export function GameTerminal() {
+export function GameTerminal( { gameid, challenge } : { gameid: string, challenge: ChallengeDetailModel }) {
 
     const { theme } = useTheme();
 
     const [ terminalTheme, setTerminalTheme ] = useState(theme == "dark" ? "a1-theme-dark" : "a1-theme")
+    const gmid = parseInt(gameid, 10)
 
     useEffect(() => {
         if (theme === "dark") {
@@ -43,16 +47,34 @@ export function GameTerminal() {
                 <span><span className="text-cyan-400">ciallo</span> -- <span className="text-purple-400">Your can guess~</span></span>
             </div>
         ),
-        submit: (flag: string) => {
+        submit: async (flag: string) => {
             if (!flag.length) return (
                 <span>Usage: submit &lt;flag&gt;</span>
             )
+            
+            const { data: submitID } = await api.game.gameSubmit(gmid, challenge.id || 0, { flag })
+            const { data: flagStatus } = await api.game.gameStatus(gmid, challenge.id || 0, submitID)
 
-            return (
-                <div className="bg-green-600 pl-3 pr-3 pt-2 pb-2 w-[360px] rounded-lg mt-2">
-                    Correct! Your winned <span className="text-red-500 font-bold">300</span> scores!
-                </div>
-            )
+            switch (flagStatus) {
+                case AnswerResult.Accepted:
+                    return (
+                        <div className="bg-green-600 pl-3 pr-3 pt-2 pb-2 w-[80px] rounded-lg mt-2 text-white">
+                            Correct!
+                        </div>
+                    )
+                case AnswerResult.WrongAnswer:
+                    return (
+                        <div className="bg-red-500 pl-3 pr-3 pt-2 pb-2 w-[80px] rounded-lg mt-2 text-white">
+                            Wrong
+                        </div>
+                    )
+                default:
+                    return (
+                        <div className="bg-purple-400 pl-3 pr-3 pt-2 pb-2 w-[80px] rounded-lg mt-2 text-white">
+                            Error!
+                        </div>
+                    )
+            }
         }
     };
 
@@ -68,6 +90,7 @@ export function GameTerminal() {
                 commands={commands}
                 showControlBar={false}
                 welcomeMessage={welcomeMessage}
+                prompt={ `${challenge.title ? challenge.title : ""} >>>` }
                 themes={{
                     "a1-theme": {
                         themeBGColor: "transparent",
