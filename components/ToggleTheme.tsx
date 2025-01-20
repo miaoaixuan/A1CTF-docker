@@ -78,7 +78,7 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
                         style={{ "backgroundColor": "hsl(var(--background))" }}
                     >
                         <motion.button
-                            className="transition-all ease-in-out duration-400 relative w-44 h-11 rounded-[10px] hover:rounded-[0px] bg-gray-300 dark:bg-gray-600 flex items-center justify-center focus:outline-none overflow-hidden"
+                            className="transition-all ease-in-out duration-300 relative w-44 h-11 rounded-[10px] hover:rounded-[0px]  flex items-center justify-center focus:outline-none overflow-hidden"
                             onClick={toggleTheme}
                             // animate={{ backgroundColor: theme === 'light' ? '#D1D5DB' : '#4B5563' }}
                         >

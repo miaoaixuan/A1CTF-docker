@@ -71,10 +71,10 @@ export const ChallengeItem: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
                 
             </div>
             <div className={`flex flex-col h-full w-full`}>
-                <div className="flex items-center">
-                    <div id="card-title" className="flex justify-start items-center gap-2">
+                <div className="flex items-center gap-1">
+                    <div id="card-title" className="flex justify-start items-center gap-2 min-w-0">
                         <Gamepad2 />
-                        <Label className={`font-bold text-ellipsis whitespace-nowrap w-[150px] overflow-hidden`}>{ name }</Label>
+                        <Label className={`font-bold text-ellipsis whitespace-nowrap overflow-hidden`}>{ name }</Label>
                     </div>
                     <div className="flex-1" />
                     <div className="flex justify-end gap-[2px] z-20">

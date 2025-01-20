@@ -48,6 +48,13 @@ export function GameTerminal( { gameid, challenge } : { gameid: string, challeng
             </div>
         ),
         submit: async (flag: string) => {
+
+            if (!challenge.title) return (
+                <div className="bg-red-500 pl-3 pr-3 pt-2 pb-2 w-[285px] rounded-lg mt-2 text-white">
+                    Chose a challenge first!
+                </div>
+            )
+
             if (!flag.length) return (
                 <span>Usage: submit &lt;flag&gt;</span>
             )
@@ -75,6 +82,10 @@ export function GameTerminal( { gameid, challenge } : { gameid: string, challeng
                         </div>
                     )
             }
+        },
+        download: () => {
+            // challenge.context
+            return (<></>)
         }
     };
 

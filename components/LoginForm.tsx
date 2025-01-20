@@ -90,8 +90,8 @@ export function LoginForm({
                         t("login")
                     )}
                 </Button>
-                <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
-                    <span className="relative z-10 bg-background px-2 text-muted-foreground">
+                <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border transition-all duration-300">
+                    <span className="relative z-10 bg-background px-2 text-muted-foreground transition-all duration-300">
                         {t("or_continue_with")}
                     </span>
                 </div>

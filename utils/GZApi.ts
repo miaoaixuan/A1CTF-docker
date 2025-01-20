@@ -9,6 +9,8 @@
  * ---------------------------------------------------------------
  */
 
+/* Copied from GZCTF :) */
+
 /** Request response */
 export interface RequestResponseOfRegisterStatus {
     /** Response message */

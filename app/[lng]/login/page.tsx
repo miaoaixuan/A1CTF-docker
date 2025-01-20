@@ -22,7 +22,7 @@ export default async function LoginPage({ params }: { params: Promise<{ lng: str
                             src="/images/A1natas.svg"
                             alt="A1natas"
                             width={40}
-                            height={30}
+                            height={40}
                             priority
                         />
                         <Label className="font-bold text-lg">A1natas SSO</Label>

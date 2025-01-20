@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
-const A1Anime = () => {
+const A1Animation = () => {
     const [svgReady, setSvgReady] = useState(false); // 控制 SVG 的显示
     const [rotate_deg, setRotate_deg] = useState(0); // 旋转
     const [scaleN, setScaleN] = useState(1); // 放大
@@ -88,4 +88,4 @@ const A1Anime = () => {
     )
 }
 
-export default A1Anime
+export default A1Animation
