@@ -7,7 +7,7 @@ export default async function Home({ params }: { params: Promise<{ lng: string }
 
     const { lng } = await params;
     
-    const source = fs.readFileSync("app/md/about.mdx").toString("utf-8");
+    const source = fs.readFileSync("public/md/about.mdx").toString("utf-8");
 
     return (
         <div className="p-0 font-[family-name:var(--font-geist-sans)] h-screen flex flex-col">

@@ -1,10 +1,5 @@
 import PageHeader from "@/components/A1Headers"
-import A1Footer from "@/components/A1Footer";
 import AnimatedButton from "@/components/AnimatedButton"
-import GameSwitchHover from "@/components/GameSwitchHover"
-
-// i18n 多语言
-import { Button } from "@/components/ui/button";
 
 export default async function Games({ params }: { params: Promise<{ lng: string }>}) {
     

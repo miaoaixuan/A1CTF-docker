@@ -1,14 +1,9 @@
 "use client";
 
-// i18n 多语言
 import { Label } from "@radix-ui/react-label";
-
 import ToggleTheme from "@/components/ToggleTheme"
-
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-
 import { AppSidebar } from "@/components/CategorySideBar";
-
 import { GameTerminal } from "@/components/GameTerminal"
 
 import {
@@ -23,13 +18,11 @@ import {
 } from "@/components/ui/resizable"
 
 import { ResizableScrollablePanel } from "@/components/ResizableScrollablePanel"
-import dynamic from "next/dynamic";
-import { SkeletonCard } from "@/components/SkeletonCard"; 
 
 import { Mdx } from "./MdxCompoents";
 import { useEffect, useState } from "react";
 
-import api, { ChallengeInfo, ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel } from '@/utils/GZApi'
+import api, { ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel } from '@/utils/GZApi'
 import { Skeleton } from "./ui/skeleton";
 
 import dayjs from "dayjs";

@@ -3,7 +3,6 @@ import PageHeader from "@/components/A1Headers"
 import A1Footer from "@/components/A1Footer";
 import A1Anime from "@/components/A1Anime";
 
-// i18n 多语言
 import React from "react";
 
 export default async function Home({ params }: { params: Promise<{ lng: string }>}) {
