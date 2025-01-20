@@ -3,21 +3,10 @@
 import { Label } from "@radix-ui/react-label";
 import { useEffect, useState } from "react";
 
-export const LoadingPage = () => {
-
-    const [visible, setvisible] = useState(true);
-
-    useEffect(() => {
-        console.log("Loading....")
-        const timer = setTimeout(() => {
-            console.log("OK")
-            setvisible(false)
-        }, 1000);
-        return () => clearTimeout(timer);
-    });
+export const LoadingPage = ({visible} : { visible: boolean }) => {
 
     return (
-        <div className={`w-screen h-screen flex justify-center items-center z-50 absolute backdrop-blur-xl transition-opacity duration-100 ease-in-out ${
+        <div className={`w-screen h-screen flex justify-center items-center z-50 absolute bg-background transition-opacity duration-100 ease-in-out ${
             visible ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}>
             <svg

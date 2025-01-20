@@ -1,4 +1,6 @@
-import {  Sparkle, Gamepad2, ChevronsRight } from "lucide-react"
+"use client";
+
+import {  Sparkle, Gamepad2, ChevronsRight, Target, Crosshair, CheckCheck, Zap } from "lucide-react"
 
 import { Label } from "@radix-ui/react-label"
 import { FC } from "react"
@@ -8,12 +10,13 @@ interface ChallengeInfo {
     name: string,
     solved: number,
     score: number,
-    rank: number
+    rank: number,
+    choiced: boolean
 }
 
-export const ChallengeItem: FC<ChallengeInfo> = ({ type, name, solved, score, rank }) => {
+export const ChallengeItem: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivElement>> = ({ type, name, solved, score, rank, choiced, ...props }) => {
 
-    var colorClass = "bg-amber-600";
+    let colorClass = "bg-amber-600";
 
     /* 
         copied from gzctf (
@@ -51,21 +54,32 @@ export const ChallengeItem: FC<ChallengeInfo> = ({ type, name, solved, score, ra
     else colorClass = colorMap["misc"]
 
     return (
-        <div className="w-full h-[100px] rounded-xl shadow-xl dark:shadow-white/15 dark:shadow-xl hover:scale-[1.02] duration-300 transition-all text-stone-800 pl-4 pt-4 pr-4 pb-4 select-none"
+        <div className="w-full h-[100px] rounded-xl shadow-xl relative dark:shadow-white/15 dark:shadow-xl hover:scale-[1.02] duration-300 transition-all text-stone-800 pl-4 pt-4 pr-4 pb-3 select-none overflow-hidden will-change-transform"
             style={{
                 backgroundColor: colorClass
             }}
+            {...props} 
         >
-            <div className="flex flex-col h-full w-full">
+            <div className="absolute w-[120px] h-[120px] right-[-40px] top-[-50px] rotate-[-20deg]">
+                {
+                    choiced && (
+                        <div className="flex items-center justify-center h-full text-black">
+                            <Zap fill="true" size={120} className="fill-yellow-300 text-yellow-600" />
+                        </div>
+                    )
+                }
+                
+            </div>
+            <div className={`flex flex-col h-full w-full`}>
                 <div className="flex items-center">
                     <div id="card-title" className="flex justify-start items-center gap-2">
                         <Gamepad2 />
-                        <Label className="font-bold">{ name }</Label>
+                        <Label className={`font-bold text-ellipsis whitespace-nowrap w-[150px] overflow-hidden`}>{ name }</Label>
                     </div>
                     <div className="flex-1" />
-                    <div className="flex justify-end gap-[2px]">
-                        { Array(rank).fill(null).map((_) => (
-                            <Sparkle size={20} />
+                    <div className="flex justify-end gap-[2px] z-20">
+                        { Array(rank).fill(null).map((_, index) => (
+                            <Sparkle key={index} fill="true" className="fill-yellow-500 text-yellow-500" size={20} />
                         )) }
                     </div>
                 </div>
@@ -77,7 +91,7 @@ export const ChallengeItem: FC<ChallengeInfo> = ({ type, name, solved, score, ra
                     <div className="flex-1"/>
                     <div className="flex justify-end items-center">
                         <Label className="font-bold">Try it</Label>
-                        <ChevronsRight />
+                        <ChevronsRight size={32}/>
                     </div>
                 </div>
             </div>
