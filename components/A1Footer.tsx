@@ -1,10 +1,12 @@
+"use client";
+
 import { Label } from "@radix-ui/react-dropdown-menu"
 import Link from "next/link";
 import { History, Box } from 'lucide-react'
 
 const A1Footer = () => {
     return (
-        <footer className="h-14 flex justify-center items-center border-t font-bold text-xs lg:text-base">
+        <footer className="h-14 flex justify-center items-center font-bold text-xs lg:text-base">
             <Box /> 
             <Label className="ml-2">A1CTF for A1natas</Label>
             <Label className="ml-2 mr-2">/</Label>

@@ -1,67 +1,67 @@
+"use client";
 
-import { MDXRemote, MDXRemoteProps } from "next-mdx-remote-client/rsc";
+import ReactMarkdown from 'react-markdown'
+
+import remarkGfm from 'remark-gfm'
+import remarkBreaks from 'remark-breaks'; // To handle line breaks
+
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
+
 import { Button } from "./ui/button";
-import { Suspense } from "react";
+import { useTheme } from 'next-themes';
 
-import { transformerCopyButton } from "@rehype-pretty/transformers";
-import { rehypePrettyCode } from "rehype-pretty-code";
+export function Mdx({ source }: { source: string }) {
 
-import { visit } from 'unist-util-visit';
+    const { theme, resolvedTheme } = useTheme();
 
-function customCopyButtonTransformer() {
-  return (tree: any) => {
-    visit(tree, 'element', (node) => {
-      if (
-        node.tagName === 'button' &&
-        node.properties &&
-        node.properties.className.includes('rehype-pretty-code-copy-button')
-      ) {
-        // 修复 onClick
-        node.properties.onClick = () => {
-          const code = node.parent.children
-            .find((child: any) => child.tagName === 'code')
-            .children.map((textNode: any) => textNode.value)
-            .join('\n');
-          navigator.clipboard.writeText(code).then(() => {
-            console.log('Copied to clipboard');
-          });
-        };
-      }
-    });
-  };
-}
+    // 延迟渲染，直到 theme 确定
+    if (!theme && !resolvedTheme) {
+        return null; // 或者加载指示器
+    }
 
-/** @type {import('rehype-pretty-code').Options} */
-const options = {
-    // Use one of Shiki's packaged themes
-    // https://shiki.style/themes#themes
-    theme: "one-dark-pro",
-    // Keep the background or use a custom background color?
-    grid: true,
-    keepBackground: true,
-    bypassInlineCode: true,
-    defaultLang: "plaintext",
-};
-
-const Mdx = (props: MDXRemoteProps) => {
     return (
-        <MDXRemote
-            {...props}
+        <ReactMarkdown 
+            remarkPlugins={[remarkGfm, remarkBreaks]}
             components={{
-                h1: (props) => {
-                    return <h1 className="text-2xl font-bold">{props.children}</h1>;
+                code: ({ children = [], className, ...props }) => {
+                    const match = /language-(\w+)/.exec(className || '')
+                    return (<SyntaxHighlighter
+                            language={match?.[1]}
+                            showLineNumbers={true}
+                            style={ theme == "dark" ? (oneDark as any) : (oneLight as any) }
+                            PreTag='div'
+                            className='syntax-hight-wrapper'
+                          >
+                            {children as string[]}
+                          </SyntaxHighlighter>)
                 },
-                Button,
+                h1: ({ node, ...props }) => (
+                    <h1 className="text-3xl font-bold" {...props} />
+                ),
+                h2: ({ node, ...props }) => (
+                    <h2 className="text-2xl font-semibold" {...props} />
+                ),
+                h3: ({ node, ...props }) => (
+                    <h3 className="text-xl font-medium" {...props} />
+                ),
+                h4: ({ node, ...props }) => (
+                    <h4 className="text-lg font-medium" {...props} />
+                ),
+                h5: ({ node, ...props }) => (
+                    <h5 className="text-base font-normal" {...props} />
+                ),
+                a: ({ node, href, ...props }) => (
+                    <a 
+                        href={href} 
+                        className="text-orange-500 underline hover:text-orange-700 transition-colors" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        {...props}
+                    />
+                ),
             }}
-            options={{
-                mdxOptions: {
-                    remarkPlugins: [],
-                    rehypePlugins: [[rehypePrettyCode, options]],
-                    // format: "mdx"
-                }
-            }}
-        />
-    );
+            skipHtml={false}
+        >{ source.replace(/<br\s*\/?>/g, "\n") }</ReactMarkdown>
+    )
 }
-
-export default Mdx;

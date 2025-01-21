@@ -17,7 +17,7 @@ import {
 
 import { House, Flag, UsersRound, Info, NotebookText, KeyRound } from 'lucide-react'
 
-import { useTranslation } from '@/app/i18n/client'
+import {useTranslations} from 'next-intl';
 import { TransitionLink } from "./TransitionLink";
 
 // import { cookies } from "next/headers";
@@ -26,7 +26,7 @@ import { useState } from "react";
 
 const PageHeader = ({ lng } : { lng: string }) => {
 
-    const { t } = useTranslation(lng);
+    const t = useTranslations();
     const [isOpen, setIsOpen] = useState(false);
 
     let path = (usePathname() || "/zh").slice(lng.length + 2);
@@ -38,7 +38,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
     }
 
     return (
-        <header className="sticky top-0 h-16 backdrop-blur-sm border-b">
+        <header className="sticky top-0 h-16 backdrop-blur-sm">
             <div className="container-wrapper h-full">
                 <div className="container h-16 items-center header-theme hidden md:flex">
                     <div className="md:flex items-center">
@@ -48,7 +48,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
                                 src="/images/A1natas.svg"
                                 alt="A1natas"
                                 width={40}
-                                height={30}
+                                height={40}
                                 priority
                             />
                         </TransitionLink>
@@ -104,7 +104,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
                                 src="/images/A1natas.svg"
                                 alt="A1natas"
                                 width={34}
-                                height={30}
+                                height={34}
                                 priority
                             />
                             <Label className="font-bold ml-2">A1CTF</Label>

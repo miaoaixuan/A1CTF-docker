@@ -5,16 +5,58 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-import { useTranslation } from '@/app/i18n/client'
+import {useTranslations} from 'next-intl';
+import { FormEventHandler, useRef, useState } from "react";
+import { LoaderCircle } from 'lucide-react';
+
+import { toastError, toastSuccess } from "@/utils/ToastUtil"
+
+import axios, { AxiosError } from 'axios';
+import { useTheme } from "next-themes";
+
+import api from "@/utils/GZApi";
+
+interface ErrorLoginResponse {
+    title: string;
+    status: number;
+}
 
 export function LoginForm({
     className,
     ...props
 }: React.ComponentPropsWithoutRef<"form">) {
-    const { t } = useTranslation(props.lang);
+    const t = useTranslations();
+
+    const userNameRef = useRef<HTMLInputElement>(null)
+    const passwordRef = useRef<HTMLInputElement>(null)
+
+    const [loading, setLoading] = useState(false)
+
+    const { theme } = useTheme();
+
+    const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+
+        setLoading(true)
+        axios.post("/api/account/login", {
+            "userName": userNameRef.current!.value,
+            "password": passwordRef.current!.value
+        }).then(response => {
+            toastSuccess({ title: "登录成功", theme: theme || "dark"})
+        }).catch((error: AxiosError) => {
+            if (error.response?.status == 401) {
+                const response = error.response.data as ErrorLoginResponse
+                toastError({ title: response.title, theme: theme || "dark"})
+            }
+        }).finally(() => {
+            setTimeout(() => {
+                setLoading(false)
+            }, 300)
+        })
+    }
 
     return (
-        <form className={cn("flex flex-col gap-6", className)} {...props}>
+        <form className={cn("flex flex-col gap-6", className)} onSubmit={handleLogin} {...props}>
             <div className="flex flex-col items-center gap-2 text-center">
                 <h1 className="text-2xl font-bold">{t("login_title")}</h1>
                 <p className="text-balance text-sm text-muted-foreground">
@@ -24,7 +66,7 @@ export function LoginForm({
             <div className="grid gap-6">
                 <div className="grid gap-2">
                     <Label htmlFor="email">{t("email")}</Label>
-                    <Input id="email" type="email" placeholder="m@example.com" required />
+                    <Input id="email" type="email" placeholder="m@example.com" ref={userNameRef} required />
                 </div>
                 <div className="grid gap-2">
                     <div className="flex items-center">
@@ -36,13 +78,20 @@ export function LoginForm({
                             {t("forget_password")}
                         </a>
                     </div>
-                    <Input id="password" type="password" required />
+                    <Input id="password" type="password" ref={passwordRef} required />
                 </div>
-                <Button type="submit" className="w-full">
-                    {t("login")}
+                <Button type="submit" className="w-full transition-all duration-300 ease-in-out" disabled={loading}>
+                    {loading ? (
+                        <div className="flex items-center">
+                            <LoaderCircle className="animate-spin" />
+                            <Label className="font-bold text-base ml-2">Processing...</Label>
+                        </div>
+                    ) : (
+                        t("login")
+                    )}
                 </Button>
-                <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
-                    <span className="relative z-10 bg-background px-2 text-muted-foreground">
+                <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border transition-all duration-300">
+                    <span className="relative z-10 bg-background px-2 text-muted-foreground transition-all duration-300">
                         {t("or_continue_with")}
                     </span>
                 </div>

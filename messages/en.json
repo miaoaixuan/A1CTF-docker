@@ -1,0 +1,20 @@
+{
+    "home": "Home",
+    "race": "Competitions",
+    "team": "Teams",
+    "about": "About",
+    "wp": "WritesUP",
+    "signup": "Signup",
+    "login": "Login",
+    "title": "A1CTF | A1natas",
+    "login_title": "Login to your account",
+    "login_hint": "Enter your email below to login to your account",
+    "email": "Email",
+    "password": "Password",
+    "forget_password": "Forgot your password?",
+    "or_continue_with": "Or continue with",
+    "login_with_github": "Login with Github",
+    "dont_have_account": "Don't have an account?",
+    "sign_up_title": "Sign up",
+    "system_color": "System Color"
+}

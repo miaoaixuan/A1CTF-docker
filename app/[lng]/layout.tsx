@@ -6,16 +6,24 @@ import localFont from "next/font/local";
 import "./globals.css";
 // import { ThemeProvider } from "@/components/ThemeProvider"
 
-import {ThemeProvider} from "next-themes";
+import { ThemeProvider } from "next-themes";
 import { TransitionProvider } from '@/contexts/TransitionContext'
 import { TransitionLayout } from '@/components/TransitionLayout'
 
-
 import { dir } from 'i18next'
-import { languages, fallbackLng } from '../i18n/settings'
-import { useTranslation } from '../i18n'
 import { LoadingPage } from "@/components/LoadingPage";
 
+import { Toaster } from "react-hot-toast"
+
+// i18n settings
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
+import { routing } from '@/i18n/routing';
+import { notFound, redirect } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
+
+// fonts
 const geistSans = localFont({
     src: "../fonts/GeistVF.woff",
     variable: "--font-geist-sans",
@@ -27,17 +35,13 @@ const geistMono = localFont({
     weight: "100 900",
 });
 
-export async function generateStaticParams() {
-    return languages.map((lng) => ({ lng }))
-}
+export async function generateMetadata({ params }: { params: any }) {
+    const { lng } = await params
+    const t = await getTranslations({ lng });
 
-export async function generateMetadata({ params } : { params: any }) {
-    let { lng } = await params
-    if (languages.indexOf(lng) < 0) lng = fallbackLng
-    const { t } = await useTranslation(lng)
     return {
-      title: t('title'),
-      content: 'A1CTF for A1natas'
+        title: t('title'),
+        content: 'A1CTF for A1natas'
     }
 }
 
@@ -46,30 +50,42 @@ export default async function RootLayout({
     params
 }: Readonly<{
     children: React.ReactNode,
-    params: {
-        lng: string
-    }
+    params: { lng: string };
 }>) {
     const { lng } = await params;
 
+    if (!routing.locales.includes(lng as any)) {
+        redirect("/zh/404")
+    }
+
+    const messages = await getMessages();
+
     return (
-        <html lang={lng} dir={dir(lng)} suppressHydrationWarning>
+        <html lang={lng} suppressHydrationWarning>
             <body
                 className={`${geistSans.variable} ${geistMono.variable} antialiased`}
             >
-                 <ThemeProvider
-                    attribute="class"
-                    defaultTheme="system"
-                    enableSystem
-                >
-                    <DelayedSuspense>
-                        <TransitionProvider>
-                            <TransitionLayout>
+                <NextIntlClientProvider messages={messages}>
+                    <ThemeProvider
+                        attribute="class"
+                        defaultTheme="system"
+                        enableSystem
+                    >
+                        <div>
+                            <Toaster
+                                // position="top-right"
+                                reverseOrder={false}
+                            />
+                        </div>
+                        <DelayedSuspense>
+                            <TransitionProvider>
+                                <TransitionLayout>
                                     {children}
-                            </TransitionLayout>
-                        </TransitionProvider>
-                    </DelayedSuspense>
-                </ThemeProvider>
+                                </TransitionLayout>
+                            </TransitionProvider>
+                        </DelayedSuspense>
+                    </ThemeProvider>
+                </NextIntlClientProvider>
             </body>
         </html>
     );

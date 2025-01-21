@@ -18,12 +18,12 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link";
 import { usePathname, useSearchParams } from 'next/navigation'
 
-import { useTranslation } from '@/app/i18n/client';
+import {useTranslations} from 'next-intl';
 
 const ThemeSwitcher = ({ lng } : { lng: string }) => {
     const [mounted, setMounted] = useState(false)
     const { theme, setTheme } = useTheme()
-    const { t } = useTranslation(lng);
+    const t = useTranslations();
 
     const asPath = usePathname() + ( useSearchParams().size ? "?" + useSearchParams() : ""); // 获取当前路径
 
@@ -78,7 +78,7 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
                         style={{ "backgroundColor": "hsl(var(--background))" }}
                     >
                         <motion.button
-                            className="transition-all ease-in-out duration-400 relative w-44 h-11 rounded-[10px] hover:rounded-[0px] bg-gray-300 dark:bg-gray-600 flex items-center justify-center focus:outline-none overflow-hidden"
+                            className="transition-all ease-in-out duration-300 relative w-44 h-11 rounded-[10px] hover:rounded-[0px]  flex items-center justify-center focus:outline-none overflow-hidden"
                             onClick={toggleTheme}
                             // animate={{ backgroundColor: theme === 'light' ? '#D1D5DB' : '#4B5563' }}
                         >

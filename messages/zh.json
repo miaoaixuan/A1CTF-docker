@@ -1,0 +1,20 @@
+{
+    "home": "主页",
+    "race": "比赛",
+    "team": "队伍",
+    "about": "关于",
+    "wp": "WritesUP",
+    "signup": "注册",
+    "login": "登录",
+    "title": "A1CTF | A1natas",
+    "login_title": "登录你的账户",
+    "login_hint": "在下面输入你的邮箱",
+    "email": "邮箱",
+    "password": "密码",
+    "forget_password": "忘记密码?",
+    "or_continue_with": "或者",
+    "login_with_github": "Github SSO 登录",
+    "dont_have_account": "还没有账户?",
+    "sign_up_title": "注册",
+    "system_color": "使用系统颜色"
+}

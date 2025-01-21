@@ -41,8 +41,57 @@ body {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--border)) transparent;
 
-    transition: border-color var(--color-duration-time) cubic-bezier(.4, 0, .2, 1),
-        stroke var(--color-duration-time) cubic-bezier(.4, 0, .2, 1);
+    /* transition: border-color var(--color-duration-time) cubic-bezier(.4, 0, .2, 1),
+        stroke var(--color-duration-time) cubic-bezier(.4, 0, .2, 1); */
+}
+
+::-webkit-scrollbar-thumb {
+    transition: background-color 0.3s ease-in-out; /* 设置颜色变化的过渡动画 */
+}
+
+.fake-bg::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(10px);
+}
+
+@layer utilities {
+    /*
+      Chromium browsers don't render nested backdrop filters.
+      As a workaround, add 'before:' to the outer filter, along with 'before:backdrop-hack':
+  
+        <div class="before:backdrop-blur-md before:backdrop-hack>
+          <div class="backdrop-blur-md"></div>
+        </div>
+  
+      See https://stackoverflow.com/a/76207141.
+    */
+    .backdrop-hack {
+      @apply absolute inset-0 -z-10;
+    }
+}
+
+@keyframes rainbow {
+    0% {
+      background-position: -100%;
+    }
+    100% {
+      background-position: 100%;
+    }
+  }
+  
+.rainbow-text {
+    font-weight: bold; /* Optional: make text bold */
+    background: linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet);
+    background-size: 200% 100%; /* Make the gradient larger than the text */
+    background-clip: text; /* Apply the gradient to the text itself */
+    color: transparent; /* Make the text transparent to see the gradient */
+    animation: rainbow 3s linear infinite; /* 3 seconds duration, infinite loop */
 }
 
 @layer base {
@@ -85,7 +134,7 @@ body {
     }
 
     .dark {
-        --background: 0 0% 3.9%;
+        --background: 0 0% 7%;
         --foreground: 0 0% 98%;
         --card: 0 0% 3.9%;
         --card-foreground: 0 0% 98%;
@@ -186,8 +235,27 @@ body {
     }
 }
 
-/* 删除多余的 ` 符号 */
-[data-rehype-pretty-code-figure] code::before {
+
+/* 自定义终端主题 */
+#terminalEditor {
+    /* @apply backdrop-blur-sm; */
+    border-radius: 0!important;
+}
+
+.hide-scrollbar {
+    -ms-overflow-style: none; /* IE 11 */
+    scrollbar-width: none; /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
+}
+
+/* .index_terminal__teubZ {
+    background-color: transparent!important;
+} */
+
+/* [data-rehype-pretty-code-figure] code::before {
     content: none;
 }
 
@@ -199,17 +267,14 @@ figure[data-rehype-pretty-code-figure] pre {
     @apply py-4 overflow-x-auto rounded-lg leading-7;
 }
 
-/* 代码块边距 */
 pre [data-line] {
     @apply px-4
 }
 
-/* title */
 [data-rehype-pretty-code-title] {
     @apply ml-1
 }
 
-/* Group 高亮 */
 
 [data-highlighted-chars] {
     @apply border-b-2 rounded p-1 font-bold border-red-700 text-red-300 bg-red-950
@@ -231,7 +296,6 @@ pre [data-line] {
     @apply border-b-2 rounded p-1 font-bold border-blue-600 text-blue-300 bg-blue-900
 }
 
-/* 行号实现 */
 [data-line-numbers] {
     counter-reset: line;
 }
@@ -246,7 +310,6 @@ pre [data-line] {
     @apply text-sm text-gray-600;
 }
 
-/* inline */
 span[data-rehype-pretty-code-figure] code {
     @apply bg-gray-200 text-black text-sm font-normal px-2 py-1 mx-1 rounded !important
 }
@@ -254,3 +317,4 @@ span[data-rehype-pretty-code-figure] code {
 span[data-highlighted-line] {
     @apply bg-slate-300 bg-opacity-10;
 }
+ */
