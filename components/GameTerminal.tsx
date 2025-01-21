@@ -8,7 +8,9 @@ import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 
 import api, { ChallengeDetailModel, AnswerResult } from '@/utils/GZApi'
-import { AxiosError } from "axios";
+import { TerminalContent, TerminalContentCustom } from "./TerminalContent";
+
+import Image from "next/image";
 
 // 使用 dynamic 懒加载 ReactTerminal，并禁用服务器端渲染
 const ReactTerminal = dynamic(
@@ -42,7 +44,7 @@ export function GameTerminal( { gameid, challenge } : { gameid: string, challeng
     const commands = {
         help: (
             <div>
-                <span><span className="text-cyan-400">submit</span> &lt;flag&gt; -- submit your flag</span><br/>
+                <div className="flex items-center"><TerminalContentCustom className="bg-lime-700 text-white p-1 pl-2 pr-2 rounded-md">Submit &lt;flag&gt; -- submit your flag</TerminalContentCustom></div>
                 <span><span className="text-cyan-400">download</span> -- download attachments</span><br/>
                 <span><span className="text-cyan-400">ciallo</span> -- <span className="text-purple-400">Your can guess~</span></span>
             </div>
@@ -50,13 +52,11 @@ export function GameTerminal( { gameid, challenge } : { gameid: string, challeng
         submit: async (flag: string) => {
 
             if (!challenge.title) return (
-                <div className="bg-red-500 pl-3 pr-3 pt-2 pb-2 w-[285px] rounded-lg mt-2 text-white">
-                    Chose a challenge first!
-                </div>
+                <TerminalContent className="bg-red-500 text-white" >Choose a challenge first!</TerminalContent>
             )
 
             if (!flag.length) return (
-                <span>Usage: submit &lt;flag&gt;</span>
+                <TerminalContent className="bg-red-500 text-white" >Usage: submit &lt;flag&gt;</TerminalContent>
             )
             
             const { data: submitID } = await api.game.gameSubmit(gmid, challenge.id || 0, { flag })
@@ -65,27 +65,33 @@ export function GameTerminal( { gameid, challenge } : { gameid: string, challeng
             switch (flagStatus) {
                 case AnswerResult.Accepted:
                     return (
-                        <div className="bg-green-600 pl-3 pr-3 pt-2 pb-2 w-[80px] rounded-lg mt-2 text-white">
-                            Correct!
-                        </div>
+                        <TerminalContent className="bg-green-600 text-white" >Correct!</TerminalContent>
                     )
                 case AnswerResult.WrongAnswer:
                     return (
-                        <div className="bg-red-500 pl-3 pr-3 pt-2 pb-2 w-[80px] rounded-lg mt-2 text-white">
-                            Wrong
-                        </div>
+                        <TerminalContent className="bg-red-500 text-white" >Wrong</TerminalContent>
                     )
                 default:
                     return (
-                        <div className="bg-purple-400 pl-3 pr-3 pt-2 pb-2 w-[80px] rounded-lg mt-2 text-white">
-                            Error!
-                        </div>
+                        <TerminalContent className="bg-purple-400 text-white" >Unknow Error</TerminalContent>
                     )
             }
         },
         download: () => {
             // challenge.context
             return (<></>)
+        },
+        enllus1on: () => {
+            return (
+                <Image
+                    className="mt-2 rounded-xl"
+                    src="/images/enllu.jpg"
+                    alt="enllus1on"
+                    width={200}
+                    height={200}
+                    priority
+                />
+            )
         }
     };
 

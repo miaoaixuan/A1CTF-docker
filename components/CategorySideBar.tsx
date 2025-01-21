@@ -27,24 +27,52 @@ const OnceSWRConfig: SWRConfiguration = {
 
 import { AxiosError } from 'axios';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
+import { TransitionLink } from "./TransitionLink";
 
-export function AppSidebar({ gameid, setChallenge, setGameDetail } : { 
+export function CategorySidebar({ gameid, setChallenge, setGameDetail, lng } : { 
     gameid: string, 
     setChallenge: Dispatch<SetStateAction<ChallengeDetailModel>>,
-    setGameDetail: Dispatch<SetStateAction<GameDetailModel>>
+    setGameDetail: Dispatch<SetStateAction<GameDetailModel>>,
+    lng: string
 }) {
 
     const gmid = parseInt(gameid, 10)
     const [ challenges, setChallenges ] = useState<Record<string, ChallengeInfo[]>> ()
     const [ CurChallenge, setCurChallenge ] = useState<ChallengeDetailModel>({})
 
+    const prevChallenges = useRef<Record<string, ChallengeInfo[]>> ()
+    const prevGameDetail = useRef<GameDetailModel> ()
+
     const observerRef = useRef<IntersectionObserver | null>(null);
     const [visibleItems, setVisibleItems] = useState<Record<string, Record<string, boolean>>>({});
 
-    useEffect(() => {
+    const updateChalenges = () => {
         api.game.gameChallengesWithTeamInfo(gmid).then((response) => {
+
+            if (JSON.stringify(prevChallenges.current) == JSON.stringify(response.data.challenges)) return
+            prevChallenges.current = response.data.challenges
             setChallenges(response.data.challenges)
+
+            if (JSON.stringify(prevGameDetail.current) == JSON.stringify(response.data)) return
+            prevGameDetail.current = response.data
             setGameDetail(response.data)
+
+            let stillExists = false
+
+            for (const key in challenges) {
+                if (challenges.hasOwnProperty(key)) {
+                    challenges[key].forEach(challenge => {
+                        if (challenge.title == CurChallenge.title) {
+                            stillExists = true
+                        }
+                    });
+                }
+            }
+
+            if (!stillExists) {
+                setCurChallenge({})
+                setChallenge({})
+            }
 
             observerRef.current = new IntersectionObserver((entries) => {
                 entries.forEach((entry) => {
@@ -81,13 +109,25 @@ export function AppSidebar({ gameid, setChallenge, setGameDetail } : {
 
         }).catch((error: AxiosError) => {
         })
+    }
+
+    useEffect(() => {
+        updateChalenges()
+
+        const iter = setInterval(() => {
+            updateChalenges()
+        }, 5000)
         // eslint-disable-next-line react-hooks/exhaustive-deps
+        return () => { clearInterval(iter) }
     }, [gmid])
 
     const handleChangeChallenge = (id: number) => {
         return (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+
+            if (id == CurChallenge.id) return
+
             api.game.gameGetChallenge(gmid, id).then((response) => {
-                console.log(response)
+                // console.log(response)
                 setChallenge(response.data || {})
                 setCurChallenge(response.data || {})
             }).catch((error: AxiosError) => {})
@@ -120,9 +160,11 @@ export function AppSidebar({ gameid, setChallenge, setGameDetail } : {
                         </div>
                         <div className="flex-1" />
                         <div className="justify-end">
-                            <Button className="rounded-3xl p-4 pointer-events-auto w-[100px] mt-[5px] ml-[5px] mb-[10px]">
-                                <CircleArrowLeft/>
-                                <Label>Back</Label>
+                            <Button className="rounded-3xl p-4 pointer-events-auto w-[100px] mt-[5px] ml-[5px] mb-[10px]" asChild>
+                                <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                                    <CircleArrowLeft/>
+                                    <Label>Back</Label>
+                                </TransitionLink>
                             </Button>
                         </div>
                     </div>

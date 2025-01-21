@@ -7,9 +7,17 @@ const nextConfig = {
     async rewrites() {
         return [
           {
-            source: '/api/:path*', // 本地 API 路径
-            destination: 'https://ctf.a1natas.com/api/:path*', // 实际目标 API 地址
+            source: '/api/:path*',
+            destination: 'https://ctf.a1natas.com/api/:path*',
           },
+          {
+            source: '/hub/:path*',
+            destination: 'https://ctf.a1natas.com/hub/:path*',
+          },
+          {
+            source: '/assets/:path*',
+            destination: 'https://ctf.a1natas.com/assets/:path*' 
+          }
         ];
     },
     reactStrictMode: false,

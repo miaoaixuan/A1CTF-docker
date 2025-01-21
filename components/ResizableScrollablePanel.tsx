@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react'
 import { ResizablePanel } from "@/components/ui/resizable"
 import { ComponentProps } from 'react'
