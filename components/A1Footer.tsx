@@ -1,3 +1,5 @@
+"use client";
+
 import { Label } from "@radix-ui/react-dropdown-menu"
 import Link from "next/link";
 import { History, Box } from 'lucide-react'
