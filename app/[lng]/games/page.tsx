@@ -11,7 +11,7 @@ export default async function Games({ params }: { params: Promise<{ lng: string 
             <main className="flex p-10 flex-1 overflow-y-auto justify-center items-center">
                 {/* <GameSwitchHover x={800} y={100}/> */}
                 <div className="mt-[-400px] ml-[-1200px]">
-                    <AnimatedButton id={114514}>Click Me</AnimatedButton>
+                    <AnimatedButton id={37}>Click Me</AnimatedButton>
                 </div>
             </main>
             {/* <A1Footer/> */}

@@ -1,0 +1,201 @@
+"use client";
+
+import {  Sparkle, Gamepad2, ChevronsRight, Target, Crosshair, CheckCheck, Zap, Star, Sparkles, Stars, Flag, Dices, SquareCheckBig, Square, CircleCheckBig } from "lucide-react"
+
+import { Label } from "@radix-ui/react-label"
+import { FC, useEffect, useRef, useState } from "react"
+import { AnimatePresence, motion } from "framer-motion";
+
+interface ChallengeInfo {
+    type: string,
+    name: string,
+    solved: number,
+    score: number,
+    rank: number,
+    choiced: boolean,
+    status: boolean
+}
+
+export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivElement>> = ({ type, name, solved, score, rank, choiced, status, ...props }) => {
+
+    let colorClass = "bg-amber-600";
+    const [ solveStatus, setSolveStatus ] = useState(false)
+    
+    // 解决懒加载重新播放动画的问题
+    const [ initHook, setInitHook ] = useState(true)
+    const [ shouldAnime, setShouldAnime ] = useState(false)
+    const prevStatus = useRef(false)
+
+    /* 
+        copied from gzctf (
+        
+        misc: rgb(32, 201, 151)
+        crypto: rgb(132, 94, 247)
+        pwn: rgb(255, 107, 107)
+        web: fill: rgb(51, 154, 240)
+        reverse: rgb(252, 196, 25)
+        forensics: rgb(92, 124, 250)
+        hardware: rgb(208, 208, 208)
+        mobile: rgb(240, 101, 149)
+        ppc: rgb(34, 184, 207)
+        ai: rgb(148, 216, 45)
+        pentent: rgb(204, 93, 232)
+        osint: rgb(255, 146, 43)
+    */
+
+    const colorMap : { [key: string]: string } = {
+        "misc": "rgb(32, 201, 151)",
+        "crypto": "rgb(132, 94, 247)",
+        "pwn": "rgb(255, 107, 107)",
+        "web": "rgb(51, 154, 240)",
+        "reverse": "rgb(252, 196, 25)",
+        "forensics": "rgb(92, 124, 250)",
+        "hardware": "rgb(208, 208, 208)",
+        "mobile": "rgb(240, 101, 149)",
+        "ppc": "rgb(34, 184, 207)",
+        "ai": "rgb(148, 216, 45)",
+        "pentent": "rgb(204, 93, 232)",
+        "osint": "rgb(255, 146, 43)"
+    };
+
+    if (type in colorMap) colorClass = colorMap[type]
+    else colorClass = colorMap["misc"]
+
+    useEffect(() => {
+        setInitHook(false)
+        setSolveStatus(status)
+        prevStatus.current = status
+
+        let inter = null;
+
+        return () => {
+            if (inter) clearInterval(inter)
+        }
+    }, [])
+
+    useEffect(() => {
+        if (prevStatus.current != status) {
+            if (status == true) {
+                setShouldAnime(status)
+                setTimeout(() => {
+                    setShouldAnime(false)
+                }, 4000)
+            }
+            setSolveStatus(status)
+            prevStatus.current = status
+        }
+    }, [status])
+
+    return (
+        <div className={`w-full h-[100px] rounded-xl relative hover:scale-[1.04] duration-300 transition-all pl-4 pt-4 pr-4 pb-3 select-none overflow-hidden will-change-transform border-[2px]`}
+            // style={{
+            //     backgroundColor: choiced ? colorClass : "transparent"
+            // }}
+            {...props} 
+        >
+            {/* <div className="absolute w-[80px] h-[120px] right-[5px] top-[-12px] rotate-[0deg] opacity-25">
+                <AnimatePresence>
+                    {
+                        choiced && (
+                            <motion.div className="flex items-center justify-center h-full"
+                                exit={{
+                                    translateX: "80%",
+                                    translateY: "-40%",
+                                    opacity: 0,
+                                    scale: 0.1
+                                }}
+                                initial={{
+                                    translateX: "80%",
+                                    translateY: "-40%",
+                                    opacity: 0,
+                                    scale: 0.1
+                                }}
+                                animate={{
+                                    translateX: "0%",
+                                    translateY: "0%",
+                                    opacity: 1,
+                                    scale: 1
+                                }}
+                                transition={{
+                                    duration: initHook ? 0 : 0.4,
+                                    ease: "anticipate"
+                                }}
+                            >
+                                <Star size={100} className="fill-yellow-300 text-yellow-600" />
+                            </motion.div>
+                        )
+                    }
+                </AnimatePresence>
+                
+            </div> */}
+            <AnimatePresence>
+                { shouldAnime && (
+                    <motion.div className="absolute w-full h-full top-0 left-0 z-100 flex justify-center items-center"
+                        initial={{
+                            backdropFilter: "blur(0px)"
+                        }}
+                        animate={{
+                            backdropFilter: "blur(10px)"
+                        }}
+                        exit={{
+                            backdropFilter: "blur(0px)"
+                        }}
+                        transition={{
+                            duration: 0.5
+                        }}
+                        onAnimationEnd={() => {
+                            alert("OK")
+                        }}
+                    >
+                        <motion.div
+                            initial={{
+                                opacity: 0
+                            }}
+                            animate={{
+                                opacity: 1
+                            }}
+                            exit={{
+                                opacity: 0
+                            }}
+                            transition={{
+                                duration: 0.5,
+                                // delay: 0.2,
+                                ease: "anticipate"
+                            }}
+                        >
+                            <div className="flex items-center gap-3">
+                                <CircleCheckBig size={40} />
+                                <Label className="text-2xl font-bold">Solved!</Label>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                ) }
+            </AnimatePresence>
+            <div className={`flex flex-col h-full w-full transition-all duration-300`}>
+                <div className="flex items-center gap-1">
+                    <div id="card-title" className="flex justify-start items-center gap-2 min-w-0 transition-colors duration-300 h-[32px]" style={{ color: !choiced ? "" : colorClass }} >
+                        <Dices size={23} className="flex-none"/>
+                        <Label className={`font-bold text-ellipsis whitespace-nowrap overflow-hidden`}>{ name }</Label>
+                    </div>
+                    <div className="flex-1" />
+                    <div className="flex justify-end gap-[2px] w-[32px] h-full items-center text-green-400">
+                        { solveStatus ? (
+                            <CircleCheckBig size={23} />
+                        ) : <></> }
+                    </div>
+                </div>
+                <div className="flex-1"/>
+                <div className="flex items-center">
+                    <div className="flex justify-start">
+                        <Label className="font-bold">{ solved } solves & { score } pts</Label>
+                    </div>
+                    <div className="flex-1"/>
+                    <div className="flex justify-end items-center">
+                        <Label className="font-bold">Try it</Label>
+                        <ChevronsRight size={32}/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}

@@ -52,7 +52,7 @@ export default function GameSwitchHover({ x, y, id } : { x: number, y: number, i
 
             setTimeout(() => {
                 startTransition(() => {
-                    router.push(`/games/${id}`);
+                    router.push(`/zh/games/${id}`);
                 })
             }, 500)
         }, 3000);

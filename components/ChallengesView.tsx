@@ -4,7 +4,6 @@ import { Label } from "@radix-ui/react-label";
 import ToggleTheme from "@/components/ToggleTheme"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { CategorySidebar } from "@/components/CategorySideBar";
-import { GameTerminal } from "@/components/GameTerminal"
 
 import {
     Avatar,
@@ -20,7 +19,6 @@ import {
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
@@ -29,7 +27,7 @@ import { ResizableScrollablePanel } from "@/components/ResizableScrollablePanel"
 import { Mdx } from "./MdxCompoents";
 import { useEffect, useRef, useState } from "react";
 
-import api, { ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeType } from '@/utils/GZApi'
+import api, { ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeType, ChallengeInfo } from '@/utils/GZApi'
 import { Skeleton } from "./ui/skeleton";
 
 import * as signalR from '@microsoft/signalr'
@@ -37,14 +35,28 @@ import * as signalR from '@microsoft/signalr'
 import dayjs from "dayjs";
 import { LoadingPage } from "./LoadingPage";
 import { Button } from "./ui/button";
-import { CalendarClock, Clock, FoldHorizontal, UnfoldHorizontal } from "lucide-react";
+import { CalendarClock, FoldHorizontal, LoaderPinwheel, UnfoldHorizontal } from "lucide-react";
 import { AxiosError } from "axios";
-import ScoreBoardPage from "./ScoreBoardPage";
 
 
-function formatDuration(duration: number) {
+import dynamic from "next/dynamic";
+import { AnimatePresence, motion } from "framer-motion";
 
-    // 以防万一
+const GameTerminal = dynamic(
+    () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
+    {
+        ssr: false, // 禁用服务器端渲染
+        loading: () => (
+            // <div className="w-full h-full">
+            //     <SkeletonCard />
+            // </div>
+            <></>
+        ), // 占位符
+    }
+);
+
+// 格式化时间
+const formatDuration = (duration: number) => {
     duration = Math.floor(duration)
 
     const days = Math.floor(duration / (24 * 3600));
@@ -65,10 +77,13 @@ function formatDuration(duration: number) {
 
 export function ChallengesView({ lng, id }: { lng: string, id: string }) {
 
-    const [challenge, setChallenge] = useState<ChallengeDetailModel>({})
-    const prevChallenge = useRef<ChallengeDetailModel>({});
+    // 所有题目
+    const [ challenges, setChallenges ] = useState<Record<string, ChallengeInfo[]>> ({})
 
-    const [avatarURL, setAvatarURL] = useState("#")
+    // 当前选中的题目
+    const [curChallenge, setCurChallenge] = useState<ChallengeDetailModel>({})
+
+    // 比赛信息
     const [gameDetail, setGameDeatail] = useState<GameDetailModel>({
         teamToken: "",
         writeupRequired: false,
@@ -77,21 +92,54 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
         challengeCount: undefined,
         rank: null,
     })
+
+    // 前一个题目
+    const prevChallenge = useRef<ChallengeDetailModel>({});
+
+    // 头像 URL
+    const [avatarURL, setAvatarURL] = useState("#")
+
+    // 剩余时间 & 剩余时间百分比
     const [remainTime, setRemainTime] = useState("")
     const [remainTimePercent, setRemainTimePercent] = useState(100)
 
+    // 用户名
+    const [userName, setUserName] = useState("")
+
+    // 比赛详细信息
     const [gameInfo, setGameInfo] = useState<DetailedGameInfoModel>({})
+
+    // 加载动画
     const [loadingVisiblity, setLoadingVisibility] = useState(true)
 
+    // 侧栏打开关闭的时候更新 Terminal 宽度用的钩子
+    const [ resizeTrigger, setResizeTrigger ] = useState<number>(0)
+
+    // Hints 折叠状态
     const [foldedItems, setFoldedItems] = useState<Record<number, boolean>>({});
 
+    // 页面切换动画
+    const [ pageSwitch, setPageSwitch ] = useState(false)
+
+    // 题目是否解决
+    const [challengeSolvedList, setChallengeSolvedList] = useState<Record<number, boolean>>({});
+
+    // 更新当前选中题目信息, 根据 Websocket 接收到的信息被动调用
     const updateChallenge = () => {
         if (!prevChallenge.current.title) return
         api.game.gameGetChallenge(parseInt(id, 10), prevChallenge.current.id || 0).then((response) => {
-            setChallenge(response.data || {})
+            setCurChallenge(response.data || {})
         }).catch((error: AxiosError) => {})
     }
 
+    const setChallengeSolved = (id: number) => {
+        setChallengeSolvedList((prev) => ({
+            ...prev,
+            [id]: true
+        }))
+    }
+
+    // 开关某一 Hint 项的折叠状态
     const toggleFolded = (itemId: number) => {
         setFoldedItems((prevState) => ({
           ...prevState,
@@ -101,29 +149,39 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
 
     useEffect(() => {
         // 切换题目重置折叠状态
-        if (JSON.stringify(challenge) == JSON.stringify(prevChallenge.current)) return
-        prevChallenge.current = challenge
+        if (JSON.stringify(curChallenge) == JSON.stringify(prevChallenge.current)) return
+        prevChallenge.current = curChallenge
 
         const noneDict: Record<number, boolean> = {}
-        for (let i = 0; i < (challenge.hints?.length || 0); i++) {
+        for (let i = 0; i < (curChallenge.hints?.length || 0); i++) {
             noneDict[i] = true
         }
         setFoldedItems(noneDict)
-    }, [challenge]);
+
+        const timeout = setTimeout(() => setPageSwitch(false), 300)
+
+        return () => {
+            clearTimeout(timeout)
+        }
+    }, [curChallenge]);
 
     useEffect(() => {
+        // 获取账户信息
         api.account.accountProfile().then((res) => {
             setAvatarURL(res.data.avatar || "")
+            setUserName(res.data.userName || "")
         })
 
-        let iter: any = null;
+        // 更新时间迭代器
+        let timeIter: any = null;
 
+        // 获取比赛信息以及剩余时间
         api.game.gameGame(parseInt(id, 10)).then((res) => {
             setGameInfo(res.data)
 
             const totalTime = Math.floor(dayjs(res.data.end).diff(dayjs(res.data.start)) / 1000)
 
-            iter = setInterval(() => {
+            timeIter = setInterval(() => {
                 const curLeft = Math.floor(dayjs(res.data.end).diff(dayjs()) / 1000)
 
                 setRemainTime(formatDuration(curLeft))
@@ -133,6 +191,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
             setTimeout(() => setLoadingVisibility(false), 500)
         })
 
+        // Websocket
         const connection = new signalR.HubConnectionBuilder()
             .withUrl(`/hub/user?game=${id}`)
             .withHubProtocol(new signalR.JsonHubProtocol())
@@ -154,8 +213,16 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
             console.error(error)
         })
 
+        // 测试代码
+        // setTimeout(() => {
+        //     setChallengeSolvedList((prev) => ({
+        //         ...prev,
+        //         [105]: true
+        //     }))
+        // }, 8000)
+
         return () => {
-            if (iter) clearInterval(iter)
+            if (timeIter) clearInterval(timeIter)
 
             connection.stop().catch((err) => {
                 console.error(err)
@@ -166,15 +233,27 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
     return (
         <>
             <LoadingPage visible={loadingVisiblity} />
-            <ScoreBoardPage gmid={parseInt(id, 10)}/>
+            {/* <ScoreBoardPage gmid={parseInt(id, 10)}/> */}
             <SidebarProvider>
                 <div className="z-20">
-                    <CategorySidebar gameid={id} setChallenge={setChallenge} setGameDetail={setGameDeatail} lng={lng} />
+                    <CategorySidebar 
+                        gameid={id} 
+                        curChallenge={curChallenge} 
+                        setCurChallenge={setCurChallenge} 
+                        setGameDetail={setGameDeatail} 
+                        resizeTrigger={setResizeTrigger} 
+                        setPageSwitching={setPageSwitch} 
+                        lng={lng} 
+                        challenges={challenges || {}}
+                        setChallenges={setChallenges}
+                        challengeSolvedList={challengeSolvedList}
+                        setChallengeSolvedList={setChallengeSolvedList}
+                    />
                 </div>
                 <main className="flex flex-col top-0 left-0 h-screen w-screen overflow-hidden backdrop-blur-sm">
                     <div className="h-[60px] flex items-center pl-4 pr-4 z-20 pt-2 w-full">
                         <div className="flex items-center min-w-0 h-[32px]">
-                            <SidebarTrigger />
+                            <SidebarTrigger/>
                             {/* <Label className="font-bold ml-3">{ challenge.category } - { challenge.title }</Label> */}
                             <Label className="font-bold ml-1 text-ellipsis overflow-hidden text-nowrap">{gameInfo.title}</Label>
                         </div>
@@ -213,9 +292,26 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                             </Avatar>
                         </div>
                     </div>
-                    <ResizablePanelGroup direction="vertical">
-                        <ResizableScrollablePanel defaultSize={60} minSize={20} className="overflow-auto relative">
-                            { !challenge.title ? (
+                    <ResizablePanelGroup direction="vertical" className="relative">
+                        <AnimatePresence>
+                            { pageSwitch ? ( 
+                                <motion.div className="absolute top-0 left-0 w-full h-full bg-background z-20 flex justify-center items-center"
+                                    exit={{
+                                        opacity: 0
+                                    }}
+                                >
+                                    {/* <SkeletonCard /> */}
+                                    <div className="flex">
+                                        <LoaderPinwheel className="animate-spin" />
+                                        <Label className="font-bold ml-3">Loading...</Label>
+                                    </div>
+                                </motion.div>
+                            ) : (null) }
+                        </AnimatePresence>
+                        <ResizableScrollablePanel defaultSize={60} minSize={20} className="overflow-auto relative" onResize={(size, prevSize) => {
+                            setResizeTrigger(size)
+                        }}>
+                            { !curChallenge.title ? (
                                 <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
                                     <div className="">
                                         <Label className="text-xl">Choose something?</Label>
@@ -224,7 +320,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                             ) : <></> }
                             <div className="absolute bottom-2 right-2 flex flex-col gap-2 p-2 transition-all duration-500 opacity-100 ease-in-out">
                                 { 
-                                    challenge.hints?.map((value, index) => {
+                                    curChallenge.hints?.map((value, index) => {
                                         return (
                                             <div className="flex" key={index}>
                                                 <div className="flex-1" />
@@ -251,15 +347,21 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                 }
                             </div>
                             <div className="pl-7 pr-5 pb-5 flex-1">
-                                <Mdx source={challenge.content || ""} />
+                                <Mdx source={curChallenge.content || ""} />
                             </div>
                         </ResizableScrollablePanel>
-                        <ResizableHandle withHandle={true} className="duration-300 transition-all"/>
-                        <ResizableScrollablePanel defaultSize={40} minSize={10}>
-                            <div className="flex flex-col p-0 h-full resize-y">
-                                <GameTerminal challenge={challenge} gameid={id} />
-                            </div>
-                        </ResizableScrollablePanel>
+                        { curChallenge.title ? (
+                            <>
+                                <ResizableHandle withHandle={true} className="duration-300 transition-all"/>
+                                <ResizableScrollablePanel defaultSize={40} minSize={10}>
+                                    <div className="flex flex-col p-0 h-full resize-y">
+                                        { userName ? (
+                                            <GameTerminal challenge={curChallenge} gameid={id} pSize={resizeTrigger!} userName={userName} setChallengeSolved={setChallengeSolved} />
+                                        ) : (<></>) }
+                                    </div>
+                                </ResizableScrollablePanel>
+                            </>
+                        ) : (<></>) }
                     </ResizablePanelGroup>
                 </main>
             </SidebarProvider>

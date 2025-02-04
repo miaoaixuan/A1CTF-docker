@@ -46,7 +46,8 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-    transition: background-color 0.3s ease-in-out; /* 设置颜色变化的过渡动画 */
+    transition: background-color 0.3s ease-in-out;
+    /* 设置颜色变化的过渡动画 */
 }
 
 .fake-bg::before {
@@ -61,6 +62,7 @@ body {
 }
 
 @layer utilities {
+
     /*
       Chromium browsers don't render nested backdrop filters.
       As a workaround, add 'before:' to the outer filter, along with 'before:backdrop-hack':
@@ -72,26 +74,32 @@ body {
       See https://stackoverflow.com/a/76207141.
     */
     .backdrop-hack {
-      @apply absolute inset-0 -z-10;
+        @apply absolute inset-0 -z-10;
     }
 }
 
 @keyframes rainbow {
     0% {
-      background-position: -100%;
+        background-position: -100%;
     }
+
     100% {
-      background-position: 100%;
+        background-position: 100%;
     }
-  }
-  
+}
+
 .rainbow-text {
-    font-weight: bold; /* Optional: make text bold */
+    font-weight: bold;
+    /* Optional: make text bold */
     background: linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet);
-    background-size: 200% 100%; /* Make the gradient larger than the text */
-    background-clip: text; /* Apply the gradient to the text itself */
-    color: transparent; /* Make the text transparent to see the gradient */
-    animation: rainbow 3s linear infinite; /* 3 seconds duration, infinite loop */
+    background-size: 200% 100%;
+    /* Make the gradient larger than the text */
+    background-clip: text;
+    /* Apply the gradient to the text itself */
+    color: transparent;
+    /* Make the text transparent to see the gradient */
+    animation: rainbow 3s linear infinite;
+    /* 3 seconds duration, infinite loop */
 }
 
 @layer base {
@@ -239,16 +247,19 @@ body {
 /* 自定义终端主题 */
 #terminalEditor {
     /* @apply backdrop-blur-sm; */
-    border-radius: 0!important;
+    border-radius: 0 !important;
 }
 
 .hide-scrollbar {
-    -ms-overflow-style: none; /* IE 11 */
-    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;
+    /* IE 11 */
+    scrollbar-width: none;
+    /* Firefox */
 }
 
 .hide-scrollbar::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Edge */
+    display: none;
+    /* Chrome, Safari, Edge */
 }
 
 /* .index_terminal__teubZ {
@@ -318,3 +329,24 @@ span[data-highlighted-line] {
     @apply bg-slate-300 bg-opacity-10;
 }
  */
+
+.xterm .xterm-viewport {
+    background-color: transparent !important;
+}
+
+.xterm-selection div {
+    opacity: 0.4;
+}
+
+.xterm-decoration-top {
+    background-color: transparent !important;
+}
+
+.index_editor__JoDSg .index_caret__VS4iV {
+    animation: index_blink__FJp0- 0.3s ease-in-out !important;
+}
+
+.index_caretAfter__6aXPx {
+    /* opacity: 0.9!important; */
+    width: 2px !important;
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, CircleArrowLeft, Home, Inbox, Search, Settings } from "lucide-react"
+import { CircleArrowLeft } from "lucide-react"
 
 import Image from "next/image";
 import {
@@ -10,48 +10,51 @@ import {
     SidebarGroupContent,
     SidebarGroupLabel,
     SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { Button } from "./ui/button"
 import { Label } from "@radix-ui/react-label"
 
-import { ChallengeItem } from "./ChallengeItem";
-import { Cache, SWRConfiguration } from 'swr'
+import { ChallengeCard } from "./ChallengeCard";
+import { SWRConfiguration } from 'swr'
 import api, { ChallengeInfo, ChallengeDetailModel, GameDetailModel } from '@/utils/GZApi'
-
-const OnceSWRConfig: SWRConfiguration = {
-    refreshInterval: 0,
-    revalidateOnFocus: false,
-}
 
 import { AxiosError } from 'axios';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import { TransitionLink } from "./TransitionLink";
 
-export function CategorySidebar({ gameid, setChallenge, setGameDetail, lng } : { 
-    gameid: string, 
-    setChallenge: Dispatch<SetStateAction<ChallengeDetailModel>>,
+export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGameDetail, lng, resizeTrigger, setPageSwitching, challenges, setChallenges, challengeSolvedList, setChallengeSolvedList } : { 
+    gameid: string,
+    curChallenge: ChallengeDetailModel,
+    setCurChallenge: Dispatch<SetStateAction<ChallengeDetailModel>>,
     setGameDetail: Dispatch<SetStateAction<GameDetailModel>>,
-    lng: string
+    lng: string,
+    resizeTrigger: Dispatch<SetStateAction<number>>,
+    setPageSwitching: Dispatch<SetStateAction<boolean>>,
+    challenges: Record<string, ChallengeInfo[]>,
+    setChallenges: Dispatch<SetStateAction<Record<string, ChallengeInfo[]>>>,
+    challengeSolvedList: Record<string, boolean>,
+    setChallengeSolvedList: Dispatch<SetStateAction<Record<string, boolean>>>
 }) {
 
-    const gmid = parseInt(gameid, 10)
-    const [ challenges, setChallenges ] = useState<Record<string, ChallengeInfo[]>> ()
-    const [ CurChallenge, setCurChallenge ] = useState<ChallengeDetailModel>({})
+    // 比赛 ID
+    const gameID = parseInt(gameid, 10)
 
+    // 之前的题目列表
     const prevChallenges = useRef<Record<string, ChallengeInfo[]>> ()
     const prevGameDetail = useRef<GameDetailModel> ()
 
+    // 懒加载, 当前题目卡片是否在视窗内
     const observerRef = useRef<IntersectionObserver | null>(null);
     const [visibleItems, setVisibleItems] = useState<Record<string, Record<string, boolean>>>({});
-
+    
+    // 更新题目列表
     const updateChalenges = () => {
-        api.game.gameChallengesWithTeamInfo(gmid).then((response) => {
+
+        api.game.gameChallengesWithTeamInfo(gameID).then((response) => {
 
             if (JSON.stringify(prevChallenges.current) == JSON.stringify(response.data.challenges)) return
             prevChallenges.current = response.data.challenges
-            setChallenges(response.data.challenges)
+            setChallenges(response.data.challenges || {})
 
             if (JSON.stringify(prevGameDetail.current) == JSON.stringify(response.data)) return
             prevGameDetail.current = response.data
@@ -59,19 +62,34 @@ export function CategorySidebar({ gameid, setChallenge, setGameDetail, lng } : {
 
             let stillExists = false
 
-            for (const key in challenges) {
-                if (challenges.hasOwnProperty(key)) {
-                    challenges[key].forEach(challenge => {
-                        if (challenge.title == CurChallenge.title) {
+            for (const key in response.data.challenges) {
+                if (response.data.challenges.hasOwnProperty(key)) {
+                    response.data.challenges[key].forEach(challenge => {
+                        if (challenge.title == curChallenge.title) {
                             stillExists = true
                         }
+                    });
+
+                    // 初始化一次先
+                    response.data.challenges[key].forEach(challenge => {
+                        setChallengeSolvedList((prev) => ({
+                            ...prev,
+                            [challenge.id || 0]: prevGameDetail.current?.rank?.solvedChallenges?.some(obj => obj.id == challenge.id) || false
+                        }))
                     });
                 }
             }
 
+            // setInterval(() => {
+            //     setChallengeSolvedList((prev) => ({
+            //         ...prev,
+            //         [132]: !prev[132]
+            //     }))
+            // }, 6000)
+
             if (!stillExists) {
                 setCurChallenge({})
-                setChallenge({})
+                console.log("Here clean1")
             }
 
             observerRef.current = new IntersectionObserver((entries) => {
@@ -119,21 +137,38 @@ export function CategorySidebar({ gameid, setChallenge, setGameDetail, lng } : {
         }, 5000)
         // eslint-disable-next-line react-hooks/exhaustive-deps
         return () => { clearInterval(iter) }
-    }, [gmid])
+    }, [gameID])
 
+
+    useEffect(() => {
+        // 更新题目的解决状态
+        for (const key in Object.keys(challenges)) {
+            if (challenges.hasOwnProperty(key)) {
+                challenges[key].forEach(challenge => {
+                    setChallengeSolvedList((prev) => ({
+                        ...prev,
+                        [challenge.id || 0]: prevGameDetail.current?.rank?.solvedChallenges?.some(obj => obj.id == challenge.id) || false
+                    }))
+                });
+            }
+        }
+    }, [challenges])
+
+    // 处理切换题目
     const handleChangeChallenge = (id: number) => {
         return (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
 
-            if (id == CurChallenge.id) return
+            if (id == curChallenge.id) return
 
-            api.game.gameGetChallenge(gmid, id).then((response) => {
+            api.game.gameGetChallenge(gameID, id).then((response) => {
                 // console.log(response)
-                setChallenge(response.data || {})
                 setCurChallenge(response.data || {})
+                setPageSwitching(true)
             }).catch((error: AxiosError) => {})
         };
     };
 
+    // 懒加载
     const observeItem = (el: HTMLElement, category: string, id: string) => {
         if (el && observerRef.current) {
             el.dataset.id = id;
@@ -143,7 +178,9 @@ export function CategorySidebar({ gameid, setChallenge, setGameDetail, lng } : {
     };
     
     return (
-        <Sidebar className="backdrop-blur-sm hide-scrollbar select-none transition-all duration-200">
+        <Sidebar className="backdrop-blur-sm hide-scrollbar select-none transition-all duration-200" onTransitionEnd={() => {
+            resizeTrigger(Math.floor(Math.random() * 1000000))
+        }} >
             <SidebarContent>
                 <SidebarGroup>
                     <div className="flex justify-center w-full items-center pl-2 pr-2 pt-2">
@@ -183,14 +220,15 @@ export function CategorySidebar({ gameid, setChallenge, setGameDetail, lng } : {
                                                 ref={(el) => observeItem(el!, category, challenge.id?.toString() || "")}
                                             >
                                                 {visibleItems[category]?.[challenge.id || 0] ? (
-                                                    <ChallengeItem
+                                                    <ChallengeCard
                                                         type={challenge.category?.toLocaleLowerCase() || "None"}
                                                         name={challenge.title || "None"}
                                                         solved={challenge.solved || 0}
                                                         score={challenge.score || 0}
                                                         rank={3}
-                                                        choiced={CurChallenge.id == challenge.id}
+                                                        choiced={curChallenge.id == challenge.id}
                                                         onClick={handleChangeChallenge(challenge.id || 0)}
+                                                        status={challengeSolvedList[challenge.id || 0]}
                                                     />
                                                 ) : (
                                                     <div className="h-[100px]"></div>

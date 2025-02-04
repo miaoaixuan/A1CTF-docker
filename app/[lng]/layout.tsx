@@ -3,7 +3,9 @@
 import DelayedSuspense from '@/components/DelayedSuspense';
 import { Suspense } from 'react';
 import localFont from "next/font/local";
+
 import "./globals.css";
+import '@xterm/xterm/css/xterm.css';
 // import { ThemeProvider } from "@/components/ThemeProvider"
 
 import { ThemeProvider } from "next-themes";
@@ -29,10 +31,11 @@ const geistSans = localFont({
     variable: "--font-geist-sans",
     weight: "100 900",
 });
-const geistMono = localFont({
-    src: "../fonts/GeistMonoVF.woff",
-    variable: "--font-geist-mono",
-    weight: "100 900",
+
+const jetbrainMono = localFont({
+    src: "../fonts/JetBrainsMono-Medium.woff2",
+    variable: "--font-jetbrain-mono",
+    weight: "100 700 900",
 });
 
 export async function generateMetadata({ params }: { params: any }) {
@@ -63,7 +66,7 @@ export default async function RootLayout({
     return (
         <html lang={lng} suppressHydrationWarning>
             <body
-                className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+                className={`${geistSans.variable} ${jetbrainMono.variable} antialiased`}
             >
                 <NextIntlClientProvider messages={messages}>
                     <ThemeProvider
