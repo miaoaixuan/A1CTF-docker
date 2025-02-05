@@ -62,15 +62,16 @@ export function DownloadBar({ progress, downloadName } : { progress: number, dow
                                     ease: "anticipate"
                                 }}
                             >
-                                <div className="flex-1 items-center h-full flex mr-2">
-                                    <div className="flex flex-col w-full justify-center gap-1">
+                                <div className="flex justify-start items-center h-full w-[275px] mr-[5px]">
+                                    <div className="flex flex-col w-full justify-center gap-1 min-w-0">
                                         <div className="flex items-center w-full gap-[6px]">
                                             <Download size={18}/>
-                                            <span className="text-sm">Downloading {downloadName}</span>
+                                            <span className="text-sm text-ellipsis whitespace-nowrap overflow-hidden">Downloading {downloadName}</span>
                                         </div>
                                         <Progress value={progress} className="w-full" />
                                     </div>
                                 </div>
+                                <div className="flex flex-1"/>
                                 <div className="flex w-[40px] h-full justify-center items-center">
                                     <Button size="icon" className="[&_svg]:size-6" variant="ghost" onClick={() => setFolded(true)} ><UnfoldVertical /></Button>
                                 </div>

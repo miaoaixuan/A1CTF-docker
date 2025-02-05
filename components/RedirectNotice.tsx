@@ -26,7 +26,7 @@ export function RedirectNotice({ redirectURL, setRedirectURL } : { redirectURL: 
                     }}
                 >
                     <div className="flex flex-col justify-center items-center gap-4">
-                        <FileWarning size={60} />
+                        <FileWarning size={80} />
                         <span className="text-xl font-bold">准备重定向到: {redirectURL}</span>
                         <span className="text-xl font-bold text-red-400">请注意检查链接是否安全合法</span>
                         <div className="flex w-full justify-center gap-4">

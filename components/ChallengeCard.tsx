@@ -178,7 +178,7 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
                         <Label className={`font-bold text-ellipsis whitespace-nowrap overflow-hidden transition-colors duration-300`} style={{ color: !choiced ? "" : colorClass }}>{ name }</Label>
                     </div>
                     <div className="flex-1" />
-                    <div className="flex justify-end gap-[2px] w-[32px] h-full items-center text-green-400">
+                    <div className="flex justify-end gap-[2px] w-[32px] h-full items-center text-green-600">
                         { solveStatus ? (
                             <CircleCheckBig size={23} />
                         ) : <></> }

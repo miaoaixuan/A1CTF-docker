@@ -27,7 +27,7 @@ import { ResizableScrollablePanel } from "@/components/ResizableScrollablePanel"
 import { Mdx } from "./MdxCompoents";
 import { useEffect, useRef, useState } from "react";
 
-import api, { ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeType, ChallengeInfo, ChallengeCategory, ChallengeType } from '@/utils/GZApi'
+import api, { ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeType, ChallengeInfo, ChallengeType } from '@/utils/GZApi'
 import { Skeleton } from "./ui/skeleton";
 
 import * as signalR from '@microsoft/signalr'
@@ -35,14 +35,18 @@ import * as signalR from '@microsoft/signalr'
 import dayjs from "dayjs";
 import { LoadingPage } from "./LoadingPage";
 import { Button } from "./ui/button";
-import { CalendarClock, CircleCheck, CircleCheckBig, CirclePlay, CloudDownload, Container, Crosshair, ExternalLink, Files, FoldHorizontal, Info, LoaderPinwheel, Rocket, ScanHeart, Target, UnfoldHorizontal } from "lucide-react";
+import { CalendarClock, CircleCheckBig, CloudDownload, Files, Flag, FoldHorizontal, Info, Link, LoaderPinwheel, PackageOpen, Rocket, ScanHeart, Target, UnfoldHorizontal } from "lucide-react";
 import { AxiosError } from "axios";
+
+import Image from "next/image";
 
 
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import { DownloadBar } from "./DownloadBar";
 import { RedirectNotice } from "./RedirectNotice";
+import { NoticesView } from "./NoticesView";
+import SafeComponent from "./SafeComponent";
 
 const GameTerminal = dynamic(
     () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
@@ -132,6 +136,9 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
     const [downloadName, setDownloadName] = useState<string>("")
 
     const [redirectURL, setRedirectURL] = useState<string>("")
+
+    // 公告页面是否打开
+    const [noticesOpened, setNoticeOpened] = useState<boolean>(false)
 
     // 更新当前选中题目信息, 根据 Websocket 接收到的信息被动调用
     const updateChallenge = () => {
@@ -279,16 +286,15 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                             if (done) {
                                 const blob = new Blob(chunks);
                                 const downloadUrl = URL.createObjectURL(blob);
-                                const a = document.createElement("a");
-
-                                a.href = downloadUrl;
-                                a.download = dayjs().format("HHmmss") + "_" + fileName;
                                 
                                 setTimeout(() => {
                                     setDownloadName("");  // 清除文件名
                                     setAttachDownloadProgress(0); // 重置进度条
 
                                     setTimeout(() => {
+                                        const a = document.createElement("a");
+                                        a.href = downloadUrl;
+                                        a.download = dayjs().format("HHmmss") + "_" + fileName;
                                         a.click();
                                         URL.revokeObjectURL(downloadUrl);
                                     }, 300)
@@ -338,7 +344,10 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
             {/* 下载动画 */}
             <DownloadBar key={"download-panel"} progress={attachDownloadProgress} downloadName={downloadName}></DownloadBar>
             {/* <ScoreBoardPage gmid={parseInt(id, 10)}/> */}
+            {/* 重定向警告页 */}
             <RedirectNotice redirectURL={redirectURL} setRedirectURL={setRedirectURL} />
+            {/* 公告页 */}
+            <NoticesView opened={noticesOpened} setOpened={setNoticeOpened} />
             <SidebarProvider>
                 <div className="z-20">
                     <CategorySidebar
@@ -369,7 +378,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                     <div className="absolute top-0 left-0 bg-black dark:bg-white transition-colors duration-300"
                                         style={{ width: `${remainTimePercent}%`, height: '100%' }}
                                     />
-                                    <Label className="text-white mix-blend-difference z-20 font-mono transition-all duration-500">RT: {remainTime}</Label>
+                                    <Label className="text-white mix-blend-difference z-20 font-mono transition-all duration-500">{remainTime}</Label>
                                 </div>
                             </div>
                             <DropdownMenu>
@@ -385,11 +394,14 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                                 className="absolute top-0 left-0 bg-black dark:bg-white"
                                                 style={{ width: `${remainTimePercent}%`, height: '100%' }}
                                             />
-                                            <Label className="text-white mix-blend-difference z-20 font-mono">RT: {remainTime}</Label>
+                                            <Label className="text-white mix-blend-difference z-20 font-mono">{remainTime}</Label>
                                         </div>
                                     </div>
                                 </DropdownMenuContent>
                             </DropdownMenu>
+                            <Button size="icon" variant="outline" onClick={() => setNoticeOpened(true)}>
+                                <PackageOpen />
+                            </Button>
                             <ToggleTheme lng={lng} />
                             <Avatar>
                                 <AvatarImage src={avatarURL} alt="@shadcn" />
@@ -430,7 +442,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                             return (
                                                 <div className="flex" key={index}>
                                                     <div className="flex-1" />
-                                                    <div className={`inline-flex bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 pt-2 pb-2 pl-3 pr-[25px] rounded-xl shadow-lg shadow-yellow-500/30 min-w-0 transition-all duration-300 ease-in-out text-black text-md gap-2 ${!foldedItems[index] ? "translate-x-[calc(30px)]" : "translate-x-[calc(100%-80px)]"}`}>
+                                                    <div className={`inline-flex bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 pt-2 pb-2 pl-3 pr-[25px] rounded-xl shadow-lg shadow-yellow-500/30 min-w-0 transition-transform duration-300 ease-in-out text-black text-md gap-2 ${!foldedItems[index] ? "translate-x-[calc(30px)]" : "translate-x-[calc(100%-80px)]"}`}>
                                                         {
                                                             !foldedItems[index] ? (
                                                                 <FoldHorizontal className="hover:text-white flex-shrink-0 transition-colors duration-200 ease-in-out" onClick={() => {
@@ -452,7 +464,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                         })
                                     }
                                 </div>
-                                <div className="pl-20 pr-20 pt-5 pb-5 flex-1 flex flex-col">
+                                <div className="pl-20 pr-20 pt-5 pb-5 flex-1 flex flex-col h-full">
 
                                     {curChallenge.title && (
                                         <div className="w-full border-b-[1px] h-[50px] p-2 transition-[border-color] duration-300 flex items-center">
@@ -462,13 +474,20 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                             </div>
                                             <div className="flex-1" />
                                             <div className="flex justify-end gap-4 transition-colors duration-300">
-                                                <div className="flex items-center gap-2 text-purple-600">
-                                                    <ScanHeart />
-                                                    <Label className="text-md font-bold">{curChallengeDetail.current.score} pts</Label>
-                                                </div>
+                                                { challengeSolvedList[curChallenge.id || 0] ? (
+                                                    <div className="flex items-center gap-2 text-purple-600">
+                                                        <ScanHeart />
+                                                        <Label className="text-md font-bold">{curChallengeDetail.current.score} pts</Label>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-2 text-amber-600">
+                                                        <Flag />
+                                                        <Label className="text-md font-bold">{curChallengeDetail.current.score} pts</Label>
+                                                    </div>
+                                                ) }
                                                 <div className="flex items-center gap-2 text-green-600">
                                                     <CircleCheckBig />
-                                                    <Label className="text-md font-bold">{curChallengeDetail.current.solved} solved</Label>
+                                                    <Label className="text-md font-bold">{curChallengeDetail.current.solved} solves</Label>
                                                 </div>
                                             </div>
                                         </div>
@@ -497,8 +516,8 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                                 <Label className="text-md">Attachments: </Label>
                                             </div>
                                             <div className="flex justify-end gap-4">
-                                                <Button variant="ghost" onClick={() => handleDownload()} className="pl-4 pr-4 pt-0 pb-0 text-md font-bold [&_svg]:size-6 transition-all duration-300" disabled={downloadName != ""}>
-                                                    <div className="flex gap-[4px]">
+                                                <Button variant="ghost" onClick={() => handleDownload()} className="pl-4 pr-4 pt-0 pb-0 text-md [&_svg]:size-5 transition-all duration-300" disabled={downloadName != ""}>
+                                                    <div className="flex gap-[4px] items-center">
                                                         {curChallenge.context.fileSize ? (
                                                             // 有文件大小的是本地附件
                                                             <>
@@ -508,7 +527,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                                         ) : (
                                                             // 远程附件
                                                             <>
-                                                                <ExternalLink />
+                                                                <Link />
                                                                 <Label className=""> External links </Label>
                                                             </>
                                                         )}
@@ -517,9 +536,25 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                             </div>
                                         </div>
                                     ) : (<></>)}
-                                    <div className="w-full p-8">
-                                        <Mdx source={curChallenge.content || ""} />
+                                    { curChallenge.title && (
+                                        <div className="w-full p-8 flex-1">
+                                        { curChallenge.content ? (
+                                            <Mdx source={curChallenge.content} />
+                                        ) : (
+                                            <div className="w-full h-full flex justify-center items-center select-none gap-4">
+                                                <Image
+                                                    src="/images/peter.png"
+                                                    alt="Peter"
+                                                    width={200}
+                                                    height={40}
+                                                    priority
+                                                />
+                                                <span className="text-3xl font-bold">Oops, the description is empty!</span>
+                                            </div>
+                                        ) }
+                                        
                                     </div>
+                                    ) }
                                 </div>
                             </div>
                         </ResizableScrollablePanel>

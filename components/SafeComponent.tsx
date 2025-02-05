@@ -11,7 +11,7 @@ const SafeComponent = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     if (!isClient) return (
-        <div className="w-full h-full flex items-center justify-center">
+        <div className="w-full h-full flex items-center justify-center overflow-hidden">
              <div className="flex flex-col space-y-3">
                 <Skeleton className="h-[125px] w-[250px] rounded-xl" />
                 <div className="space-y-2">
