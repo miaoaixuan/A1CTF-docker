@@ -15,9 +15,12 @@ export default async function Home({ params }: { params: Promise<{ lng: string }
             <PageHeader lng={lng} />
             <main className="flex p-10 pl-20 flex-1 overflow-y-auto">
                 <div className="w-full">
-                    <SafeComponent>
+                    {/* <SafeComponent>
                         <Mdx source={source} />
-                    </SafeComponent>
+                    </SafeComponent> */}
+                    <span className="transition-colors duration-300" style={{
+                        transitionBehavior: "initial"
+                    }}>114514</span>
                 </div>
             </main>
             <A1Footer />

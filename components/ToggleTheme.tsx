@@ -44,7 +44,7 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
     const toggleTheme = () => {
         // console.log("added!")
         const body = document.querySelector("body");
-        body?.classList.add("transition-colors-custom");
+        // body?.classList.add("transition-colors-custom");
         setTheme(theme === 'light' ? 'dark' : 'light')
     }
     
@@ -78,7 +78,7 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
                         style={{ "backgroundColor": "hsl(var(--background))" }}
                     >
                         <motion.button
-                            className="transition-all ease-in-out duration-300 relative w-44 h-11 rounded-[10px] hover:rounded-[0px]  flex items-center justify-center focus:outline-none overflow-hidden"
+                            className="relative w-44 h-11 rounded-[10px] hover:rounded-[0px]  flex items-center justify-center focus:outline-none overflow-hidden"
                             onClick={toggleTheme}
                             // animate={{ backgroundColor: theme === 'light' ? '#D1D5DB' : '#4B5563' }}
                         >

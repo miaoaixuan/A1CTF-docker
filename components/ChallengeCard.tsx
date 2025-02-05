@@ -87,7 +87,7 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
     }, [status])
 
     return (
-        <div className={`w-full h-[100px] rounded-xl relative hover:scale-[1.04] duration-300 transition-all pl-4 pt-4 pr-4 pb-3 select-none overflow-hidden will-change-transform border-[2px]`}
+        <div className={`w-full h-[100px] rounded-xl relative hover:scale-[1.04] pl-4 pt-4 pr-4 pb-3 select-none overflow-hidden transition-transform_bordercolor duration-300 will-change-transform border-[2px] bg-transparent`}
             // style={{
             //     backgroundColor: choiced ? colorClass : "transparent"
             // }}
@@ -171,11 +171,11 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
                     </motion.div>
                 ) }
             </AnimatePresence>
-            <div className={`flex flex-col h-full w-full transition-all duration-300`}>
+            <div className={`flex flex-col h-full w-full`}>
                 <div className="flex items-center gap-1">
-                    <div id="card-title" className="flex justify-start items-center gap-2 min-w-0 transition-colors duration-300 h-[32px]" style={{ color: !choiced ? "" : colorClass }} >
-                        <Dices size={23} className="flex-none"/>
-                        <Label className={`font-bold text-ellipsis whitespace-nowrap overflow-hidden`}>{ name }</Label>
+                    <div id="card-title" className="flex justify-start items-center gap-2 min-w-0 h-[32px]" >
+                        <Dices size={23} className="flex-none transition-colors duration-300" style={{ color: !choiced ? "" : colorClass }}/>
+                        <Label className={`font-bold text-ellipsis whitespace-nowrap overflow-hidden transition-colors duration-300`} style={{ color: !choiced ? "" : colorClass }}>{ name }</Label>
                     </div>
                     <div className="flex-1" />
                     <div className="flex justify-end gap-[2px] w-[32px] h-full items-center text-green-400">
@@ -185,7 +185,7 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
                     </div>
                 </div>
                 <div className="flex-1"/>
-                <div className="flex items-center">
+                <div className="flex items-center transition-colors duration-300">
                     <div className="flex justify-start">
                         <Label className="font-bold">{ solved } solves & { score } pts</Label>
                     </div>

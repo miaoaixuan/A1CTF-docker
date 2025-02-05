@@ -137,14 +137,15 @@ export function GameTerminal({ gameid, challenge, pSize, userName, setChallengeS
             if (args.length) {
                 if (args[0] == "") {
                     terminal.writeln("")
+                    prompt()
                     return
                 }
                 switch (args[0]) {
                     case "clear":
                         terminal.write('\x1b[A\x1b[M');
                         terminal.clear()
-                        // prompt()
-                        break
+                        prompt()
+                        return
                     case "help":
                         const padding = 10;
                         const formatMessage = (name: string, description: string) => {
@@ -372,8 +373,9 @@ export function GameTerminal({ gameid, challenge, pSize, userName, setChallengeS
                 <div id="terminal-container" style={{
                     width: '100%',
                     height: '100%',
+                    overflow: "hidden",
                     backgroundColor: "transparent"
-                }} />
+                }} className="transition-colors duration-300" />
             </div>
         </div>
     );

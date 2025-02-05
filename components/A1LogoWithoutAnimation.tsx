@@ -16,7 +16,7 @@ export function A1LogoWithoutAnimation() {
                 </filter>
             </defs>
 
-            <path id="a1path" 
+            <path id="a1path" className="transition-colors duration-300" 
             d="M897 2692 c-488 -488 -887 -892 -887 -897 0 -5 126 -136 281 -291
             l281 -281 -51 -101 -51 -102 90 -45 c49 -25 91 -45 93 -45 2 0 18 32 37 70
             l34 71 533 -533 533 -533 890 890 c490 489 890 894 890 900 0 6 -126 136 -279
