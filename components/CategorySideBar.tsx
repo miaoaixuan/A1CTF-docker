@@ -22,6 +22,10 @@ import { AxiosError } from 'axios';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import { TransitionLink } from "./TransitionLink";
 
+import { MacScrollbar } from 'mac-scrollbar';
+import { useTheme } from "next-themes";
+import SafeComponent from "./SafeComponent";
+
 export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGameDetail, lng, resizeTrigger, setPageSwitching, challenges, setChallenges, challengeSolvedList, setChallengeSolvedList } : { 
     gameid: string,
     curChallenge: ChallengeDetailModel,
@@ -35,6 +39,8 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGame
     challengeSolvedList: Record<string, boolean>,
     setChallengeSolvedList: Dispatch<SetStateAction<Record<string, boolean>>>
 }) {
+
+    const { theme } = useTheme()
 
     // 比赛 ID
     const gameID = parseInt(gameid, 10)
@@ -180,69 +186,75 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGame
             resizeTrigger(Math.floor(Math.random() * 1000000))
         }} >
             <SidebarContent>
-                <div id="scroller">
-                    <SidebarGroup>
-                        <div className="flex justify-center w-full items-center pl-2 pr-2 pt-2">
-                            <div className="justify-start flex gap-2 items-center mt-[-6px]">
-                                <Image
-                                    className="dark:invert transition-all duration-300"
-                                    src="/images/A1natas.svg"
-                                    alt="A1natas"
-                                    width={40}
-                                    height={40}
-                                    priority
-                                />
-                                <Label className="font-bold text-xl transition-colors duration-300">A1CTF</Label>
-                            </div>
-                            <div className="flex-1" />
-                            <div className="justify-end">
-                                <Button className="rounded-3xl p-4 pointer-events-auto w-[100px] mt-[5px] ml-[5px] mb-[10px]" asChild>
-                                    <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                                        <CircleArrowLeft/>
-                                        <Label>Back</Label>
-                                    </TransitionLink>
-                                </Button>
-                            </div>
-                        </div>
-                        <div className="pl-[7px] pr-[7px]">
-                            {Object.entries(challenges ?? {}).map(([category, challengeList]) => (
-                                <div key={category}>
-                                    {/* Sidebar Group Label */}
-                                    <SidebarGroupLabel className="text-[0.9em] transition-colors duration-300">{category}</SidebarGroupLabel>
-                                    <SidebarGroupContent>
-                                        <SidebarMenu>
-                                        <div className="flex flex-col pl-2 pr-2 pb-2 gap-3">
-                                            {/* Render all ChallengeItems for this category */}
-                                            {challengeList.map((challenge, index) => (
-                                                <div
-                                                    key={index}
-                                                    ref={(el) => observeItem(el!, category, challenge.id?.toString() || "")}
-                                                >
-                                                    {visibleItems[category]?.[challenge.id || 0] ? (
-                                                        <ChallengeCard
-                                                            type={challenge.category?.toLocaleLowerCase() || "None"}
-                                                            name={challenge.title || "None"}
-                                                            solved={challenge.solved || 0}
-                                                            score={challenge.score || 0}
-                                                            rank={3}
-                                                            choiced={curChallenge.id == challenge.id}
-                                                            onClick={handleChangeChallenge(challenge.id || 0)}
-                                                            status={challengeSolvedList[challenge.id || 0]}
-                                                        />
-                                                    ) : (
-                                                        <div className="h-[100px]"></div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                        </SidebarMenu>
-                                    </SidebarGroupContent>
+                <SafeComponent>
+                    <MacScrollbar 
+                        skin={theme ==  "light" ? "light" : "dark"}
+                        trackStyle={(horizontal) => ({ [horizontal ? "height" : "width"]: 0, borderWidth: 0})}
+                        thumbStyle={(horizontal) => ({ [horizontal ? "height" : "width"]: 6})}
+                    >
+                        <SidebarGroup>
+                            <div className="flex justify-center w-full items-center pl-2 pr-2 pt-2">
+                                <div className="justify-start flex gap-2 items-center mt-[-6px]">
+                                    <Image
+                                        className="dark:invert transition-all duration-300"
+                                        src="/images/A1natas.svg"
+                                        alt="A1natas"
+                                        width={40}
+                                        height={40}
+                                        priority
+                                    />
+                                    <Label className="font-bold text-xl transition-colors duration-300">A1CTF</Label>
                                 </div>
-                            ))}
+                                <div className="flex-1" />
+                                <div className="justify-end">
+                                    <Button className="rounded-3xl p-4 pointer-events-auto w-[100px] mt-[5px] ml-[5px] mb-[10px]" asChild>
+                                        <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                                            <CircleArrowLeft/>
+                                            <Label>Back</Label>
+                                        </TransitionLink>
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="pl-[7px] pr-[7px]">
+                                {Object.entries(challenges ?? {}).map(([category, challengeList]) => (
+                                    <div key={category}>
+                                        {/* Sidebar Group Label */}
+                                        <SidebarGroupLabel className="text-[0.9em] transition-colors duration-300">{category}</SidebarGroupLabel>
+                                        <SidebarGroupContent>
+                                            <SidebarMenu>
+                                            <div className="flex flex-col pl-2 pr-2 pb-2 gap-3">
+                                                {/* Render all ChallengeItems for this category */}
+                                                {challengeList.map((challenge, index) => (
+                                                    <div
+                                                        key={index}
+                                                        ref={(el) => observeItem(el!, category, challenge.id?.toString() || "")}
+                                                    >
+                                                        {visibleItems[category]?.[challenge.id || 0] ? (
+                                                            <ChallengeCard
+                                                                type={challenge.category?.toLocaleLowerCase() || "None"}
+                                                                name={challenge.title || "None"}
+                                                                solved={challenge.solved || 0}
+                                                                score={challenge.score || 0}
+                                                                rank={3}
+                                                                choiced={curChallenge.id == challenge.id}
+                                                                onClick={handleChangeChallenge(challenge.id || 0)}
+                                                                status={challengeSolvedList[challenge.id || 0]}
+                                                            />
+                                                        ) : (
+                                                            <div className="h-[100px]"></div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            </SidebarMenu>
+                                        </SidebarGroupContent>
+                                    </div>
+                                ))}
 
-                        </div>
-                    </SidebarGroup>
-                </div>
+                            </div>
+                        </SidebarGroup>
+                    </MacScrollbar>
+                </SafeComponent>
             </SidebarContent>
         </Sidebar>
     )

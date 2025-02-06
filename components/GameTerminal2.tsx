@@ -274,12 +274,12 @@ export function GameTerminal({ gameid, challenge, pSize, userName, setChallengeS
 
             const isCursorAnsi = (cursorX: number, text: string) => {
                 const encoder = new TextEncoder()
-                let curChar = text.charAt(getCursorAnsiIndex(cursorX, text))
+                const curChar = text.charAt(getCursorAnsiIndex(cursorX, text))
                 return encoder.encode(curChar).length == 1
             }
 
             const deleteCursorChar = (cursorX: number, text: string) => {
-                let curCharIndex = getCursorAnsiIndex(cursorX, text) + 1
+                const curCharIndex = getCursorAnsiIndex(cursorX, text) + 1
                 return text.substring(0, curCharIndex) + text.substring(curCharIndex + 1, text.length)
             }
 

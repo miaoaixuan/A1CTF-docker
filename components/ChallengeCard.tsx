@@ -65,11 +65,8 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
         setInitHook(false)
         setSolveStatus(status)
         prevStatus.current = status
-
-        let inter = null;
-
         return () => {
-            if (inter) clearInterval(inter)
+            
         }
     }, [])
 

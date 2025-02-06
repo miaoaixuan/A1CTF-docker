@@ -5,6 +5,8 @@ import ToggleTheme from "@/components/ToggleTheme"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { CategorySidebar } from "@/components/CategorySideBar";
 
+import { toastNewNotice } from "@/utils/ToastUtil";
+
 import {
     Avatar,
     AvatarFallback,
@@ -35,7 +37,7 @@ import * as signalR from '@microsoft/signalr'
 import dayjs from "dayjs";
 import { LoadingPage } from "./LoadingPage";
 import { Button } from "./ui/button";
-import { CalendarClock, CircleCheckBig, CloudDownload, Files, Flag, FoldHorizontal, Info, Link, LoaderPinwheel, PackageOpen, Rocket, ScanHeart, Target, UnfoldHorizontal } from "lucide-react";
+import { CalendarClock, CircleCheckBig, CloudDownload, Files, Flag, FlaskConical, FoldHorizontal, Info, Link, LoaderPinwheel, PackageOpen, Rocket, ScanHeart, Target, UnfoldHorizontal } from "lucide-react";
 import { AxiosError } from "axios";
 
 import Image from "next/image";
@@ -47,6 +49,11 @@ import { DownloadBar } from "./DownloadBar";
 import { RedirectNotice } from "./RedirectNotice";
 import { NoticesView } from "./NoticesView";
 import SafeComponent from "./SafeComponent";
+
+import { MacScrollbar } from 'mac-scrollbar';
+import { useTheme } from "next-themes";
+
+import { Badge } from "@/components/ui/badge"
 
 const GameTerminal = dynamic(
     () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
@@ -139,6 +146,11 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
 
     // 公告页面是否打开
     const [noticesOpened, setNoticeOpened] = useState<boolean>(false)
+    const [notices, setNotices] = useState<GameNotice[]>([])
+
+    const noticesRef = useRef<GameNotice[]>([])
+
+    const { theme } = useTheme()
 
     // 更新当前选中题目信息, 根据 Websocket 接收到的信息被动调用
     const updateChallenge = () => {
@@ -212,6 +224,21 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
             setTimeout(() => setLoadingVisibility(false), 500)
         })
 
+        // 获取比赛通知
+        api.game.gameNotices(parseInt(id, 10)).then((res) => {
+            const filtedNotices: GameNotice[] = []
+            let curIndex = 0
+
+            res.data.sort((a, b) => b.time - a.time)
+
+            res.data.forEach((obj) => {
+                if (obj.type == NoticeType.Normal) filtedNotices[curIndex++] = obj
+            })
+
+            noticesRef.current = filtedNotices
+            setNotices(filtedNotices)
+        })
+
         // Websocket
         const connection = new signalR.HubConnectionBuilder()
             .withUrl(`/hub/user?game=${id}`)
@@ -227,6 +254,21 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
 
             if (message.type == NoticeType.NewHint && message.values[0] == prevChallenge.current.title) {
                 updateChallenge()
+            }
+
+            if (message.type == NoticeType.Normal) {
+
+                const newNotices: GameNotice[] = []
+
+                newNotices[0] = message
+                noticesRef.current.forEach((ele, index) => {
+                    newNotices[index + 1] = ele
+                })
+
+                noticesRef.current = newNotices
+                setNotices(newNotices)
+
+                toastNewNotice({ title: message.values[0], time: message.time, openNotices: setNoticeOpened })
             }
         })
 
@@ -263,7 +305,6 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
             // 判断是否是本地附件
             if (curChallenge.context.fileSize) {
                 const fileName = getAttachmentName(url);
-                let prog = 0;
                 setDownloadName(fileName);
     
                 // 开始下载
@@ -336,6 +377,10 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
             }
         }
     };
+
+    const testFunction = () => {
+        
+    }
     
 
     return (
@@ -347,7 +392,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
             {/* 重定向警告页 */}
             <RedirectNotice redirectURL={redirectURL} setRedirectURL={setRedirectURL} />
             {/* 公告页 */}
-            <NoticesView opened={noticesOpened} setOpened={setNoticeOpened} />
+            <NoticesView opened={noticesOpened} setOpened={setNoticeOpened} notices={notices} />
             <SidebarProvider>
                 <div className="z-20">
                     <CategorySidebar
@@ -399,9 +444,14 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                     </div>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                            <Button size="icon" variant="outline" onClick={() => setNoticeOpened(true)}>
-                                <PackageOpen />
+                            <Button variant="outline" className="flex" onClick={() => setNoticeOpened(true)}>
+                                <div className="flex items-center gap-1">
+                                    <PackageOpen />
+                                    <span>打开公告</span>
+                                    { notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{ notices.length }</Badge> : <></> }
+                                </div>
                             </Button>
+                            <Button size="icon" variant="outline" onClick={testFunction}><FlaskConical /></Button>
                             <ToggleTheme lng={lng} />
                             <Avatar>
                                 <AvatarImage src={avatarURL} alt="@shadcn" />
@@ -428,134 +478,138 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                         <ResizableScrollablePanel defaultSize={60} minSize={20} className="relative" onResize={(size, prevSize) => {
                             setResizeTrigger(size)
                         }}>
-                            <div id="scroller">
-                                {!curChallenge.title ? (
-                                    <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-                                        <div className="">
-                                            <Label className="text-xl">Choose something?</Label>
-                                        </div>
+                            {!curChallenge.title ? (
+                                <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
+                                    <div className="">
+                                        <Label className="text-xl">Choose something?</Label>
                                     </div>
-                                ) : <></>}
-                                <div className="absolute bottom-2 right-2 flex flex-col gap-2 p-2 opacity-100 ease-in-out">
-                                    {
-                                        curChallenge.hints?.map((value, index) => {
-                                            return (
-                                                <div className="flex" key={index}>
-                                                    <div className="flex-1" />
-                                                    <div className={`inline-flex bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 pt-2 pb-2 pl-3 pr-[25px] rounded-xl shadow-lg shadow-yellow-500/30 min-w-0 transition-transform duration-300 ease-in-out text-black text-md gap-2 ${!foldedItems[index] ? "translate-x-[calc(30px)]" : "translate-x-[calc(100%-80px)]"}`}>
-                                                        {
-                                                            !foldedItems[index] ? (
-                                                                <FoldHorizontal className="hover:text-white flex-shrink-0 transition-colors duration-200 ease-in-out" onClick={() => {
-                                                                    toggleFolded(index)
-                                                                }} />
-                                                            ) : (
-                                                                <UnfoldHorizontal className="hover:text-white flex-shrink-0 transition-colors duration-200 ease-in-out" onClick={() => {
-                                                                    toggleFolded(index)
-                                                                }} />
-                                                            )
-                                                        }
-                                                        <div className="inline-flex gap-1">
-                                                            <Label className="font-bold w-[50px] flex-shrink-0 overflow-hidden font-mono select-none">Hint{index + 1}</Label>
-                                                            <Label className="font-bold">{value}</Label>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )
-                                        })
-                                    }
                                 </div>
-                                <div className="pl-20 pr-20 pt-5 pb-5 flex-1 flex flex-col h-full">
-
-                                    {curChallenge.title && (
-                                        <div className="w-full border-b-[1px] h-[50px] p-2 transition-[border-color] duration-300 flex items-center">
-                                            <div className="flex items-center gap-2 transition-colors duration-300">
-                                                <Info size={21} />
-                                                <Label className="text-lg">{curChallenge.title}</Label>
-                                            </div>
-                                            <div className="flex-1" />
-                                            <div className="flex justify-end gap-4 transition-colors duration-300">
-                                                { challengeSolvedList[curChallenge.id || 0] ? (
-                                                    <div className="flex items-center gap-2 text-purple-600">
-                                                        <ScanHeart />
-                                                        <Label className="text-md font-bold">{curChallengeDetail.current.score} pts</Label>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex items-center gap-2 text-amber-600">
-                                                        <Flag />
-                                                        <Label className="text-md font-bold">{curChallengeDetail.current.score} pts</Label>
-                                                    </div>
-                                                ) }
-                                                <div className="flex items-center gap-2 text-green-600">
-                                                    <CircleCheckBig />
-                                                    <Label className="text-md font-bold">{curChallengeDetail.current.solved} solves</Label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {curChallenge.type == ChallengeType.DynamicContainer && (
-                                        <div className="w-full border-b-[1px] h-[50px] p-2 transition-[border-color] duration-300 flex items-center">
-                                            <div className="flex items-center gap-2 transition-colors duration-300">
-                                                <Target size={21} />
-                                                <Label className="text-md">Live Container</Label>
-                                            </div>
-                                            <div className="flex-1" />
-                                            <div className="flex justify-end gap-4">
-                                                <Button asChild variant="ghost" className="pl-4 pr-4 pt-0 pb-0 text-md text-green-600 font-bold [&_svg]:size-6 transition-colors duration-300">
-                                                    <div className="flex gap-[4px]">
-                                                        <Rocket />
-                                                        <Label className="">Launch</Label>
-                                                    </div>
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {curChallenge.context?.url ? (
-                                        <div className="w-full border-b-[1px] h-[50px] p-2 flex items-center gap-4 transition-[border-color] duration-300">
-                                            <div className="flex items-center gap-2 transition-colors duration-300">
-                                                <Files size={21} />
-                                                <Label className="text-md">Attachments: </Label>
-                                            </div>
-                                            <div className="flex justify-end gap-4">
-                                                <Button variant="ghost" onClick={() => handleDownload()} className="pl-4 pr-4 pt-0 pb-0 text-md [&_svg]:size-5 transition-all duration-300" disabled={downloadName != ""}>
-                                                    <div className="flex gap-[4px] items-center">
-                                                        {curChallenge.context.fileSize ? (
-                                                            // 有文件大小的是本地附件
-                                                            <>
-                                                                <CloudDownload />
-                                                                <Label className=""> {getAttachmentName(curChallenge.context.url)} </Label>
-                                                            </>
+                            ) : <></>}
+                            <div className="absolute bottom-2 right-2 flex flex-col gap-2 p-2 opacity-100 ease-in-out">
+                                {
+                                    curChallenge.hints?.map((value, index) => {
+                                        return (
+                                            <div className="flex" key={index}>
+                                                <div className="flex-1" />
+                                                <div className={`inline-flex bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 pt-2 pb-2 pl-3 pr-[25px] rounded-xl shadow-lg shadow-yellow-500/30 min-w-0 transition-transform duration-300 ease-in-out text-black text-md gap-2 ${!foldedItems[index] ? "translate-x-[calc(30px)]" : "translate-x-[calc(100%-80px)]"}`}>
+                                                    {
+                                                        !foldedItems[index] ? (
+                                                            <FoldHorizontal className="hover:text-white flex-shrink-0 transition-colors duration-200 ease-in-out" onClick={() => {
+                                                                toggleFolded(index)
+                                                            }} />
                                                         ) : (
-                                                            // 远程附件
-                                                            <>
-                                                                <Link />
-                                                                <Label className=""> External links </Label>
-                                                            </>
-                                                        )}
+                                                            <UnfoldHorizontal className="hover:text-white flex-shrink-0 transition-colors duration-200 ease-in-out" onClick={() => {
+                                                                toggleFolded(index)
+                                                            }} />
+                                                        )
+                                                    }
+                                                    <div className="inline-flex gap-1">
+                                                        <Label className="font-bold w-[50px] flex-shrink-0 overflow-hidden font-mono select-none">Hint{index + 1}</Label>
+                                                        <Label className="font-bold">{value}</Label>
                                                     </div>
-                                                </Button>
+                                                </div>
                                             </div>
+                                        )
+                                    })
+                                }
+                            </div>
+                            <div className="flex h-full">
+                                <SafeComponent>
+                                    <MacScrollbar
+                                        className="pl-20 pr-20 pt-5 pb-5 w-full flex flex-col"
+                                        skin={theme === "dark" ? "dark" : "light"}
+                                    >
+                                        {curChallenge.title && (
+                                            <div className="w-full border-b-[1px] h-[50px] p-2 transition-[border-color] duration-300 flex items-center">
+                                                <div className="flex items-center gap-2 transition-colors duration-300">
+                                                    <Info size={21} />
+                                                    <Label className="text-lg">{curChallenge.title}</Label>
+                                                </div>
+                                                <div className="flex-1" />
+                                                <div className="flex justify-end gap-4 transition-colors duration-300">
+                                                    { challengeSolvedList[curChallenge.id || 0] ? (
+                                                        <div className="flex items-center gap-2 text-purple-600">
+                                                            <ScanHeart />
+                                                            <Label className="text-md font-bold">{curChallengeDetail.current.score} pts</Label>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-2 text-amber-600">
+                                                            <Flag />
+                                                            <Label className="text-md font-bold">{curChallengeDetail.current.score} pts</Label>
+                                                        </div>
+                                                    ) }
+                                                    <div className="flex items-center gap-2 text-green-600">
+                                                        <CircleCheckBig />
+                                                        <Label className="text-md font-bold">{curChallengeDetail.current.solved} solves</Label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {curChallenge.type == ChallengeType.DynamicContainer && (
+                                            <div className="w-full border-b-[1px] h-[50px] p-2 transition-[border-color] duration-300 flex items-center">
+                                                <div className="flex items-center gap-2 transition-colors duration-300">
+                                                    <Target size={21} />
+                                                    <Label className="text-md">Live Container</Label>
+                                                </div>
+                                                <div className="flex-1" />
+                                                <div className="flex justify-end gap-4">
+                                                    <Button asChild variant="ghost" className="pl-4 pr-4 pt-0 pb-0 text-md text-green-600 font-bold [&_svg]:size-6 transition-colors duration-300">
+                                                        <div className="flex gap-[4px]">
+                                                            <Rocket />
+                                                            <Label className="">Launch</Label>
+                                                        </div>
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {curChallenge.context?.url ? (
+                                            <div className="w-full border-b-[1px] h-[50px] p-2 flex items-center gap-4 transition-[border-color] duration-300">
+                                                <div className="flex items-center gap-2 transition-colors duration-300">
+                                                    <Files size={21} />
+                                                    <Label className="text-md">Attachments: </Label>
+                                                </div>
+                                                <div className="flex justify-end gap-4">
+                                                    <Button variant="ghost" onClick={() => handleDownload()} className="pl-4 pr-4 pt-0 pb-0 text-md [&_svg]:size-5 transition-all duration-300" disabled={downloadName != ""}>
+                                                        <div className="flex gap-[4px] items-center">
+                                                            {curChallenge.context.fileSize ? (
+                                                                // 有文件大小的是本地附件
+                                                                <>
+                                                                    <CloudDownload />
+                                                                    <Label className=""> {getAttachmentName(curChallenge.context.url)} </Label>
+                                                                </>
+                                                            ) : (
+                                                                // 远程附件
+                                                                <>
+                                                                    <Link />
+                                                                    <Label className=""> External links </Label>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ) : (<></>)}
+                                        { curChallenge.title && (
+                                            <div className="w-full p-8 flex-1">
+                                            { curChallenge.content ? (
+                                                <Mdx source={curChallenge.content} />
+                                            ) : (
+                                                <div className="w-full h-full flex justify-center items-center select-none gap-4">
+                                                    <Image
+                                                        src="/images/peter.png"
+                                                        alt="Peter"
+                                                        width={200}
+                                                        height={40}
+                                                        priority
+                                                    />
+                                                    <span className="text-3xl font-bold">Oops, the description is empty!</span>
+                                                </div>
+                                            ) }
+                                            
                                         </div>
-                                    ) : (<></>)}
-                                    { curChallenge.title && (
-                                        <div className="w-full p-8 flex-1">
-                                        { curChallenge.content ? (
-                                            <Mdx source={curChallenge.content} />
-                                        ) : (
-                                            <div className="w-full h-full flex justify-center items-center select-none gap-4">
-                                                <Image
-                                                    src="/images/peter.png"
-                                                    alt="Peter"
-                                                    width={200}
-                                                    height={40}
-                                                    priority
-                                                />
-                                                <span className="text-3xl font-bold">Oops, the description is empty!</span>
-                                            </div>
                                         ) }
-                                        
-                                    </div>
-                                    ) }
-                                </div>
+                                    </MacScrollbar>
+                                </SafeComponent>
                             </div>
                         </ResizableScrollablePanel>
                         {curChallenge.title ? (

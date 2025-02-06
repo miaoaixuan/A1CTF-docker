@@ -5,30 +5,15 @@ import { Dispatch, MutableRefObject, SetStateAction, useEffect, useRef, useState
 import { Button } from "./ui/button";
 import { CalendarClock, CircleX, X } from "lucide-react";
 import dayjs from "dayjs";
+import { GameNotice, NoticeType } from "@/utils/GZApi";
+import { Mdx } from "./MdxCompoents";
 
-interface Notices {
-    message: string,
-    announceTime: number
-}
-
-const messages: Notices[] = [
-    { message: "test114514", announceTime: 1738759278531 },
-    { message: "test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514", announceTime: 1738659278531 },
-    { message: "test314514", announceTime: 1738559278531 },
-    { message: "test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514", announceTime: 1738459278531 },
-    { message: "test514514", announceTime: 1738359278531 },
-    { message: "test214514test214514testtest214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514test214514", announceTime: 1738259278531 },
-    { message: "test114514", announceTime: 1738759278531 },
-    { message: "test114514", announceTime: 1738759278531 },
-    { message: "test114514", announceTime: 1738759278531 },
-    { message: "test114514", announceTime: 1738759278531 },
-    { message: "test114514", announceTime: 1738759278531 },
-    { message: "test114514", announceTime: 1738759278531 },
-]
+let messages: GameNotice[] = []
 
 const calcTranslateX = (index: number) => {
-    const width = window.innerWidth, height = window.innerHeight;
-    return `${((width - 600) / 2) + 600}px`
+    const width = window.innerWidth;
+    const boxWidth = (width >= 1024 ? 600 : 300);
+    return `${((width - boxWidth) / 2) + boxWidth}px`
 }
 
 const calcTranslateY = (index: number) => {
@@ -39,16 +24,24 @@ const calcTranslateY = (index: number) => {
 
     // 估计信息盒子的高度
     messages.forEach((ele, curIndex) => {
-        const lines = Math.ceil(ele.message.length / 68)
+        // 先根据换行符拆开
+        const lines = ele.values[0].split("\n")
+
+        // 当前盒子的高度
+        let curBoxHeight = 64
+        // 基础的 内外高度
+        boxHeight += 64
+
+        lines.forEach((line) => {
+            const line_count = Math.ceil(line.length / 68)
+            // 测试得到一行文本的高度大概为 24
+            boxHeight += line_count * 24
+            curBoxHeight += line_count * 24
+        })
         
-        // 基础的 一行文本的信息盒子高度大概为 88
-        boxHeight += 88
-        // 测试得到一行文本的高度大概为 24
-        boxHeight += Math.max(0, lines - 1) * 24
         // gap 为 16px
         boxHeight += 16
-
-        const curBoxHeight = 88 + Math.max(0, lines - 1) * 24 + 16
+        curBoxHeight += 16
 
         if (curIndex <= index) untilCurBoxHeight += curBoxHeight
     })
@@ -67,16 +60,24 @@ const shouldAnimated = (index: number) => {
 
     // 估计信息盒子的高度
     messages.forEach((ele, curIndex) => {
-        const lines = Math.ceil(ele.message.length / 68)
+        // 先根据换行符拆开
+        const lines = ele.values[0].split("\n")
+
+        // 当前盒子的高度
+        let curBoxHeight = 64
+        // 基础的 内外高度
+        boxHeight += 64
+
+        lines.forEach((line) => {
+            const line_count = Math.ceil(line.length / 68)
+            // 测试得到一行文本的高度大概为 24
+            boxHeight += line_count * 24
+            curBoxHeight += line_count * 24
+        })
         
-        // 基础的 一行文本的信息盒子高度大概为 88
-        boxHeight += 88
-        // 测试得到一行文本的高度大概为 24
-        boxHeight += Math.max(0, lines - 1) * 24
         // gap 为 16px
         boxHeight += 16
-
-        const curBoxHeight = 88 + Math.max(0, lines - 1) * 24 + 16
+        curBoxHeight += 16
 
         if (curIndex < index) untilCurBoxHeight += curBoxHeight
     })
@@ -87,7 +88,9 @@ const shouldAnimated = (index: number) => {
     return (untilCurBoxHeight + paddingTop) < height - 40
 }
 
-export function NoticesView({ opened, setOpened }: { opened: boolean, setOpened: Dispatch<SetStateAction<boolean>> }) {
+export function NoticesView({ opened, setOpened, notices }: { opened: boolean, setOpened: Dispatch<SetStateAction<boolean>>, notices: GameNotice[] }) {
+
+    messages = notices
 
     // 消息卡片的可见列表
     const [visible, setVisible] = useState<boolean>(false)
@@ -133,10 +136,10 @@ export function NoticesView({ opened, setOpened }: { opened: boolean, setOpened:
             const newDelayTime: Record<string, number> = {};
             const newDurationTime: Record<string, number> = {};
 
-            // 由于刚打开元素没有渲染，无法得知真实宽度，只能计算得出 shouldAnimated 就是模拟计算出来的宽度来判断是否在屏幕内
+            // 由于刚打开元素没有渲染，无法得知真实宽度，只能计算得出 shouldAnimated 就是根据模拟计算出来的宽度来判断是否在屏幕内
             messages.forEach((ele, index) => {
                 newDurationTime[index.toString()] = shouldAnimated(index) ? 0.9 : 0
-                newDelayTime[index.toString()] = 0.1 * index
+                newDelayTime[index.toString()] = shouldAnimated(index) ? 0.1 * index : 0
             })
 
             // 更新
@@ -231,7 +234,7 @@ export function NoticesView({ opened, setOpened }: { opened: boolean, setOpened:
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                transition={{ duration: 0.6}}
+                                transition={{ duration: 0.3}}
                             >
                                 <Button asChild variant="secondary" className="pl-4 pr-4 [&_svg]:size-5 select-none" onClick={() => setOpened(false)}>
                                     <div className="w-full h-full items-center justify-center">
@@ -243,11 +246,11 @@ export function NoticesView({ opened, setOpened }: { opened: boolean, setOpened:
                         ) }
                     </AnimatePresence>
                     <div className="w-full overflow-y-auto" id="scroller">
-                        <div className="flex flex-col gap-4 justify-center items-center p-10 overflow-hidden">
+                        <div className="flex flex-col gap-4 justify-center items-center p-16 lg:p-10 overflow-hidden">
                             { messages.map((mes, index) => (
                                 <AnimatePresence key={`message-${index}`}>
                                     { visible && (
-                                        <motion.div className="w-[600px] border-[3px] bg-background rounded-xl"
+                                        <motion.div className="w-[300px] lg:w-[600px] border-[3px] bg-background rounded-xl"
                                             ref={(el) => observeItem(el!, index?.toString() || "")}
                                             initial={{
                                                 translateX: calcTranslateX(index),
@@ -273,10 +276,10 @@ export function NoticesView({ opened, setOpened }: { opened: boolean, setOpened:
                                             <div className="w-full h-full flex flex-col p-4 gap-2">
                                                 <div className="flex w-full gap-2">
                                                     <CalendarClock />
-                                                    <span>{ dayjs(mes.announceTime).format("YYYY-MM-DD HH:mm:ss") }</span>
+                                                    <span>{ dayjs(mes.time).format("YYYY-MM-DD HH:mm:ss") }</span>
                                                 </div>
                                                 <div className="flex flex-col break-words">
-                                                    <span>{ mes.message }</span>
+                                                    <Mdx source={mes.values[0]}></Mdx>
                                                 </div>
                                             </div>
                                         </motion.div>
