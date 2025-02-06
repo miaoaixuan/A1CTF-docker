@@ -38,7 +38,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
     }
 
     return (
-        <header className="sticky top-0 h-16 backdrop-blur-sm">
+        <header className="sticky top-0 h-16 backdrop-blur-sm select-none">
             <div className="container-wrapper h-full">
                 <div className="container h-16 items-center header-theme hidden md:flex">
                     <div className="md:flex items-center">

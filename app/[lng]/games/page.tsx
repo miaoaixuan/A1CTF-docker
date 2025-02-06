@@ -1,5 +1,10 @@
 import PageHeader from "@/components/A1Headers"
 import AnimatedButton from "@/components/AnimatedButton"
+import { ChangeGames } from "@/components/ChangeGames";
+import SafeComponent from "@/components/SafeComponent";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import Image from "next/image";
 
 export default async function Games({ params }: { params: Promise<{ lng: string }>}) {
     
@@ -8,13 +13,9 @@ export default async function Games({ params }: { params: Promise<{ lng: string 
     return (
         <div className="p-0 font-[family-name:var(--font-geist-sans)] h-screen flex flex-col">
             <PageHeader lng={ lng }/>
-            <main className="flex p-10 flex-1 overflow-y-auto justify-center items-center">
-                {/* <GameSwitchHover x={800} y={100}/> */}
-                <div className="mt-[-400px] ml-[-1200px]">
-                    <AnimatedButton id={37}>Click Me</AnimatedButton>
-                </div>
-            </main>
-            {/* <A1Footer/> */}
+            <div className="w-full flex-1 overflow-hidden">
+                <ChangeGames />
+            </div>
         </div>
     );
 }
