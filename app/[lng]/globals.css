@@ -3,32 +3,7 @@
 @tailwind utilities;
 
 body {
-    font-family: Arial, Helvetica, sans-serif;
-    /* transition-property: opacity, transform, filter, background;
-    transition-timing-function: ease-in-out;
-    transition-duration: 4000ms; */
-}
-
-.transition-colors-custom {
-    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, transform, filter, background;
-    transition-timing-function: cubic-bezier(.4, 0, .2, 1);
-    transition-duration: var(--color-duration-time);
-
-    /* transition: 
-        color var(--color-duration-time) cubic-bezier(.4,0,.2,1),
-        background-color var(--color-duration-time) cubic-bezier(.4,0,.2,1),
-        border-color var(--color-duration-time) cubic-bezier(.4,0,.2,1),
-        text-decoration-color var(--color-duration-time) cubic-bezier(.4,0,.2,1),
-        fill var(--color-duration-time) cubic-bezier(.4,0,.2,1),
-        stroke var(--color-duration-time) cubic-bezier(.4,0,.2,1),
-        opacity var(--page-change-duration-time) cubic-bezier(.4,0,.2,1),
-        transform var(--page-change-duration-time) cubic-bezier(.4,0,.2,1),
-        filter var(--page-change-duration-time) cubic-bezier(.4,0,.2,1),
-        background var(--page-change-duration-time) cubic-bezier(.4,0,.2,1); */
-
-    /* transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 150ms; */
+    font-family: 'JetBrains Mono', sans-serif;
 }
 
 @layer utilities {
@@ -37,16 +12,10 @@ body {
     }
 }
 
-* {
-    scrollbar-width: thin;
-    scrollbar-color: hsl(var(--border)) transparent;
-
-    /* transition: border-color var(--color-duration-time) cubic-bezier(.4, 0, .2, 1),
-        stroke var(--color-duration-time) cubic-bezier(.4, 0, .2, 1); */
-}
-
-::-webkit-scrollbar-thumb {
-    transition: background-color 0.3s ease-in-out; /* 设置颜色变化的过渡动画 */
+.background-transition-class {
+    transition-property: background-color, border-color, text-decoration-color, fill, stroke, opacity, transform, filter, background;
+    transition-timing-function: cubic-bezier(.4, 0, .2, 1);
+    transition-duration: 300ms;
 }
 
 .fake-bg::before {
@@ -61,6 +30,7 @@ body {
 }
 
 @layer utilities {
+
     /*
       Chromium browsers don't render nested backdrop filters.
       As a workaround, add 'before:' to the outer filter, along with 'before:backdrop-hack':
@@ -72,26 +42,32 @@ body {
       See https://stackoverflow.com/a/76207141.
     */
     .backdrop-hack {
-      @apply absolute inset-0 -z-10;
+        @apply absolute inset-0 -z-10;
     }
 }
 
 @keyframes rainbow {
     0% {
-      background-position: -100%;
+        background-position: -100%;
     }
+
     100% {
-      background-position: 100%;
+        background-position: 100%;
     }
-  }
-  
+}
+
 .rainbow-text {
-    font-weight: bold; /* Optional: make text bold */
+    font-weight: bold;
+    /* Optional: make text bold */
     background: linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet);
-    background-size: 200% 100%; /* Make the gradient larger than the text */
-    background-clip: text; /* Apply the gradient to the text itself */
-    color: transparent; /* Make the text transparent to see the gradient */
-    animation: rainbow 3s linear infinite; /* 3 seconds duration, infinite loop */
+    background-size: 200% 100%;
+    /* Make the gradient larger than the text */
+    background-clip: text;
+    /* Apply the gradient to the text itself */
+    color: transparent;
+    /* Make the text transparent to see the gradient */
+    animation: rainbow 3s linear infinite;
+    /* 3 seconds duration, infinite loop */
 }
 
 @layer base {
@@ -239,82 +215,85 @@ body {
 /* 自定义终端主题 */
 #terminalEditor {
     /* @apply backdrop-blur-sm; */
-    border-radius: 0!important;
+    border-radius: 0 !important;
 }
 
 .hide-scrollbar {
-    -ms-overflow-style: none; /* IE 11 */
-    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;
+    /* IE 11 */
+    scrollbar-width: none;
+    /* Firefox */
 }
 
 .hide-scrollbar::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Edge */
+    display: none;
+    /* Chrome, Safari, Edge */
 }
 
-/* .index_terminal__teubZ {
-    background-color: transparent!important;
-} */
-
-/* [data-rehype-pretty-code-figure] code::before {
-    content: none;
+.xterm .xterm-viewport {
+    background-color: transparent !important;
 }
 
-[data-rehype-pretty-code-figure] code::after {
-    content: none
+.xterm-selection div {
+    opacity: 0.4;
 }
 
-figure[data-rehype-pretty-code-figure] pre {
-    @apply py-4 overflow-x-auto rounded-lg leading-7;
+.xterm-decoration-top {
+    background-color: transparent !important;
 }
 
-pre [data-line] {
-    @apply px-4
+.index_editor__JoDSg .index_caret__VS4iV {
+    animation: index_blink__FJp0- 0.3s ease-in-out !important;
 }
 
-[data-rehype-pretty-code-title] {
-    @apply ml-1
+.index_caretAfter__6aXPx {
+    /* opacity: 0.9!important; */
+    width: 2px !important;
 }
 
-
-[data-highlighted-chars] {
-    @apply border-b-2 rounded p-1 font-bold border-red-700 text-red-300 bg-red-950
+.transition-transform_bordercolor {
+    transition-property: border-color, transform, background-color;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
 }
 
-[data-chars-id="1"] {
-    @apply border-b-2 rounded p-1 font-bold border-red-600 text-red-300 bg-red-900
+.xterm-rows span {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
 }
 
-[data-chars-id="2"] {
-    @apply border-b-2 rounded p-1 font-bold border-green-600 text-green-300 bg-green-900
+#scroller {
+    /* fill parent */
+    display: block;
+    width: 100%;
+    height: 100%;
+
+    /* set to some transparent color */
+    border-color: rgba(0, 0, 0, 0.0);
+    /* here we make the color transition */
+    transition: border-color 0.3s linear;
+    /* make this element do the scrolling */
+    overflow: auto;
 }
 
-[data-chars-id="3"] {
-    @apply border-b-2 rounded p-1 font-bold border-cyan-600 text-cyan-300 bg-cyan-900
+#scroller:hover {
+    /* the color we want the scrollbar on hover */
+    border-color: rgba(0, 0, 0, 0.1);
 }
 
-[data-chars-id="4"] {
-    @apply border-b-2 rounded p-1 font-bold border-blue-600 text-blue-300 bg-blue-900
+#scroller::-webkit-scrollbar,
+#scroller::-webkit-scrollbar-thumb,
+#scroller::-webkit-scrollbar-corner {
+    /* add border to act as background-color */
+    border-right-style: inset;
+    /* sum viewport dimensions to guarantee border will fill scrollbar */
+    border-right-width: 6px;
+    width: 6px;
+    /* inherit border-color to inherit transitions */
+    border-color: inherit;
 }
 
-[data-line-numbers] {
-    counter-reset: line;
+.xterm-viewport {
+    overflow: hidden!important;
 }
-
-[data-line-numbers] [data-line]::before {
-    counter-increment: line;
-    content: counter(line);
-    display: inline-block;
-    width: 1rem;
-    margin-right: 1rem;
-    text-align: right;
-    @apply text-sm text-gray-600;
-}
-
-span[data-rehype-pretty-code-figure] code {
-    @apply bg-gray-200 text-black text-sm font-normal px-2 py-1 mx-1 rounded !important
-}
-
-span[data-highlighted-line] {
-    @apply bg-slate-300 bg-opacity-10;
-}
- */

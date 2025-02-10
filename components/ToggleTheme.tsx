@@ -44,7 +44,7 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
     const toggleTheme = () => {
         // console.log("added!")
         const body = document.querySelector("body");
-        body?.classList.add("transition-colors-custom");
+        body?.classList.add("background-transition-class");
         setTheme(theme === 'light' ? 'dark' : 'light')
     }
     
@@ -78,7 +78,7 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
                         style={{ "backgroundColor": "hsl(var(--background))" }}
                     >
                         <motion.button
-                            className="transition-all ease-in-out duration-300 relative w-44 h-11 rounded-[10px] hover:rounded-[0px]  flex items-center justify-center focus:outline-none overflow-hidden"
+                            className="relative w-44 h-11 rounded-[10px] hover:rounded-[0px]  flex items-center justify-center focus:outline-none overflow-hidden"
                             onClick={toggleTheme}
                             // animate={{ backgroundColor: theme === 'light' ? '#D1D5DB' : '#4B5563' }}
                         >
@@ -105,7 +105,7 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
                         <div className='w-full justify-center p-1 hidden lg:flex mt-[0.5px]'>
                             <Button variant="ghost" className="w-full p-2 rounded-[10px]" >
                                 <div className='flex justify-between w-full '>
-                                    <Label className='font-bold'>{t("system_color")}</Label>
+                                    <span className='font-bold'>{t("system_color")}</span>
                                     <MonitorCog />
                                 </div>
                             </Button>
@@ -129,16 +129,16 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
                 >
                     <div className='flex justify-center w-full gap-1 py-1'>
                         <Button asChild variant="ghost" size="icon">
-                            <Link href={`/zh${asPath.slice(lng.length + 1)}`}><Label className='font-bold'>简</Label></Link>
+                            <Link href={`/zh${asPath.slice(lng.length + 1)}`}><span className='font-bold'>简</span></Link>
                         </Button>
                         <Button asChild variant="ghost" size="icon">
-                            <Label className='font-bold'>繁</Label>
+                            <span className='font-bold'>繁</span>
                         </Button>
                         <Button asChild variant="ghost" size="icon">
-                            <Link href={`/en${asPath.slice(lng.length + 1)}`}><Label className='font-bold'>En</Label></Link>
+                            <Link href={`/en${asPath.slice(lng.length + 1)}`}><span className='font-bold'>En</span></Link>
                         </Button>
                         <Button asChild variant="ghost" size="icon">
-                            <Label className='font-bold'>日</Label>
+                            <span className='font-bold'>日</span>
                         </Button>
                     </div>
                 </motion.div>
@@ -159,7 +159,7 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
                 >
                     <Button variant="ghost" className="w-full p-2" >
                         <div className='flex justify-between w-full '>
-                            <Label className='font-bold'>{t("system_color")}</Label>
+                            <span className='font-bold'>{t("system_color")}</span>
                             <MonitorCog />
                         </div>
                     </Button>

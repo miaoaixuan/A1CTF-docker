@@ -1,7 +1,6 @@
 import { GalleryVerticalEnd } from "lucide-react"
 
 import { LoginForm } from "@/components/LoginForm"
-import { Label } from "@radix-ui/react-dropdown-menu"
 
 import Image from "next/image";
 
@@ -25,7 +24,7 @@ export default async function LoginPage({ params }: { params: Promise<{ lng: str
                             height={40}
                             priority
                         />
-                        <Label className="font-bold text-lg">A1natas SSO</Label>
+                        <span className="font-bold text-lg">A1natas SSO</span>
                     </TransitionLink>
                     <ThemeSwitcher lng={lng} />
                 </div>

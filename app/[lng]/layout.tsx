@@ -3,17 +3,20 @@
 import DelayedSuspense from '@/components/DelayedSuspense';
 import { Suspense } from 'react';
 import localFont from "next/font/local";
+
 import "./globals.css";
+import '@xterm/xterm/css/xterm.css';
+import 'mac-scrollbar/dist/mac-scrollbar.css';
 // import { ThemeProvider } from "@/components/ThemeProvider"
 
-import { ThemeProvider } from "next-themes";
+import { ThemeProvider, useTheme } from "next-themes";
 import { TransitionProvider } from '@/contexts/TransitionContext'
 import { TransitionLayout } from '@/components/TransitionLayout'
 
 import { dir } from 'i18next'
 import { LoadingPage } from "@/components/LoadingPage";
 
-import { Toaster } from "react-hot-toast"
+import { Toaster } from 'sonner'
 
 // i18n settings
 import { NextIntlClientProvider } from 'next-intl';
@@ -22,18 +25,10 @@ import { routing } from '@/i18n/routing';
 import { notFound, redirect } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
+import { ClientToaster } from '@/components/ClientToaster';
+import { GameSwitchProvider } from '@/contexts/GameSwitchContext';
 
 // fonts
-const geistSans = localFont({
-    src: "../fonts/GeistVF.woff",
-    variable: "--font-geist-sans",
-    weight: "100 900",
-});
-const geistMono = localFont({
-    src: "../fonts/GeistMonoVF.woff",
-    variable: "--font-geist-mono",
-    weight: "100 900",
-});
 
 export async function generateMetadata({ params }: { params: any }) {
     const { lng } = await params
@@ -62,8 +57,11 @@ export default async function RootLayout({
 
     return (
         <html lang={lng} suppressHydrationWarning>
+            <head>
+                <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet" />
+            </head>
             <body
-                className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+                className={`antialiased`}
             >
                 <NextIntlClientProvider messages={messages}>
                     <ThemeProvider
@@ -71,16 +69,13 @@ export default async function RootLayout({
                         defaultTheme="system"
                         enableSystem
                     >
-                        <div>
-                            <Toaster
-                                // position="top-right"
-                                reverseOrder={false}
-                            />
-                        </div>
                         <DelayedSuspense>
                             <TransitionProvider>
                                 <TransitionLayout>
-                                    {children}
+                                    <GameSwitchProvider>
+                                        {children}
+                                    </GameSwitchProvider>
+                                    <ClientToaster/>
                                 </TransitionLayout>
                             </TransitionProvider>
                         </DelayedSuspense>

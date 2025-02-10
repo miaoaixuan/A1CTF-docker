@@ -31,30 +31,33 @@ export function Mdx({ source }: { source: string }) {
                             showLineNumbers={true}
                             style={ theme == "dark" ? (oneDark as any) : (oneLight as any) }
                             PreTag='div'
-                            className='syntax-hight-wrapper'
+                            className='syntax-hight-wrapper transition-colors duration-300'
                           >
                             {children as string[]}
                           </SyntaxHighlighter>)
                 },
                 h1: ({ node, ...props }) => (
-                    <h1 className="text-3xl font-bold" {...props} />
+                    <h1 className="text-3xl font-bold transition-colors duration-300" {...props} />
                 ),
                 h2: ({ node, ...props }) => (
-                    <h2 className="text-2xl font-semibold" {...props} />
+                    <h2 className="text-2xl font-semibold transition-colors duration-300" {...props} />
                 ),
                 h3: ({ node, ...props }) => (
-                    <h3 className="text-xl font-medium" {...props} />
+                    <h3 className="text-xl font-medium transition-colors duration-300" {...props} />
                 ),
                 h4: ({ node, ...props }) => (
-                    <h4 className="text-lg font-medium" {...props} />
+                    <h4 className="text-lg font-medium transition-colors duration-300" {...props} />
                 ),
                 h5: ({ node, ...props }) => (
-                    <h5 className="text-base font-normal" {...props} />
+                    <h5 className="text-base font-normal transition-colors duration-300" {...props} />
+                ),
+                p: ({ node, ...props }) => (
+                    <p className="text-base font-normal transition-colors duration-300" {...props} />
                 ),
                 a: ({ node, href, ...props }) => (
                     <a 
                         href={href} 
-                        className="text-orange-500 underline hover:text-orange-700 transition-colors" 
+                        className="text-orange-500 underline hover:text-orange-700 transition-colors duration-300" 
                         target="_blank" 
                         rel="noopener noreferrer"
                         {...props}
