@@ -10,7 +10,7 @@ export default async function Home({ params }: { params: Promise<{ lng: string }
     const { lng } = await params;
 
     return (
-        <div className="p-0 font-[family-name:var(--font-geist-sans)] h-screen flex flex-col">
+        <div className="p-0 h-screen flex flex-col">
             <PageHeader lng={ lng }/>
             <main className="flex flex-1 overflow-y-auto">
                 {/* <div className="relative top-5 left-5 w-[300px] h-[100px] border-2 grow-0 shrink-0 rounded-xl p-3 bg-gray-100">

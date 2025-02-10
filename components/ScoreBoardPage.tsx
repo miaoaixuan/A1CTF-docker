@@ -1,7 +1,6 @@
 "use client";
 
 import api, { ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeType } from '@/utils/GZApi'
-import { Label } from '@radix-ui/react-label'
 import { LogOut } from 'lucide-react'
 
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
@@ -144,7 +143,7 @@ export default function ScoreBoardPage({ gmid } : { gmid: number }) {
         <div className='absolute top-0 left-0 h-screen w-screen bg-background opacity-100 z-40 transition-colors duration-300'>
             <div className='w-full h-full flex flex-col relative p-10'>
                 <div id='scoreHeader' className='w-full h-[60px] flex items-center'>
-                    <Label className='text-3xl font-bold [text-shadow:_hsl(var(--foreground))_1px_1px_20px] select-none'>ScoreBoard</Label>
+                    <span className='text-3xl font-bold [text-shadow:_hsl(var(--foreground))_1px_1px_20px] select-none'>ScoreBoard</span>
                     <div className='flex-1' />
                     <ThemeSwitcher lng='zh' />
                     <LogOut size={32} className=' ml-4 hover:scale-110 transition-all duration-300 ease-linear' />

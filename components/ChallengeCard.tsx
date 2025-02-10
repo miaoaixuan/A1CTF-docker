@@ -1,8 +1,7 @@
 "use client";
 
-import {  Sparkle, Gamepad2, ChevronsRight, Target, Crosshair, CheckCheck, Zap, Star, Sparkles, Stars, Flag, Dices, SquareCheckBig, Square, CircleCheckBig } from "lucide-react"
+import {  ChevronsRight, Dices, CircleCheckBig } from "lucide-react"
 
-import { Label } from "@radix-ui/react-label"
 import { FC, useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -162,7 +161,7 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
                         >
                             <div className="flex items-center gap-3">
                                 <CircleCheckBig size={40} />
-                                <Label className="text-2xl font-bold">Solved!</Label>
+                                <span className="text-2xl font-bold">Solved!</span>
                             </div>
                         </motion.div>
                     </motion.div>
@@ -172,23 +171,27 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
                 <div className="flex items-center gap-1">
                     <div id="card-title" className="flex justify-start items-center gap-2 min-w-0 h-[32px]" >
                         <Dices size={23} className="flex-none transition-colors duration-300" style={{ color: !choiced ? "" : colorClass }}/>
-                        <Label className={`font-bold text-ellipsis whitespace-nowrap overflow-hidden transition-colors duration-300`} style={{ color: !choiced ? "" : colorClass }}>{ name }</Label>
+                        <span className={`font-bold text-ellipsis whitespace-nowrap overflow-hidden transition-colors duration-300`} style={{ color: !choiced ? "" : colorClass }}>{ name }</span>
                     </div>
-                    <div className="flex-1" />
-                    <div className="flex justify-end gap-[2px] w-[32px] h-full items-center text-green-600">
-                        { solveStatus ? (
-                            <CircleCheckBig size={23} />
-                        ) : <></> }
-                    </div>
+                    
+                    { solveStatus ? (
+                            <>
+                                <div className="flex-1" />
+                                <div className="flex justify-end gap-[2px] w-[32px] h-full items-center text-green-600">
+                                    <CircleCheckBig size={23} />
+                                </div>
+                            </>
+                    ) : <></> }
+                        
                 </div>
                 <div className="flex-1"/>
                 <div className="flex items-center transition-colors duration-300">
                     <div className="flex justify-start">
-                        <Label className="font-bold">{ solved } solves & { score } pts</Label>
+                        <span className="font-bold">{ solved } solves & { score } pts</span>
                     </div>
                     <div className="flex-1"/>
                     <div className="flex justify-end items-center">
-                        <Label className="font-bold">Try it</Label>
+                        <span className="font-bold">Try it</span>
                         <ChevronsRight size={32}/>
                     </div>
                 </div>

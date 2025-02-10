@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button"
 import ThemeSwitcher from "@/components/ToggleTheme"
-import { Label } from "@radix-ui/react-dropdown-menu";
 import Link from "next/link";
 
 import { ArrowUpToLine, ArrowDownToLine } from 'lucide-react'
@@ -56,32 +55,32 @@ const PageHeader = ({ lng } : { lng: string }) => {
                             <Button asChild variant={whetherSelected("home")}>
                                 <TransitionLink className="transition-colors hover:text-foreground/80 text-foreground/80" href={`/${lng}`}>
                                     <House />
-                                    <Label className="font-bold text-base ml-[-2px]">{t("home")}</Label>
+                                    <span className="font-bold text-base ml-[-2px]">{t("home")}</span>
                                 </TransitionLink>
                             </Button>
                             <Button asChild variant={whetherSelected("games")}>
                                 <TransitionLink className="transition-colors hover:text-foreground/80 text-foreground/80" href={`/${lng}/games`}>
                                     <Flag />
-                                    <Label className="font-bold text-base ml-[-2px]">{t("race")}</Label>
+                                    <span className="font-bold text-base ml-[-2px]">{t("race")}</span>
                                 </TransitionLink>
                             </Button>
                             <Button asChild variant={whetherSelected("teams")}>
                                 <TransitionLink className="transition-colors hover:text-foreground/80 text-foreground/80" href={`/${lng}/teams`}>
                                     <UsersRound />
-                                    <Label className="font-bold text-base ml-[-2px]">{t("team")}</Label>
+                                    <span className="font-bold text-base ml-[-2px]">{t("team")}</span>
                                 </TransitionLink>
                             </Button>
                             <Button asChild variant={whetherSelected("about")}>
                                 <TransitionLink className="transition-colors hover:text-foreground/80 text-foreground/80" href={`/${lng}/about`}>
                                     <Info />
-                                    <Label className="font-bold text-base ml-[-2px]">{t("about")}</Label>
+                                    <span className="font-bold text-base ml-[-2px]">{t("about")}</span>
                                 </TransitionLink>
                             </Button>
 
                             <Button asChild variant={whetherSelected("wp")}>
                                 <TransitionLink className="transition-colors hover:text-foreground/80 text-foreground/80" href={`/${lng}/wp`}>
                                     <NotebookText />
-                                    <Label className="font-bold text-base ml-[-2px]">{t("wp")}</Label>
+                                    <span className="font-bold text-base ml-[-2px]">{t("wp")}</span>
                                 </TransitionLink>
                             </Button>
                         </nav>
@@ -107,7 +106,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
                                 height={34}
                                 priority
                             />
-                            <Label className="font-bold ml-2">A1CTF</Label>
+                            <span className="font-bold ml-2">A1CTF</span>
                         </TransitionLink>
                     </div>
                     <div className="flex justify-end w-full">
@@ -130,32 +129,32 @@ const PageHeader = ({ lng } : { lng: string }) => {
                                     <Button asChild variant={whetherSelected("home")}>
                                         <TransitionLink className="transition-colors hover:text-foreground/80 text-foreground/80" href={`/${lng}`}>
                                             <House />
-                                            <Label className="font-bold text-base ml-[-2px]">{t("home")}</Label>
+                                            <span className="font-bold text-base ml-[-2px]">{t("home")}</span>
                                         </TransitionLink>
                                     </Button>
                                     <Button asChild variant={whetherSelected("games")}>
                                         <TransitionLink className="transition-colors hover:text-foreground/80 text-foreground/80" href={`/${lng}/games`}>
                                             <Flag />
-                                            <Label className="font-bold text-base ml-[-2px]">{t("race")}</Label>
+                                            <span className="font-bold text-base ml-[-2px]">{t("race")}</span>
                                         </TransitionLink>
                                     </Button>
                                     <Button asChild variant={whetherSelected("teams")}>
                                         <TransitionLink className="transition-colors hover:text-foreground/80 text-foreground/80" href={`/${lng}/teams`}>
                                             <UsersRound />
-                                            <Label className="font-bold text-base ml-[-2px]">{t("team")}</Label>
+                                            <span className="font-bold text-base ml-[-2px]">{t("team")}</span>
                                         </TransitionLink>
                                     </Button>
                                     <Button asChild variant={whetherSelected("about")}>
                                         <TransitionLink className="transition-colors hover:text-foreground/80 text-foreground/80" href={`/${lng}/about`}>
                                             <Info />
-                                            <Label className="font-bold text-base ml-[-2px]">{t("about")}</Label>
+                                            <span className="font-bold text-base ml-[-2px]">{t("about")}</span>
                                         </TransitionLink>
                                     </Button>
 
-                                    <Button asChild variant={whetherSelected("wp")}>
+                                    <Button asChild variant={whetherSelected("wp")} disabled>
                                         <TransitionLink className="transition-colors hover:text-foreground/80 text-foreground/80" href={`/${lng}/wp`}>
                                             <NotebookText />
-                                            <Label className="font-bold text-base ml-[-2px]">{t("wp")}</Label>
+                                            <span className="font-bold text-base ml-[-2px]">{t("wp")}</span>
                                         </TransitionLink>
                                     </Button>
                                     
@@ -163,7 +162,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
 
                                     <Button asChild variant="ghost" className="mt-[0.5px]">
                                         <TransitionLink href={`/${lng}/login`}>
-                                            <KeyRound /><Label className="font-bold">{t("login")}</Label>
+                                            <KeyRound /><span className="font-bold">{t("login")}</span>
                                         </TransitionLink>
                                     </Button>
                                 </div>

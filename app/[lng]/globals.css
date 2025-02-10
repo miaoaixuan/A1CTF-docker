@@ -3,10 +3,7 @@
 @tailwind utilities;
 
 body {
-    font-family: Arial, Helvetica, sans-serif;
-    transition-property: background-color, border-color, text-decoration-color, fill, stroke, opacity, transform, filter, background;
-    transition-timing-function: cubic-bezier(.4, 0, .2, 1);
-    transition-duration: 300ms;
+    font-family: 'JetBrains Mono', sans-serif;
 }
 
 @layer utilities {
@@ -15,31 +12,11 @@ body {
     }
 }
 
-* {
-    /* scrollbar-width: thin;
-    scrollbar-color: hsl(var(--border)) transparent; */
-
+.background-transition-class {
+    transition-property: background-color, border-color, text-decoration-color, fill, stroke, opacity, transform, filter, background;
+    transition-timing-function: cubic-bezier(.4, 0, .2, 1);
+    transition-duration: 300ms;
 }
-
-/* ::-webkit-scrollbar-thumb {
-    transition: all 0.3s ease-in-out;
-} */
-
-/* ::-webkit-scrollbar {
-    width: 5px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    display: none;
-    transition: background-color 0.3s ease;
-}
-
-::-webkit-scrollbar-thumb {
-    border-radius: 20px;
-    background-color: hsl(var(--border));
-    transition: background-color 0.3s ease;
-} */
 
 .fake-bg::before {
     content: "";

@@ -12,7 +12,6 @@ import {
     SidebarMenu,
 } from "@/components/ui/sidebar"
 import { Button } from "./ui/button"
-import { Label } from "@radix-ui/react-label"
 
 import { ChallengeCard } from "./ChallengeCard";
 import { SWRConfiguration } from 'swr'
@@ -203,14 +202,14 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGame
                                         height={40}
                                         priority
                                     />
-                                    <Label className="font-bold text-xl transition-colors duration-300">A1CTF</Label>
+                                    <span className="font-bold text-xl transition-colors duration-300">A1CTF</span>
                                 </div>
                                 <div className="flex-1" />
                                 <div className="justify-end">
                                     <Button className="rounded-3xl p-4 pointer-events-auto w-[100px] mt-[5px] ml-[5px] mb-[10px]" asChild>
                                         <TransitionLink className="transition-colors" href={`/${lng}/games`}>
                                             <CircleArrowLeft/>
-                                            <Label>Back</Label>
+                                            <span>Back</span>
                                         </TransitionLink>
                                     </Button>
                                 </div>

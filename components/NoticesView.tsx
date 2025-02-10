@@ -234,7 +234,7 @@ export function NoticesView({ opened, setOpened, notices }: { opened: boolean, s
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                transition={{ duration: 0.3}}
+                                transition={{ duration: notices.length ? 0.3 : 0}}
                             >
                                 <Button asChild variant="secondary" className="pl-4 pr-4 [&_svg]:size-5 select-none" onClick={() => setOpened(false)}>
                                     <div className="w-full h-full items-center justify-center">

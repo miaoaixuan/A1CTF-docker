@@ -3332,7 +3332,7 @@ export interface RequestResponseOfRegisterStatus {
         },
         params: RequestParams = {},
       ) =>
-        this.request<ArrayResponseOfBasicGameInfoModel, RequestResponse>({
+        this.request<BasicGameInfoModel[], RequestResponse>({
           path: `/api/game`,
           method: "GET",
           query: query,

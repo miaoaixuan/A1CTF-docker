@@ -1,6 +1,5 @@
 "use client";
 
-import { Label } from "@radix-ui/react-label";
 import ToggleTheme from "@/components/ToggleTheme"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { CategorySidebar } from "@/components/CategorySideBar";
@@ -54,6 +53,8 @@ import { MacScrollbar } from 'mac-scrollbar';
 import { useTheme } from "next-themes";
 
 import { Badge } from "@/components/ui/badge"
+import { useTransitionContext } from "@/contexts/GameSwitchContext";
+import GameSwitchHover from "./GameSwitchHover";
 
 const GameTerminal = dynamic(
     () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
@@ -151,6 +152,9 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
     const noticesRef = useRef<GameNotice[]>([])
 
     const { theme } = useTheme()
+
+    // 切换比赛动画
+    const { isChangingGame, setIsChangingGame } = useTransitionContext();
 
     // 更新当前选中题目信息, 根据 Websocket 接收到的信息被动调用
     const updateChallenge = () => {
@@ -293,6 +297,14 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
         }
     }, [id])
 
+    useEffect(() => {
+        if (!loadingVisiblity) {
+            setTimeout(() => {
+                setIsChangingGame(false)
+            }, 500)
+        }
+    }, [loadingVisiblity])
+
     const getAttachmentName = (url: string) => {
         const parts = url.split("/")
         return parts[parts.length - 1]
@@ -385,6 +397,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
 
     return (
         <>
+            <GameSwitchHover animation={false} />
             <LoadingPage visible={loadingVisiblity} />
             {/* 下载动画 */}
             <DownloadBar key={"download-panel"} progress={attachDownloadProgress} downloadName={downloadName}></DownloadBar>
@@ -413,8 +426,8 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                     <div className="h-[70px] flex items-center pl-4 pr-4 z-20 w-full bg-transparent border-b-[1px] transition-[border-color] duration-300">
                         <div className="flex items-center min-w-0 h-[32px]">
                             <SidebarTrigger className="transition-colors duration-300" />
-                            {/* <Label className="font-bold ml-3">{ challenge.category } - { challenge.title }</Label> */}
-                            <Label className="font-bold ml-1 text-ellipsis overflow-hidden text-nowrap transition-colors duration-300">{gameInfo.title}</Label>
+                            {/* <span className="font-bold ml-3">{ challenge.category } - { challenge.title }</span> */}
+                            <span className="font-bold ml-1 text-ellipsis overflow-hidden text-nowrap transition-colors duration-300">{gameInfo.title}</span>
                         </div>
                         <div className="flex-1" />
                         <div id="rightArea" className="justify-end flex h-ful gap-[6px] lg:gap-[10px] items-center pointer-events-auto">
@@ -423,7 +436,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                     <div className="absolute top-0 left-0 bg-black dark:bg-white transition-colors duration-300"
                                         style={{ width: `${remainTimePercent}%`, height: '100%' }}
                                     />
-                                    <Label className="text-white mix-blend-difference z-20 font-mono transition-all duration-500">{remainTime}</Label>
+                                    <span className="text-white mix-blend-difference z-20 font-mono transition-all duration-500">{remainTime}</span>
                                 </div>
                             </div>
                             <DropdownMenu>
@@ -439,7 +452,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                                 className="absolute top-0 left-0 bg-black dark:bg-white"
                                                 style={{ width: `${remainTimePercent}%`, height: '100%' }}
                                             />
-                                            <Label className="text-white mix-blend-difference z-20 font-mono">{remainTime}</Label>
+                                            <span className="text-white mix-blend-difference z-20 font-mono">{remainTime}</span>
                                         </div>
                                     </div>
                                 </DropdownMenuContent>
@@ -470,7 +483,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                     {/* <SkeletonCard /> */}
                                     <div className="flex">
                                         <LoaderPinwheel className="animate-spin" />
-                                        <Label className="font-bold ml-3">Loading...</Label>
+                                        <span className="font-bold ml-3">Loading...</span>
                                     </div>
                                 </motion.div>
                             ) : (null)}
@@ -481,7 +494,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                             {!curChallenge.title ? (
                                 <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
                                     <div className="">
-                                        <Label className="text-xl">Choose something?</Label>
+                                        <span className="text-xl">Choose something?</span>
                                     </div>
                                 </div>
                             ) : <></>}
@@ -504,8 +517,8 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                                         )
                                                     }
                                                     <div className="inline-flex gap-1">
-                                                        <Label className="font-bold w-[50px] flex-shrink-0 overflow-hidden font-mono select-none">Hint{index + 1}</Label>
-                                                        <Label className="font-bold">{value}</Label>
+                                                        <span className="font-bold w-[50px] flex-shrink-0 overflow-hidden font-mono select-none">Hint{index + 1}</span>
+                                                        <span className="font-bold">{value}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -523,24 +536,24 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                             <div className="w-full border-b-[1px] h-[50px] p-2 transition-[border-color] duration-300 flex items-center">
                                                 <div className="flex items-center gap-2 transition-colors duration-300">
                                                     <Info size={21} />
-                                                    <Label className="text-lg">{curChallenge.title}</Label>
+                                                    <span className="text-lg">{curChallenge.title}</span>
                                                 </div>
                                                 <div className="flex-1" />
                                                 <div className="flex justify-end gap-4 transition-colors duration-300">
                                                     { challengeSolvedList[curChallenge.id || 0] ? (
                                                         <div className="flex items-center gap-2 text-purple-600">
                                                             <ScanHeart />
-                                                            <Label className="text-md font-bold">{curChallengeDetail.current.score} pts</Label>
+                                                            <span className="text-md font-bold">{curChallengeDetail.current.score} pts</span>
                                                         </div>
                                                     ) : (
                                                         <div className="flex items-center gap-2 text-amber-600">
                                                             <Flag />
-                                                            <Label className="text-md font-bold">{curChallengeDetail.current.score} pts</Label>
+                                                            <span className="text-md font-bold">{curChallengeDetail.current.score} pts</span>
                                                         </div>
                                                     ) }
                                                     <div className="flex items-center gap-2 text-green-600">
                                                         <CircleCheckBig />
-                                                        <Label className="text-md font-bold">{curChallengeDetail.current.solved} solves</Label>
+                                                        <span className="text-md font-bold">{curChallengeDetail.current.solved} solves</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -549,14 +562,14 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                             <div className="w-full border-b-[1px] h-[50px] p-2 transition-[border-color] duration-300 flex items-center">
                                                 <div className="flex items-center gap-2 transition-colors duration-300">
                                                     <Target size={21} />
-                                                    <Label className="text-md">Live Container</Label>
+                                                    <span className="text-md">Live Container</span>
                                                 </div>
                                                 <div className="flex-1" />
                                                 <div className="flex justify-end gap-4">
                                                     <Button asChild variant="ghost" className="pl-4 pr-4 pt-0 pb-0 text-md text-green-600 font-bold [&_svg]:size-6 transition-colors duration-300">
                                                         <div className="flex gap-[4px]">
                                                             <Rocket />
-                                                            <Label className="">Launch</Label>
+                                                            <span className="">Launch</span>
                                                         </div>
                                                     </Button>
                                                 </div>
@@ -566,7 +579,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                             <div className="w-full border-b-[1px] h-[50px] p-2 flex items-center gap-4 transition-[border-color] duration-300">
                                                 <div className="flex items-center gap-2 transition-colors duration-300">
                                                     <Files size={21} />
-                                                    <Label className="text-md">Attachments: </Label>
+                                                    <span className="text-md">Attachments: </span>
                                                 </div>
                                                 <div className="flex justify-end gap-4">
                                                     <Button variant="ghost" onClick={() => handleDownload()} className="pl-4 pr-4 pt-0 pb-0 text-md [&_svg]:size-5 transition-all duration-300" disabled={downloadName != ""}>
@@ -575,13 +588,13 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                                                 // 有文件大小的是本地附件
                                                                 <>
                                                                     <CloudDownload />
-                                                                    <Label className=""> {getAttachmentName(curChallenge.context.url)} </Label>
+                                                                    <span className=""> {getAttachmentName(curChallenge.context.url)} </span>
                                                                 </>
                                                             ) : (
                                                                 // 远程附件
                                                                 <>
                                                                     <Link />
-                                                                    <Label className=""> External links </Label>
+                                                                    <span className=""> External links </span>
                                                                 </>
                                                             )}
                                                         </div>

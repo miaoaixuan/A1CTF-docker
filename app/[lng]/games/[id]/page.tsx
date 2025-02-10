@@ -8,7 +8,7 @@ export default async function Games({ params }: { params: Promise<{ lng: string,
     const { lng, id } = await params;
 
     return (
-        <div className="p-0 font-[family-name:var(--font-geist-sans)] h-screen relative">
+        <div className="p-0 h-screen relative">
             <div className="absolute top-0 left-0 w-screen h-screen z-[-19] overflow-hidden">
                 <div className="w-[400px] h-[400px] absolute bottom-[-120px] right-[-120px] rotate-[-20deg]">
                     <A1LogoWithoutAnimation />

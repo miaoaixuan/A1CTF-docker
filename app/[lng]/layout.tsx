@@ -26,19 +26,9 @@ import { notFound, redirect } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { ClientToaster } from '@/components/ClientToaster';
+import { GameSwitchProvider } from '@/contexts/GameSwitchContext';
 
 // fonts
-const geistSans = localFont({
-    src: "../fonts/GeistVF.woff",
-    variable: "--font-geist-sans",
-    weight: "100 900",
-});
-
-const jetbrainMono = localFont({
-    src: "../fonts/JetBrainsMono-Medium.woff2",
-    variable: "--font-jetbrain-mono",
-    weight: "100 700 900",
-});
 
 export async function generateMetadata({ params }: { params: any }) {
     const { lng } = await params
@@ -67,8 +57,11 @@ export default async function RootLayout({
 
     return (
         <html lang={lng} suppressHydrationWarning>
+            <head>
+                <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet" />
+            </head>
             <body
-                className={`${geistSans.variable} ${jetbrainMono.variable} antialiased`}
+                className={`antialiased`}
             >
                 <NextIntlClientProvider messages={messages}>
                     <ThemeProvider
@@ -79,7 +72,9 @@ export default async function RootLayout({
                         <DelayedSuspense>
                             <TransitionProvider>
                                 <TransitionLayout>
-                                    {children}
+                                    <GameSwitchProvider>
+                                        {children}
+                                    </GameSwitchProvider>
                                     <ClientToaster/>
                                 </TransitionLayout>
                             </TransitionProvider>

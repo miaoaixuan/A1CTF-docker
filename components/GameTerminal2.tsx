@@ -99,8 +99,8 @@ export function GameTerminal({ gameid, challenge, pSize, userName, setChallengeS
         const terminal = new Terminal({
             // fontFamily: '"Fira Code", monospace, "Powerline Extra Symbols"'
             theme: theme == "dark" ? darkTheme : lightTheme,
-            fontFamily: "var(--font-jetbrain-mono), Microsoft YaHei, monospace",
-            lineHeight: 1.5,
+            fontFamily: "'JetBrains Mono', sans-serif",
+            lineHeight: 1,
             cursorBlink: true,
             cursorInactiveStyle: "outline",
             cursorStyle: 'underline',
