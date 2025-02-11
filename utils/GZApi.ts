@@ -4056,7 +4056,7 @@ export interface RequestResponseOfRegisterStatus {
   }
   
   const api = new Api({
-    baseURL: "http://a1-test.cn:3000",
+    // baseURL: "http://a1-test.cn:3000",
     withCredentials: true
   });
   export default api;

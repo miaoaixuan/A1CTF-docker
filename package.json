@@ -45,6 +45,7 @@
     "react-resizable-panels": "^2.1.7",
     "react-syntax-highlighter": "^15.6.1",
     "react-terminal": "^1.4.5",
+    "react-tooltip": "^5.28.0",
     "recharts": "^2.15.0",
     "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.0",

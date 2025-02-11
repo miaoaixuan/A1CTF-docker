@@ -16,5 +16,39 @@
     "login_with_github": "Github SSO 登录",
     "dont_have_account": "还没有账户?",
     "sign_up_title": "注册",
-    "system_color": "使用系统颜色"
+    "system_color": "使用系统颜色",
+    "close": "关闭",
+
+    "challenge_view": {
+        "choose_something": "也许你可以选择一下题目",
+        "open_notices": "打开公告",
+        "rank": "排行",
+        "attachments": "附件: ",
+        "external_links": "外部链接",
+        "live_container": "动态靶机",
+        "launch": "启动",
+        "downloaded": "下载完成",
+        "ready_redirect": "准备重定向到:",
+        "check_security": "请注意检查链接是否安全合法",
+        "continue_redirect": "继续跳转",
+        "cancel_redirect": "取消",
+        "oops_empty": "题目简介是空的？"
+    },
+
+    "game_terminal": {
+        "terminal_hint_part1": "使用指令",
+        "terminal_hint_part2": "来提交flag, 点击",
+        "terminal_hint_part3": "来获取更多的帮助。",
+        "waiting_for_result": "[...] 等待 OJ 结果中, 请稍后",
+        "submit_correct": "[!] Correct!",
+        "submit_wrong": "[?] flag 错误，请再检查一下",
+        "submit_unknow_error": "[?] 未知错误!",
+        "fake_cheat": "[*] Wow, how did you find it? But... is it real?",
+        "command_unknow_prefix": "[?] 未知命令",
+        "command_unknow_suffix": "点击 'help' 来获取更多信息!",
+        "help_prefix": "下面是一些有用的命令 :)",
+        "format_warn": "格式",
+        "help_message_help": "展示这条帮助信息",
+        "help_message_submit": "提交你的flag! 格式: sumit flag"
+    }
 }

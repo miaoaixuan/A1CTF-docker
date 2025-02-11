@@ -7,7 +7,7 @@ import { useTheme } from 'next-themes';
 
 import Image from "next/image";
 
-import { useTransitionContext } from "@/contexts/GameSwitchContext";
+import { useGameSwitchContext } from "@/contexts/GameSwitchContext";
 import { LoaderPinwheel } from 'lucide-react';
 import { BasicGameInfoModel } from '@/utils/GZApi';
 
@@ -17,7 +17,7 @@ import { url } from 'inspector';
 export default function GameSwitchHover({ animation } : { animation: boolean }) {
 
 
-    const { isChangingGame, curSwitchingGame, posterData } = useTransitionContext();
+    const { isChangingGame, curSwitchingGame, posterData } = useGameSwitchContext();
 
     const [fromY, setFromY] = useState(10);
 

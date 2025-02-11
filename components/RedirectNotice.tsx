@@ -1,9 +1,15 @@
+"use client";
+
 import { AnimatePresence, motion } from "framer-motion";
 import { FileWarning } from "lucide-react";
 import { Dispatch, SetStateAction } from "react";
 import { Button } from "./ui/button";
+import { useTranslations } from "next-intl";
 
 export function RedirectNotice({ redirectURL, setRedirectURL } : { redirectURL: string, setRedirectURL: Dispatch<SetStateAction<string>> }) {
+
+    const t = useTranslations('challenge_view');
+
     return (
         <AnimatePresence>
             { redirectURL && (
@@ -27,14 +33,14 @@ export function RedirectNotice({ redirectURL, setRedirectURL } : { redirectURL: 
                 >
                     <div className="flex flex-col justify-center items-center gap-4">
                         <FileWarning size={80} />
-                        <span className="text-xl font-bold">准备重定向到: {redirectURL}</span>
-                        <span className="text-xl font-bold text-red-400">请注意检查链接是否安全合法</span>
+                        <span className="text-xl font-bold">{ t("ready_redirect") } {redirectURL}</span>
+                        <span className="text-xl font-bold text-red-400">{ t("check_security") }</span>
                         <div className="flex w-full justify-center gap-4">
                             <Button variant="destructive" className="w-[90px]" onClick={() => {
                                 window.open(redirectURL)
                                 setRedirectURL("")
-                            }}>继续跳转</Button>
-                            <Button variant="ghost" className="w-[90px]" onClick={() => setRedirectURL("")}>取消</Button>
+                            }}>{ t("continue_redirect") }</Button>
+                            <Button variant="ghost" className="w-[90px]" onClick={() => setRedirectURL("")}>{ t("cancel_redirect") }</Button>
                         </div>
                     </div>
                 </motion.div>

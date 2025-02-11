@@ -14,10 +14,10 @@ interface TransitionContextType {
 
 const TransitionContext = createContext<TransitionContextType | undefined>(undefined);
 
-export const useTransitionContext = () => {
+export const useGameSwitchContext = () => {
     const context = useContext(TransitionContext);
     if (!context) {
-        throw new Error("useTransitionContext must be used within a TransitionProvider");
+        throw new Error("useGameSwitchContext must be used within a TransitionProvider");
     }
     return context;
 };

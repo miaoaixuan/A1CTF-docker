@@ -27,6 +27,8 @@ import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { ClientToaster } from '@/components/ClientToaster';
 import { GameSwitchProvider } from '@/contexts/GameSwitchContext';
+import { CookiesProvider } from 'react-cookie';
+import { GlobalVariableProvider } from '@/contexts/GlobalVariableContext';
 
 // fonts
 
@@ -72,9 +74,11 @@ export default async function RootLayout({
                         <DelayedSuspense>
                             <TransitionProvider>
                                 <TransitionLayout>
-                                    <GameSwitchProvider>
-                                        {children}
-                                    </GameSwitchProvider>
+                                    <GlobalVariableProvider>
+                                        <GameSwitchProvider>
+                                            {children}
+                                        </GameSwitchProvider>
+                                    </GlobalVariableProvider>
                                     <ClientToaster/>
                                 </TransitionLayout>
                             </TransitionProvider>

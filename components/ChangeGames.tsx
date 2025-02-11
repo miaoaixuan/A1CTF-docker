@@ -31,7 +31,7 @@ import {
 
 import GameSwitchHover from "./GameSwitchHover";
 // import { DialogTitle } from "@/components/ui/sheet";
-import { useTransitionContext } from "@/contexts/GameSwitchContext";
+import { useGameSwitchContext } from "@/contexts/GameSwitchContext";
 import { useRouter } from 'next/navigation';
 export function ChangeGames() {
 
@@ -45,7 +45,7 @@ export function ChangeGames() {
 
     const [curGames, setCurGames] = useState<BasicGameInfoModel[]>()
 
-    const { setIsChangingGame, setCurSwitchingGame, setPosterData } = useTransitionContext();
+    const { setIsChangingGame, setCurSwitchingGame, setPosterData } = useGameSwitchContext();
 
     const handleSwitch = (direction: "up" | "down") => {
         if (direction == "up") {
@@ -301,7 +301,7 @@ export function ChangeGames() {
                                                     className="transition-colors duration-300 aspect-[9/5] flex-shrink flex-grow max-w-[900px] border-2 border-[#121212] opacity-[1] dark:border-[#ffffff] rounded-[4px] shadow-[0.8em_0.8em_0_0_#121212bb] dark:shadow-[0.8em_0.8em_0_0_#ffffffbb] relative"
                                                 >
                                                     <div className={`transition-[border-color,transform,background] duration-300 absolute border-2 border-[#121212] dark:border-white w-[40%] h-[20%] rounded-[8px] z-10 ${width >= 1200 ? "translate-x-[-25%] translate-y-[-50%]" : "top-2 left-2"}`}>
-                                                        <div className="flex max-w-[400px] flex-col w-full h-full pl-6 pr-6 justify-center bg-background/55 dark:bg-background/10 backdrop-blur-md dark:backdrop-blur-md rounded-[8px]">
+                                                        <div className="flex max-w-[400px] flex-col w-full h-full pl-6 pr-6 justify-center bg-background/95 dark:bg-background/85 rounded-[8px]">
                                                             <span className="font-bold text-nowrap overflow-hidden text-ellipsis" title={game.title}
                                                                 style={{
                                                                     fontSize: "clamp(10px, 2.3vw, 24px)"

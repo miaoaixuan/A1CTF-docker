@@ -20,6 +20,7 @@ import {
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
@@ -36,7 +37,7 @@ import * as signalR from '@microsoft/signalr'
 import dayjs from "dayjs";
 import { LoadingPage } from "./LoadingPage";
 import { Button } from "./ui/button";
-import { CalendarClock, CircleCheckBig, CloudDownload, Files, Flag, FlaskConical, FoldHorizontal, Info, Link, LoaderPinwheel, PackageOpen, Rocket, ScanHeart, Target, UnfoldHorizontal } from "lucide-react";
+import { AppWindow, CalendarClock, CircleCheckBig, CloudDownload, Files, Flag, FlaskConical, FoldHorizontal, Info, Link, LoaderPinwheel, PackageOpen, Presentation, Rocket, ScanHeart, Target, UnfoldHorizontal } from "lucide-react";
 import { AxiosError } from "axios";
 
 import Image from "next/image";
@@ -53,8 +54,11 @@ import { MacScrollbar } from 'mac-scrollbar';
 import { useTheme } from "next-themes";
 
 import { Badge } from "@/components/ui/badge"
-import { useTransitionContext } from "@/contexts/GameSwitchContext";
+import { useGameSwitchContext } from "@/contexts/GameSwitchContext";
 import GameSwitchHover from "./GameSwitchHover";
+import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
+import ScoreBoardPage from "./ScoreBoardPage";
+import { useTranslations } from "next-intl";
 
 const GameTerminal = dynamic(
     () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
@@ -90,6 +94,8 @@ const formatDuration = (duration: number) => {
 }
 
 export function ChallengesView({ lng, id }: { lng: string, id: string }) {
+
+    const t = useTranslations('challenge_view');
 
     // 所有题目
     const [challenges, setChallenges] = useState<Record<string, ChallengeInfo[]>>({})
@@ -151,10 +157,14 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
 
     const noticesRef = useRef<GameNotice[]>([])
 
+    const [scoreBoardVisible, setScoreBoardVisible] = useState(false)
+
     const { theme } = useTheme()
 
     // 切换比赛动画
-    const { isChangingGame, setIsChangingGame } = useTransitionContext();
+    const { isChangingGame, setIsChangingGame } = useGameSwitchContext();
+
+    const { curProfile } = useGlobalVariableContext()
 
     // 更新当前选中题目信息, 根据 Websocket 接收到的信息被动调用
     const updateChallenge = () => {
@@ -204,10 +214,10 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
 
     useEffect(() => {
         // 获取账户信息
-        api.account.accountProfile().then((res) => {
-            setAvatarURL(res.data.avatar || "")
-            setUserName(res.data.userName || "")
-        })
+        // api.account.accountProfile().then((res) => {
+        //     setAvatarURL(res.data.avatar || "")
+        //     setUserName(res.data.userName || "")
+        // })
 
         // 更新时间迭代器
         let timeIter: any = null;
@@ -296,6 +306,11 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
             })
         }
     }, [id])
+
+    useEffect(() => {
+        setAvatarURL(curProfile.avatar || "#")
+        setUserName(curProfile.userName || "")
+    }, [curProfile])
 
     useEffect(() => {
         if (!loadingVisiblity) {
@@ -391,7 +406,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
     };
 
     const testFunction = () => {
-        
+        setScoreBoardVisible(!scoreBoardVisible)
     }
     
 
@@ -401,7 +416,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
             <LoadingPage visible={loadingVisiblity} />
             {/* 下载动画 */}
             <DownloadBar key={"download-panel"} progress={attachDownloadProgress} downloadName={downloadName}></DownloadBar>
-            {/* <ScoreBoardPage gmid={parseInt(id, 10)}/> */}
+            <ScoreBoardPage gmid={parseInt(id, 10)} visible={scoreBoardVisible} setVisible={setScoreBoardVisible}/>
             {/* 重定向警告页 */}
             <RedirectNotice redirectURL={redirectURL} setRedirectURL={setRedirectURL} />
             {/* 公告页 */}
@@ -442,31 +457,49 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" className="lg:hidden" size="icon">
-                                        <CalendarClock />
+                                        <AppWindow />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-54 mr-4 mt-2">
-                                    <div className="w-full h-full">
-                                        <div className="bg-black bg-opacity-10 pl-4 pr-4 pt-1 pb-1 rounded-2xl overflow-hidden select-none dark:bg-[#2A2A2A] relative">
-                                            <div
-                                                className="absolute top-0 left-0 bg-black dark:bg-white"
-                                                style={{ width: `${remainTimePercent}%`, height: '100%' }}
-                                            />
-                                            <span className="text-white mix-blend-difference z-20 font-mono">{remainTime}</span>
-                                        </div>
+                                <DropdownMenuContent className="mr-4 mt-2">
+                                    <div className="w-full h-full flex flex-col gap-1">
+                                        <DropdownMenuItem>
+                                            <div className="bg-black bg-opacity-10 pl-4 pr-4 pt-1 pb-1 rounded-2xl overflow-hidden select-none dark:bg-[#2A2A2A] relative">
+                                                <div
+                                                    className="absolute top-0 left-0 bg-black dark:bg-white"
+                                                    style={{ width: `${remainTimePercent}%`, height: '100%' }}
+                                                />
+                                                <span className="text-white mix-blend-difference z-20 font-mono">{remainTime}</span>
+                                            </div>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setNoticeOpened(true)} disabled={notices.length == 0}>
+                                            <PackageOpen />
+                                            <span>{ t("open_notices") }</span>
+                                            { notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{ notices.length }</Badge> : <></> }
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setScoreBoardVisible(true)}>
+                                            <Presentation />
+                                            <span>{ t("rank") }</span>
+                                        </DropdownMenuItem>
                                     </div>
+                                    
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                            <Button variant="outline" className="flex" onClick={() => setNoticeOpened(true)}>
+                            <Button variant="outline" className="select-none hidden lg:flex" onClick={() => setNoticeOpened(true)} disabled={notices.length == 0}>
                                 <div className="flex items-center gap-1">
                                     <PackageOpen />
-                                    <span>打开公告</span>
+                                    <span>{ t("open_notices") }</span>
                                     { notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{ notices.length }</Badge> : <></> }
                                 </div>
                             </Button>
-                            <Button size="icon" variant="outline" onClick={testFunction}><FlaskConical /></Button>
+                            <Button variant="outline" className="select-none hidden lg:flex" onClick={() => setScoreBoardVisible(true)}>
+                                <div className="flex items-center gap-1">
+                                    <Presentation />
+                                    <span>{ t("rank") }</span>
+                                </div>
+                            </Button>
+                            {/* <Button size="icon" variant="outline" onClick={testFunction}><FlaskConical /></Button> */}
                             <ToggleTheme lng={lng} />
-                            <Avatar>
+                            <Avatar className="select-none">
                                 <AvatarImage src={avatarURL} alt="@shadcn" />
                                 <AvatarFallback><Skeleton className="h-12 w-12 rounded-full" /></AvatarFallback>
                             </Avatar>
@@ -492,10 +525,14 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                             setResizeTrigger(size)
                         }}>
                             {!curChallenge.title ? (
-                                <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-                                    <div className="">
-                                        <span className="text-xl">Choose something?</span>
-                                    </div>
+                                <div className="absolute top-0 left-0 w-full h-full flex p-7 flex-col">
+                                    { gameInfo.content ? (
+                                        <Mdx source={gameInfo.content || ""}></Mdx>
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center select-none">
+                                            <span className="font-bold text-lg">{ t("choose_something") }</span>
+                                        </div>
+                                    ) }
                                 </div>
                             ) : <></>}
                             <div className="absolute bottom-2 right-2 flex flex-col gap-2 p-2 opacity-100 ease-in-out">
@@ -560,16 +597,16 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                         )}
                                         {curChallenge.type == ChallengeType.DynamicContainer && (
                                             <div className="w-full border-b-[1px] h-[50px] p-2 transition-[border-color] duration-300 flex items-center">
-                                                <div className="flex items-center gap-2 transition-colors duration-300">
+                                                <div className="flex items-center gap-2 transition-colors duration-300 select-none">
                                                     <Target size={21} />
-                                                    <span className="text-md">Live Container</span>
+                                                    <span className="text-md">{ t("live_container") }</span>
                                                 </div>
                                                 <div className="flex-1" />
                                                 <div className="flex justify-end gap-4">
-                                                    <Button asChild variant="ghost" className="pl-4 pr-4 pt-0 pb-0 text-md text-green-600 font-bold [&_svg]:size-6 transition-colors duration-300">
+                                                    <Button asChild variant="ghost" className="pl-4 pr-4 pt-0 pb-0 text-md text-green-600 font-bold [&_svg]:size-6 transition-colors duration-300 select-none">
                                                         <div className="flex gap-[4px]">
                                                             <Rocket />
-                                                            <span className="">Launch</span>
+                                                            <span className="">{ t("launch") }</span>
                                                         </div>
                                                     </Button>
                                                 </div>
@@ -579,7 +616,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                             <div className="w-full border-b-[1px] h-[50px] p-2 flex items-center gap-4 transition-[border-color] duration-300">
                                                 <div className="flex items-center gap-2 transition-colors duration-300">
                                                     <Files size={21} />
-                                                    <span className="text-md">Attachments: </span>
+                                                    <span className="text-md">{ t("attachments") }</span>
                                                 </div>
                                                 <div className="flex justify-end gap-4">
                                                     <Button variant="ghost" onClick={() => handleDownload()} className="pl-4 pr-4 pt-0 pb-0 text-md [&_svg]:size-5 transition-all duration-300" disabled={downloadName != ""}>
@@ -594,7 +631,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                                                 // 远程附件
                                                                 <>
                                                                     <Link />
-                                                                    <span className=""> External links </span>
+                                                                    <span className=""> { t("external_links") } </span>
                                                                 </>
                                                             )}
                                                         </div>
@@ -615,7 +652,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                                         height={40}
                                                         priority
                                                     />
-                                                    <span className="text-3xl font-bold">Oops, the description is empty!</span>
+                                                    <span className="text-3xl font-bold">{ t("oops_empty") }</span>
                                                 </div>
                                             ) }
                                             
