@@ -17,6 +17,9 @@ import { CreateTeamDialog } from "./dialogs/CreateTeamDialog";
 import { JoinTeamDialog } from "./dialogs/JoinTeamDialog";
 import { EditTeamDialog } from "./dialogs/EditTeamDialog";
 import { AxiosError } from "axios";
+import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
+import { useLocale } from "next-intl";
 
 interface ErrorMessage {
     status: number;
@@ -29,6 +32,10 @@ export function TeamsView() {
 
     const [inviteCodes, setInviteCodes] = useState<Record<number, string>>({})
     const [showInviteCodes, setShowInviteCodes] = useState<Record<number, boolean>>({})
+
+    const lng = useLocale()
+    const { theme } = useTheme()
+    const router = useRouter()
 
     const updateTeams = (first?: boolean) => {
         api.team.teamGetTeamsInfo().then((res) => {
@@ -44,14 +51,21 @@ export function TeamsView() {
             }
 
             setTeams(res.data)
+        }).catch((error: AxiosError) => {
+            if (error.response?.status == 401) {
+                toast.error("Please login first!", { position: "top-center" })
+                router.push(`/${lng}/login`)
+            }
         })
     }
 
     useEffect(() => {
+
         updateTeams(true)
+
         const updateInter = setInterval(() => {
             updateTeams()
-        }, 10000)
+        }, 5000)
 
         return () => {
             clearInterval(updateInter)
@@ -100,7 +114,7 @@ export function TeamsView() {
 
     return (
         <div className="flex w-full h-full">
-            <MacScrollbar className="w-full h-full p-5 lg:p-20 overflow-y-auto">
+            <MacScrollbar className="w-full h-full p-5 lg:p-20 overflow-y-auto" skin={theme == "light" ? "light" : "dark"}>
                 <div className={`grid auto-rows-[300px] gap-6 w-full ${ teams.length >= 2 ? "grid-cols-[repeat(auto-fill,minmax(350px,1fr))] lg:grid-cols-[repeat(auto-fill,minmax(600px,1fr))] " : "grid-cols-[repeat(auto-fill,minmax(350px,600px))] lg:grid-cols-[repeat(auto-fill,minmax(500px,600px))]"}`}>
                     { teams.map((e, index) => (
                         <div className="flex flex-col p-6 w-full h-full gap-3 bg-background transition-[background,border-color,box-shadow] duration-300 rounded-2xl border-2 shadow-md hover:shadow-xl shadow-foreground/15 hover:shadow-foreground/15" key={index}>

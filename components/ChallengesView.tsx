@@ -29,7 +29,7 @@ import { ResizableScrollablePanel } from "@/components/ResizableScrollablePanel"
 import { Mdx } from "./MdxCompoents";
 import { useEffect, useRef, useState } from "react";
 
-import api, { ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeType, ChallengeInfo, ChallengeType } from '@/utils/GZApi'
+import api, { ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeType, ChallengeInfo, ChallengeType, ErrorMessage, TeamInfoModel, ParticipationStatus } from '@/utils/GZApi'
 import { Skeleton } from "./ui/skeleton";
 
 import * as signalR from '@microsoft/signalr'
@@ -37,7 +37,7 @@ import * as signalR from '@microsoft/signalr'
 import dayjs from "dayjs";
 import { LoadingPage } from "./LoadingPage";
 import { Button } from "./ui/button";
-import { AppWindow, CalendarClock, CircleCheckBig, CloudDownload, Files, Flag, FlaskConical, FoldHorizontal, Info, Link, LoaderPinwheel, PackageOpen, Presentation, Rocket, ScanHeart, Target, UnfoldHorizontal } from "lucide-react";
+import { AppWindow, CalendarClock, CircleCheckBig, CloudDownload, Files, Flag, FlaskConical, FoldHorizontal, Info, Link, LoaderPinwheel, PackageOpen, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal } from "lucide-react";
 import { AxiosError } from "axios";
 
 import Image from "next/image";
@@ -60,6 +60,18 @@ import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
 import ScoreBoardPage from "./ScoreBoardPage";
 import { useLocale, useTranslations } from "next-intl";
 import { randomInt } from "mathjs";
+
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectLabel,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { toast } from "sonner";
+import { TransitionLink } from "./TransitionLink";
 
 const GameTerminal = dynamic(
     () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
@@ -169,10 +181,25 @@ export function ChallengesView({ id }: { id: string }) {
 
     const { curProfile } = useGlobalVariableContext()
 
+    const [gameStatus, setGameStatus] = useState("")
+    const [beforeGameTime, setBeforeGameTime] = useState("")
+    
+    const checkInterStarted = useRef(false)
+
+    const [availableTeams, setAvailableTeams] = useState<TeamInfoModel[]>([])
+    const [preJoinDataPrepared, setPreJoinDataPrepared] = useState(false)
+
+    const [curChoosedTeam, setCurChoosedTeam] = useState<number>(-1)
+
+    let checkGameStatusIter: NodeJS.Timeout;
+
+    const gameID = parseInt(id, 10)
+
+
     // 更新当前选中题目信息, 根据 Websocket 接收到的信息被动调用
     const updateChallenge = () => {
         if (!prevChallenge.current.title) return
-        api.game.gameGetChallenge(parseInt(id, 10), prevChallenge.current.id || 0).then((response) => {
+        api.game.gameGetChallenge(gameID, prevChallenge.current.id || 0).then((response) => {
             setCurChallenge(response.data || {})
         }).catch((error: AxiosError) => { })
     }
@@ -216,100 +243,199 @@ export function ChallengesView({ id }: { id: string }) {
     }, [curChallenge]);
 
     useEffect(() => {
-        // 获取账户信息
-        // api.account.accountProfile().then((res) => {
-        //     setAvatarURL(res.data.avatar || "")
-        //     setUserName(res.data.userName || "")
-        // })
-
-        // 更新时间迭代器
-        let timeIter: any = null;
-
         // 获取比赛信息以及剩余时间
-        api.game.gameGame(parseInt(id, 10)).then((res) => {
+        api.game.gameGame(gameID).then((res) => {
             setGameInfo(res.data)
 
-            const totalTime = Math.floor(dayjs(res.data.end).diff(dayjs(res.data.start)) / 1000)
+            // 第一步 检查是否报名
+            if (res.data.status == ParticipationStatus.Unsubmitted) {
+                // 未报名
+                setGameStatus("unRegistered")
+            } else if (res.data.status == ParticipationStatus.Pending) {
+                // 审核中
+                setGameStatus("waitForProcess")
+            } else if (res.data.status == ParticipationStatus.Accepted) {
+                if (dayjs() < dayjs(res.data.start)) {
+                    // 等待比赛开始
+                    setGameStatus("pending")
+                } else if (dayjs() < dayjs(res.data.end)) {
+                    // 比赛进行中
+                    setGameStatus("running")
+                } else if (dayjs() > dayjs(res.data.end)) {
+                    if (!res.data.practiceMode) {
+                        setGameStatus("ended")
+                    } else {
+                        // 练习模式
+                        setGameStatus("practiceMode")
+                    }
+                }
+            } else if (res.data.status == ParticipationStatus.Suspended) {
+                // 禁赛
+                setGameStatus("banned")
+            }
+        }).catch((error: AxiosError) => {
+            if (error.response?.status) {
+                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
+                if (error.response.status == 401) {
+                    setGameStatus("unLogin")
+                } else if (error.response.status == 404) {
+                    setGameStatus("noSuchGame")
+                }
+            }
+        })
+    }, [id])
 
-            timeIter = setInterval(() => {
-                const curLeft = Math.floor(dayjs(res.data.end).diff(dayjs()) / 1000)
+    useEffect(() => {
 
-                setRemainTime(formatDuration(curLeft))
-                setRemainTimePercent(Math.floor((curLeft / totalTime) * 100))
+        // 根据比赛状态处理事件
+        if (gameStatus == "running" || gameStatus == "practiceMode") {
+
+            const totalTime = Math.floor(dayjs(gameInfo.end).diff(dayjs(gameInfo.start)) / 1000)
+            let timeIter: NodeJS.Timeout;
+
+            // 比赛时间倒计时
+            if (gameStatus != "practiceMode") {
+                timeIter = setInterval(() => {
+                    const curLeft = Math.floor(dayjs(gameInfo.end).diff(dayjs()) / 1000)
+            
+                    setRemainTime(formatDuration(curLeft))
+                    setRemainTimePercent(Math.floor((curLeft / totalTime) * 100))
+                }, 500)
+            } else {
+                setRemainTime("Ended. Practice Mode")
+                setRemainTimePercent(0)
+            }
+
+            setTimeout(() => setLoadingVisibility(false), 200)
+
+            // 获取比赛通知
+            api.game.gameNotices(gameID).then((res) => {
+                const filtedNotices: GameNotice[] = []
+                let curIndex = 0
+
+                res.data.sort((a, b) => b.time - a.time)
+
+                res.data.forEach((obj) => {
+                    if (obj.type == NoticeType.Normal) filtedNotices[curIndex++] = obj
+                })
+
+                noticesRef.current = filtedNotices
+                setNotices(filtedNotices)
+            })
+
+            // Websocket
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl(`/hub/user?game=${id}`)
+                .withHubProtocol(new signalR.JsonHubProtocol())
+                .withAutomaticReconnect()
+                .configureLogging(signalR.LogLevel.None)
+                .build()
+
+            connection.serverTimeoutInMilliseconds = 60 * 1000 * 60 * 2
+
+            connection.on('ReceivedGameNotice', (message: GameNotice) => {
+                console.log(message)
+
+                if (message.type == NoticeType.NewHint && message.values[0] == prevChallenge.current.title) {
+                    // 防止并发
+                    setTimeout(updateChallenge, randomInt(200, 600))
+                }
+
+                if (message.type == NoticeType.Normal) {
+
+                    const newNotices: GameNotice[] = []
+
+                    newNotices[0] = message
+                    noticesRef.current.forEach((ele, index) => {
+                        newNotices[index + 1] = ele
+                    })
+
+                    noticesRef.current = newNotices
+                    setNotices(newNotices)
+
+                    toastNewNotice({ title: message.values[0], time: message.time, openNotices: setNoticeOpened })
+                }
+            })
+
+            connection.start().catch((error) => {
+                console.error(error)
+            })
+
+            return () => {
+                if (connection) {
+                     connection.stop().catch((err) => {
+                         console.error(err)
+                     })
+                }
+
+                if (timeIter) clearInterval(timeIter)
+            }
+
+        } else if (gameStatus == "unRegistered") {
+            // 未注册 先获取队伍信息
+            api.team.teamGetTeamsInfo().then((res) => {
+                setAvailableTeams(res.data)
+
+                // 设置加载遮罩状态
+                setPreJoinDataPrepared(true)
+                setTimeout(() => setLoadingVisibility(false), 200)
+            }).catch((error: AxiosError) => {
+                if (error.response?.status) {
+                    if (error.response.status == 401) {
+                        setGameStatus("unLogin")
+                    }
+                }
+            })
+        } else if (gameStatus == "waitForProcess") {
+            // 启动一个监听进程
+            const refershTeamStatusInter = setInterval(() => {
+                api.game.gameGame(gameID).then((res) => {
+                    if (res.data.status == ParticipationStatus.Accepted) {
+                        if (dayjs() < dayjs(res.data.start)) {
+                            // 等待比赛开始
+                            setGameStatus("pending")
+                        } else if (dayjs() < dayjs(res.data.end)) {
+                            // 比赛进行中
+                            setGameStatus("running")
+                        } else if (dayjs() > dayjs(res.data.end)) {
+                            setGameStatus("ended")
+                        }
+                        // 结束监听
+                        clearInterval(refershTeamStatusInter)
+                    }
+                })
+            }, 2000)
+
+            setTimeout(() => setLoadingVisibility(false), 200)
+        } else if (gameStatus == "banned" || gameStatus == "ended" || gameStatus == "noSuchGame" || gameStatus == "unLogin") {
+            setTimeout(() => setLoadingVisibility(false), 200)
+        } else if (gameStatus == "pending") {
+            const penddingTimeInter = setInterval(() => {
+                // 如果当前时间大于开始时间
+                if (dayjs() > dayjs(gameInfo.start)) {
+                    clearInterval(penddingTimeInter)
+                    const checkGameStartedInter = setInterval(() => {
+                        api.game.gameChallengesWithTeamInfo(gameID).then((res) => {
+                            clearInterval(checkGameStartedInter)
+
+                            // 防卡
+                            setTimeout(() => {
+                                setGameStatus("running")
+                            }, randomInt(1000, 2000))
+                        }).catch((error: AxiosError) => {})
+                    }, 2000)
+                } else {
+                    setBeforeGameTime(formatDuration(Math.floor(dayjs(gameInfo.start).diff(dayjs()) / 1000)))
+                }
             }, 500)
 
             setTimeout(() => setLoadingVisibility(false), 500)
-        })
 
-        // 获取比赛通知
-        api.game.gameNotices(parseInt(id, 10)).then((res) => {
-            const filtedNotices: GameNotice[] = []
-            let curIndex = 0
-
-            res.data.sort((a, b) => b.time - a.time)
-
-            res.data.forEach((obj) => {
-                if (obj.type == NoticeType.Normal) filtedNotices[curIndex++] = obj
-            })
-
-            noticesRef.current = filtedNotices
-            setNotices(filtedNotices)
-        })
-
-        // Websocket
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl(`/hub/user?game=${id}`)
-            .withHubProtocol(new signalR.JsonHubProtocol())
-            .withAutomaticReconnect()
-            .configureLogging(signalR.LogLevel.None)
-            .build()
-
-        connection.serverTimeoutInMilliseconds = 60 * 1000 * 60 * 2
-
-        connection.on('ReceivedGameNotice', (message: GameNotice) => {
-            console.log(message)
-
-            if (message.type == NoticeType.NewHint && message.values[0] == prevChallenge.current.title) {
-                // 防止并发
-                setTimeout(updateChallenge, randomInt(200, 600))
+            return () => {
+                if (penddingTimeInter) clearInterval(penddingTimeInter)
             }
-
-            if (message.type == NoticeType.Normal) {
-
-                const newNotices: GameNotice[] = []
-
-                newNotices[0] = message
-                noticesRef.current.forEach((ele, index) => {
-                    newNotices[index + 1] = ele
-                })
-
-                noticesRef.current = newNotices
-                setNotices(newNotices)
-
-                toastNewNotice({ title: message.values[0], time: message.time, openNotices: setNoticeOpened })
-            }
-        })
-
-        connection.start().catch((error) => {
-            console.error(error)
-        })
-
-        // 测试代码
-        // setTimeout(() => {
-        //     setChallengeSolvedList((prev) => ({
-        //         ...prev,
-        //         [105]: true
-        //     }))
-        // }, 8000)
-
-        return () => {
-            if (timeIter) clearInterval(timeIter)
-
-            connection.stop().catch((err) => {
-                console.error(err)
-            })
         }
-    }, [id])
+    }, [gameStatus])
 
     useEffect(() => {
         setAvatarURL(curProfile.avatar || "#")
@@ -408,19 +534,164 @@ export function ChallengesView({ id }: { id: string }) {
             }
         }
     };
-
-    const testFunction = () => {
-        setScoreBoardVisible(!scoreBoardVisible)
-    }
     
+    const submitTeam = () => {
+        if (curChoosedTeam != -1) {
+            api.game.gameJoinGame(gameID, {
+                teamId: curChoosedTeam
+            }).then((res) => {
+                // 更新队伍信息
+                api.game.gameGame(gameID).then((res) => {
+                    setGameInfo(res.data)
+                    toast.success("Submitted!", { position: "top-center" })
+
+                    setGameStatus("waitForProcess")
+                }).catch((error: AxiosError) => {
+                    if (error.response?.status) {
+                        const errorMessage: ErrorMessage = error.response.data as ErrorMessage
+                        toast.error(errorMessage.title, { position: "top-center" })
+                    } else {
+                        toast.error("Unknow error", { position: "top-center" })
+                    }
+                })
+            })
+        } else {
+            toast.error("Choose a team first!", { position: "top-center" })
+        }
+    }
 
     return (
         <>
             <GameSwitchHover animation={false} />
             <LoadingPage visible={loadingVisiblity} />
+
+            { (gameStatus == "pending" || gameStatus == "ended") && (
+                <div className="absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]">
+                    <div className="flex flex-col text-3xl items-center gap-4 select-none">
+                        <Info size={80} />
+                        { gameStatus == "ended" ? (<span>比赛已结束</span>) : (<span>比赛未开始</span>) }
+                        { gameStatus == "pending" && (<span>距离比赛开始还有 { beforeGameTime }</span>) }
+                        <div className="flex">
+                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                                <Button>返回主页</Button>
+                            </TransitionLink>
+                        </div>
+                    </div>
+                </div>
+            ) }
+
+            { gameStatus == "banned" && (
+                <motion.div 
+                    className={`absolute top-0 left-0 w-screen h-screen flex items-center justify-center z-[40]`}
+                    initial={{
+                        backgroundColor: "rgb(239 68 68 / 0)",
+                        backdropFilter: "blur(0px)"
+                    }}
+                    animate={{
+                        backgroundColor: "rgb(239 68 68 / 0.9)",
+                        backdropFilter: "blur(12px)"
+                    }}
+                    transition={{
+                        duration: 0.5
+                    }}
+                >
+                    <div className="flex flex-col items-center gap-4 select-none">
+                        <div className="flex flex-col items-center gap-6 text-white">
+                            <TriangleAlert size={120} />
+                            <span className="text-3xl">你已被禁赛，详细请联系管理员</span>
+                        </div>
+                        <div className="flex gap-4 mt-6">
+                            <Button variant="secondary"
+                                onClick={() => setScoreBoardVisible(true)}
+                            ><Presentation />排行榜</Button>
+                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                                <Button variant="secondary">返回主页</Button>
+                            </TransitionLink>
+                        </div>
+                    </div>
+                </motion.div>
+            ) }
+
+            { gameStatus == "unRegistered" && preJoinDataPrepared && ( 
+                <div className="absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]">
+                    <div className="flex flex-col items-center gap-4 select-none">
+                        <Info size={80} />
+                        <span className="text-3xl">尚未参赛，请先报名</span>
+                        <div className="flex w-full mb-[-12px]">
+                            <span>Team name:</span>
+                        </div>
+                        <Select onValueChange={(val) => setCurChoosedTeam(parseInt(val, 10))}>
+                            <SelectTrigger className="w-[280px] bg-background">
+                                <SelectValue placeholder="Select a team" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    { availableTeams.map((e, index) => (
+                                        <SelectItem value={`${e.id}`} key={index}>{ e.name }</SelectItem>
+                                    )) }
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                        <div className="flex gap-4">
+                            <Button onClick={submitTeam}>报名</Button>
+                            <Button variant="outline"
+                                onClick={() => setScoreBoardVisible(true)}
+                            ><Presentation />排行榜</Button>
+                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                                <Button variant="outline">返回主页</Button>
+                            </TransitionLink>
+                        </div>
+                    </div>
+                </div>
+            ) }
+
+            { gameStatus == "waitForProcess" && (
+                <div 
+                    className={`absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]`}
+                >
+                    <div className="flex flex-col items-center gap-4 select-none">
+                        <Info size={80} />
+                        <span className="text-3xl">已报名，请等待审核通过</span>
+                    </div>
+                </div>
+            ) }
+
+            { gameStatus == "unLogin" && (
+                <div 
+                    className={`absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]`}
+                >
+                    <div className="flex flex-col items-center gap-4 select-none">
+                        <ShieldX size={80} />
+                        <span className="text-3xl">请先登录</span>
+                        <div className="flex gap-6">
+                            <Button variant="outline"
+                                onClick={() => setScoreBoardVisible(true)}
+                            ><Presentation />排行榜</Button>
+                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                                <Button variant="outline">返回主页</Button>
+                            </TransitionLink>
+                        </div>
+                    </div>
+                </div>
+            ) }
+
+            { gameStatus == "noSuchGame" && (
+                <div 
+                    className={`absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]`}
+                >
+                    <div className="flex flex-col items-center gap-4 select-none">
+                        <Info size={80} />
+                        <span className="text-3xl">没有这场比赛</span>
+                        <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                            <Button variant="outline">返回主页</Button>
+                        </TransitionLink>
+                    </div>
+                </div>
+            ) }
+
             {/* 下载动画 */}
             <DownloadBar key={"download-panel"} progress={attachDownloadProgress} downloadName={downloadName}></DownloadBar>
-            <ScoreBoardPage gmid={parseInt(id, 10)} visible={scoreBoardVisible} setVisible={setScoreBoardVisible}/>
+            <ScoreBoardPage gmid={gameID} visible={scoreBoardVisible} setVisible={setScoreBoardVisible} gameStatus={gameStatus}/>
             {/* 重定向警告页 */}
             <RedirectNotice redirectURL={redirectURL} setRedirectURL={setRedirectURL} />
             {/* 公告页 */}
@@ -439,6 +710,8 @@ export function ChallengesView({ id }: { id: string }) {
                         setChallenges={setChallenges}
                         challengeSolvedList={challengeSolvedList}
                         setChallengeSolvedList={setChallengeSolvedList}
+                        gameStatus={gameStatus}
+                        setGameStatus={setGameStatus}
                     />
                 </div>
                 <main className="flex flex-col top-0 left-0 h-screen w-screen overflow-hidden backdrop-blur-sm relative">

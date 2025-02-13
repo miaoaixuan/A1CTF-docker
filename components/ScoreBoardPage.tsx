@@ -21,7 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Skeleton } from './ui/skeleton';
 import { MacScrollbar } from 'mac-scrollbar';
 
-export default function ScoreBoardPage({ gmid, visible, setVisible } : { gmid: number, visible: boolean, setVisible: Dispatch<SetStateAction<boolean>> }) {
+export default function ScoreBoardPage({ gmid, visible, setVisible, gameStatus } : { gmid: number, visible: boolean, setVisible: Dispatch<SetStateAction<boolean>>, gameStatus: string }) {
 
 
     const [ gameInfo, setGameInfo ] = useState<DetailedGameInfoModel>()
@@ -164,7 +164,7 @@ export default function ScoreBoardPage({ gmid, visible, setVisible } : { gmid: n
             })
         }
 
-        updateScoreBoard()
+        setTimeout(() => updateScoreBoard(), 1000)
         const scoreBoardInter = setInterval(() => {
             if (visibleRef.current) updateScoreBoard()
         }, randomInt(4000, 5000))
@@ -179,8 +179,10 @@ export default function ScoreBoardPage({ gmid, visible, setVisible } : { gmid: n
     }, [visible])
 
     useEffect(() => {
-        api.game.gameGame(gmid).then((res) => { setGameInfo(res.data) })
-    }, [])
+        if (gameStatus != "unLogin" && gameStatus != "") {
+            api.game.gameGame(gmid).then((res) => { setGameInfo(res.data) })
+        }
+    }, [gameStatus])
 
     useEffect(() => {
 
@@ -422,7 +424,7 @@ export default function ScoreBoardPage({ gmid, visible, setVisible } : { gmid: n
                             }}
                         >
                             <Tooltip id="challengeTooltip2" opacity={0.9} className='z-[200]'/>
-                            <MacScrollbar className='w-full h-full overflow-y-auto pr-3 lg:pr-0 lg:overflow-hidden' suppressScrollX>
+                            <MacScrollbar className='w-full h-full overflow-y-auto pr-3 lg:pr-0 lg:overflow-hidden' skin={theme == "light" ? "light" : "dark"} suppressScrollX>
                                 <div className='flex flex-row h-full w-full gap-4'>
                                     <div className='flex flex-col w-full h-full gap-1 lg:basis-1/2 lg:overflow-hidden'>
                                         <div className='flex items-center gap-4 mb-3'>
@@ -494,7 +496,7 @@ export default function ScoreBoardPage({ gmid, visible, setVisible } : { gmid: n
                                         </div>
                                     </div>
                                     <div className='h-full basis-1/2 overflow-hidden hidden lg:flex'>
-                                        <MacScrollbar className='flex flex-col w-full overflow-hidden pr-5'>
+                                        <MacScrollbar className='flex flex-col w-full overflow-hidden pr-5' skin={theme == "light" ? "light" : "dark"}>
                                             <div className={`flex h-9 flex-none items-center border-b-2 w-full`}>
                                                 <div className='w-[150px] flex-shrink-0 flex justify-center border-r-2 h-full items-center'>
                                                     <span>Solved Time</span>

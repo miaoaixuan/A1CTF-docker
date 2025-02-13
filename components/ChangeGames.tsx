@@ -163,7 +163,7 @@ export function ChangeGames() {
         const curGame = curGames![curIndex]
 
         // 预下载海报，防闪
-        fetch(curGame.poster as string).then(res => res.blob())
+        fetch(curGame.poster || "/images/p2g7wm.jpg").then(res => res.blob())
         .then(blob => {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -333,7 +333,7 @@ export function ChangeGames() {
                                                     </div>
                                                     <Image
                                                         className="select-none"
-                                                        src={game.poster || "#"}
+                                                        src={game.poster || "/images/p2g7wm.jpg"}
                                                         alt="Image"
                                                         fill={true}
                                                         objectFit="cover"
@@ -401,7 +401,7 @@ export function ChangeGames() {
                                 </div>
                             </div>
                             <Image
-                                src={curGames[curIndex].poster || "#"}
+                                src={curGames[curIndex].poster || "/images/p2g7wm.jpg"}
                                 alt="Image"
                                 layout="responsive"
                                 width={1920}

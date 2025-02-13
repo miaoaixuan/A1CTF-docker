@@ -68,7 +68,7 @@ export default async function RootLayout({
                         defaultTheme="system"
                         enableSystem
                     >
-                        <DelayedSuspense>
+                        {/* <DelayedSuspense> */}
                             <TransitionProvider>
                                 <TransitionLayout>
                                     <GlobalVariableProvider>
@@ -79,7 +79,7 @@ export default async function RootLayout({
                                     <ClientToaster/>
                                 </TransitionLayout>
                             </TransitionProvider>
-                        </DelayedSuspense>
+                        {/* </DelayedSuspense> */}
                     </ThemeProvider>
                 </NextIntlClientProvider>
             </body>

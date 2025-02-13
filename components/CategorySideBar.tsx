@@ -15,7 +15,7 @@ import { Button } from "./ui/button"
 
 import { ChallengeCard } from "./ChallengeCard";
 import { SWRConfiguration } from 'swr'
-import api, { ChallengeInfo, ChallengeDetailModel, GameDetailModel } from '@/utils/GZApi'
+import api, { ChallengeInfo, ChallengeDetailModel, GameDetailModel, ErrorMessage, ParticipationStatus } from '@/utils/GZApi'
 
 import { AxiosError } from 'axios';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
@@ -26,13 +26,16 @@ import { useTheme } from "next-themes";
 import SafeComponent from "./SafeComponent";
 
 import { randomInt } from "mathjs";
+import { toast } from "sonner";
 
-export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGameDetail, lng, resizeTrigger, setPageSwitching, challenges, setChallenges, challengeSolvedList, setChallengeSolvedList } : { 
+export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGameDetail, lng, gameStatus, setGameStatus, resizeTrigger, setPageSwitching, challenges, setChallenges, challengeSolvedList, setChallengeSolvedList } : { 
     gameid: string,
     curChallenge: ChallengeDetailModel,
     setCurChallenge: Dispatch<SetStateAction<ChallengeDetailModel>>,
     setGameDetail: Dispatch<SetStateAction<GameDetailModel>>,
     lng: string,
+    gameStatus: string,
+    setGameStatus: Dispatch<SetStateAction<string>>,
     resizeTrigger: Dispatch<SetStateAction<number>>,
     setPageSwitching: Dispatch<SetStateAction<boolean>>,
     challenges: Record<string, ChallengeInfo[]>,
@@ -56,9 +59,11 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGame
     // 懒加载, 当前题目卡片是否在视窗内
     const observerRef = useRef<IntersectionObserver | null>(null);
     const [visibleItems, setVisibleItems] = useState<Record<string, Record<string, boolean>>>({});
+
+    let updateChallengeInter: NodeJS.Timeout;
     
     // 更新题目列表
-    const updateChalenges = () => {
+    const updateChalenges = (first?: boolean) => {
 
         api.game.gameChallengesWithTeamInfo(gameID).then((response) => {
 
@@ -130,18 +135,36 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGame
 
 
         }).catch((error: AxiosError) => {
+            if (error.response?.status == 400) {
+                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
+                if (errorMessage.title == "您的参赛申请尚未通过或被禁赛") {
+                    // 停止更新
+                    clearInterval(updateChallengeInter)
+
+                    api.game.gameGame(gameID).then((res) => {
+                        if (res.data.status == ParticipationStatus.Suspended) {
+                            setGameStatus("banned")
+                        } else {
+                            toast.error("Unknow error!", { position: "top-center" })
+                        }
+                    })
+                }
+            }
         })
     }
 
     useEffect(() => {
-        updateChalenges()
 
-        const iter = setInterval(() => {
-            updateChalenges()
-        }, randomInt(4000, 5000))
+        if (gameStatus == "running" || gameStatus == "practiceMode") {
+            updateChalenges(true)
+
+            updateChallengeInter = setInterval(() => {
+                updateChalenges()
+            }, randomInt(4000, 5000))
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        return () => { clearInterval(iter) }
-    }, [gameID])
+        return () => { if (updateChallengeInter) clearInterval(updateChallengeInter) }
+    }, [gameStatus])
 
 
     useEffect(() => {
