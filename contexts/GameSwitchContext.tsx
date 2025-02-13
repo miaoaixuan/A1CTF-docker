@@ -1,7 +1,7 @@
 "use client";
 
 import { BasicGameInfoModel } from "@/utils/GZApi";
-import React, { createContext, Dispatch, SetStateAction, useContext, useState } from "react";
+import React, { createContext, Dispatch, SetStateAction, useContext, useRef, useState } from "react";
 
 interface TransitionContextType {
     isChangingGame: boolean;

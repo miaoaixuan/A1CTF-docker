@@ -3,7 +3,7 @@
 import { Award, Flag, Medal, Trophy } from "lucide-react";
 import { MacScrollbar } from "mac-scrollbar";
 import { useTheme } from "next-themes";
-import { useEffect, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import { Button } from "./ui/button";
 import api, { ChallengeInfo, ScoreboardItem, SubmissionType, ScoreboardModel } from "@/utils/GZApi";
 import dayjs from "dayjs";
@@ -11,7 +11,7 @@ import dayjs from "dayjs";
 import ReactDOMServer from 'react-dom/server';
 import Link from "next/link";
 
-export function ScoreTable ({ scoreBoardModel }: { scoreBoardModel: ScoreboardModel }) {
+export function ScoreTable ({ scoreBoardModel, setShowUserDetail }: { scoreBoardModel: ScoreboardModel, setShowUserDetail: Dispatch<SetStateAction<ScoreboardItem>> }) {
 
     const tableRef = useRef<HTMLDivElement | null>(null)
     const [pageLines, setPageLines] = useState(10)
@@ -166,7 +166,7 @@ export function ScoreTable ({ scoreBoardModel }: { scoreBoardModel: ScoreboardMo
                                     <div className="flex-1 overflow-hidden select-none">
                                         <a className="text-nowrap text-ellipsis overflow-hidden hover:underline focus:underline" data-tooltip-id="challengeTooltip" data-tooltip-html={ `<div class='text-sm'>${item.name} - ${ item.score } pts</div>` } 
                                             onClick={() => {
-                                                
+                                                setShowUserDetail(item || {})
                                             }}
                                         >{ item.name }</a>
                                     </div>

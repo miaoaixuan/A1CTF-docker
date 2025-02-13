@@ -334,6 +334,7 @@ export function GameTerminal({ gameid, challenge, pSize, userName, setChallengeS
 
                     if (data.startsWith('\x1b')) return
 
+                    // 只允许 Ascii 字符
                     data = data.replace(/[^ -~\t\n\r]/g, '')
 
                     const length = getStrLenght(data)
@@ -356,7 +357,7 @@ export function GameTerminal({ gameid, challenge, pSize, userName, setChallengeS
             fitAddon.dispose();
             webLink.dispose();
         };
-    }, [challenge]); // 当 theme 改变时执行
+    }, [challenge]); // 当 challenge 改变时执行
 
     useEffect(() => {
         if (terminal) {

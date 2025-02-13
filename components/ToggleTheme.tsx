@@ -18,9 +18,12 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link";
 import { usePathname, useSearchParams } from 'next/navigation'
 
-import {useTranslations} from 'next-intl';
+import {useLocale, useTranslations} from 'next-intl';
 
-const ThemeSwitcher = ({ lng } : { lng: string }) => {
+const ThemeSwitcher = () => {
+
+    const lng = useLocale();
+
     const [mounted, setMounted] = useState(false)
     const { theme, setTheme } = useTheme()
     const t = useTranslations();

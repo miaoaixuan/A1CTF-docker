@@ -8,12 +8,10 @@ import { MainPageAnimation } from "@/components/MainPageAnimation";
 import SafeComponent from "@/components/SafeComponent";
 
 export default async function Home({ params }: { params: Promise<{ lng: string }>}) {
-    
-    const { lng } = await params;
 
     return (
         <div className="p-0 h-screen flex flex-col">
-            <PageHeader lng={ lng }/>
+            <PageHeader />
             <main className="flex flex-1 overflow-hidden">
                 <SafeComponent animation={false}>
                     <MainPageAnimation />

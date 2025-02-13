@@ -11,6 +11,7 @@ export function ClientToaster() {
         <Toaster
             theme={ theme == "light" ? "light" : "dark" }
             style={{ backgroundColor: "hsl(var(--background))" }}
+            richColors
             visibleToasts={3}
             closeButton={true}
         />

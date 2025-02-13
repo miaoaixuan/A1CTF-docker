@@ -58,7 +58,8 @@ import { useGameSwitchContext } from "@/contexts/GameSwitchContext";
 import GameSwitchHover from "./GameSwitchHover";
 import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
 import ScoreBoardPage from "./ScoreBoardPage";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { randomInt } from "mathjs";
 
 const GameTerminal = dynamic(
     () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
@@ -93,9 +94,11 @@ const formatDuration = (duration: number) => {
     }
 }
 
-export function ChallengesView({ lng, id }: { lng: string, id: string }) {
+export function ChallengesView({ id }: { id: string }) {
 
     const t = useTranslations('challenge_view');
+
+    const lng = useLocale();
 
     // 所有题目
     const [challenges, setChallenges] = useState<Record<string, ChallengeInfo[]>>({})
@@ -267,7 +270,8 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
             console.log(message)
 
             if (message.type == NoticeType.NewHint && message.values[0] == prevChallenge.current.title) {
-                updateChallenge()
+                // 防止并发
+                setTimeout(updateChallenge, randomInt(200, 600))
             }
 
             if (message.type == NoticeType.Normal) {
@@ -498,7 +502,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                 </div>
                             </Button>
                             {/* <Button size="icon" variant="outline" onClick={testFunction}><FlaskConical /></Button> */}
-                            <ToggleTheme lng={lng} />
+                            <ToggleTheme />
                             <Avatar className="select-none">
                                 <AvatarImage src={avatarURL} alt="@shadcn" />
                                 <AvatarFallback><Skeleton className="h-12 w-12 rounded-full" /></AvatarFallback>
@@ -566,31 +570,31 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                             <div className="flex h-full">
                                 <SafeComponent>
                                     <MacScrollbar
-                                        className="pl-20 pr-20 pt-5 pb-5 w-full flex flex-col"
+                                        className="pl-5 pr-5 lg:pl-20 lg:pr-20 pt-5 pb-5 w-full flex flex-col"
                                         skin={theme === "dark" ? "dark" : "light"}
                                     >
                                         {curChallenge.title && (
-                                            <div className="w-full border-b-[1px] h-[50px] p-2 transition-[border-color] duration-300 flex items-center">
-                                                <div className="flex items-center gap-2 transition-colors duration-300">
-                                                    <Info size={21} />
-                                                    <span className="text-lg">{curChallenge.title}</span>
+                                            <div className="w-full border-b-[1px] h-[50px] p-2 transition-[border-color] duration-300 flex items-center gap-1">
+                                                <div className="flex items-center gap-2 transition-colors duration-300 overflow-hidden">
+                                                    <Info size={21} className="flex-none" />
+                                                    <span className="text-lg overflow-hidden text-ellipsis text-nowrap">{curChallenge.title}</span>
                                                 </div>
                                                 <div className="flex-1" />
                                                 <div className="flex justify-end gap-4 transition-colors duration-300">
                                                     { challengeSolvedList[curChallenge.id || 0] ? (
                                                         <div className="flex items-center gap-2 text-purple-600">
-                                                            <ScanHeart />
-                                                            <span className="text-md font-bold">{curChallengeDetail.current.score} pts</span>
+                                                            <ScanHeart className="flex-none" />
+                                                            <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current.score} pts</span>
                                                         </div>
                                                     ) : (
                                                         <div className="flex items-center gap-2 text-amber-600">
-                                                            <Flag />
-                                                            <span className="text-md font-bold">{curChallengeDetail.current.score} pts</span>
+                                                            <Flag className="flex-none" />
+                                                            <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current.score} pts</span>
                                                         </div>
                                                     ) }
                                                     <div className="flex items-center gap-2 text-green-600">
                                                         <CircleCheckBig />
-                                                        <span className="text-md font-bold">{curChallengeDetail.current.solved} solves</span>
+                                                        <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current.solved} solves</span>
                                                     </div>
                                                 </div>
                                             </div>

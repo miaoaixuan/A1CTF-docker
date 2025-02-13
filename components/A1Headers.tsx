@@ -17,7 +17,7 @@ import {
 
 import { House, Flag, UsersRound, Info, NotebookText, KeyRound } from 'lucide-react'
 
-import {useTranslations} from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { TransitionLink } from "./TransitionLink";
 
 // import { cookies } from "next/headers";
@@ -31,7 +31,9 @@ import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
 import { Skeleton } from "./ui/skeleton";
 import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
 
-const PageHeader = ({ lng } : { lng: string }) => {
+const PageHeader = () => {
+
+    const lng = useLocale();
 
     const t = useTranslations();
     const [isOpen, setIsOpen] = useState(false);
@@ -102,7 +104,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
                             </nav>
                         </div>
                         <div className="flex flex-1 items-center justify-between gap-3 md:justify-end">
-                            <ThemeSwitcher lng={lng} />
+                            <ThemeSwitcher />
                             { cookies.uid ? (
                                 <>
                                     <DropdownMenu>
@@ -151,7 +153,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
                             </TransitionLink>
                         </div>
                         <div className="flex justify-end w-full">
-                            <ThemeSwitcher lng={lng} />
+                            <ThemeSwitcher />
                             <div className="mr-2"></div>
                             <DropdownMenu onOpenChange={(open) => setIsOpen(open)}>
                                 <DropdownMenuTrigger asChild>

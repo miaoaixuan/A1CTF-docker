@@ -37,19 +37,19 @@ export function Mdx({ source }: { source: string }) {
                           </SyntaxHighlighter>)
                 },
                 h1: ({ node, ...props }) => (
-                    <h1 className="text-3xl font-bold transition-colors duration-300" {...props} />
+                    <h1 className="text-3xl font-bold mt-6 mb-4 transition-colors duration-300" {...props} />
                 ),
                 h2: ({ node, ...props }) => (
-                    <h2 className="text-2xl font-semibold transition-colors duration-300" {...props} />
+                    <h2 className="text-2xl font-semibold mt-5 mb-3 transition-colors duration-300" {...props} />
                 ),
                 h3: ({ node, ...props }) => (
-                    <h3 className="text-xl font-medium transition-colors duration-300" {...props} />
+                    <h3 className="text-xl font-medium mt-4 mb-3 transition-colors duration-300" {...props} />
                 ),
                 h4: ({ node, ...props }) => (
-                    <h4 className="text-lg font-medium transition-colors duration-300" {...props} />
+                    <h4 className="text-lg font-medium mt-4 mb-2 transition-colors duration-300" {...props} />
                 ),
                 h5: ({ node, ...props }) => (
-                    <h5 className="text-base font-normal transition-colors duration-300" {...props} />
+                    <h5 className="text-base font-normal mt-3 mb-2 transition-colors duration-300" {...props} />
                 ),
                 p: ({ node, ...props }) => (
                     <p className="text-base font-normal transition-colors duration-300" {...props} />
@@ -62,6 +62,33 @@ export function Mdx({ source }: { source: string }) {
                         rel="noopener noreferrer"
                         {...props}
                     />
+                ),
+                table: ({ node, ...props }) => (
+                    <div className="w-full overflow-x-auto">
+                        <table className="w-full border-collapse border-t border-b transition-[border-color,background] duration-300">
+                            {props.children}
+                        </table>
+                    </div>
+                ),
+                thead: ({ node, ...props }) => (
+                    <thead className="bg-gray-100 dark:bg-gray-800">
+                        {props.children}
+                    </thead>
+                ),
+                tr: ({ node, ...props }) => (
+                    <tr className="border-t border-b transition-[border-color,background] duration-300">
+                        {props.children}
+                    </tr>
+                ),
+                th: ({ node, ...props }) => (
+                    <th className="px-4 py-2 text-left font-semibold border-none">
+                        {props.children}
+                    </th>
+                ),
+                td: ({ node, ...props }) => (
+                    <td className="px-4 py-2 border-none">
+                        {props.children}
+                    </td>
                 ),
             }}
             skipHtml={false}

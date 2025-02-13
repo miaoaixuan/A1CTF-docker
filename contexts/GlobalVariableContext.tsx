@@ -23,7 +23,7 @@ export const GlobalVariableProvider: React.FC<{ children: React.ReactNode }> = (
 
     const [cookies, setCookie, removeCookie] = useCookies(["uid"])
     const [curProfile, setCurProfile] = useState<ProfileUserInfoModel>({})
-
+    
     useEffect(() => {
         if (!curProfile.userId) {
             api.account.accountProfile().then((res) => {

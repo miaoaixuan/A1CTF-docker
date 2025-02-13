@@ -13,11 +13,6 @@ import { ThemeProvider, useTheme } from "next-themes";
 import { TransitionProvider } from '@/contexts/TransitionContext'
 import { TransitionLayout } from '@/components/TransitionLayout'
 
-import { dir } from 'i18next'
-import { LoadingPage } from "@/components/LoadingPage";
-
-import { Toaster } from 'sonner'
-
 // i18n settings
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';

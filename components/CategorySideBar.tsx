@@ -25,6 +25,8 @@ import { MacScrollbar } from 'mac-scrollbar';
 import { useTheme } from "next-themes";
 import SafeComponent from "./SafeComponent";
 
+import { randomInt } from "mathjs";
+
 export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGameDetail, lng, resizeTrigger, setPageSwitching, challenges, setChallenges, challengeSolvedList, setChallengeSolvedList } : { 
     gameid: string,
     curChallenge: ChallengeDetailModel,
@@ -136,7 +138,7 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGame
 
         const iter = setInterval(() => {
             updateChalenges()
-        }, 5000)
+        }, randomInt(4000, 5000))
         // eslint-disable-next-line react-hooks/exhaustive-deps
         return () => { clearInterval(iter) }
     }, [gameID])
