@@ -24,6 +24,8 @@ import { ClientToaster } from '@/components/ClientToaster';
 import { GameSwitchProvider } from '@/contexts/GameSwitchContext';
 import { CookiesProvider } from 'react-cookie';
 import { GlobalVariableProvider } from '@/contexts/GlobalVariableContext';
+import { Tooltip } from 'react-tooltip';
+import SafeComponent from '@/components/SafeComponent';
 
 // fonts
 
