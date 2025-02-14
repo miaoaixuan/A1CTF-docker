@@ -54,7 +54,7 @@ interface ErrorMessage {
 
 export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamInfoModel, children: React.ReactNode }> = ({ updateTeam, teamModel, children }) => {
 
-    let form = useForm<z.infer<typeof formSchema>>({
+    const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             teamName: teamModel.name || "",
@@ -208,7 +208,7 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
                                                 <Input placeholder="a1team" disabled={!isLeader()} {...field} />
                                             </FormControl>
                                             <FormDescription>
-                                                This is your team's public display name.
+                                                This is your team&apos;s public display name.
                                             </FormDescription>
                                             <FormMessage />
                                         </FormItem>
@@ -259,7 +259,7 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
                                         <Textarea placeholder="We can win!" disabled={!isLeader()} {...field} />
                                     </FormControl>
                                     <FormDescription>
-                                        This is your team's public display slogan.
+                                        This is your team&apos;s public display slogan.
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem>

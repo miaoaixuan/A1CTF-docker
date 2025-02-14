@@ -146,6 +146,7 @@ const PageHeader = () => {
                                             <DropdownMenuItem onClick={() => {
                                                 api.account.accountLogOut().then(() => {
                                                     updateProfile(() => {
+                                                        router.push(`/${lng}/`)
                                                         toast.success("成功登出", { position: "top-center" })
                                                     })
                                                 })

@@ -103,7 +103,7 @@ export const CreateTeamDialog: React.FC<{ updateTeam: () => void, children: Reac
                                         <Input placeholder="a1team" {...field} />
                                     </FormControl>
                                     <FormDescription>
-                                        This is your team's public display name.
+                                        This is your team&apos;s public display name.
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem>
