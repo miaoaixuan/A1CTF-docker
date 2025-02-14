@@ -50,7 +50,7 @@ const A1Footer = () => {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="mb-2">
                         <div className="flex flex-col pt-1 pb-2 pl-2 pr-2 select-none">
-                            <div className="flex items-center justify-center pt-1 pb-1 pl-4 pr-4 gap-4 hover:bg-foreground/5 rounded-md transition-[background] duration-300"
+                            <div className="flex items-center justify-center pt-1 pb-1 pl-4 pr-4 gap-4 hover:bg-foreground/10 rounded-md transition-[background] duration-300"
                                 onClick={() => {
                                     setInfoViewShow(false)
                                     startTransition(() => {
