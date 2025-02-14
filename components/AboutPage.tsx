@@ -9,10 +9,14 @@ export function AboutPage ({ source } : { source: string }) {
     const { theme } = useTheme()
 
     return (
-        <MacScrollbar className="overflow-y-auto w-full h-full pl-8 pr-8 md:pl-10 md:pr-10 lg:pl-20 lg:pr-20 pt-4 pb-4"
+        <MacScrollbar className="overflow-y-auto w-full h-full pl-8 lg:pr-20 pt-4 pb-4"
             skin={theme == "light" ? "light" : "dark"}
         >
-            <Mdx source={source} />
+            <div className="flex w-full justify-center">
+                <div className="max-w-[90%] md:max-w-[80%] lg:max-w-[75%] xl:max-w-[70%]">
+                    <Mdx source={source} />
+                </div>
+            </div>
         </MacScrollbar>
     )
 }
