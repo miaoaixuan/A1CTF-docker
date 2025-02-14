@@ -13,11 +13,6 @@ import { ThemeProvider, useTheme } from "next-themes";
 import { TransitionProvider } from '@/contexts/TransitionContext'
 import { TransitionLayout } from '@/components/TransitionLayout'
 
-import { dir } from 'i18next'
-import { LoadingPage } from "@/components/LoadingPage";
-
-import { Toaster } from 'sonner'
-
 // i18n settings
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
@@ -27,6 +22,10 @@ import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { ClientToaster } from '@/components/ClientToaster';
 import { GameSwitchProvider } from '@/contexts/GameSwitchContext';
+import { CookiesProvider } from 'react-cookie';
+import { GlobalVariableProvider } from '@/contexts/GlobalVariableContext';
+import { Tooltip } from 'react-tooltip';
+import SafeComponent from '@/components/SafeComponent';
 
 // fonts
 
@@ -69,16 +68,18 @@ export default async function RootLayout({
                         defaultTheme="system"
                         enableSystem
                     >
-                        <DelayedSuspense>
+                        {/* <DelayedSuspense> */}
                             <TransitionProvider>
                                 <TransitionLayout>
-                                    <GameSwitchProvider>
-                                        {children}
-                                    </GameSwitchProvider>
+                                    <GlobalVariableProvider>
+                                        <GameSwitchProvider>
+                                            {children}
+                                        </GameSwitchProvider>
+                                    </GlobalVariableProvider>
                                     <ClientToaster/>
                                 </TransitionLayout>
                             </TransitionProvider>
-                        </DelayedSuspense>
+                        {/* </DelayedSuspense> */}
                     </ThemeProvider>
                 </NextIntlClientProvider>
             </body>

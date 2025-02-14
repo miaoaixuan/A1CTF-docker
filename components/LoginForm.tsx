@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-import {useTranslations} from 'next-intl';
+import {useLocale, useTranslations} from 'next-intl';
 import { FormEventHandler, useRef, useState } from "react";
 import { LoaderCircle } from 'lucide-react';
 
@@ -14,7 +14,27 @@ import { toastError, toastSuccess } from "@/utils/ToastUtil"
 import axios, { AxiosError } from 'axios';
 import { useTheme } from "next-themes";
 
+import {
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form"
+
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+
 import api from "@/utils/GZApi";
+
+import Image from "next/image";
+import { useTransitionContext } from "@/contexts/TransitionContext";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
 
 interface ErrorLoginResponse {
     title: string;
@@ -25,28 +45,55 @@ export function LoginForm({
     className,
     ...props
 }: React.ComponentPropsWithoutRef<"form">) {
-    const t = useTranslations();
+    const t = useTranslations("login_form");
 
     const userNameRef = useRef<HTMLInputElement>(null)
     const passwordRef = useRef<HTMLInputElement>(null)
+
+    const { startTransition } = useTransitionContext()
+    const router = useRouter()
+    const lng = useLocale()
+
+    const { updateProfile } = useGlobalVariableContext()
 
     const [loading, setLoading] = useState(false)
 
     const { theme } = useTheme();
 
-    const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
+    const formSchema = z.object({
+        userName: z.string().nonempty(t("username_not_null")),
+        password: z.string().nonempty(t("password_not_null"))
+    })
 
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            "userName": "",
+            "password": ""
+        },
+    })
+
+    function onSubmit(values: z.infer<typeof formSchema>) {
         setLoading(true)
-        axios.post("/api/account/login", {
-            "userName": userNameRef.current!.value,
-            "password": passwordRef.current!.value
+        api.account.accountLogIn({
+            userName: values.userName,
+            password: values.password,
         }).then(response => {
-            toastSuccess({ title: "登录成功", theme: theme || "dark"})
+            updateProfile(() => {
+                startTransition(() => {
+                    router.push(`/${lng}/`)
+                })
+    
+                setTimeout(() => {
+                    toast.success(t("login_successful"), { position: "top-center" })
+                }, 300)
+            })
         }).catch((error: AxiosError) => {
             if (error.response?.status == 401) {
                 const response = error.response.data as ErrorLoginResponse
-                toastError({ title: response.title, theme: theme || "dark"})
+                toast.error(response.title, { position: "top-center" })
+            } else {
+                toast.error(t("unknow_error"), { position: "top-center" })
             }
         }).finally(() => {
             setTimeout(() => {
@@ -56,61 +103,89 @@ export function LoginForm({
     }
 
     return (
-        <form className={cn("flex flex-col gap-6", className)} onSubmit={handleLogin} {...props}>
-            <div className="flex flex-col items-center gap-2 text-center">
+        <Form {...form}>
+            <div className="flex flex-col items-center gap-2 text-center mb-10">
                 <h1 className="text-2xl font-bold">{t("login_title")}</h1>
                 <p className="text-balance text-sm text-muted-foreground">
                     {t("login_hint")}
                 </p>
             </div>
-            <div className="grid gap-6">
-                <div className="grid gap-2">
-                    <Label htmlFor="email">{t("email")}</Label>
-                    <Input id="email" type="email" placeholder="m@example.com" ref={userNameRef} required />
-                </div>
-                <div className="grid gap-2">
-                    <div className="flex items-center">
-                        <Label htmlFor="password">{t("password")}</Label>
-                        <a
-                            href="#"
-                            className="ml-auto text-sm underline-offset-4 hover:underline"
-                        >
-                            {t("forget_password")}
-                        </a>
-                    </div>
-                    <Input id="password" type="password" ref={passwordRef} required />
-                </div>
-                <Button type="submit" className="w-full transition-all duration-300 ease-in-out" disabled={loading}>
-                    {loading ? (
-                        <div className="flex items-center">
-                            <LoaderCircle className="animate-spin" />
-                            <Label className="font-bold text-base ml-2">Processing...</Label>
-                        </div>
-                    ) : (
-                        t("login")
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                    control={form.control}
+                    name="userName"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>{ t("form_account") }</FormLabel>
+                            <FormControl>
+                                <Input {...field} />
+                            </FormControl>
+                            <FormDescription>
+                                { t("form_account_desc") }
+                            </FormDescription>
+                            <FormMessage />
+                        </FormItem>
                     )}
-                </Button>
-                <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border transition-all duration-300">
+                />
+                <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>
+                            <div className="flex items-center">
+                                <Label htmlFor="password">{t("password")}</Label>
+                                <a
+                                    href="#"
+                                    className="ml-auto text-sm underline-offset-4 hover:underline"
+                                >
+                                    {t("forget_password")}
+                                </a>
+                            </div>
+                            </FormLabel>
+                            <FormControl>
+                                <Input type="password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <div className='h-0' />
+                <Button type="submit" className="transition-all duration-300 w-full" disabled={loading}>{ t("login") }</Button>
+                <div className="text-center text-sm">
+                    {t("dont_have_account")}{" "}
+                    <a className="underline underline-offset-4" onClick={() => startTransition(() => {
+                        router.push(`/${lng}/signup`)
+                    })}>
+                        {t("sign_up_title")}
+                    </a>
+                </div>
+                <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border transition-[border-color] duration-300">
                     <span className="relative z-10 bg-background px-2 text-muted-foreground transition-all duration-300">
                         {t("or_continue_with")}
                     </span>
                 </div>
-                <Button variant="outline" className="w-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                        <path
-                            d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"
-                            fill="currentColor"
+                <div className="flex flex-col gap-2 w-full">
+                    <Button variant="outline" className="w-full" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path
+                                d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"
+                                fill="currentColor"
+                            />
+                        </svg>
+                        {t("login_with_github")}
+                    </Button>
+                    <Button variant="outline" className="w-full" disabled>
+                        <Image 
+                            src="/images/zjnu_small_logo.png"
+                            alt="ZJNU Union Authserver"
+                            width={24}
+                            height={24}
                         />
-                    </svg>
-                    {t("login_with_github")}
-                </Button>
-            </div>
-            <div className="text-center text-sm">
-                {t("dont_have_account")}{" "}
-                <a href="#" className="underline underline-offset-4">
-                    {t("sign_up_title")}
-                </a>
-            </div>
-        </form>
+                        {t("login_with_zjnu")}
+                    </Button>
+                </div>
+            </form>
+        </Form>
     )
 }

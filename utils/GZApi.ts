@@ -23,6 +23,11 @@ export interface RequestResponseOfRegisterStatus {
      */
     status?: number;
   }
+
+  export interface ErrorMessage {
+      status: number;
+      title: string;
+  }
   
   /** Login response status */
   export enum RegisterStatus {
@@ -4056,7 +4061,7 @@ export interface RequestResponseOfRegisterStatus {
   }
   
   const api = new Api({
-    baseURL: "http://a1-test.cn:3000",
+    // baseURL: "http://a1-test.cn:3000",
     withCredentials: true
   });
   export default api;

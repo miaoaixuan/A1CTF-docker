@@ -5,7 +5,7 @@ import { History, Box } from 'lucide-react'
 
 const A1Footer = () => {
     return (
-        <footer className="h-14 flex justify-center items-center font-bold text-xs lg:text-base">
+        <footer className="h-14 flex justify-center items-center font-bold text-sm lg:text-base">
             <Box /> 
             <span className="ml-2">A1CTF for A1natas</span>
             <span className="ml-2 mr-2">/</span>

@@ -17,7 +17,11 @@ import { Chalk } from 'chalk';
 import dayjs from "dayjs";
 import stringWidth from 'string-width';
 
+import { useTranslations } from "next-intl";
+
 export function GameTerminal({ gameid, challenge, pSize, userName, setChallengeSolved }: { gameid: string, challenge: ChallengeDetailModel, pSize: number, userName: string, setChallengeSolved: (id: number) => void }) {
+
+    const t = useTranslations('game_terminal');
 
     const { theme } = useTheme();
     const [instance, setInstance] = useState<any>(null);
@@ -117,19 +121,11 @@ export function GameTerminal({ gameid, challenge, pSize, userName, setChallengeS
         type CommandType = {
             help: string;
             submit: string;
-            ls: string;
-            poweron: string;
-            poweroff: string;
-            extend: string;
         };
 
         const commands: CommandType = {
-            "help": "Show this message",
-            "submit": "Submit your flag! format: submit <flag>",
-            "ls": "List all the attachments.",
-            "poweron": "Start your instance",
-            "poweroff": "Close your instance",
-            "extend": "Extend your instance time"
+            "help": t("help_message_help"),
+            "submit": t("help_message_submit"),
         }
 
         const handleCommnd = async (command: string) => {
@@ -174,34 +170,41 @@ export function GameTerminal({ gameid, challenge, pSize, userName, setChallengeS
                             return message;
                         }                            
                         terminal.writeln([
-                            `Here are some useful commands below :)`,
+                            t("help_prefix"),
                             ...Object.keys(commands).map(e => formatMessage(e, commands[e as keyof CommandType]))
                         ].join("\n\r"));
                         break
                     case "submit":
                         if (args.length != 2) {
-                            terminal.writeln(chalk.hex("#FC7E65")(`[?] format:: submit <flag_text_here>`));
+                            terminal.writeln(chalk.hex("#FC7E65")(`[?] ${t("format_warn")}:: submit <flag_text_here>`));
                             break
                         }
 
                         const { data: submitID } = await api.game.gameSubmit(gmid, challenge.id || 0, { flag: args[1] })
+
+                        terminal.writeln(chalk.ansi256(141)(t("waiting_for_result")));
+
                         const { data: flagStatus } = await api.game.gameStatus(gmid, challenge.id || 0, submitID)
 
                         switch (flagStatus) {
                             case AnswerResult.Accepted:
-                                terminal.writeln(chalk.ansi256(84)(`[!] Correct!`));
+                                terminal.writeln(chalk.ansi256(84)(t("submit_correct")));
                                 setChallengeSolved(challenge.id || 0)
                                 break
                             case AnswerResult.WrongAnswer:
-                                terminal.writeln(chalk.hex("#FC7E65")(`[?] This flag is wrong!`));
+                                terminal.writeln(chalk.hex("#FC7E65")(t("submit_wrong")));
                                 break
                             default:
-                                terminal.writeln(chalk.hex("#FC7E65")(`[?] Unknow error!`));
+                                terminal.writeln(chalk.hex("#FC7E65")(t("submit_unknow_error")));
                                 break
                         }
                         break
+                    case "cheat":
+                        terminal.writeln(chalk.ansi256(141).bold(t("fake_cheat")));
+                        setChallengeSolved(challenge.id || 0)
+                        break
                     default:
-                        terminal.writeln(chalk.hex("#FC7E65")(`[?] Unknow command '${args[0]}'. Click \'help\' for more information!`));
+                        terminal.writeln(chalk.hex("#FC7E65")(`${t("command_unknow_prefix")} '${args[0]}'. ${t("command_unknow_suffix")}`));
                 }
                 terminal.writeln("")
                 prompt()
@@ -249,7 +252,7 @@ export function GameTerminal({ gameid, challenge, pSize, userName, setChallengeS
         fitAddon.fit()
 
         terminal.writeln(`Welcome to ${chalk.ansi256(141).bold("A1::CTF")} Terminal`)
-        terminal.writeln(`${chalk.ansi256(141).bold("[+]")} PS: 使用指令 \`${chalk.green('submit')} ${chalk.ansi256(210)("flag")}\` 来提交flag, 点击 -> ${chalk.green("help")} 来获取更多的帮助。`)
+        terminal.writeln(`${chalk.ansi256(141).bold("[+]")} PS: ${ t("terminal_hint_part1") } \`${chalk.green('submit')} ${chalk.ansi256(210)("flag")}\` ${ t("terminal_hint_part2") } -> ${chalk.green("help")} ${t("terminal_hint_part3")}`)
         terminal.writeln("")
         prompt()
 
@@ -331,6 +334,7 @@ export function GameTerminal({ gameid, challenge, pSize, userName, setChallengeS
 
                     if (data.startsWith('\x1b')) return
 
+                    // 只允许 Ascii 字符
                     data = data.replace(/[^ -~\t\n\r]/g, '')
 
                     const length = getStrLenght(data)
@@ -353,7 +357,7 @@ export function GameTerminal({ gameid, challenge, pSize, userName, setChallengeS
             fitAddon.dispose();
             webLink.dispose();
         };
-    }, [challenge]); // 当 theme 改变时执行
+    }, [challenge]); // 当 challenge 改变时执行
 
     useEffect(() => {
         if (terminal) {

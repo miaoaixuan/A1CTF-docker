@@ -1,13 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useAnimate } from 'framer-motion';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 
 import Image from "next/image";
 
-import { useTransitionContext } from "@/contexts/GameSwitchContext";
+import { useGameSwitchContext } from "@/contexts/GameSwitchContext";
 import { LoaderPinwheel } from 'lucide-react';
 import { BasicGameInfoModel } from '@/utils/GZApi';
 
@@ -17,7 +17,7 @@ import { url } from 'inspector';
 export default function GameSwitchHover({ animation } : { animation: boolean }) {
 
 
-    const { isChangingGame, curSwitchingGame, posterData } = useTransitionContext();
+    const { isChangingGame, curSwitchingGame, posterData } = useGameSwitchContext();
 
     const [fromY, setFromY] = useState(10);
 
@@ -25,19 +25,21 @@ export default function GameSwitchHover({ animation } : { animation: boolean }) 
     const [animeMethod, setAnimeMethod] = useState("easeInOut")
     const [exitAnimationTime, setExitAnimationTime] = useState(0)
 
+    const [scope, animate] = useAnimate()
+
     const { theme } = useTheme();
 
     useEffect(() => {
         if (animation) {
             setShouldAnime(true)
-            setAnimeMethod("anticipate")
-            setExitAnimationTime(0.6)
+            setAnimeMethod("easeInOut")
+            setExitAnimationTime(0.4)
         } else {
             setTimeout(() => {
                 setShouldAnime(true)
             }, 200)
             setAnimeMethod("easeInOut")
-            setExitAnimationTime(0.3)
+            setExitAnimationTime(0.4)
         }
     }, [])
 
@@ -59,7 +61,8 @@ export default function GameSwitchHover({ animation } : { animation: boolean }) 
                         duration: shouldAnime ? exitAnimationTime : 0
                     }}
                 >
-                    <motion.div className='w-full h-full bg-cover'
+                    <motion.div ref={scope} className='w-full h-full bg-cover'
+                        key="exitscale"
                         style={{
                             backgroundImage: `url(${posterData})`,
                             // backgroundSize: "100%"
@@ -68,17 +71,30 @@ export default function GameSwitchHover({ animation } : { animation: boolean }) 
                             scale: 1
                         }}
                         animate={{
-                            scale: 1.05
+                            scale: 1.08
                         }}
                         transition={{
-                            duration: animation ? 2 : 0,
+                            duration: animation ? 2 : (shouldAnime ? exitAnimationTime : 0),
                             ease: "easeInOut"
                             // delay: 0.6
                         }}
                     >
                     </motion.div>
                     <motion.div
-                        className='absolute w-screen h-screen top-0 left-0 backdrop-blur-md'
+                        className='absolute w-screen h-screen top-0 left-0'
+                        initial={{
+                            backdropFilter: "blur(5px)",
+                            backgroundColor: "rgba(0, 0, 0, 0)"
+                        }}
+                        animate={{
+                            backdropFilter: "blur(8px)",
+                            backgroundColor: "rgba(0, 0, 0, 0.4)"
+                        }}
+                        transition={{
+                            duration: animation ? 2 : (shouldAnime ? exitAnimationTime : 0),
+                            ease: "easeInOut"
+                            // delay: 0.6
+                        }}
                     >
                     </motion.div>
                     <div className='absolute top-0 left-0 w-screen h-screen flex items-center justify-center'>

@@ -83,7 +83,7 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
     }, [status])
 
     return (
-        <div className={`w-full h-[100px] rounded-xl relative hover:scale-[1.04] pl-4 pt-4 pr-4 pb-3 select-none overflow-hidden transition-transform_bordercolor duration-300 will-change-transform border-[2px] bg-transparent`}
+        <div className={`w-full h-[100px] rounded-xl relative hover:scale-[1.04] pl-4 pt-4 pr-4 pb-3 select-none overflow-hidden transition-transform_bordercolor duration-300 will-change-transform border-[2px] bg-background`}
             // style={{
             //     backgroundColor: choiced ? colorClass : "transparent"
             // }}
@@ -126,24 +126,25 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
             </div> */}
             <AnimatePresence>
                 { shouldAnime && (
-                    <motion.div className="absolute w-full h-full top-0 left-0 z-100 flex justify-center items-center"
-                        initial={{
-                            backdropFilter: "blur(0px)"
-                        }}
-                        animate={{
-                            backdropFilter: "blur(10px)"
-                        }}
-                        exit={{
-                            backdropFilter: "blur(0px)"
-                        }}
-                        transition={{
-                            duration: 0.5
-                        }}
-                        onAnimationEnd={() => {
-                            alert("OK")
-                        }}
-                    >
+                    <>
+                        <motion.div className="absolute w-full h-full top-0 left-0 z-100"
+                            initial={{
+                                backdropFilter: "blur(0px)"
+                            }}
+                            animate={{
+                                backdropFilter: "blur(10px)"
+                            }}
+                            exit={{
+                                backdropFilter: "blur(0px)"
+                            }}
+                            transition={{
+                                duration: 0.5
+                            }}
+                        >
+                            
+                        </motion.div>
                         <motion.div
+                            className="absolute w-full h-full top-0 left-0 flex justify-center items-center"
                             initial={{
                                 opacity: 0
                             }}
@@ -164,7 +165,7 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
                                 <span className="text-2xl font-bold">Solved!</span>
                             </div>
                         </motion.div>
-                    </motion.div>
+                    </>
                 ) }
             </AnimatePresence>
             <div className={`flex flex-col h-full w-full`}>

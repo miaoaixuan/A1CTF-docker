@@ -15,7 +15,7 @@ export function DownloadBar({ progress, downloadName } : { progress: number, dow
             { downloadName && (
                 <motion.div
                     key={"download-panel"}
-                    className={`absolute top-[10px] right-[10px] w-[350px] h-[60px] transition-[border-color] duration-300 backdrop-blur-md z-[99] border-2 rounded-xl flex pl-4 pr-2 overflow-hidden`} onClick={() => (folded && setFolded(false))} 
+                    className={`absolute top-[10px] right-[10px] w-[350px] h-[60px] transition-[border-color] duration-300 backdrop-blur-md z-[99] border-[1px] rounded-xl flex pl-4 pr-2 overflow-hidden`} onClick={() => (folded && setFolded(false))} 
                     initial={{
                         translateY: "calc(-100% - 20px)"
                     }}

@@ -20,6 +20,7 @@ import {
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
@@ -28,7 +29,7 @@ import { ResizableScrollablePanel } from "@/components/ResizableScrollablePanel"
 import { Mdx } from "./MdxCompoents";
 import { useEffect, useRef, useState } from "react";
 
-import api, { ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeType, ChallengeInfo, ChallengeType } from '@/utils/GZApi'
+import api, { ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeType, ChallengeInfo, ChallengeType, ErrorMessage, TeamInfoModel, ParticipationStatus } from '@/utils/GZApi'
 import { Skeleton } from "./ui/skeleton";
 
 import * as signalR from '@microsoft/signalr'
@@ -36,7 +37,7 @@ import * as signalR from '@microsoft/signalr'
 import dayjs from "dayjs";
 import { LoadingPage } from "./LoadingPage";
 import { Button } from "./ui/button";
-import { CalendarClock, CircleCheckBig, CloudDownload, Files, Flag, FlaskConical, FoldHorizontal, Info, Link, LoaderPinwheel, PackageOpen, Rocket, ScanHeart, Target, UnfoldHorizontal } from "lucide-react";
+import { AppWindow, CalendarClock, CircleCheckBig, CloudDownload, Files, Flag, FlaskConical, FoldHorizontal, Info, Link, LoaderPinwheel, PackageOpen, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal } from "lucide-react";
 import { AxiosError } from "axios";
 
 import Image from "next/image";
@@ -53,8 +54,24 @@ import { MacScrollbar } from 'mac-scrollbar';
 import { useTheme } from "next-themes";
 
 import { Badge } from "@/components/ui/badge"
-import { useTransitionContext } from "@/contexts/GameSwitchContext";
+import { useGameSwitchContext } from "@/contexts/GameSwitchContext";
 import GameSwitchHover from "./GameSwitchHover";
+import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
+import ScoreBoardPage from "./ScoreBoardPage";
+import { useLocale, useTranslations } from "next-intl";
+import { randomInt } from "mathjs";
+
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectLabel,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { toast } from "sonner";
+import { TransitionLink } from "./TransitionLink";
 
 const GameTerminal = dynamic(
     () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
@@ -89,7 +106,11 @@ const formatDuration = (duration: number) => {
     }
 }
 
-export function ChallengesView({ lng, id }: { lng: string, id: string }) {
+export function ChallengesView({ id }: { id: string }) {
+
+    const t = useTranslations('challenge_view');
+
+    const lng = useLocale();
 
     // 所有题目
     const [challenges, setChallenges] = useState<Record<string, ChallengeInfo[]>>({})
@@ -151,15 +172,34 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
 
     const noticesRef = useRef<GameNotice[]>([])
 
+    const [scoreBoardVisible, setScoreBoardVisible] = useState(false)
+
     const { theme } = useTheme()
 
     // 切换比赛动画
-    const { isChangingGame, setIsChangingGame } = useTransitionContext();
+    const { isChangingGame, setIsChangingGame } = useGameSwitchContext();
+
+    const { curProfile } = useGlobalVariableContext()
+
+    const [gameStatus, setGameStatus] = useState("")
+    const [beforeGameTime, setBeforeGameTime] = useState("")
+    
+    const checkInterStarted = useRef(false)
+
+    const [availableTeams, setAvailableTeams] = useState<TeamInfoModel[]>([])
+    const [preJoinDataPrepared, setPreJoinDataPrepared] = useState(false)
+
+    const [curChoosedTeam, setCurChoosedTeam] = useState<number>(-1)
+
+    let checkGameStatusIter: NodeJS.Timeout;
+
+    const gameID = parseInt(id, 10)
+
 
     // 更新当前选中题目信息, 根据 Websocket 接收到的信息被动调用
     const updateChallenge = () => {
         if (!prevChallenge.current.title) return
-        api.game.gameGetChallenge(parseInt(id, 10), prevChallenge.current.id || 0).then((response) => {
+        api.game.gameGetChallenge(gameID, prevChallenge.current.id || 0).then((response) => {
             setCurChallenge(response.data || {})
         }).catch((error: AxiosError) => { })
     }
@@ -203,99 +243,204 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
     }, [curChallenge]);
 
     useEffect(() => {
-        // 获取账户信息
-        api.account.accountProfile().then((res) => {
-            setAvatarURL(res.data.avatar || "")
-            setUserName(res.data.userName || "")
-        })
-
-        // 更新时间迭代器
-        let timeIter: any = null;
-
         // 获取比赛信息以及剩余时间
-        api.game.gameGame(parseInt(id, 10)).then((res) => {
+        api.game.gameGame(gameID).then((res) => {
             setGameInfo(res.data)
 
-            const totalTime = Math.floor(dayjs(res.data.end).diff(dayjs(res.data.start)) / 1000)
+            // 第一步 检查是否报名
+            if (res.data.status == ParticipationStatus.Unsubmitted) {
+                // 未报名
+                setGameStatus("unRegistered")
+            } else if (res.data.status == ParticipationStatus.Pending) {
+                // 审核中
+                setGameStatus("waitForProcess")
+            } else if (res.data.status == ParticipationStatus.Accepted) {
+                if (dayjs() < dayjs(res.data.start)) {
+                    // 等待比赛开始
+                    setGameStatus("pending")
+                } else if (dayjs() < dayjs(res.data.end)) {
+                    // 比赛进行中
+                    setGameStatus("running")
+                } else if (dayjs() > dayjs(res.data.end)) {
+                    if (!res.data.practiceMode) {
+                        setGameStatus("ended")
+                    } else {
+                        // 练习模式
+                        setGameStatus("practiceMode")
+                    }
+                }
+            } else if (res.data.status == ParticipationStatus.Suspended) {
+                // 禁赛
+                setGameStatus("banned")
+            }
+        }).catch((error: AxiosError) => {
+            if (error.response?.status) {
+                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
+                if (error.response.status == 401) {
+                    setGameStatus("unLogin")
+                } else if (error.response.status == 404) {
+                    setGameStatus("noSuchGame")
+                }
+            }
+        })
+    }, [id])
 
-            timeIter = setInterval(() => {
-                const curLeft = Math.floor(dayjs(res.data.end).diff(dayjs()) / 1000)
+    useEffect(() => {
 
-                setRemainTime(formatDuration(curLeft))
-                setRemainTimePercent(Math.floor((curLeft / totalTime) * 100))
+        // 根据比赛状态处理事件
+        if (gameStatus == "running" || gameStatus == "practiceMode") {
+
+            const totalTime = Math.floor(dayjs(gameInfo.end).diff(dayjs(gameInfo.start)) / 1000)
+            let timeIter: NodeJS.Timeout;
+
+            // 比赛时间倒计时
+            if (gameStatus != "practiceMode") {
+                timeIter = setInterval(() => {
+                    const curLeft = Math.floor(dayjs(gameInfo.end).diff(dayjs()) / 1000)
+            
+                    setRemainTime(formatDuration(curLeft))
+                    setRemainTimePercent(Math.floor((curLeft / totalTime) * 100))
+                }, 500)
+            } else {
+                setRemainTime(t("practice_time"))
+                setRemainTimePercent(0)
+            }
+
+            setTimeout(() => setLoadingVisibility(false), 200)
+
+            // 获取比赛通知
+            api.game.gameNotices(gameID).then((res) => {
+                const filtedNotices: GameNotice[] = []
+                let curIndex = 0
+
+                res.data.sort((a, b) => b.time - a.time)
+
+                res.data.forEach((obj) => {
+                    if (obj.type == NoticeType.Normal) filtedNotices[curIndex++] = obj
+                })
+
+                noticesRef.current = filtedNotices
+                setNotices(filtedNotices)
+            })
+
+            // Websocket
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl(`/hub/user?game=${id}`)
+                .withHubProtocol(new signalR.JsonHubProtocol())
+                .withAutomaticReconnect()
+                .configureLogging(signalR.LogLevel.None)
+                .build()
+
+            connection.serverTimeoutInMilliseconds = 60 * 1000 * 60 * 2
+
+            connection.on('ReceivedGameNotice', (message: GameNotice) => {
+                console.log(message)
+
+                if (message.type == NoticeType.NewHint && message.values[0] == prevChallenge.current.title) {
+                    // 防止并发
+                    setTimeout(updateChallenge, randomInt(200, 600))
+                }
+
+                if (message.type == NoticeType.Normal) {
+
+                    const newNotices: GameNotice[] = []
+
+                    newNotices[0] = message
+                    noticesRef.current.forEach((ele, index) => {
+                        newNotices[index + 1] = ele
+                    })
+
+                    noticesRef.current = newNotices
+                    setNotices(newNotices)
+
+                    toastNewNotice({ title: message.values[0], time: message.time, openNotices: setNoticeOpened })
+                }
+            })
+
+            connection.start().catch((error) => {
+                console.error(error)
+            })
+
+            return () => {
+                if (connection) {
+                     connection.stop().catch((err) => {
+                         console.error(err)
+                     })
+                }
+
+                if (timeIter) clearInterval(timeIter)
+            }
+
+        } else if (gameStatus == "unRegistered") {
+            // 未注册 先获取队伍信息
+            api.team.teamGetTeamsInfo().then((res) => {
+                setAvailableTeams(res.data)
+
+                // 设置加载遮罩状态
+                setPreJoinDataPrepared(true)
+                setTimeout(() => setLoadingVisibility(false), 200)
+            }).catch((error: AxiosError) => {
+                if (error.response?.status) {
+                    if (error.response.status == 401) {
+                        setGameStatus("unLogin")
+                    }
+                }
+            })
+        } else if (gameStatus == "waitForProcess") {
+            // 启动一个监听进程
+            const refershTeamStatusInter = setInterval(() => {
+                api.game.gameGame(gameID).then((res) => {
+                    if (res.data.status == ParticipationStatus.Accepted) {
+                        if (dayjs() < dayjs(res.data.start)) {
+                            // 等待比赛开始
+                            setGameStatus("pending")
+                        } else if (dayjs() < dayjs(res.data.end)) {
+                            // 比赛进行中
+                            setGameStatus("running")
+                        } else if (dayjs() > dayjs(res.data.end)) {
+                            setGameStatus("ended")
+                        }
+                        // 结束监听
+                        clearInterval(refershTeamStatusInter)
+                    }
+                })
+            }, 2000)
+
+            setTimeout(() => setLoadingVisibility(false), 200)
+        } else if (gameStatus == "banned" || gameStatus == "ended" || gameStatus == "noSuchGame" || gameStatus == "unLogin") {
+            setTimeout(() => setLoadingVisibility(false), 200)
+        } else if (gameStatus == "pending") {
+            const penddingTimeInter = setInterval(() => {
+                // 如果当前时间大于开始时间
+                if (dayjs() > dayjs(gameInfo.start)) {
+                    clearInterval(penddingTimeInter)
+                    const checkGameStartedInter = setInterval(() => {
+                        api.game.gameChallengesWithTeamInfo(gameID).then((res) => {
+                            clearInterval(checkGameStartedInter)
+
+                            // 防卡
+                            setTimeout(() => {
+                                setGameStatus("running")
+                            }, randomInt(1000, 2000))
+                        }).catch((error: AxiosError) => {})
+                    }, 2000)
+                } else {
+                    setBeforeGameTime(formatDuration(Math.floor(dayjs(gameInfo.start).diff(dayjs()) / 1000)))
+                }
             }, 500)
 
             setTimeout(() => setLoadingVisibility(false), 500)
-        })
 
-        // 获取比赛通知
-        api.game.gameNotices(parseInt(id, 10)).then((res) => {
-            const filtedNotices: GameNotice[] = []
-            let curIndex = 0
-
-            res.data.sort((a, b) => b.time - a.time)
-
-            res.data.forEach((obj) => {
-                if (obj.type == NoticeType.Normal) filtedNotices[curIndex++] = obj
-            })
-
-            noticesRef.current = filtedNotices
-            setNotices(filtedNotices)
-        })
-
-        // Websocket
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl(`/hub/user?game=${id}`)
-            .withHubProtocol(new signalR.JsonHubProtocol())
-            .withAutomaticReconnect()
-            .configureLogging(signalR.LogLevel.None)
-            .build()
-
-        connection.serverTimeoutInMilliseconds = 60 * 1000 * 60 * 2
-
-        connection.on('ReceivedGameNotice', (message: GameNotice) => {
-            console.log(message)
-
-            if (message.type == NoticeType.NewHint && message.values[0] == prevChallenge.current.title) {
-                updateChallenge()
+            return () => {
+                if (penddingTimeInter) clearInterval(penddingTimeInter)
             }
-
-            if (message.type == NoticeType.Normal) {
-
-                const newNotices: GameNotice[] = []
-
-                newNotices[0] = message
-                noticesRef.current.forEach((ele, index) => {
-                    newNotices[index + 1] = ele
-                })
-
-                noticesRef.current = newNotices
-                setNotices(newNotices)
-
-                toastNewNotice({ title: message.values[0], time: message.time, openNotices: setNoticeOpened })
-            }
-        })
-
-        connection.start().catch((error) => {
-            console.error(error)
-        })
-
-        // 测试代码
-        // setTimeout(() => {
-        //     setChallengeSolvedList((prev) => ({
-        //         ...prev,
-        //         [105]: true
-        //     }))
-        // }, 8000)
-
-        return () => {
-            if (timeIter) clearInterval(timeIter)
-
-            connection.stop().catch((err) => {
-                console.error(err)
-            })
         }
-    }, [id])
+    }, [gameStatus])
+
+    useEffect(() => {
+        setAvatarURL(curProfile.avatar || "#")
+        setUserName(curProfile.userName || "")
+    }, [curProfile])
 
     useEffect(() => {
         if (!loadingVisiblity) {
@@ -389,19 +534,170 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
             }
         }
     };
-
-    const testFunction = () => {
-        
-    }
     
+    const submitTeam = () => {
+        if (curChoosedTeam != -1) {
+            api.game.gameJoinGame(gameID, {
+                teamId: curChoosedTeam
+            }).then((res) => {
+                // 更新队伍信息
+                api.game.gameGame(gameID).then((res) => {
+                    setGameInfo(res.data)
+                    toast.success(t("team_submitted"), { position: "top-center" })
+
+                    setGameStatus("waitForProcess")
+                }).catch((error: AxiosError) => {
+                    if (error.response?.status) {
+                        const errorMessage: ErrorMessage = error.response.data as ErrorMessage
+                        toast.error(errorMessage.title, { position: "top-center" })
+                    } else {
+                        toast.error(t("unknow_error"), { position: "top-center" })
+                    }
+                })
+            })
+        } else {
+            toast.error(t("choose_team_first"), { position: "top-center" })
+        }
+    }
 
     return (
         <>
             <GameSwitchHover animation={false} />
             <LoadingPage visible={loadingVisiblity} />
+
+            { (gameStatus == "pending" || gameStatus == "ended") && (
+                <div className="absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]">
+                    <div className="flex flex-col text-3xl items-center gap-4 select-none">
+                        <Info size={80} />
+                        { gameStatus == "ended" ? (<span>{ t("game_ended") }</span>) : (<span>{ t("game_pending") }</span>) }
+                        { gameStatus == "pending" && (<span>{ t("game_start_countdown") } { beforeGameTime }</span>) }
+                        <div className="flex">
+                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                                <Button>{ t("back_to_main") }</Button>
+                            </TransitionLink>
+                        </div>
+                    </div>
+                </div>
+            ) }
+
+            { gameStatus == "banned" && (
+                <motion.div 
+                    className={`absolute top-0 left-0 w-screen h-screen flex items-center justify-center z-[40]`}
+                    initial={{
+                        backgroundColor: "rgb(239 68 68 / 0)",
+                        backdropFilter: "blur(0px)"
+                    }}
+                    animate={{
+                        backgroundColor: "rgb(239 68 68 / 0.9)",
+                        backdropFilter: "blur(12px)"
+                    }}
+                    transition={{
+                        duration: 0.5
+                    }}
+                >
+                    <div className="flex flex-col items-center gap-4 select-none">
+                        <div className="flex flex-col items-center gap-6 text-white">
+                            <TriangleAlert size={120} />
+                            <span className="text-3xl">{ t("you_have_be_banned") }</span>
+                        </div>
+                        <div className="flex gap-4 mt-6">
+                            <Button variant="secondary"
+                                onClick={() => setScoreBoardVisible(true)}
+                            ><Presentation />{ t("rank") }</Button>
+                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                                <Button variant="secondary">{ t("back_to_main") }</Button>
+                            </TransitionLink>
+                        </div>
+                    </div>
+                </motion.div>
+            ) }
+
+            { gameStatus == "unRegistered" && preJoinDataPrepared && ( 
+                <div className="absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]">
+                    <div className="flex flex-col items-center gap-4 select-none">
+                        <Info size={80} />
+                        <span className="text-3xl">{ t("not_participated") }</span>
+                        { availableTeams.length ? (
+                            <>
+                                <div className="flex w-full mb-[-12px]">
+                                    <span>{ t("team_name") }</span>
+                                </div>
+                                <Select onValueChange={(val) => setCurChoosedTeam(parseInt(val, 10))}>
+                                    <SelectTrigger className="w-[280px] bg-background">
+                                        <SelectValue placeholder="Select a team" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            { availableTeams.map((e, index) => (
+                                                <SelectItem value={`${e.id}`} key={index}>{ e.name }</SelectItem>
+                                            )) }
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                            </>
+                        ) : (
+                            <span>{ t("no_available_team") }</span>
+                        ) }
+                        <div className="flex gap-4">
+                            <Button onClick={submitTeam} disabled={availableTeams.length <= 0}>{ t("sign_up") }</Button>
+                            <Button variant="outline"
+                                onClick={() => setScoreBoardVisible(true)}
+                            ><Presentation />{ t("rank") }</Button>
+                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                                <Button variant="outline">{ t("back_to_main") }</Button>
+                            </TransitionLink>
+                        </div>
+                    </div>
+                </div>
+            ) }
+
+            { gameStatus == "waitForProcess" && (
+                <div 
+                    className={`absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]`}
+                >
+                    <div className="flex flex-col items-center gap-4 select-none">
+                        <Info size={80} />
+                        <span className="text-3xl">{ t("wait_for_process") }</span>
+                    </div>
+                </div>
+            ) }
+
+            { gameStatus == "unLogin" && (
+                <div 
+                    className={`absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]`}
+                >
+                    <div className="flex flex-col items-center gap-4 select-none">
+                        <ShieldX size={80} />
+                        <span className="text-3xl">{ t("login_first") }</span>
+                        <div className="flex gap-6">
+                            <Button variant="outline"
+                                onClick={() => setScoreBoardVisible(true)}
+                            ><Presentation />{ t("rank") }</Button>
+                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                                <Button variant="outline">{ t("back_to_main") }</Button>
+                            </TransitionLink>
+                        </div>
+                    </div>
+                </div>
+            ) }
+
+            { gameStatus == "noSuchGame" && (
+                <div 
+                    className={`absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]`}
+                >
+                    <div className="flex flex-col items-center gap-4 select-none">
+                        <Info size={80} />
+                        <span className="text-3xl">{ t("no_such_game") }</span>
+                        <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                            <Button variant="outline">{ t("back_to_main") }</Button>
+                        </TransitionLink>
+                    </div>
+                </div>
+            ) }
+
             {/* 下载动画 */}
             <DownloadBar key={"download-panel"} progress={attachDownloadProgress} downloadName={downloadName}></DownloadBar>
-            {/* <ScoreBoardPage gmid={parseInt(id, 10)}/> */}
+            <ScoreBoardPage gmid={gameID} visible={scoreBoardVisible} setVisible={setScoreBoardVisible} gameStatus={gameStatus}/>
             {/* 重定向警告页 */}
             <RedirectNotice redirectURL={redirectURL} setRedirectURL={setRedirectURL} />
             {/* 公告页 */}
@@ -420,6 +716,8 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                         setChallenges={setChallenges}
                         challengeSolvedList={challengeSolvedList}
                         setChallengeSolvedList={setChallengeSolvedList}
+                        gameStatus={gameStatus}
+                        setGameStatus={setGameStatus}
                     />
                 </div>
                 <main className="flex flex-col top-0 left-0 h-screen w-screen overflow-hidden backdrop-blur-sm relative">
@@ -442,33 +740,61 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" className="lg:hidden" size="icon">
-                                        <CalendarClock />
+                                        <AppWindow />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-54 mr-4 mt-2">
-                                    <div className="w-full h-full">
-                                        <div className="bg-black bg-opacity-10 pl-4 pr-4 pt-1 pb-1 rounded-2xl overflow-hidden select-none dark:bg-[#2A2A2A] relative">
-                                            <div
-                                                className="absolute top-0 left-0 bg-black dark:bg-white"
-                                                style={{ width: `${remainTimePercent}%`, height: '100%' }}
-                                            />
-                                            <span className="text-white mix-blend-difference z-20 font-mono">{remainTime}</span>
-                                        </div>
+                                <DropdownMenuContent className="mr-4 mt-2">
+                                    <div className="w-full h-full flex flex-col gap-1">
+                                        <DropdownMenuItem>
+                                            <div className="bg-black bg-opacity-10 pl-4 pr-4 pt-1 pb-1 rounded-2xl overflow-hidden select-none dark:bg-[#2A2A2A] relative">
+                                                <div
+                                                    className="absolute top-0 left-0 bg-black dark:bg-white"
+                                                    style={{ width: `${remainTimePercent}%`, height: '100%' }}
+                                                />
+                                                <span className="text-white mix-blend-difference z-20 font-mono">{remainTime}</span>
+                                            </div>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setNoticeOpened(true)} disabled={notices.length == 0}>
+                                            <PackageOpen />
+                                            <span>{ t("open_notices") }</span>
+                                            { notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{ notices.length }</Badge> : <></> }
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setScoreBoardVisible(true)}>
+                                            <Presentation />
+                                            <span>{ t("rank") }</span>
+                                        </DropdownMenuItem>
                                     </div>
+                                    
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                            <Button variant="outline" className="flex" onClick={() => setNoticeOpened(true)}>
+                            <Button variant="outline" className="select-none hidden lg:flex" onClick={() => setNoticeOpened(true)} disabled={notices.length == 0}>
                                 <div className="flex items-center gap-1">
                                     <PackageOpen />
-                                    <span>打开公告</span>
+                                    <span>{ t("open_notices") }</span>
                                     { notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{ notices.length }</Badge> : <></> }
                                 </div>
                             </Button>
-                            <Button size="icon" variant="outline" onClick={testFunction}><FlaskConical /></Button>
-                            <ToggleTheme lng={lng} />
-                            <Avatar>
-                                <AvatarImage src={avatarURL} alt="@shadcn" />
-                                <AvatarFallback><Skeleton className="h-12 w-12 rounded-full" /></AvatarFallback>
+                            <Button variant="outline" className="select-none hidden lg:flex" onClick={() => setScoreBoardVisible(true)}>
+                                <div className="flex items-center gap-1">
+                                    <Presentation />
+                                    <span>{ t("rank") }</span>
+                                </div>
+                            </Button>
+                            {/* <Button size="icon" variant="outline" onClick={testFunction}><FlaskConical /></Button> */}
+                            <ToggleTheme />
+                            <Avatar className="select-none">
+                                { curProfile.avatar ? (
+                                    <>
+                                        <AvatarImage src={curProfile.avatar || "#"} alt="@shadcn"
+                                            className={`rounded-2xl`}
+                                        />
+                                        <AvatarFallback><Skeleton className="h-full w-full rounded-full" /></AvatarFallback>
+                                    </>
+                                ) : ( 
+                                    <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
+                                        <span className='text-background text-md'> { curProfile.userName?.substring(0, 2) } </span>
+                                    </div>
+                                ) }
                             </Avatar>
                         </div>
                     </div>
@@ -492,10 +818,14 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                             setResizeTrigger(size)
                         }}>
                             {!curChallenge.title ? (
-                                <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-                                    <div className="">
-                                        <span className="text-xl">Choose something?</span>
-                                    </div>
+                                <div className="absolute top-0 left-0 w-full h-full flex p-7 flex-col">
+                                    { gameInfo.content ? (
+                                        <Mdx source={gameInfo.content || ""}></Mdx>
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center select-none">
+                                            <span className="font-bold text-lg">{ t("choose_something") }</span>
+                                        </div>
+                                    ) }
                                 </div>
                             ) : <></>}
                             <div className="absolute bottom-2 right-2 flex flex-col gap-2 p-2 opacity-100 ease-in-out">
@@ -529,47 +859,47 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                             <div className="flex h-full">
                                 <SafeComponent>
                                     <MacScrollbar
-                                        className="pl-20 pr-20 pt-5 pb-5 w-full flex flex-col"
+                                        className="pl-5 pr-5 lg:pl-20 lg:pr-20 pt-5 pb-5 w-full flex flex-col"
                                         skin={theme === "dark" ? "dark" : "light"}
                                     >
                                         {curChallenge.title && (
-                                            <div className="w-full border-b-[1px] h-[50px] p-2 transition-[border-color] duration-300 flex items-center">
-                                                <div className="flex items-center gap-2 transition-colors duration-300">
-                                                    <Info size={21} />
-                                                    <span className="text-lg">{curChallenge.title}</span>
+                                            <div className="w-full border-b-[1px] h-[50px] p-2 transition-[border-color] duration-300 flex items-center gap-1">
+                                                <div className="flex items-center gap-2 transition-colors duration-300 overflow-hidden">
+                                                    <Info size={21} className="flex-none" />
+                                                    <span className="text-lg overflow-hidden text-ellipsis text-nowrap">{curChallenge.title}</span>
                                                 </div>
                                                 <div className="flex-1" />
                                                 <div className="flex justify-end gap-4 transition-colors duration-300">
                                                     { challengeSolvedList[curChallenge.id || 0] ? (
                                                         <div className="flex items-center gap-2 text-purple-600">
-                                                            <ScanHeart />
-                                                            <span className="text-md font-bold">{curChallengeDetail.current.score} pts</span>
+                                                            <ScanHeart className="flex-none" />
+                                                            <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current.score} pts</span>
                                                         </div>
                                                     ) : (
                                                         <div className="flex items-center gap-2 text-amber-600">
-                                                            <Flag />
-                                                            <span className="text-md font-bold">{curChallengeDetail.current.score} pts</span>
+                                                            <Flag className="flex-none" />
+                                                            <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current.score} pts</span>
                                                         </div>
                                                     ) }
                                                     <div className="flex items-center gap-2 text-green-600">
                                                         <CircleCheckBig />
-                                                        <span className="text-md font-bold">{curChallengeDetail.current.solved} solves</span>
+                                                        <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current.solved} solves</span>
                                                     </div>
                                                 </div>
                                             </div>
                                         )}
                                         {curChallenge.type == ChallengeType.DynamicContainer && (
                                             <div className="w-full border-b-[1px] h-[50px] p-2 transition-[border-color] duration-300 flex items-center">
-                                                <div className="flex items-center gap-2 transition-colors duration-300">
+                                                <div className="flex items-center gap-2 transition-colors duration-300 select-none">
                                                     <Target size={21} />
-                                                    <span className="text-md">Live Container</span>
+                                                    <span className="text-md">{ t("live_container") }</span>
                                                 </div>
                                                 <div className="flex-1" />
                                                 <div className="flex justify-end gap-4">
-                                                    <Button asChild variant="ghost" className="pl-4 pr-4 pt-0 pb-0 text-md text-green-600 font-bold [&_svg]:size-6 transition-colors duration-300">
+                                                    <Button asChild variant="ghost" className="pl-4 pr-4 pt-0 pb-0 text-md text-green-600 font-bold [&_svg]:size-6 transition-colors duration-300 select-none">
                                                         <div className="flex gap-[4px]">
                                                             <Rocket />
-                                                            <span className="">Launch</span>
+                                                            <span className="">{ t("launch") }</span>
                                                         </div>
                                                     </Button>
                                                 </div>
@@ -579,7 +909,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                             <div className="w-full border-b-[1px] h-[50px] p-2 flex items-center gap-4 transition-[border-color] duration-300">
                                                 <div className="flex items-center gap-2 transition-colors duration-300">
                                                     <Files size={21} />
-                                                    <span className="text-md">Attachments: </span>
+                                                    <span className="text-md">{ t("attachments") }</span>
                                                 </div>
                                                 <div className="flex justify-end gap-4">
                                                     <Button variant="ghost" onClick={() => handleDownload()} className="pl-4 pr-4 pt-0 pb-0 text-md [&_svg]:size-5 transition-all duration-300" disabled={downloadName != ""}>
@@ -594,7 +924,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                                                 // 远程附件
                                                                 <>
                                                                     <Link />
-                                                                    <span className=""> External links </span>
+                                                                    <span className=""> { t("external_links") } </span>
                                                                 </>
                                                             )}
                                                         </div>
@@ -615,7 +945,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                                         height={40}
                                                         priority
                                                     />
-                                                    <span className="text-3xl font-bold">Oops, the description is empty!</span>
+                                                    <span className="text-3xl font-bold">{ t("oops_empty") }</span>
                                                 </div>
                                             ) }
                                             
@@ -631,7 +961,7 @@ export function ChallengesView({ lng, id }: { lng: string, id: string }) {
                                 <ResizableScrollablePanel defaultSize={40} minSize={10}>
                                     <div className="flex flex-col p-0 h-full resize-y">
                                         {userName ? (
-                                            <GameTerminal challenge={curChallenge} gameid={id} pSize={resizeTrigger!} userName={userName} setChallengeSolved={setChallengeSolved} />
+                                            <GameTerminal challenge={curChallenge} gameid={id} pSize={resizeTrigger!} userName={gameInfo.teamName || ""} setChallengeSolved={setChallengeSolved} />
                                         ) : (<></>)}
                                     </div>
                                 </ResizableScrollablePanel>

@@ -18,9 +18,12 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link";
 import { usePathname, useSearchParams } from 'next/navigation'
 
-import {useTranslations} from 'next-intl';
+import {useLocale, useTranslations} from 'next-intl';
 
-const ThemeSwitcher = ({ lng } : { lng: string }) => {
+const ThemeSwitcher = () => {
+
+    const lng = useLocale();
+
     const [mounted, setMounted] = useState(false)
     const { theme, setTheme } = useTheme()
     const t = useTranslations();
@@ -128,16 +131,16 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
                     }}
                 >
                     <div className='flex justify-center w-full gap-1 py-1'>
-                        <Button asChild variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon">
                             <Link href={`/zh${asPath.slice(lng.length + 1)}`}><span className='font-bold'>简</span></Link>
                         </Button>
-                        <Button asChild variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" disabled>
                             <span className='font-bold'>繁</span>
                         </Button>
-                        <Button asChild variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon">
                             <Link href={`/en${asPath.slice(lng.length + 1)}`}><span className='font-bold'>En</span></Link>
                         </Button>
-                        <Button asChild variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" disabled>
                             <span className='font-bold'>日</span>
                         </Button>
                     </div>

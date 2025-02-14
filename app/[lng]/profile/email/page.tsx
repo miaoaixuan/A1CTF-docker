@@ -1,17 +1,15 @@
 import PageHeader from "@/components/A1Headers"
 
-import A1Footer from "@/components/A1Footer";
 import SafeComponent from "@/components/SafeComponent";
-import { TeamsView } from "@/components/TeamsView";
+import { ChangeEmailView } from "@/components/ChangeEmailView";
 
-export default async function Teams() {
+export default async function ProfilePassword() {
 
     return (
         <div className="p-0 h-screen flex flex-col">
-            <PageHeader />
             <main className="flex w-full flex-1 overflow-hidden">
-                <SafeComponent>
-                    <TeamsView />
+                <SafeComponent animation={false}>
+                    <ChangeEmailView />
                 </SafeComponent>
             </main>
         </div>
