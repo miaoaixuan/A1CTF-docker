@@ -617,23 +617,29 @@ export function ChallengesView({ id }: { id: string }) {
                     <div className="flex flex-col items-center gap-4 select-none">
                         <Info size={80} />
                         <span className="text-3xl">尚未参赛，请先报名</span>
-                        <div className="flex w-full mb-[-12px]">
-                            <span>Team name:</span>
-                        </div>
-                        <Select onValueChange={(val) => setCurChoosedTeam(parseInt(val, 10))}>
-                            <SelectTrigger className="w-[280px] bg-background">
-                                <SelectValue placeholder="Select a team" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    { availableTeams.map((e, index) => (
-                                        <SelectItem value={`${e.id}`} key={index}>{ e.name }</SelectItem>
-                                    )) }
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
+                        { availableTeams.length ? (
+                            <>
+                                <div className="flex w-full mb-[-12px]">
+                                    <span>Team name:</span>
+                                </div>
+                                <Select onValueChange={(val) => setCurChoosedTeam(parseInt(val, 10))}>
+                                    <SelectTrigger className="w-[280px] bg-background">
+                                        <SelectValue placeholder="Select a team" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            { availableTeams.map((e, index) => (
+                                                <SelectItem value={`${e.id}`} key={index}>{ e.name }</SelectItem>
+                                            )) }
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                            </>
+                        ) : (
+                            <span>无可用战队，请先去创建战队</span>
+                        ) }
                         <div className="flex gap-4">
-                            <Button onClick={submitTeam}>报名</Button>
+                            <Button onClick={submitTeam} disabled={availableTeams.length <= 0}>报名</Button>
                             <Button variant="outline"
                                 onClick={() => setScoreBoardVisible(true)}
                             ><Presentation />排行榜</Button>
@@ -777,8 +783,18 @@ export function ChallengesView({ id }: { id: string }) {
                             {/* <Button size="icon" variant="outline" onClick={testFunction}><FlaskConical /></Button> */}
                             <ToggleTheme />
                             <Avatar className="select-none">
-                                <AvatarImage src={avatarURL} alt="@shadcn" />
-                                <AvatarFallback><Skeleton className="h-12 w-12 rounded-full" /></AvatarFallback>
+                                { curProfile.avatar ? (
+                                    <>
+                                        <AvatarImage src={curProfile.avatar || "#"} alt="@shadcn"
+                                            className={`rounded-2xl`}
+                                        />
+                                        <AvatarFallback><Skeleton className="h-full w-full rounded-full" /></AvatarFallback>
+                                    </>
+                                ) : ( 
+                                    <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
+                                        <span className='text-background text-md'> { curProfile.userName?.substring(0, 2) } </span>
+                                    </div>
+                                ) }
                             </Avatar>
                         </div>
                     </div>
@@ -945,7 +961,7 @@ export function ChallengesView({ id }: { id: string }) {
                                 <ResizableScrollablePanel defaultSize={40} minSize={10}>
                                     <div className="flex flex-col p-0 h-full resize-y">
                                         {userName ? (
-                                            <GameTerminal challenge={curChallenge} gameid={id} pSize={resizeTrigger!} userName={userName} setChallengeSolved={setChallengeSolved} />
+                                            <GameTerminal challenge={curChallenge} gameid={id} pSize={resizeTrigger!} userName={gameInfo.teamName || ""} setChallengeSolved={setChallengeSolved} />
                                         ) : (<></>)}
                                     </div>
                                 </ResizableScrollablePanel>

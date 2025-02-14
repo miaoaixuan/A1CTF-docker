@@ -6,7 +6,8 @@ import React, { createContext, Dispatch, SetStateAction, useContext, useEffect, 
 import { useCookies } from "react-cookie";
 
 interface TransitionContextType {
-    curProfile: ProfileUserInfoModel
+    curProfile: ProfileUserInfoModel;
+    updateProfile: (callback?: () => void) => void;
 }
 
 const TransitionContext = createContext<TransitionContextType | undefined>(undefined);
@@ -23,6 +24,17 @@ export const GlobalVariableProvider: React.FC<{ children: React.ReactNode }> = (
 
     const [cookies, setCookie, removeCookie] = useCookies(["uid"])
     const [curProfile, setCurProfile] = useState<ProfileUserInfoModel>({})
+
+    const updateProfile = (callback?: () => void) => {
+        api.account.accountProfile().then((res) => {
+            setCurProfile(res.data)
+            setCookie("uid", res.data.userId, { path: "/" })
+        }).catch((error: AxiosError) => {
+            removeCookie("uid")
+        }).finally(() => {
+            if (callback) callback()
+        })
+    }
     
     useEffect(() => {
         if (!curProfile.userId) {
@@ -36,7 +48,7 @@ export const GlobalVariableProvider: React.FC<{ children: React.ReactNode }> = (
     }, [])
 
     return (
-        <TransitionContext.Provider value={{ curProfile }}>
+        <TransitionContext.Provider value={{ curProfile, updateProfile }}>
             {children}
         </TransitionContext.Provider>
     );

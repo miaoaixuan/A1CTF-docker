@@ -6,11 +6,12 @@ import Image from "next/image";
 
 import ThemeSwitcher from "@/components/ToggleTheme"
 import { TransitionLink } from "@/components/TransitionLink";
+import { RegisterForm } from "@/components/RegisterForm";
 
-export default async function LoginPage() {
+export default async function SignupPage() {
 
     return (
-        <div className="grid min-h-svh lg:grid-cols-2 select-none">
+        <div className="grid min-h-svh lg:grid-cols-2">
             <div className="flex flex-col gap-4 p-6 md:p-10">
                 <div className="flex justify-center gap-2 md:justify-between">
                     <TransitionLink href="/" className="flex items-center gap-2 font-medium">
@@ -28,7 +29,7 @@ export default async function LoginPage() {
                 </div>
                 <div className="flex flex-1 items-center justify-center">
                     <div className="w-full max-w-[400px]">
-                        <LoginForm/>
+                        <RegisterForm/>
                     </div>
                 </div>
             </div>

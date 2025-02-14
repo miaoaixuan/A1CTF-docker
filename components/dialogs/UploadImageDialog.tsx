@@ -38,7 +38,7 @@ interface ErrorMessage {
     title: string;
 }
 
-export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id: number, type: "team" | "person",  children: React.ReactNode }> = ({ updateTeam, id, type, children }) => {
+export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number, type: "team" | "person",  children: React.ReactNode }> = ({ updateTeam, id, type, children }) => {
 
     const [isOpen, setIsOpen] = useState(false)
 
@@ -52,8 +52,27 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id: number, 
 
     const handleFileChange = (event: any) => {
         const file = event.target.files[0];
-        if (type == "team") {
+        if (type == "team" && id) {
             api.team.teamAvatar(id, {
+                file: file
+            }).then((res) => {
+                toast.success("Set the avatar successfully.", { position: "top-center" })
+
+                if (updateTeam) updateTeam()
+                setTimeout(() => {
+                    setIsOpen(false)
+                }, 200)
+            }).catch((error: AxiosError) => {
+                if (error.response?.status) {
+                    const errorMessage: ErrorMessage = error.response.data as ErrorMessage
+                    toast.error(errorMessage.title, { position: "top-center" })
+                } else {
+                    toast.error("Unknow error", { position: "top-center" })
+                }
+            })
+        }
+        if (type == "person") {
+            api.account.accountAvatar({
                 file: file
             }).then((res) => {
                 toast.success("Set the avatar successfully.", { position: "top-center" })

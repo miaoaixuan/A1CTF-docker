@@ -30,6 +30,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
 import { Skeleton } from "./ui/skeleton";
 import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
+import { useTransitionContext } from "@/contexts/TransitionContext";
+import api from "@/utils/GZApi";
+import { toast } from "sonner";
 
 const PageHeader = () => {
 
@@ -39,7 +42,7 @@ const PageHeader = () => {
     const [isOpen, setIsOpen] = useState(false);
 
     const [cookies, setCookie, removeCookie] = useCookies(["uid"])
-    const { curProfile } = useGlobalVariableContext()
+    const { curProfile, updateProfile } = useGlobalVariableContext()
 
     let path = (usePathname() || "/zh").slice(lng.length + 2);
 
@@ -48,6 +51,9 @@ const PageHeader = () => {
     const whetherSelected = (name: string) => {
         return (path == name) ? "secondary" : "ghost";
     }
+
+    const { startTransition } = useTransitionContext();
+    const router = useRouter()
 
     useEffect(() => {
 
@@ -109,17 +115,41 @@ const PageHeader = () => {
                                 <>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger>
-                                            <Avatar className="select-none">
-                                                <AvatarImage src={curProfile.avatar || "#"} alt="@shadcn" />
-                                                <AvatarFallback><Skeleton className="h-12 w-12 rounded-full" /></AvatarFallback>
-                                            </Avatar>
+                                        <Avatar className="select-none">
+                                            { curProfile.avatar ? (
+                                                <>
+                                                    <AvatarImage src={curProfile.avatar || "#"} alt="@shadcn"
+                                                        className={`rounded-2xl`}
+                                                    />
+                                                    <AvatarFallback><Skeleton className="h-full w-full rounded-full" /></AvatarFallback>
+                                                </>
+                                            ) : ( 
+                                                <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
+                                                    <span className='text-background text-md'> { curProfile.userName?.substring(0, 2) } </span>
+                                                </div>
+                                            ) }
+                                        </Avatar>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent className="mt-2">
-                                            <DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => startTransition(() => {
+                                                router.push(`/${lng}/profile`)
+                                            })}>
                                                 <Settings />
                                                 <span>Settings</span>
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => startTransition(() => {
+                                                router.push(`/${lng}/profile/password`)
+                                            })}>
+                                                <KeyRound />
+                                                <span>Change password</span>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => {
+                                                api.account.accountLogOut().then(() => {
+                                                    updateProfile(() => {
+                                                        toast.success("成功登出", { position: "top-center" })
+                                                    })
+                                                })
+                                            }}>
                                                 <UserRoundMinus />
                                                 <span>LoginOut</span>
                                             </DropdownMenuItem>
