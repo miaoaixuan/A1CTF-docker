@@ -32,6 +32,7 @@ import api from "@/utils/GZApi";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
 import { FileUp, Upload } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface ErrorMessage {
     status: number;
@@ -46,6 +47,8 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number,
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const t = useTranslations("upload_image")
+
     const handleUpload = () => {
         fileInputRef.current?.click();
     }
@@ -56,7 +59,7 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number,
             api.team.teamAvatar(id, {
                 file: file
             }).then((res) => {
-                toast.success("Set the avatar successfully.", { position: "top-center" })
+                toast.success(t("set_avatar_success"), { position: "top-center" })
 
                 if (updateTeam) updateTeam()
                 setTimeout(() => {
@@ -67,7 +70,7 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number,
                     const errorMessage: ErrorMessage = error.response.data as ErrorMessage
                     toast.error(errorMessage.title, { position: "top-center" })
                 } else {
-                    toast.error("Unknow error", { position: "top-center" })
+                    toast.error(t("unknow_error"), { position: "top-center" })
                 }
             })
         }
@@ -75,7 +78,7 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number,
             api.account.accountAvatar({
                 file: file
             }).then((res) => {
-                toast.success("Set the avatar successfully.", { position: "top-center" })
+                toast.success(t("set_avatar_success"), { position: "top-center" })
 
                 if (updateTeam) updateTeam()
                 setTimeout(() => {
@@ -86,7 +89,7 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number,
                     const errorMessage: ErrorMessage = error.response.data as ErrorMessage
                     toast.error(errorMessage.title, { position: "top-center" })
                 } else {
-                    toast.error("Unknow error", { position: "top-center" })
+                    toast.error(t("unknow_error"), { position: "top-center" })
                 }
             })
         }
@@ -103,7 +106,7 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number,
                 onInteractOutside={(e) => e.preventDefault()}
             >
                 <DialogHeader>
-                    <DialogTitle>Choose a image</DialogTitle>
+                    <DialogTitle>{ t("choose_image") }</DialogTitle>
                 </DialogHeader>
                 <input
                     type="file"

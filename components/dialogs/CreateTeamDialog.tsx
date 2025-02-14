@@ -31,13 +31,7 @@ import { Textarea } from "../ui/textarea";
 import api from "@/utils/GZApi";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
-
-const formSchema = z.object({
-    teamName: z.string().min(2, {
-        message: "Team name must be at least 2 characters.",
-    }),
-    slogan: z.string()
-})
+import { useTranslations } from "next-intl";
 
 interface ErrorMessage {
     status: number;
@@ -45,6 +39,15 @@ interface ErrorMessage {
 }
 
 export const CreateTeamDialog: React.FC<{ updateTeam: () => void, children: React.ReactNode }> = ({ updateTeam , children }) => {
+
+    const t = useTranslations("teams")
+
+    const formSchema = z.object({
+        teamName: z.string().min(2, {
+            message: t("form_team_name_error"),
+        }),
+        slogan: z.string()
+    })
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -61,7 +64,7 @@ export const CreateTeamDialog: React.FC<{ updateTeam: () => void, children: Reac
             name: values.teamName,
             bio: values.slogan
         }).then((res) => {
-            toast.success("Create team success!", { position: "top-center" })
+            toast.success(t("create_team_success"), { position: "top-center" })
             updateTeam()
             setIsOpen(false)
         }).catch((error: AxiosError) => {
@@ -69,7 +72,7 @@ export const CreateTeamDialog: React.FC<{ updateTeam: () => void, children: Reac
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
                 toast.error(errorMessage.title, { position: "top-center" })
             } else {
-                toast.error("Unknow error", { position: "top-center" })
+                toast.error(t("unknow_error"), { position: "top-center" })
             }
         })
     }
@@ -86,9 +89,9 @@ export const CreateTeamDialog: React.FC<{ updateTeam: () => void, children: Reac
                 onInteractOutside={(e) => e.preventDefault()}
             >
                 <DialogHeader>
-                    <DialogTitle>Create Team</DialogTitle>
+                    <DialogTitle>{ t("create_team") }</DialogTitle>
                     <DialogDescription>
-                        Create a team, then you can invite others to join it.
+                        { t("create_team_desc") }
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -98,12 +101,12 @@ export const CreateTeamDialog: React.FC<{ updateTeam: () => void, children: Reac
                             name="teamName"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>TeamName</FormLabel>
+                                    <FormLabel>{ t("team_name") }</FormLabel>
                                     <FormControl>
                                         <Input placeholder="a1team" {...field} />
                                     </FormControl>
                                     <FormDescription>
-                                        This is your team&apos;s public display name.
+                                        { t("team_name_desc") }
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem>
@@ -114,7 +117,7 @@ export const CreateTeamDialog: React.FC<{ updateTeam: () => void, children: Reac
                             name="slogan"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Slogan</FormLabel>
+                                    <FormLabel>{ t("slogan") }</FormLabel>
                                     <FormControl>
                                         <Textarea placeholder="We can win!" {...field} />
                                     </FormControl>
@@ -122,7 +125,7 @@ export const CreateTeamDialog: React.FC<{ updateTeam: () => void, children: Reac
                                 </FormItem>
                             )}
                         />
-                        <Button type="submit">Submit</Button>
+                        <Button type="submit">{ t("submit") }</Button>
                     </form>
                 </Form>
             </DialogContent>

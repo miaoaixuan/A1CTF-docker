@@ -39,13 +39,8 @@ import { Badge } from "../ui/badge";
 import { Trash2 } from "lucide-react";
 import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
 import { ConfirmDialog, DialogOption } from "./ConfirmDialog";
+import { useTranslations } from "next-intl";
 
-const formSchema = z.object({
-    teamName: z.string().min(2, {
-        message: "Team name must be at least 2 characters.",
-    }),
-    slogan: z.string()
-})
 
 interface ErrorMessage {
     status: number;
@@ -53,6 +48,15 @@ interface ErrorMessage {
 }
 
 export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamInfoModel, children: React.ReactNode }> = ({ updateTeam, teamModel, children }) => {
+
+    const t = useTranslations("teams")
+
+    const formSchema = z.object({
+        teamName: z.string().min(2, {
+            message: t("form_team_name_error"),
+        }),
+        slogan: z.string()
+    })
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -86,7 +90,7 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
             name: values.teamName,
             bio: values.slogan
         }).then((res) => {
-            toast.success(`Update team info successful.`, { position: "top-center" })
+            toast.success(t("update_successful"), { position: "top-center" })
             updateTeam()
             setSubmitDisabled(false)
             setIsOpen(false)
@@ -95,7 +99,7 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
                 toast.error(errorMessage.title, { position: "top-center" })
             } else {
-                toast.error("Unknow error", { position: "top-center" })
+                toast.error(t("unknow_error"), { position: "top-center" })
             }
         })
     }
@@ -103,7 +107,7 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
     const handleKickMember = (member: TeamUserInfoModel) => {
         setSubmitDisabled(true)
         api.team.teamKickUser(teamModel.id!, member.id!).then((res) => {
-            toast.success(`Kick user ${ member.userName } successful!`, { position: "top-center" })
+            toast.success(`${t("kick_user_info_p1")} ${ member.userName } ${t("kick_user_info_p2")}`, { position: "top-center" })
             setSubmitDisabled(false)
             updateTeam()
         }).catch((error: AxiosError) => {
@@ -111,14 +115,14 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
                 toast.error(errorMessage.title, { position: "top-center" })
             } else {
-                toast.error("Unknow error", { position: "top-center" })
+                toast.error(t("unknow_error"), { position: "top-center" })
             }
         })
     }
 
     const deleteTeam = () => {
         api.team.teamDeleteTeam(teamModel.id!).then(() => {
-            toast.success(`Disband team ${ teamModel.name } successful!`, { position: "top-center" })
+            toast.success(`${t("disband_info_p1")} ${ teamModel.name } ${t("disband_info_p2")}`, { position: "top-center" })
             setSubmitDisabled(false)
             updateTeam()
             setIsOpen(false)
@@ -127,14 +131,14 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
                 toast.error(errorMessage.title, { position: "top-center" })
             } else {
-                toast.error("Unknow error", { position: "top-center" })
+                toast.error(t("unknow_error"), { position: "top-center" })
             }
         })
     }
 
     const leaveTeam = () => {
         api.team.teamLeave(teamModel.id!).then(() => {
-            toast.success(`Leave team ${ teamModel.name } successful!`, { position: "top-center" })
+            toast.success(`${t("leave_team_info_p1")} ${ teamModel.name } ${t("leave_team_info_p2")}`, { position: "top-center" })
             setSubmitDisabled(false)
             updateTeam()
             setIsOpen(false)
@@ -143,7 +147,7 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
                 toast.error(errorMessage.title, { position: "top-center" })
             } else {
-                toast.error("Unknow error", { position: "top-center" })
+                toast.error(t("unknow_error"), { position: "top-center" })
             }
         })
     }
@@ -154,7 +158,7 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
             {
                 ...prev,
                 isOpen: true,
-                message: "Did you really want to disband this team?",
+                message: t("disband_confirm_dialog"),
                 onConfirm: deleteTeam,
                 onCancel: () => setSubmitDisabled(false)
             }
@@ -167,7 +171,7 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
             {
                 ...prev,
                 isOpen: true,
-                message: "Did you really want to leave this team?",
+                message: t("leave_confirm_dialog"),
                 onConfirm: leaveTeam,
                 onCancel: () => setSubmitDisabled(false)
             }
@@ -192,7 +196,7 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
             >
                 <ConfirmDialog settings={dialogOption} setSettings={setDialogOption} />
                 <DialogHeader>
-                    <DialogTitle>Edit team - { teamModel.name || "" }</DialogTitle>
+                    <DialogTitle>{ t("edit_team") } - { teamModel.name || "" }</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -203,12 +207,12 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
                                     name="teamName"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>TeamName</FormLabel>
+                                            <FormLabel>{ t("team_name") }</FormLabel>
                                             <FormControl>
                                                 <Input placeholder="a1team" disabled={!isLeader()} {...field} />
                                             </FormControl>
                                             <FormDescription>
-                                                This is your team&apos;s public display name.
+                                                { t("team_name_desc") }
                                             </FormDescription>
                                             <FormMessage />
                                         </FormItem>
@@ -254,19 +258,19 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
                             name="slogan"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Slogan</FormLabel>
+                                    <FormLabel>{ t("slogan") }</FormLabel>
                                     <FormControl>
                                         <Textarea placeholder="We can win!" disabled={!isLeader()} {...field} />
                                     </FormControl>
                                     <FormDescription>
-                                        This is your team&apos;s public display slogan.
+                                        { t("slogan_desc") }
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
                         <FormItem>
-                            <FormLabel>Members</FormLabel>
+                            <FormLabel>{ t("members") }</FormLabel>
                             <FormControl>
                                 <div className="flex flex-col gap-3">
                                     { teamModel.members?.map((e, index) => (
@@ -287,7 +291,7 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
                                             </Avatar>
                                             <span className="text-lg">{ e.userName }</span>
                                             <div className="flex-1"/>
-                                            <Badge className={`pl-2 pr-2 ${ e.captain ? "bg-yellow-500 hover:bg-yellow-400" : "bg-blue-500 hover:bg-blue-400" }`}> { e.captain ? "Leader" : "Member" } </Badge>
+                                            <Badge className={`pl-2 pr-2 ${ e.captain ? "bg-yellow-500 hover:bg-yellow-400" : "bg-blue-500 hover:bg-blue-400" }`}> { e.captain ? t("leader") : t("member") } </Badge>
                                             { e.captain || !isLeader() || submitDisabled ? (
                                                 <Trash2 className="stroke-foreground/20" />
                                             ) : (
@@ -304,13 +308,13 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
                         { isLeader() ? (
                             <Button type="button" className="transition-all duration-300 mr-4" variant="destructive" disabled={submitDisabled || !isLeader()}
                                 onClick={handleDisband}
-                            >Disband</Button>
+                            >{ t("disband") }</Button>
                         ) : (
                             <Button type="button" className="transition-all duration-300 mr-4" variant="destructive" disabled={submitDisabled}
                                 onClick={handleLeaveTeam}
-                            >LeaveTeam</Button> 
+                            >{ t("leave_team") }</Button> 
                         ) }
-                        <Button type="submit" className="transition-all duration-300" disabled={submitDisabled || !isLeader()}>Save</Button>
+                        <Button type="submit" className="transition-all duration-300" disabled={submitDisabled || !isLeader()}>{ t("save") }</Button>
                     </form>
                 </Form>
             </DialogContent>

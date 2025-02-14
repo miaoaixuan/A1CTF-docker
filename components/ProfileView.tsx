@@ -25,20 +25,8 @@ import { toast } from "sonner";
 import { AxiosError } from "axios";
 import api, { ErrorMessage } from "@/utils/GZApi";
 import { useTransitionContext } from "@/contexts/TransitionContext";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-
-const formSchema = z.object({
-    userName: z.string().min(2, {
-        message: "Username must longer than 2 characters"
-    }),
-    phone: z.string().regex(/^1(3\d|4[5-9]|5[0-35-9]|6[2567]|7[0-8]|8\d|9[0-35-9])\d{8}$/g, {
-        message: "Require a valid phone number."
-    }),
-    studentNumber: z.string(),
-    realName: z.string(),
-    desc: z.string()
-})
 
 export function ProfileView () {
 
@@ -47,6 +35,21 @@ export function ProfileView () {
     const router = useRouter()
 
     const [submitDisabled, setSubmitDisabled] = useState(false)
+
+    const t = useTranslations("profile_settings")
+
+
+    const formSchema = z.object({
+        userName: z.string().min(2, {
+            message: t("form_username_error")
+        }),
+        phone: z.string().regex(/^1(3\d|4[5-9]|5[0-35-9]|6[2567]|7[0-8]|8\d|9[0-35-9])\d{8}$/g, {
+            message: t("form_phone_error")
+        }),
+        studentNumber: z.string(),
+        realName: z.string(),
+        desc: z.string()
+    })
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -78,13 +81,13 @@ export function ProfileView () {
             "bio": values.desc,
             "phone": values.phone
         }).then((res) => {
-            toast.success(`Save profile data info successful.`, { position: "top-center" })
+            toast.success(t("save_profile_success"), { position: "top-center" })
         }).catch((error: AxiosError) => {
             if (error.response?.status) {
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
                 toast.error(errorMessage.title, { position: "top-center" })
             } else {
-                toast.error("Unknow error", { position: "top-center" })
+                toast.error(t("unknow_error"), { position: "top-center" })
             }
         })
     }
@@ -93,7 +96,7 @@ export function ProfileView () {
         <MacScrollbar className="w-full h-full flex flex-col overflow-hidden overflow-y-auto">
             <div className="w-full flex flex-col items-center pt-12">
                 <div className="flex w-[80%] lg:w-[40%]">
-                    <span className="font-bold text-2xl mb-10">Change your information below</span>
+                    <span className="font-bold text-2xl mb-10">{ t("change_profile_below") }</span>
                 </div>
                 <div className="w-[80%] lg:w-[40%] pb-12">
                     <Form {...form}>
@@ -105,12 +108,12 @@ export function ProfileView () {
                                         name="userName"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Username</FormLabel>
+                                                <FormLabel>{ t("form_username_label") }</FormLabel>
                                                 <FormControl>
                                                     <Input {...field} />
                                                 </FormControl>
                                                 <FormDescription>
-                                                    Input your username here.
+                                                    { t("form_username_desc") }
                                                 </FormDescription>
                                                 <FormMessage />
                                             </FormItem>
@@ -141,12 +144,12 @@ export function ProfileView () {
                                 name="phone"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Phone</FormLabel>
+                                        <FormLabel>{ t("form_phone_label") }</FormLabel>
                                         <FormControl>
                                             <Input {...field} />
                                         </FormControl>
                                         <FormDescription>
-                                            Input your phone number here.
+                                            { t("form_phone_desc") }
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
@@ -157,12 +160,12 @@ export function ProfileView () {
                                 name="realName"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Realname</FormLabel>
+                                        <FormLabel>{ t("form_realname_label") }</FormLabel>
                                         <FormControl>
                                             <Input {...field} />
                                         </FormControl>
                                         <FormDescription>
-                                            Input your real name here.
+                                            { t("form_realname_desc") }
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
@@ -173,12 +176,12 @@ export function ProfileView () {
                                 name="studentNumber"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Student Number</FormLabel>
+                                        <FormLabel>{ t("form_student_number_label") }</FormLabel>
                                         <FormControl>
                                             <Input {...field} />
                                         </FormControl>
                                         <FormDescription>
-                                            Input your student number here.
+                                            { t("form_student_number_desc") }
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
@@ -189,21 +192,21 @@ export function ProfileView () {
                                 name="desc"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Description</FormLabel>
+                                        <FormLabel>{ t("form_desc_label") }</FormLabel>
                                         <FormControl>
                                             <Input {...field} />
                                         </FormControl>
                                         <FormDescription>
-                                            Input your description here.
+                                            { t("form_desc_desc") }
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
-                            <Button type="submit" className="transition-all duration-300 mr-4">Submit</Button>
+                            <Button type="submit" className="transition-all duration-300 mr-4">{ t("submit") }</Button>
                             <Button type="button" className="transition-all duration-300" onClick={() => startTransition(() => {
                                 router.push(`/${lng}/profile/email`)
-                            })}>Change email</Button>
+                            })}>{ t("change_email") }</Button>
                         </form>
                     </Form>
                 </div>

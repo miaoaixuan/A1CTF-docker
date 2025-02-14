@@ -33,6 +33,7 @@ import GameSwitchHover from "./GameSwitchHover";
 // import { DialogTitle } from "@/components/ui/sheet";
 import { useGameSwitchContext } from "@/contexts/GameSwitchContext";
 import { useRouter } from 'next/navigation';
+import { useTranslations } from "next-intl";
 export function ChangeGames() {
 
     const [curIndex, setCurIndex] = useState(0)
@@ -58,6 +59,8 @@ export function ChangeGames() {
         }
         setOnTransition(true)
     }
+
+    const t = useTranslations("games")
 
     // 懒加载
     const observerRef = useRef<IntersectionObserver | null>(null);
@@ -148,13 +151,13 @@ export function ChangeGames() {
     const getGameStatus = (game: BasicGameInfoModel) => {
         switch (checkTime(game)) {
             case -1:
-                return "未开始"
+                return t("game_status_pending")
             case 0:
-                return "进行中"
+                return t("game_status_running")
             case 1:
-                return "已结束"
+                return t("game_status_ended")
             default:
-                return "未知"
+                return t("game_status_unknow")
         }
     }
 
@@ -193,7 +196,7 @@ export function ChangeGames() {
         )
     } else if (curGames.length == 0) return (
         <div className="flex w-full h-full items-center justify-center">
-            <span className="text-2xl font-bold">怎么一场比赛都没有？？？</span>
+            <span className="text-2xl font-bold">{ t("game_nogame") }</span>
         </div>
     )
 
@@ -206,7 +209,7 @@ export function ChangeGames() {
                     <div className="pl-[10px] pt-[10px] pb-[10px] pr-[10px] h-full justify-center min-w-[250px] max-w-[350px] select-none hidden 2xl:flex flex-col ">
                         <div className="flex gap-1 items-center mb-[10px] pl-[20px] pr-[20px]">
                             <Swords size={32} className="transition-colors duration-300" />
-                            <span className="text-2xl transition-colors duration-300">比赛列表</span>
+                            <span className="text-2xl transition-colors duration-300">{ t("game_list") }</span>
                         </div>
                         <MacScrollbar
                             className="p-4"
@@ -242,13 +245,13 @@ export function ChangeGames() {
                                             <LayoutList />
                                         </Button>
                                     </SheetTrigger>
-                                    <span className="select-none">{ "<- 也许你可以点这个打开比赛列表(" }</span>
+                                    <span className="select-none">{ t("game_maybe_click") }</span>
                                 </div>
                                 <SheetContent side="left">
                                     <SheetTitle className="hidden" />
                                     <div className="flex gap-1 items-center mb-[10px] pl-[20px] pr-[20px] select-none">
                                         <Swords size={32} className="transition-colors duration-300" />
-                                        <span className="text-2xl transition-colors duration-300">比赛列表</span>
+                                        <span className="text-2xl transition-colors duration-300">{ t("game_list") }</span>
                                     </div>
                                     <MacScrollbar
                                         className="p-4 select-none"
@@ -324,7 +327,7 @@ export function ChangeGames() {
                                                     >
                                                         <div className="flex w-full h-full items-center select-none text-foreground/80 hover:text-cyan-500 justify-center gap-2 pt-3 pb-3 pl-8 pr-8">
                                                             <PlugZap size={35} className="transition-colors duration-300" />
-                                                            <span className="text-2xl font-bold transition-colors duration-300">加入</span>
+                                                            <span className="text-2xl font-bold transition-colors duration-300">{ t("game_join") }</span>
                                                         </div>
                                                     </div>
                                                     <div className="absolute z-10 bottom-5 left-5 rounded-xl flex flex-col items-center justify-center border-foreground/80 bg-background/20 backdrop-blur-sm    transition-transform duration-300 p-2 pl-4 pr-4">
@@ -397,7 +400,7 @@ export function ChangeGames() {
                             >
                                 <div className="flex w-full h-full items-center select-none text-foreground/80 hover:text-cyan-500 justify-center gap-2 pt-3 pb-3 pl-8 pr-8">
                                     <PlugZap size={35} className="transition-colors duration-300" />
-                                    <span className="text-2xl font-bold transition-colors duration-300">加入</span>
+                                    <span className="text-2xl font-bold transition-colors duration-300">{ t("game_join") }</span>
                                 </div>
                             </div>
                             <Image
@@ -416,7 +419,7 @@ export function ChangeGames() {
                                     <span className="text-2xl font-bold mb-[5px]">{curGames[curIndex].title}</span>
                                     <div className="flex items-center gap-2">
                                         <NotebookTabs size={22} />
-                                        <span className="text-sm font-bold">{curGames[curIndex].summary || "没有哦"}</span>
+                                        <span className="text-sm font-bold">{curGames[curIndex].summary || t("game_nocontext")}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <CalendarPlus size={22} />

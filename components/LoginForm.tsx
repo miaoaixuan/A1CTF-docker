@@ -41,16 +41,11 @@ interface ErrorLoginResponse {
     status: number;
 }
 
-const formSchema = z.object({
-    userName: z.string().nonempty("用户名不能为空"),
-    password: z.string().nonempty("密码不能为空")
-})
-
 export function LoginForm({
     className,
     ...props
 }: React.ComponentPropsWithoutRef<"form">) {
-    const t = useTranslations();
+    const t = useTranslations("login_form");
 
     const userNameRef = useRef<HTMLInputElement>(null)
     const passwordRef = useRef<HTMLInputElement>(null)
@@ -64,6 +59,11 @@ export function LoginForm({
     const [loading, setLoading] = useState(false)
 
     const { theme } = useTheme();
+
+    const formSchema = z.object({
+        userName: z.string().nonempty(t("username_not_null")),
+        password: z.string().nonempty(t("password_not_null"))
+    })
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -85,7 +85,7 @@ export function LoginForm({
                 })
     
                 setTimeout(() => {
-                    toast.success("登录成功", { position: "top-center" })
+                    toast.success(t("login_successful"), { position: "top-center" })
                 }, 300)
             })
         }).catch((error: AxiosError) => {
@@ -93,7 +93,7 @@ export function LoginForm({
                 const response = error.response.data as ErrorLoginResponse
                 toast.error(response.title, { position: "top-center" })
             } else {
-                toast.error("Unknow error", { position: "top-center" })
+                toast.error(t("unknow_error"), { position: "top-center" })
             }
         }).finally(() => {
             setTimeout(() => {
@@ -116,12 +116,12 @@ export function LoginForm({
                     name="userName"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Account</FormLabel>
+                            <FormLabel>{ t("form_account") }</FormLabel>
                             <FormControl>
                                 <Input {...field} />
                             </FormControl>
                             <FormDescription>
-                                Username or email address.
+                                { t("form_account_desc") }
                             </FormDescription>
                             <FormMessage />
                         </FormItem>
@@ -151,7 +151,7 @@ export function LoginForm({
                     )}
                 />
                 <div className='h-0' />
-                <Button type="submit" className="transition-all duration-300 w-full" disabled={loading}>Login</Button>
+                <Button type="submit" className="transition-all duration-300 w-full" disabled={loading}>{ t("login") }</Button>
                 <div className="text-center text-sm">
                     {t("dont_have_account")}{" "}
                     <a className="underline underline-offset-4" onClick={() => startTransition(() => {

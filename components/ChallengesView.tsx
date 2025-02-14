@@ -302,7 +302,7 @@ export function ChallengesView({ id }: { id: string }) {
                     setRemainTimePercent(Math.floor((curLeft / totalTime) * 100))
                 }, 500)
             } else {
-                setRemainTime("Ended. Practice Mode")
+                setRemainTime(t("practice_time"))
                 setRemainTimePercent(0)
             }
 
@@ -543,7 +543,7 @@ export function ChallengesView({ id }: { id: string }) {
                 // 更新队伍信息
                 api.game.gameGame(gameID).then((res) => {
                     setGameInfo(res.data)
-                    toast.success("Submitted!", { position: "top-center" })
+                    toast.success(t("team_submitted"), { position: "top-center" })
 
                     setGameStatus("waitForProcess")
                 }).catch((error: AxiosError) => {
@@ -551,12 +551,12 @@ export function ChallengesView({ id }: { id: string }) {
                         const errorMessage: ErrorMessage = error.response.data as ErrorMessage
                         toast.error(errorMessage.title, { position: "top-center" })
                     } else {
-                        toast.error("Unknow error", { position: "top-center" })
+                        toast.error(t("unknow_error"), { position: "top-center" })
                     }
                 })
             })
         } else {
-            toast.error("Choose a team first!", { position: "top-center" })
+            toast.error(t("choose_team_first"), { position: "top-center" })
         }
     }
 
@@ -569,11 +569,11 @@ export function ChallengesView({ id }: { id: string }) {
                 <div className="absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]">
                     <div className="flex flex-col text-3xl items-center gap-4 select-none">
                         <Info size={80} />
-                        { gameStatus == "ended" ? (<span>比赛已结束</span>) : (<span>比赛未开始</span>) }
-                        { gameStatus == "pending" && (<span>距离比赛开始还有 { beforeGameTime }</span>) }
+                        { gameStatus == "ended" ? (<span>{ t("game_ended") }</span>) : (<span>{ t("game_pending") }</span>) }
+                        { gameStatus == "pending" && (<span>{ t("game_start_countdown") } { beforeGameTime }</span>) }
                         <div className="flex">
                             <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                                <Button>返回主页</Button>
+                                <Button>{ t("back_to_main") }</Button>
                             </TransitionLink>
                         </div>
                     </div>
@@ -598,14 +598,14 @@ export function ChallengesView({ id }: { id: string }) {
                     <div className="flex flex-col items-center gap-4 select-none">
                         <div className="flex flex-col items-center gap-6 text-white">
                             <TriangleAlert size={120} />
-                            <span className="text-3xl">你已被禁赛，详细请联系管理员</span>
+                            <span className="text-3xl">{ t("you_have_be_banned") }</span>
                         </div>
                         <div className="flex gap-4 mt-6">
                             <Button variant="secondary"
                                 onClick={() => setScoreBoardVisible(true)}
-                            ><Presentation />排行榜</Button>
+                            ><Presentation />{ t("rank") }</Button>
                             <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                                <Button variant="secondary">返回主页</Button>
+                                <Button variant="secondary">{ t("back_to_main") }</Button>
                             </TransitionLink>
                         </div>
                     </div>
@@ -616,11 +616,11 @@ export function ChallengesView({ id }: { id: string }) {
                 <div className="absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]">
                     <div className="flex flex-col items-center gap-4 select-none">
                         <Info size={80} />
-                        <span className="text-3xl">尚未参赛，请先报名</span>
+                        <span className="text-3xl">{ t("not_participated") }</span>
                         { availableTeams.length ? (
                             <>
                                 <div className="flex w-full mb-[-12px]">
-                                    <span>Team name:</span>
+                                    <span>{ t("team_name") }</span>
                                 </div>
                                 <Select onValueChange={(val) => setCurChoosedTeam(parseInt(val, 10))}>
                                     <SelectTrigger className="w-[280px] bg-background">
@@ -636,15 +636,15 @@ export function ChallengesView({ id }: { id: string }) {
                                 </Select>
                             </>
                         ) : (
-                            <span>无可用战队，请先去创建战队</span>
+                            <span>{ t("no_available_team") }</span>
                         ) }
                         <div className="flex gap-4">
-                            <Button onClick={submitTeam} disabled={availableTeams.length <= 0}>报名</Button>
+                            <Button onClick={submitTeam} disabled={availableTeams.length <= 0}>{ t("sign_up") }</Button>
                             <Button variant="outline"
                                 onClick={() => setScoreBoardVisible(true)}
-                            ><Presentation />排行榜</Button>
+                            ><Presentation />{ t("rank") }</Button>
                             <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                                <Button variant="outline">返回主页</Button>
+                                <Button variant="outline">{ t("back_to_main") }</Button>
                             </TransitionLink>
                         </div>
                     </div>
@@ -657,7 +657,7 @@ export function ChallengesView({ id }: { id: string }) {
                 >
                     <div className="flex flex-col items-center gap-4 select-none">
                         <Info size={80} />
-                        <span className="text-3xl">已报名，请等待审核通过</span>
+                        <span className="text-3xl">{ t("wait_for_process") }</span>
                     </div>
                 </div>
             ) }
@@ -668,13 +668,13 @@ export function ChallengesView({ id }: { id: string }) {
                 >
                     <div className="flex flex-col items-center gap-4 select-none">
                         <ShieldX size={80} />
-                        <span className="text-3xl">请先登录</span>
+                        <span className="text-3xl">{ t("login_first") }</span>
                         <div className="flex gap-6">
                             <Button variant="outline"
                                 onClick={() => setScoreBoardVisible(true)}
-                            ><Presentation />排行榜</Button>
+                            ><Presentation />{ t("rank") }</Button>
                             <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                                <Button variant="outline">返回主页</Button>
+                                <Button variant="outline">{ t("back_to_main") }</Button>
                             </TransitionLink>
                         </div>
                     </div>
@@ -687,9 +687,9 @@ export function ChallengesView({ id }: { id: string }) {
                 >
                     <div className="flex flex-col items-center gap-4 select-none">
                         <Info size={80} />
-                        <span className="text-3xl">没有这场比赛</span>
+                        <span className="text-3xl">{ t("no_such_game") }</span>
                         <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                            <Button variant="outline">返回主页</Button>
+                            <Button variant="outline">{ t("back_to_main") }</Button>
                         </TransitionLink>
                     </div>
                 </div>

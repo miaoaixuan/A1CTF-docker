@@ -32,6 +32,7 @@ import api from "@/utils/GZApi";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
 import { CircleAlert, FileUp, Upload } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface ErrorMessage {
     status: number;
@@ -50,6 +51,8 @@ export type DialogSettings = {
 export const ConfirmDialog: React.FC<DialogSettings> = ({ settings: {
     onConfirm, onCancel, isOpen, message, title = "Are you sure"
 }, setSettings }) => {
+
+    const t = useTranslations("teams")
 
     const setIsOpen = (status: boolean) => {
         setSettings((prev) => (
@@ -87,13 +90,13 @@ export const ConfirmDialog: React.FC<DialogSettings> = ({ settings: {
                             setIsOpen(false)
                             if (onConfirm) onConfirm()
                         }}
-                    >Continue</Button>
+                    >{ t("continue_button") }</Button>
                     <Button variant="ghost"
                         onClick={() => {
                             setIsOpen(false)
                             if (onCancel) onCancel()
                         }}
-                    >Cancel</Button>
+                    >{ t("cancel_button") }</Button>
                 </div>
             </DialogContent>
         </Dialog>

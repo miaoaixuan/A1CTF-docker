@@ -10,8 +10,11 @@ import { MailCheck } from "lucide-react";
 import { toast } from "sonner";
 import api, { ErrorMessage } from "@/utils/GZApi";
 import { AxiosError } from "axios";
+import { useTranslations } from "next-intl";
 
 export function ChangeEmailView() {
+
+    const t = useTranslations("change_email")
 
     const [step, setStep] = useState<1 | 2>(1);
     const { curProfile } = useGlobalVariableContext()
@@ -21,7 +24,7 @@ export function ChangeEmailView() {
 
     const handleSendCode = async () => {
         if (!newEmail) {
-            toast.error("请输入邮箱地址", { position: "top-center" })
+            toast.error(t("please_input_email"), { position: "top-center" })
             return
         }
 
@@ -47,21 +50,20 @@ export function ChangeEmailView() {
         <div className="flex w-full items-center justify-center min-h-screen">
             <Card className="w-full max-w-md">
                 <CardHeader>
-                    <CardTitle>修改邮箱地址</CardTitle>
+                    <CardTitle>{ t("edit_email_title") }</CardTitle>
                     <CardDescription>
                         {step === 1
-                            ? "请输入新的邮箱地址，我们将发送验证码到您的邮箱。"
+                            ? t("please_input_new_email")
                             : ""}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {step === 1 ? (
                         <div className="space-y-2">
-                            <Label htmlFor="new-email">新邮箱地址</Label>
+                            <Label htmlFor="new-email">{ t("new_email_address") }</Label>
                             <Input
                                 id="new-email"
                                 type="email"
-                                placeholder="请输入新邮箱"
                                 value={newEmail}
                                 onChange={(e) => setNewEmail(e.target.value)}
                             />
@@ -69,15 +71,15 @@ export function ChangeEmailView() {
                     ) : (
                         <div className="space-y-2 justify-center items-center flex w-full flex-col pt-10 pb-10 select-none">
                             <MailCheck size={60} />
-                            <Label className="text-2xl font-bold">验证码已经发送</Label>
-                            <Label className="text-md">请点击邮箱链接完成更改</Label>
+                            <Label className="text-2xl font-bold">{ t("activate_link_sended") }</Label>
+                            <Label className="text-md">{ t("click_link") }</Label>
                         </div>
                     )}
                 </CardContent>
                 <CardFooter>
                     {step === 1 ? (
                         <Button onClick={handleSendCode} disabled={isLoading} className="w-full">
-                            {isLoading ? "发送中..." : "发送验证码"}
+                            {isLoading ? t("sending") : t("send_link")}
                         </Button>
                     ) : (
                         <></>

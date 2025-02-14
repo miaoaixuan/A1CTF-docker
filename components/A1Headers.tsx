@@ -135,24 +135,24 @@ const PageHeader = () => {
                                                 router.push(`/${lng}/profile`)
                                             })}>
                                                 <Settings />
-                                                <span>Settings</span>
+                                                <span>{ t("settings") }</span>
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => startTransition(() => {
                                                 router.push(`/${lng}/profile/password`)
                                             })}>
                                                 <KeyRound />
-                                                <span>Change password</span>
+                                                <span>{ t("change_password_header") }</span>
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => {
                                                 api.account.accountLogOut().then(() => {
                                                     updateProfile(() => {
                                                         router.push(`/${lng}/`)
-                                                        toast.success("成功登出", { position: "top-center" })
+                                                        toast.success(t("login_out_success"), { position: "top-center" })
                                                     })
                                                 })
                                             }}>
                                                 <UserRoundMinus />
-                                                <span>LoginOut</span>
+                                                <span>{ t("login_out") }</span>
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>

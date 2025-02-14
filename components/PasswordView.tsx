@@ -19,23 +19,25 @@ import { useState } from "react";
 import api, { ErrorMessage } from "@/utils/GZApi";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
-
-
-const formSchema = z.object({
-    originalPassword: z.string().min(6, "密码至少需要6个字符"),
-    newPassword: z.string()
-        .min(6, "密码至少需要6个字符")
-        .regex(/[0-9]/, "密码必须包含至少一个数字")
-        .regex(/[a-z]/, "密码必须包含至少一个小写字母")
-        .regex(/[A-Z]/, "密码必须包含至少一个大写字母")
-        .regex(/[^a-zA-Z0-9]/, "密码必须包含至少一个特殊字符"),
-    confirmPassword: z.string().min(6, "密码至少需要6个字符")
-}).refine(data => data.newPassword === data.confirmPassword, {
-    message: "确认密码必须与新密码一致",
-    path: ["confirmPassword"] // 这将使错误信息关联到 confirmPassword 字段
-});
+import { useTranslations } from "next-intl";
 
 export function PasswordView () {
+
+    const t = useTranslations("change_password")
+
+    const formSchema = z.object({
+        originalPassword: z.string().min(6, t("form_password_length")),
+        newPassword: z.string()
+            .min(6, t("form_password_length"))
+            .regex(/[0-9]/, t("form_password_number"))
+            .regex(/[a-z]/, t("form_password_lower"))
+            .regex(/[A-Z]/, t("form_password_upper"))
+            .regex(/[^a-zA-Z0-9]/, t("form_password_special")),
+        confirmPassword: z.string().min(6, t("form_password_length"))
+    }).refine(data => data.newPassword === data.confirmPassword, {
+        message: t("form_password_confirm"),
+        path: ["confirmPassword"] // 这将使错误信息关联到 confirmPassword 字段
+    });
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -56,13 +58,13 @@ export function PasswordView () {
             old: values.originalPassword,
             new: values.newPassword
         }).then((res) => {
-            toast.success(`Change password successful.`, { position: "top-center" })
+            toast.success(t("change_password_success"), { position: "top-center" })
         }).catch((error: AxiosError) => {
             if (error.response?.status) {
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
                 toast.error(errorMessage.title, { position: "top-center" })
             } else {
-                toast.error("Unknow error", { position: "top-center" })
+                toast.error(t("unknow_error"), { position: "top-center" })
             }
         })
     }
@@ -70,7 +72,7 @@ export function PasswordView () {
     return (
         <div className="w-full h-full flex flex-col items-center justify-center select-none">
             <div className="w-[20%] mb-10">
-                <span className="font-bold text-2xl">Change your password</span>
+                <span className="font-bold text-2xl">{ t("form_title_change_your_password") }</span>
             </div>
             <div className="w-[20%]">
                 <Form {...form}>
@@ -80,7 +82,7 @@ export function PasswordView () {
                             name="originalPassword"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Original Password</FormLabel>
+                                    <FormLabel>{ t("form_original_password") }</FormLabel>
                                     <FormControl>
                                         <Input {...field} />
                                     </FormControl>
@@ -93,7 +95,7 @@ export function PasswordView () {
                             name="newPassword"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>New password</FormLabel>
+                                    <FormLabel>{ t("form_new_password") }</FormLabel>
                                     <FormControl>
                                         <Input type="password" {...field} />
                                     </FormControl>
@@ -106,7 +108,7 @@ export function PasswordView () {
                             name="confirmPassword"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Confirm password</FormLabel>
+                                    <FormLabel>{ t("form_confirm_password") }</FormLabel>
                                     <FormControl>
                                         <Input type="password" {...field} />
                                     </FormControl>
@@ -114,7 +116,7 @@ export function PasswordView () {
                                 </FormItem>
                             )}
                         />
-                        <Button type="submit" className="transition-all duration-300 mr-4">Save</Button>
+                        <Button type="submit" className="transition-all duration-300 mr-4">{ t("save") }</Button>
                     </form>
                 </Form>
             </div>

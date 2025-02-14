@@ -19,7 +19,7 @@ import { EditTeamDialog } from "./dialogs/EditTeamDialog";
 import { AxiosError } from "axios";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 interface ErrorMessage {
     status: number;
@@ -32,6 +32,8 @@ export function TeamsView() {
 
     const [inviteCodes, setInviteCodes] = useState<Record<number, string>>({})
     const [showInviteCodes, setShowInviteCodes] = useState<Record<number, boolean>>({})
+
+    const t = useTranslations("teams")
 
     const lng = useLocale()
     const { theme } = useTheme()
@@ -53,7 +55,7 @@ export function TeamsView() {
             setTeams(res.data)
         }).catch((error: AxiosError) => {
             if (error.response?.status == 401) {
-                toast.error("Please login first!", { position: "top-center" })
+                toast.error(t("please_login_first"), { position: "top-center" })
                 router.push(`/${lng}/login`)
             }
         })
@@ -97,7 +99,7 @@ export function TeamsView() {
 
     const refreshInviteCode = (team: TeamInfoModel) => {
         api.team.teamUpdateInviteToken(team.id!).then((res) => {
-            toast.success(`Update team invite code successful.`, { position: "top-center" })
+            toast.success(t("update_invite_code_success"), { position: "top-center" })
             setInviteCodes((prev) => ({
                 ...prev,
                 [team.id!]: res.data
@@ -107,7 +109,7 @@ export function TeamsView() {
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
                 toast.error(errorMessage.title, { position: "top-center" })
             } else {
-                toast.error("Unknow error", { position: "top-center" })
+                toast.error(t("unknow_error"), { position: "top-center" })
             }
         })
     }
@@ -140,7 +142,7 @@ export function TeamsView() {
                             <div className="flex-1 w-full flex flex-col gap-2 justify-center">
                                 <div className="flex items-center gap-2 select-none">
                                     <SquareAsterisk size={28} />
-                                    <span className="text-lg">Invite Code</span>
+                                    <span className="text-lg">{ t("invite_code") }</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Input className="border-2 focus-visible:ring-0" onMouseDown={(e) => e.preventDefault()} width={4} readOnly value={!showInviteCodes[e.id || 0] ? "**************************************" : inviteCodes[e.id || 0]} />
@@ -159,10 +161,10 @@ export function TeamsView() {
                                         onClick={() => {
                                             if (inviteCodes[e.id!] != "null") {
                                                 const status = copy(inviteCodes[e.id!])
-                                                if (status) toast.success("已复制", { position: "top-center" })
-                                                else toast.error("复制到剪切板失败", { position: "top-center" })
+                                                if (status) toast.success(t("copied"), { position: "top-center" })
+                                                else toast.error(t("fail_copy"), { position: "top-center" })
                                             } else {
-                                                toast.error("未知错误", { position: "top-center" })
+                                                toast.error(t("unknow_error"), { position: "top-center" })
                                             }
                                         }}>
                                         <Clipboard />
@@ -176,7 +178,7 @@ export function TeamsView() {
                                 </div>
                                 <div className="flex items-center gap-2 mt-2 select-none">
                                     <Users size={28} />
-                                    <span className="text-lg">Members</span>
+                                    <span className="text-lg">{ t("members") }</span>
                                 </div>
                                 <div className="flex gap-4 mt-1">
                                     { e.members?.map((member, index) => (
@@ -186,7 +188,7 @@ export function TeamsView() {
                                                     <AvatarImage src={member.avatar || "#"} alt="@shadcn"
                                                         className={`rounded-xl shadow-[5px_5px_1px_var(--tw-shadow-colored)] ${ member.captain ? "shadow-yellow-400/50" : "shadow-blue-400/50" }`}
                                                         data-tooltip-id="challengeTooltip3"
-                                                        data-tooltip-html={ `<div class='text-sm flex flex-col'><span>${ member.userName }${ member.bio ? " - " + member.bio : "" }</span><span>${ member.captain ? "Leader" : "Member" }</span></div>` }
+                                                        data-tooltip-html={ `<div class='text-sm flex flex-col'><span>${ member.userName }${ member.bio ? " - " + member.bio : "" }</span><span>${ member.captain ? t("leader") : t("member") }</span></div>` }
                                                     />
                                                     <AvatarFallback><Skeleton className="h-12 w-12 rounded-full" /></AvatarFallback>
                                                 </>
@@ -205,13 +207,13 @@ export function TeamsView() {
                         <CreateTeamDialog updateTeam={updateTeams}>
                             <div className="w-32 h-32 flex-col transition-[transform] duration-300 border-2 hover:scale-105 border-cyan-500 border-dashed rounded-2xl flex items-center justify-center p-3">
                                 <Plus className="w-full h-full stroke-cyan-500" />
-                                <span className="text-cyan-500 text-xl">Create</span>
+                                <span className="text-cyan-500 text-xl">{ t("create_button") }</span>
                             </div>
                         </CreateTeamDialog>
                         <JoinTeamDialog updateTeam={updateTeams}>
                             <div className="w-32 h-32 border-2 flex-col transition-[transform] duration-300 hover:scale-105 border-cyan-500 border-dashed rounded-2xl flex items-center justify-center p-3">
                                 <Asterisk className="w-full h-full stroke-cyan-500" />
-                                <span className="text-cyan-500 text-xl">Join</span>
+                                <span className="text-cyan-500 text-xl">{ t("join_button") }</span>
                             </div>
                         </JoinTeamDialog>
                     </div>

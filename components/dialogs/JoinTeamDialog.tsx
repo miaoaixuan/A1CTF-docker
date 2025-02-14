@@ -31,12 +31,7 @@ import { Textarea } from "../ui/textarea";
 import api from "@/utils/GZApi";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
-
-const formSchema = z.object({
-    inviteCode: z.string().regex(/.*:\d+:[a-z0-9]{32}/g, {
-        message: "Invalid invite code."
-    })
-})
+import { useTranslations } from "next-intl";
 
 interface ErrorMessage {
     status: number;
@@ -45,6 +40,14 @@ interface ErrorMessage {
 
 export const JoinTeamDialog: React.FC<{ updateTeam: () => void, children: React.ReactNode }> = ({ updateTeam, children }) => {
 
+    const t = useTranslations("teams")
+
+    const formSchema = z.object({
+        inviteCode: z.string().regex(/.*:\d+:[a-z0-9]{32}/g, {
+            message: t("invalid_invite_code")
+        })
+    })
+    
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -60,7 +63,7 @@ export const JoinTeamDialog: React.FC<{ updateTeam: () => void, children: React.
         setSubmitDisabled(true)
 
         api.team.teamAccept(values.inviteCode).then(() => {
-            toast.success("You have joined the team!", { position: "top-center" })
+            toast.success(t("join_team_success"), { position: "top-center" })
             updateTeam()
             setIsOpen(false)
         }).catch((error: AxiosError) => {
@@ -68,7 +71,7 @@ export const JoinTeamDialog: React.FC<{ updateTeam: () => void, children: React.
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
                 toast.error(errorMessage.title, { position: "top-center" })
             } else {
-                toast.error("Unknow error", { position: "top-center" })
+                toast.error(t("unknow_error"), { position: "top-center" })
             }
         }).finally(() => {
             setSubmitDisabled(false)
@@ -87,9 +90,9 @@ export const JoinTeamDialog: React.FC<{ updateTeam: () => void, children: React.
                 onInteractOutside={(e) => e.preventDefault()}
             >
                 <DialogHeader>
-                    <DialogTitle>Join a team</DialogTitle>
+                    <DialogTitle>{ t("join_team") }</DialogTitle>
                     <DialogDescription>
-                        Compete with your friend!
+                        { t("join_team_desc") }
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -99,18 +102,18 @@ export const JoinTeamDialog: React.FC<{ updateTeam: () => void, children: React.
                             name="inviteCode"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>InviteCode</FormLabel>
+                                    <FormLabel>{ t("invite_code") }</FormLabel>
                                     <FormControl>
                                         <Input placeholder="xxxx:xx:xxxxxxxx" {...field} />
                                     </FormControl>
                                     <FormDescription>
-                                        Input your invite code here.
+                                        { t("invite_code_desc") }
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
-                        <Button type="submit" className="transition-all duration-300" disabled={submitDisabled}>Submit</Button>
+                        <Button type="submit" className="transition-all duration-300" disabled={submitDisabled}>{ t("submit") }</Button>
                     </form>
                 </Form>
             </DialogContent>
