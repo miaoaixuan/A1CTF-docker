@@ -231,6 +231,9 @@ export function ChallengesView({ id }: { id: string }) {
                 expectStopAt: curChallenge.context?.closeTime
             })
             setContainerLaunching(true)
+        } else {
+            setContainerLaunching(false)
+            setContainerInfo({})
         }
 
         // 切换题目重置折叠状态
