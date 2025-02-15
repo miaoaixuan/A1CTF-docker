@@ -34,7 +34,7 @@ export const TransitionLink: React.FC<TransitionLinkProps> = ({
     };
 
     return (
-        <Link {...props} href={href} className={cn(className, "")} onClick={handleTransition}>
+        <Link {...props} href={href} className={cn(className, "")} prefetch={false} onClick={handleTransition}>
             {children}
         </Link>
     );
