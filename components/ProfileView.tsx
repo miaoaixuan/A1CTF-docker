@@ -93,7 +93,7 @@ export function ProfileView () {
     }
 
     return (
-        <MacScrollbar className="w-full h-full flex flex-col overflow-hidden overflow-y-auto">
+        <MacScrollbar className="w-full h-full flex flex-col overflow-hidden overflow-y-auto select-none">
             <div className="w-full flex flex-col items-center pt-12">
                 <div className="flex w-[80%] lg:w-[40%]">
                     <span className="font-bold text-2xl mb-10">{ t("change_profile_below") }</span>

@@ -200,7 +200,14 @@
         "sign_up": "Sign up",
         "wait_for_process": "Registered, please wait for approval",
         "login_first": "Please login first",
-        "no_such_game": "There is no such game"
+        "no_such_game": "There is no such game",
+        "launching": "Launching...",
+        "destory": "Destory",
+        "copied": "Container info copied",
+        "fail_copy": "Copy to clipboard failed.",
+        "container_start_success": "Start the container success.",
+        "container_extend_success": "The expire time have been extended.",
+        "container_destory_success": "The container have been destoried."
     },
 
     "game_terminal": {

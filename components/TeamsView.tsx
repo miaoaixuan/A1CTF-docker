@@ -20,6 +20,7 @@ import { AxiosError } from "axios";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import { LoadingPage } from "./LoadingPage";
 
 interface ErrorMessage {
     status: number;
@@ -32,6 +33,9 @@ export function TeamsView() {
 
     const [inviteCodes, setInviteCodes] = useState<Record<number, string>>({})
     const [showInviteCodes, setShowInviteCodes] = useState<Record<number, boolean>>({})
+    const curTeamRef = useRef<number[]>([])
+
+    const [loadingPageVisible, setLoadingPageVisible] = useState(true)
 
     const t = useTranslations("teams")
 
@@ -41,16 +45,24 @@ export function TeamsView() {
 
     const updateTeams = (first?: boolean) => {
         api.team.teamGetTeamsInfo().then((res) => {
-            
-            if (first) {
-                const tmpInviteCodes: Record<string, string> = {}
-                const tmpShowInvite: Record<string, boolean> = {}
-                res.data.forEach((e) => {
-                    tmpInviteCodes[e.id || 0] = "null"
-                    tmpShowInvite[e.id || 0] = false
-                })
-                setInviteCodes(tmpInviteCodes)
-            }
+
+            setTimeout(() => {
+                setLoadingPageVisible(false)
+            }, 200)
+
+            res.data.forEach((e) => {
+                if (curTeamRef.current.findIndex((val) => val == e.id!) == -1) {
+                    setShowInviteCodes((prev) => ({
+                        ...prev,
+                        [e.id!]: false
+                    }))
+                    setInviteCodes((prev) => ({
+                        ...prev,
+                        [e.id!]: "null"
+                    }))
+                    curTeamRef.current.push(e.id!)
+                }
+            })
 
             setTeams(res.data)
         }).catch((error: AxiosError) => {
@@ -115,7 +127,8 @@ export function TeamsView() {
     }
 
     return (
-        <div className="flex w-full h-full">
+        <div className="flex w-full h-full relative">
+            <LoadingPage visible={loadingPageVisible} screen={false} absolute={true} />
             <MacScrollbar className="w-full h-full p-5 lg:p-20 overflow-y-auto" skin={theme == "light" ? "light" : "dark"}>
                 <div className={`grid auto-rows-[300px] gap-6 w-full ${ teams.length >= 2 ? "grid-cols-[repeat(auto-fill,minmax(350px,1fr))] lg:grid-cols-[repeat(auto-fill,minmax(600px,1fr))] " : "grid-cols-[repeat(auto-fill,minmax(350px,600px))] lg:grid-cols-[repeat(auto-fill,minmax(500px,600px))]"}`}>
                     { teams.map((e, index) => (

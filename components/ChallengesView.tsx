@@ -29,7 +29,7 @@ import { ResizableScrollablePanel } from "@/components/ResizableScrollablePanel"
 import { Mdx } from "./MdxCompoents";
 import { useEffect, useRef, useState } from "react";
 
-import api, { ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeType, ChallengeInfo, ChallengeType, ErrorMessage, TeamInfoModel, ParticipationStatus } from '@/utils/GZApi'
+import api, { ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeType, ChallengeInfo, ChallengeType, ErrorMessage, TeamInfoModel, ParticipationStatus, ContainerStatus, ContainerInfoModel } from '@/utils/GZApi'
 import { Skeleton } from "./ui/skeleton";
 
 import * as signalR from '@microsoft/signalr'
@@ -37,7 +37,7 @@ import * as signalR from '@microsoft/signalr'
 import dayjs from "dayjs";
 import { LoadingPage } from "./LoadingPage";
 import { Button } from "./ui/button";
-import { AppWindow, CalendarClock, CircleCheckBig, CloudDownload, Files, Flag, FlaskConical, FoldHorizontal, Info, Link, LoaderPinwheel, PackageOpen, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal } from "lucide-react";
+import { AppWindow, CalendarClock, CircleCheckBig, ClockArrowUp, CloudDownload, Container, Copy, Files, Flag, FlaskConical, FoldHorizontal, Hourglass, Info, Link, LoaderCircle, LoaderPinwheel, PackageOpen, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal, X } from "lucide-react";
 import { AxiosError } from "axios";
 
 import Image from "next/image";
@@ -72,6 +72,7 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner";
 import { TransitionLink } from "./TransitionLink";
+import copy from "copy-to-clipboard";
 
 const GameTerminal = dynamic(
     () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
@@ -183,7 +184,7 @@ export function ChallengesView({ id }: { id: string }) {
 
     const [gameStatus, setGameStatus] = useState("")
     const [beforeGameTime, setBeforeGameTime] = useState("")
-    
+
     const checkInterStarted = useRef(false)
 
     const [availableTeams, setAvailableTeams] = useState<TeamInfoModel[]>([])
@@ -191,7 +192,9 @@ export function ChallengesView({ id }: { id: string }) {
 
     const [curChoosedTeam, setCurChoosedTeam] = useState<number>(-1)
 
-    let checkGameStatusIter: NodeJS.Timeout;
+    const [containerLaunching, setContainerLaunching] = useState(false)
+    const [containerInfo, setContainerInfo] = useState<ContainerInfoModel>({})
+    const [containerLeftTime, setContainerLeftTime] = useState("")
 
     const gameID = parseInt(id, 10)
 
@@ -220,6 +223,16 @@ export function ChallengesView({ id }: { id: string }) {
     }
 
     useEffect(() => {
+
+        if (curChallenge.context?.closeTime) {
+            setContainerInfo({
+                entry: curChallenge.context.instanceEntry || "",
+                status: ContainerStatus.Running,
+                expectStopAt: curChallenge.context?.closeTime
+            })
+            setContainerLaunching(true)
+        }
+
         // 切换题目重置折叠状态
         if (JSON.stringify(curChallenge) == JSON.stringify(prevChallenge.current)) return
         prevChallenge.current = curChallenge
@@ -241,6 +254,23 @@ export function ChallengesView({ id }: { id: string }) {
             clearTimeout(timeout)
         }
     }, [curChallenge]);
+
+    useEffect(() => {
+        if (dayjs(containerInfo.expectStopAt) > dayjs()) {
+            setContainerLeftTime(formatDuration(dayjs(containerInfo.expectStopAt).diff(dayjs()) / 1000))
+            const leftTimeInter = setInterval(() => {
+                if (dayjs(containerInfo.expectStopAt) > dayjs()) {
+                    setContainerLeftTime(formatDuration(dayjs(containerInfo.expectStopAt).diff(dayjs()) / 1000))
+                } else {
+                    setContainerInfo({})
+                }
+            }, 500)
+
+            return () => clearInterval(leftTimeInter)
+        } else if (dayjs(containerInfo.expectStopAt) < dayjs()) {
+            setContainerInfo({})
+        }
+    }, [containerInfo])
 
     useEffect(() => {
         // 获取比赛信息以及剩余时间
@@ -297,7 +327,7 @@ export function ChallengesView({ id }: { id: string }) {
             if (gameStatus != "practiceMode") {
                 timeIter = setInterval(() => {
                     const curLeft = Math.floor(dayjs(gameInfo.end).diff(dayjs()) / 1000)
-            
+
                     setRemainTime(formatDuration(curLeft))
                     setRemainTimePercent(Math.floor((curLeft / totalTime) * 100))
                 }, 500)
@@ -363,9 +393,9 @@ export function ChallengesView({ id }: { id: string }) {
 
             return () => {
                 if (connection) {
-                     connection.stop().catch((err) => {
-                         console.error(err)
-                     })
+                    connection.stop().catch((err) => {
+                        console.error(err)
+                    })
                 }
 
                 if (timeIter) clearInterval(timeIter)
@@ -422,7 +452,7 @@ export function ChallengesView({ id }: { id: string }) {
                             setTimeout(() => {
                                 setGameStatus("running")
                             }, randomInt(1000, 2000))
-                        }).catch((error: AxiosError) => {})
+                        }).catch((error: AxiosError) => { })
                     }, 2000)
                 } else {
                     setBeforeGameTime(formatDuration(Math.floor(dayjs(gameInfo.start).diff(dayjs()) / 1000)))
@@ -458,12 +488,12 @@ export function ChallengesView({ id }: { id: string }) {
     const handleDownload = () => {
         if (curChallenge.context?.url) {
             const url = curChallenge.context?.url;
-    
+
             // 判断是否是本地附件
             if (curChallenge.context.fileSize) {
                 const fileName = getAttachmentName(url);
                 setDownloadName(fileName);
-    
+
                 // 开始下载
                 const fetchFile = async () => {
                     try {
@@ -472,11 +502,11 @@ export function ChallengesView({ id }: { id: string }) {
                         if (!response.ok) {
                             throw new Error("Network response was not ok");
                         }
-    
+
                         const reader = response.body!.getReader();
                         const totalBytes = parseInt(contentLength, 10);
                         let receivedBytes = 0;
-    
+
                         // 创建一个新的 Blob 来保存文件内容
                         const chunks: Uint8Array[] = [];
                         const pump = async () => {
@@ -484,7 +514,7 @@ export function ChallengesView({ id }: { id: string }) {
                             if (done) {
                                 const blob = new Blob(chunks);
                                 const downloadUrl = URL.createObjectURL(blob);
-                                
+
                                 setTimeout(() => {
                                     setDownloadName("");  // 清除文件名
                                     setAttachDownloadProgress(0); // 重置进度条
@@ -500,7 +530,7 @@ export function ChallengesView({ id }: { id: string }) {
 
                                 return;
                             }
-    
+
                             // 保存当前的下载进度
                             chunks.push(value);
                             receivedBytes += value.length;
@@ -513,10 +543,10 @@ export function ChallengesView({ id }: { id: string }) {
                                     setAttachDownloadProgress(101);
                                 }, 500)
                             }
-    
+
                             pump();  // 继续读取数据
                         };
-    
+
                         pump();
                     } catch (error) {
                         console.error("Download failed:", error);
@@ -524,7 +554,7 @@ export function ChallengesView({ id }: { id: string }) {
                         setAttachDownloadProgress(0); // 重置进度条
                     }
                 };
-    
+
                 setTimeout(() => {
                     fetchFile();
                 }, 500)
@@ -534,7 +564,7 @@ export function ChallengesView({ id }: { id: string }) {
             }
         }
     };
-    
+
     const submitTeam = () => {
         if (curChoosedTeam != -1) {
             api.game.gameJoinGame(gameID, {
@@ -560,28 +590,86 @@ export function ChallengesView({ id }: { id: string }) {
         }
     }
 
+    const updateContainer = (inter?: NodeJS.Timeout) => {
+        api.game.gameCreateContainer(gameID, curChallenge.id!).then((res) => {
+            setContainerInfo(res.data)
+
+            if (res.data.status == ContainerStatus.Running || res.data.status == ContainerStatus.Destroyed) {
+                toast.success(t("container_start_success"), { position: "top-center" })
+                if (inter) clearInterval(inter)
+            }
+        }).catch((error: AxiosError) => {
+            if (error.response?.status) {
+                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
+                toast.error(errorMessage.title, { position: "top-center" })
+            } else {
+                toast.error(t("unknow_error"), { position: "top-center" })
+            }
+
+            if (inter) clearInterval(inter)
+            setContainerLaunching(false)
+        })
+    }
+
+    const handleLaunchContainer = () => {
+        setContainerLaunching(true)
+
+        const updateContainerInter = setInterval(() => {
+            updateContainer(updateContainerInter)
+        }, 2000)
+    }
+
+    const handleExtendContainer = () => {
+        api.game.gameExtendContainerLifetime(gameID, curChallenge.id!).then((res) => {
+            setContainerInfo(res.data)
+            toast.success(t("container_extend_success"), { position: "top-center" })
+        }).catch((error: AxiosError) => {
+            if (error.response?.status) {
+                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
+                toast.error(errorMessage.title, { position: "top-center" })
+            } else {
+                toast.error(t("unknow_error"), { position: "top-center" })
+            }
+        })
+    }
+
+    const handleDestoryContainer = () => {
+        api.game.gameDeleteContainer(gameID, curChallenge.id!).then((res) => {
+            toast.success(t("container_destory_success"), { position: "top-center" })
+            setContainerInfo({})
+            setContainerLaunching(false)
+        }).catch((error: AxiosError) => {
+            if (error.response?.status) {
+                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
+                toast.error(errorMessage.title, { position: "top-center" })
+            } else {
+                toast.error(t("unknow_error"), { position: "top-center" })
+            }
+        })
+    }
+
     return (
         <>
             <GameSwitchHover animation={false} />
             <LoadingPage visible={loadingVisiblity} />
 
-            { (gameStatus == "pending" || gameStatus == "ended") && (
+            {(gameStatus == "pending" || gameStatus == "ended") && (
                 <div className="absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]">
                     <div className="flex flex-col text-3xl items-center gap-4 select-none">
                         <Info size={80} />
-                        { gameStatus == "ended" ? (<span>{ t("game_ended") }</span>) : (<span>{ t("game_pending") }</span>) }
-                        { gameStatus == "pending" && (<span>{ t("game_start_countdown") } { beforeGameTime }</span>) }
+                        {gameStatus == "ended" ? (<span>{t("game_ended")}</span>) : (<span>{t("game_pending")}</span>)}
+                        {gameStatus == "pending" && (<span>{t("game_start_countdown")} {beforeGameTime}</span>)}
                         <div className="flex">
                             <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                                <Button>{ t("back_to_main") }</Button>
+                                <Button>{t("back_to_main")}</Button>
                             </TransitionLink>
                         </div>
                     </div>
                 </div>
-            ) }
+            )}
 
-            { gameStatus == "banned" && (
-                <motion.div 
+            {gameStatus == "banned" && (
+                <motion.div
                     className={`absolute top-0 left-0 w-screen h-screen flex items-center justify-center z-[40]`}
                     initial={{
                         backgroundColor: "rgb(239 68 68 / 0)",
@@ -598,29 +686,29 @@ export function ChallengesView({ id }: { id: string }) {
                     <div className="flex flex-col items-center gap-4 select-none">
                         <div className="flex flex-col items-center gap-6 text-white">
                             <TriangleAlert size={120} />
-                            <span className="text-3xl">{ t("you_have_be_banned") }</span>
+                            <span className="text-3xl">{t("you_have_be_banned")}</span>
                         </div>
                         <div className="flex gap-4 mt-6">
                             <Button variant="secondary"
                                 onClick={() => setScoreBoardVisible(true)}
-                            ><Presentation />{ t("rank") }</Button>
+                            ><Presentation />{t("rank")}</Button>
                             <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                                <Button variant="secondary">{ t("back_to_main") }</Button>
+                                <Button variant="secondary">{t("back_to_main")}</Button>
                             </TransitionLink>
                         </div>
                     </div>
                 </motion.div>
-            ) }
+            )}
 
-            { gameStatus == "unRegistered" && preJoinDataPrepared && ( 
+            {gameStatus == "unRegistered" && preJoinDataPrepared && (
                 <div className="absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]">
                     <div className="flex flex-col items-center gap-4 select-none">
                         <Info size={80} />
-                        <span className="text-3xl">{ t("not_participated") }</span>
-                        { availableTeams.length ? (
+                        <span className="text-3xl">{t("not_participated")}</span>
+                        {availableTeams.length ? (
                             <>
                                 <div className="flex w-full mb-[-12px]">
-                                    <span>{ t("team_name") }</span>
+                                    <span>{t("team_name")}</span>
                                 </div>
                                 <Select onValueChange={(val) => setCurChoosedTeam(parseInt(val, 10))}>
                                     <SelectTrigger className="w-[280px] bg-background">
@@ -628,76 +716,76 @@ export function ChallengesView({ id }: { id: string }) {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
-                                            { availableTeams.map((e, index) => (
-                                                <SelectItem value={`${e.id}`} key={index}>{ e.name }</SelectItem>
-                                            )) }
+                                            {availableTeams.map((e, index) => (
+                                                <SelectItem value={`${e.id}`} key={index}>{e.name}</SelectItem>
+                                            ))}
                                         </SelectGroup>
                                     </SelectContent>
                                 </Select>
                             </>
                         ) : (
-                            <span>{ t("no_available_team") }</span>
-                        ) }
+                            <span>{t("no_available_team")}</span>
+                        )}
                         <div className="flex gap-4">
-                            <Button onClick={submitTeam} disabled={availableTeams.length <= 0}>{ t("sign_up") }</Button>
+                            <Button onClick={submitTeam} disabled={availableTeams.length <= 0}>{t("sign_up")}</Button>
                             <Button variant="outline"
                                 onClick={() => setScoreBoardVisible(true)}
-                            ><Presentation />{ t("rank") }</Button>
+                            ><Presentation />{t("rank")}</Button>
                             <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                                <Button variant="outline">{ t("back_to_main") }</Button>
+                                <Button variant="outline">{t("back_to_main")}</Button>
                             </TransitionLink>
                         </div>
                     </div>
                 </div>
-            ) }
+            )}
 
-            { gameStatus == "waitForProcess" && (
-                <div 
+            {gameStatus == "waitForProcess" && (
+                <div
                     className={`absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]`}
                 >
                     <div className="flex flex-col items-center gap-4 select-none">
                         <Info size={80} />
-                        <span className="text-3xl">{ t("wait_for_process") }</span>
+                        <span className="text-3xl">{t("wait_for_process")}</span>
                     </div>
                 </div>
-            ) }
+            )}
 
-            { gameStatus == "unLogin" && (
-                <div 
+            {gameStatus == "unLogin" && (
+                <div
                     className={`absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]`}
                 >
                     <div className="flex flex-col items-center gap-4 select-none">
                         <ShieldX size={80} />
-                        <span className="text-3xl">{ t("login_first") }</span>
+                        <span className="text-3xl">{t("login_first")}</span>
                         <div className="flex gap-6">
                             <Button variant="outline"
                                 onClick={() => setScoreBoardVisible(true)}
-                            ><Presentation />{ t("rank") }</Button>
+                            ><Presentation />{t("rank")}</Button>
                             <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                                <Button variant="outline">{ t("back_to_main") }</Button>
+                                <Button variant="outline">{t("back_to_main")}</Button>
                             </TransitionLink>
                         </div>
                     </div>
                 </div>
-            ) }
+            )}
 
-            { gameStatus == "noSuchGame" && (
-                <div 
+            {gameStatus == "noSuchGame" && (
+                <div
                     className={`absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]`}
                 >
                     <div className="flex flex-col items-center gap-4 select-none">
                         <Info size={80} />
-                        <span className="text-3xl">{ t("no_such_game") }</span>
+                        <span className="text-3xl">{t("no_such_game")}</span>
                         <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                            <Button variant="outline">{ t("back_to_main") }</Button>
+                            <Button variant="outline">{t("back_to_main")}</Button>
                         </TransitionLink>
                     </div>
                 </div>
-            ) }
+            )}
 
             {/* 下载动画 */}
             <DownloadBar key={"download-panel"} progress={attachDownloadProgress} downloadName={downloadName}></DownloadBar>
-            <ScoreBoardPage gmid={gameID} visible={scoreBoardVisible} setVisible={setScoreBoardVisible} gameStatus={gameStatus}/>
+            <ScoreBoardPage gmid={gameID} visible={scoreBoardVisible} setVisible={setScoreBoardVisible} gameStatus={gameStatus} />
             {/* 重定向警告页 */}
             <RedirectNotice redirectURL={redirectURL} setRedirectURL={setRedirectURL} />
             {/* 公告页 */}
@@ -756,45 +844,45 @@ export function ChallengesView({ id }: { id: string }) {
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setNoticeOpened(true)} disabled={notices.length == 0}>
                                             <PackageOpen />
-                                            <span>{ t("open_notices") }</span>
-                                            { notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{ notices.length }</Badge> : <></> }
+                                            <span>{t("open_notices")}</span>
+                                            {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{notices.length}</Badge> : <></>}
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setScoreBoardVisible(true)}>
                                             <Presentation />
-                                            <span>{ t("rank") }</span>
+                                            <span>{t("rank")}</span>
                                         </DropdownMenuItem>
                                     </div>
-                                    
+
                                 </DropdownMenuContent>
                             </DropdownMenu>
                             <Button variant="outline" className="select-none hidden lg:flex" onClick={() => setNoticeOpened(true)} disabled={notices.length == 0}>
                                 <div className="flex items-center gap-1">
                                     <PackageOpen />
-                                    <span>{ t("open_notices") }</span>
-                                    { notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{ notices.length }</Badge> : <></> }
+                                    <span>{t("open_notices")}</span>
+                                    {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{notices.length}</Badge> : <></>}
                                 </div>
                             </Button>
                             <Button variant="outline" className="select-none hidden lg:flex" onClick={() => setScoreBoardVisible(true)}>
                                 <div className="flex items-center gap-1">
                                     <Presentation />
-                                    <span>{ t("rank") }</span>
+                                    <span>{t("rank")}</span>
                                 </div>
                             </Button>
                             {/* <Button size="icon" variant="outline" onClick={testFunction}><FlaskConical /></Button> */}
                             <ToggleTheme />
                             <Avatar className="select-none">
-                                { curProfile.avatar ? (
+                                {curProfile.avatar ? (
                                     <>
                                         <AvatarImage src={curProfile.avatar || "#"} alt="@shadcn"
                                             className={`rounded-2xl`}
                                         />
                                         <AvatarFallback><Skeleton className="h-full w-full rounded-full" /></AvatarFallback>
                                     </>
-                                ) : ( 
+                                ) : (
                                     <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
-                                        <span className='text-background text-md'> { curProfile.userName?.substring(0, 2) } </span>
+                                        <span className='text-background text-md'> {curProfile.userName?.substring(0, 2)} </span>
                                     </div>
-                                ) }
+                                )}
                             </Avatar>
                         </div>
                     </div>
@@ -819,13 +907,13 @@ export function ChallengesView({ id }: { id: string }) {
                         }}>
                             {!curChallenge.title ? (
                                 <div className="absolute top-0 left-0 w-full h-full flex p-7 flex-col">
-                                    { gameInfo.content ? (
+                                    {gameInfo.content ? (
                                         <Mdx source={gameInfo.content || ""}></Mdx>
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center select-none">
-                                            <span className="font-bold text-lg">{ t("choose_something") }</span>
+                                            <span className="font-bold text-lg">{t("choose_something")}</span>
                                         </div>
-                                    ) }
+                                    )}
                                 </div>
                             ) : <></>}
                             <div className="absolute bottom-2 right-2 flex flex-col gap-2 p-2 opacity-100 ease-in-out">
@@ -870,7 +958,7 @@ export function ChallengesView({ id }: { id: string }) {
                                                 </div>
                                                 <div className="flex-1" />
                                                 <div className="flex justify-end gap-4 transition-colors duration-300">
-                                                    { challengeSolvedList[curChallenge.id || 0] ? (
+                                                    {challengeSolvedList[curChallenge.id || 0] ? (
                                                         <div className="flex items-center gap-2 text-purple-600">
                                                             <ScanHeart className="flex-none" />
                                                             <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current.score} pts</span>
@@ -880,7 +968,7 @@ export function ChallengesView({ id }: { id: string }) {
                                                             <Flag className="flex-none" />
                                                             <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current.score} pts</span>
                                                         </div>
-                                                    ) }
+                                                    )}
                                                     <div className="flex items-center gap-2 text-green-600">
                                                         <CircleCheckBig />
                                                         <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current.solved} solves</span>
@@ -892,16 +980,75 @@ export function ChallengesView({ id }: { id: string }) {
                                             <div className="w-full border-b-[1px] h-[50px] p-2 transition-[border-color] duration-300 flex items-center">
                                                 <div className="flex items-center gap-2 transition-colors duration-300 select-none">
                                                     <Target size={21} />
-                                                    <span className="text-md">{ t("live_container") }</span>
+                                                    <span className="text-md">{t("live_container")}</span>
                                                 </div>
                                                 <div className="flex-1" />
-                                                <div className="flex justify-end gap-4">
-                                                    <Button asChild variant="ghost" className="pl-4 pr-4 pt-0 pb-0 text-md text-green-600 font-bold [&_svg]:size-6 transition-colors duration-300 select-none">
-                                                        <div className="flex gap-[4px]">
-                                                            <Rocket />
-                                                            <span className="">{ t("launch") }</span>
-                                                        </div>
-                                                    </Button>
+                                                <div className="flex justify-end gap-4 h-full">
+                                                    {(containerInfo.status != ContainerStatus.Running && containerInfo.status != ContainerStatus.Destroyed) && (
+                                                        <Button variant="ghost" className="pl-4 pr-4 pt-0 pb-0 text-md text-green-600 font-bold [&_svg]:size-6 transition-colors duration-300 select-none" disabled={containerLaunching}
+                                                            onClick={() => { handleLaunchContainer() }}
+                                                        >
+                                                            {containerLaunching ? (
+                                                                <div className="flex gap-[8px]">
+                                                                    <LoaderCircle className="animate-spin" />
+                                                                    <span className="">{t("launching")}</span>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex gap-[6px]">
+                                                                    <Rocket />
+                                                                    <span className="">{t("launch")}</span>
+                                                                </div>
+                                                            )}
+                                                        </Button>
+                                                    )}
+
+                                                    {containerInfo.status == ContainerStatus.Running && (
+                                                        <>
+                                                            <div className="flex h-full gap-2">
+                                                                <div className="gap-2 h-full items-center pl-4 pr-4 border-[1px] rounded-2xl hidden xl:flex">
+                                                                    <Hourglass size={20} />
+                                                                    <span>{containerLeftTime}</span>
+                                                                </div>
+                                                                <div className="gap-2 h-full items-center pl-4 pr-4 border-[1px] rounded-2xl hidden xl:flex">
+                                                                    <Container size={22} />
+                                                                    <span>{containerInfo.entry}</span>
+                                                                </div>
+                                                                <DropdownMenu>
+                                                                    <DropdownMenuTrigger asChild>
+                                                                        <Button variant="outline" size="icon" className="xl:hidden"><Container /></Button>
+                                                                    </DropdownMenuTrigger>
+                                                                    <DropdownMenuContent className="mt-2">
+                                                                        <div className="flex flex-col gap-2 p-2">
+                                                                            <div className="gap-2 items-center h-[33px] pl-4 pr-4 border-[1px] rounded-2xl flex xl:hidden">
+                                                                                <Hourglass size={20} />
+                                                                                <span>{containerLeftTime}</span>
+                                                                            </div>
+                                                                            <div className="gap-2 items-center h-[33px] pl-4 pr-4 border-[1px] rounded-2xl flex xl:hidden">
+                                                                                <Container size={22} />
+                                                                                <span>{containerInfo.entry}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </DropdownMenuContent>
+                                                                </DropdownMenu>
+                                                                <div className="h-full flex items-center">
+                                                                    <Button variant={"outline"} size={"icon"} onClick={() => {
+                                                                        const status = copy(containerInfo.entry!)
+                                                                        if (status) {
+                                                                            toast.success(t("copied"), { position: "top-center" })
+                                                                        } else {
+                                                                            toast.success(t("fail_copy"), { position: "top-center" })
+                                                                        }
+                                                                    }}><Copy /></Button>
+                                                                </div>
+                                                                <div className="h-full flex items-center">
+                                                                    <Button variant={"outline"} size={"icon"} onClick={() => handleExtendContainer()} ><ClockArrowUp /></Button>
+                                                                </div>
+                                                                <div className="h-full flex items-center">
+                                                                    <Button variant={"destructive"} className="[&_svg]:size-5" onClick={() => handleDestoryContainer()} size={"icon"}><X /></Button>
+                                                                </div>
+                                                            </div>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
@@ -909,7 +1056,7 @@ export function ChallengesView({ id }: { id: string }) {
                                             <div className="w-full border-b-[1px] h-[50px] p-2 flex items-center gap-4 transition-[border-color] duration-300">
                                                 <div className="flex items-center gap-2 transition-colors duration-300">
                                                     <Files size={21} />
-                                                    <span className="text-md">{ t("attachments") }</span>
+                                                    <span className="text-md">{t("attachments")}</span>
                                                 </div>
                                                 <div className="flex justify-end gap-4">
                                                     <Button variant="ghost" onClick={() => handleDownload()} className="pl-4 pr-4 pt-0 pb-0 text-md [&_svg]:size-5 transition-all duration-300" disabled={downloadName != ""}>
@@ -924,7 +1071,7 @@ export function ChallengesView({ id }: { id: string }) {
                                                                 // 远程附件
                                                                 <>
                                                                     <Link />
-                                                                    <span className=""> { t("external_links") } </span>
+                                                                    <span className=""> {t("external_links")} </span>
                                                                 </>
                                                             )}
                                                         </div>
@@ -932,25 +1079,25 @@ export function ChallengesView({ id }: { id: string }) {
                                                 </div>
                                             </div>
                                         ) : (<></>)}
-                                        { curChallenge.title && (
+                                        {curChallenge.title && (
                                             <div className="w-full p-8 flex-1">
-                                            { curChallenge.content ? (
-                                                <Mdx source={curChallenge.content} />
-                                            ) : (
-                                                <div className="w-full h-full flex justify-center items-center select-none gap-4">
-                                                    <Image
-                                                        src="/images/peter.png"
-                                                        alt="Peter"
-                                                        width={200}
-                                                        height={40}
-                                                        priority
-                                                    />
-                                                    <span className="text-3xl font-bold">{ t("oops_empty") }</span>
-                                                </div>
-                                            ) }
-                                            
-                                        </div>
-                                        ) }
+                                                {curChallenge.content ? (
+                                                    <Mdx source={curChallenge.content} />
+                                                ) : (
+                                                    <div className="w-full h-full flex justify-center items-center select-none gap-4">
+                                                        <Image
+                                                            src="/images/peter.png"
+                                                            alt="Peter"
+                                                            width={200}
+                                                            height={40}
+                                                            priority
+                                                        />
+                                                        <span className="text-3xl font-bold">{t("oops_empty")}</span>
+                                                    </div>
+                                                )}
+
+                                            </div>
+                                        )}
                                     </MacScrollbar>
                                 </SafeComponent>
                             </div>

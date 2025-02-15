@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import ThemeSwitcher from "@/components/ToggleTheme"
 import Link from "next/link";
 
-import { ArrowUpToLine, ArrowDownToLine, UserRoundMinus, Settings } from 'lucide-react'
+import { ArrowUpToLine, ArrowDownToLine, UserRoundMinus, Settings, Wrench } from 'lucide-react'
 
 import {
     DropdownMenu,
@@ -31,7 +31,7 @@ import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
 import { Skeleton } from "./ui/skeleton";
 import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
 import { useTransitionContext } from "@/contexts/TransitionContext";
-import api from "@/utils/GZApi";
+import api, { Role } from "@/utils/GZApi";
 import { toast } from "sonner";
 
 const PageHeader = () => {
@@ -65,7 +65,7 @@ const PageHeader = () => {
                 <div className="container-wrapper h-full">
                     <div className="container h-16 items-center header-theme hidden md:flex">
                         <div className="md:flex items-center">
-                            <TransitionLink href={`/${lng}`}>
+                            <TransitionLink href={`/${lng}`} className="flex-shrink-0">
                                 <Image
                                     className="dark:invert"
                                     src="/images/A1natas.svg"
@@ -110,6 +110,11 @@ const PageHeader = () => {
                             </nav>
                         </div>
                         <div className="flex flex-1 items-center justify-between gap-3 md:justify-end">
+                            { (curProfile.role == Role.Admin || curProfile.role == Role.Monitor) && (
+                                <Button variant={"outline"} onClick={() => {
+                                    router.push("/admin/games")
+                                }}><Wrench />Admin</Button>
+                            ) }
                             <ThemeSwitcher />
                             { cookies.uid ? (
                                 <>
