@@ -8,15 +8,15 @@ const nextConfig = {
         return [
           {
             source: '/api/:path*',
-            destination: 'https://ctf.a1natas.com/api/:path*',
+            destination: 'https://www.a1natas.com/api/:path*',
           },
           {
             source: '/hub/:path*',
-            destination: 'https://ctf.a1natas.com/hub/:path*',
+            destination: 'https://www.a1natas.com/hub/:path*',
           },
           {
             source: '/assets/:path*',
-            destination: 'https://ctf.a1natas.com/assets/:path*' 
+            destination: 'https://www.a1natas.com/assets/:path*' 
           }
         ];
     },
