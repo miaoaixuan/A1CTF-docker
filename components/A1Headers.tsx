@@ -103,7 +103,9 @@ const PageHeader = () => {
                                     <span className="font-bold text-base ml-[-2px]">{t("about")}</span>
                                 </Button>
 
-                                <Button variant={whetherSelected("wp")}>
+                                <Button variant={whetherSelected("wp")} onClick={() => {
+                                        window.open("https://www.a1natas.com")
+                                }}>
                                     <NotebookText />
                                     <span className="font-bold text-base ml-[-2px]">{t("wp")}</span>
                                 </Button>
@@ -230,7 +232,9 @@ const PageHeader = () => {
                                         <span className="font-bold text-base ml-[-2px]">{t("about")}</span>
                                     </Button>
 
-                                    <Button variant={whetherSelected("wp")}>
+                                    <Button variant={whetherSelected("wp")} onClick={() => {
+                                        window.open("https://www.a1natas.com")
+                                    }}>
                                         <NotebookText />
                                         <span className="font-bold text-base ml-[-2px]">{t("wp")}</span>
                                     </Button>

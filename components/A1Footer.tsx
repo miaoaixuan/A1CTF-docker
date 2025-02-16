@@ -30,14 +30,18 @@ const A1Footer = () => {
 
     return (
         <>
-            <footer className="h-16 flex justify-center items-center font-bold text-sm lg:text-base">
+            <footer className="h-16 flex justify-center items-center font-bold text-sm lg:text-base select-none">
                 <Box className="hidden md:block" />
                 <span className="ml-2 hidden md:block">A1CTF for A1natas</span>
                 {/* <span className="ml-2 md:hidden">A1CTF</span> */}
                 <span className="ml-2 mr-2 hidden md:block">/</span>
-                <Link className="underline decoration-2 underline-offset-4" href="">浙ICP备2023022969号</Link>
+                <a className="hover:underline decoration-2 underline-offset-4" onClick={() => {
+                    window.open("http://beian.miit.gov.cn/")
+                }}>浙ICP备2023022969号</a>
                 <span className="ml-2 mr-2 hidden md:block">/</span>
-                <Link className="underline decoration-2 underline-offset-4 hidden md:block" href="">浙江师范大学</Link>
+                <a className="hover:underline decoration-2 underline-offset-4 hidden md:block" onClick={() => {
+                    window.open("https://www.zjnu.edu.cn/")
+                }}>浙江师范大学</a>
                 <span className="ml-2 mr-2">/</span>
                 <DropdownMenu open={infoViewShow} modal={false}>
                     <DropdownMenuTrigger asChild>
