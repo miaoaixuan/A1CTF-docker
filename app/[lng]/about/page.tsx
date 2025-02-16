@@ -16,11 +16,11 @@ export default async function Home() {
             <main className="flex flex-1 overflow-hidden">
                 <div className="w-full">
                     <SafeComponent animation={false}>
-                        <AboutPage source={source} />
+                        <AboutPage />
                     </SafeComponent>
                 </div>
             </main>
-            <A1Footer />
+            {/* <A1Footer /> */}
         </div>
     );
 }
