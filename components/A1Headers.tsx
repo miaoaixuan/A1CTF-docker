@@ -103,7 +103,7 @@ const PageHeader = () => {
                                     <span className="font-bold text-base ml-[-2px]">{t("about")}</span>
                                 </Button>
 
-                                <Button variant={whetherSelected("wp")} disabled>
+                                <Button variant={whetherSelected("wp")}>
                                     <NotebookText />
                                     <span className="font-bold text-base ml-[-2px]">{t("wp")}</span>
                                 </Button>
@@ -230,7 +230,7 @@ const PageHeader = () => {
                                         <span className="font-bold text-base ml-[-2px]">{t("about")}</span>
                                     </Button>
 
-                                    <Button variant={whetherSelected("wp")} disabled>
+                                    <Button variant={whetherSelected("wp")}>
                                         <NotebookText />
                                         <span className="font-bold text-base ml-[-2px]">{t("wp")}</span>
                                     </Button>
