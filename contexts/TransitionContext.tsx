@@ -21,13 +21,14 @@ export const TransitionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const [isTransitioning, setIsTransitioning] = useState(false);
 
     const startTransition = (callback: () => void) => {
-        setIsTransitioning(true);
-        setTimeout(() => {
-            callback();
-            setTimeout(() => {
-                setIsTransitioning(false);
-            }, 150); // Adjust this delay to match your transition duration
-        }, 150); // This delay should match your fade-out duration
+        // setIsTransitioning(true);
+        // setTimeout(() => {
+        //     callback();
+        //     setTimeout(() => {
+        //         setIsTransitioning(false);
+        //     }, 150);
+        // }, 150);
+        callback();
     };
 
     return (

@@ -3,7 +3,7 @@
     "race": "比赛",
     "team": "队伍",
     "about": "关于",
-    "wp": "WritesUP",
+    "wp": "文章",
     "signup": "注册",
     "login": "登录",
     "settings": "设置",
@@ -200,7 +200,14 @@
         "sign_up": "立即报名",
         "wait_for_process": "已提交报名，请等待审核通过",
         "login_first": "请先登录",
-        "no_such_game": "比赛不存在"
+        "no_such_game": "比赛不存在",
+        "launching": "启动中...",
+        "destory": "销毁",
+        "copied": "靶机信息已复制",
+        "fail_copy": "复制到剪贴板失败",
+        "container_start_success": "靶机开启成功",
+        "container_extend_success": "靶机到期时间已延长",
+        "container_destory_success": "销毁靶机成功"
     },
 
     "game_terminal": {

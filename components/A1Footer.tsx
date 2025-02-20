@@ -30,13 +30,18 @@ const A1Footer = () => {
 
     return (
         <>
-            <footer className="h-16 flex justify-center items-center font-bold text-sm lg:text-base">
-                <Box />
-                <span className="ml-2">A1CTF for A1natas</span>
-                <span className="ml-2 mr-2">/</span>
-                <Link className="underline decoration-2 underline-offset-4" href="">浙ICP备2023022969号</Link>
-                <span className="ml-2 mr-2">/</span>
-                <Link className="underline decoration-2 underline-offset-4" href="">浙江师范大学</Link>
+            <footer className="h-16 flex justify-center items-center font-bold text-sm lg:text-base select-none">
+                <Box className="hidden md:block" />
+                <span className="ml-2 hidden md:block">A1CTF for A1natas</span>
+                {/* <span className="ml-2 md:hidden">A1CTF</span> */}
+                <span className="ml-2 mr-2 hidden md:block">/</span>
+                <a className="hover:underline decoration-2 underline-offset-4" onClick={() => {
+                    window.open("http://beian.miit.gov.cn/")
+                }}>浙ICP备2023022969号</a>
+                <span className="ml-2 mr-2 hidden md:block">/</span>
+                <a className="hover:underline decoration-2 underline-offset-4 hidden md:block" onClick={() => {
+                    window.open("https://www.zjnu.edu.cn/")
+                }}>浙江师范大学</a>
                 <span className="ml-2 mr-2">/</span>
                 <DropdownMenu open={infoViewShow} modal={false}>
                     <DropdownMenuTrigger asChild>
@@ -48,7 +53,7 @@ const A1Footer = () => {
                             <GitPullRequestArrow size={22} />
                         </div>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="mb-2">
+                    <DropdownMenuContent className="mb-2 mr-4 md:mr-0">
                         <div className="flex flex-col pt-1 pb-2 pl-2 pr-2 select-none">
                             <div className="flex items-center justify-center pt-1 pb-1 pl-4 pr-4 gap-4 hover:bg-foreground/10 rounded-md transition-[background] duration-300"
                                 onClick={() => {

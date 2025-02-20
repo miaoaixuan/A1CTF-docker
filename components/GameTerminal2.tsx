@@ -23,7 +23,7 @@ export function GameTerminal({ gameid, challenge, pSize, userName, setChallengeS
 
     const t = useTranslations('game_terminal');
 
-    const { theme } = useTheme();
+    const { theme, systemTheme } = useTheme();
     const [instance, setInstance] = useState<any>(null);
     const chalk = new Chalk({ level: 3 });
 
@@ -81,6 +81,19 @@ export function GameTerminal({ gameid, challenge, pSize, userName, setChallengeS
         brightWhite: '#FFFFFF'
     } satisfies ITheme;
 
+    const [ terminalTheme, setTerminalTheme ] = useState(lightTheme)
+    const [ terminalConfig, setTerminalConfig ] = useState({
+        // fontFamily: '"Fira Code", monospace, "Powerline Extra Symbols"'
+        theme: lightTheme,
+        fontFamily: "'JetBrains Mono', sans-serif",
+        lineHeight: 1,
+        cursorBlink: true,
+        cursorInactiveStyle: "outline",
+        cursorStyle: 'underline',
+        altClickMovesCursor: false,
+        // allowTransparency: true,
+    })
+
     useEffect(() => {
 
         const padddingText = (left: string, right: string, chr?: string) => {
@@ -100,9 +113,19 @@ export function GameTerminal({ gameid, challenge, pSize, userName, setChallengeS
             return `${linkStart}${url}${linkEnd}${linkText}${linkStart}${linkEnd}`;
         }
 
+
+        let curTheme = lightTheme
+        if (theme == "system") {
+            if (systemTheme == "dark") curTheme = darkTheme
+            else curTheme = lightTheme
+        } else {
+            if (theme == "light") curTheme = lightTheme
+            else curTheme = darkTheme
+        }
+
         const terminal = new Terminal({
             // fontFamily: '"Fira Code", monospace, "Powerline Extra Symbols"'
-            theme: theme == "dark" ? darkTheme : lightTheme,
+            theme: curTheme,
             fontFamily: "'JetBrains Mono', sans-serif",
             lineHeight: 1,
             cursorBlink: true,

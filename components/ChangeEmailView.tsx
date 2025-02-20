@@ -47,7 +47,7 @@ export function ChangeEmailView() {
     };
 
     return (
-        <div className="flex w-full items-center justify-center min-h-screen">
+        <div className="flex w-full items-center justify-center min-h-screen select-none">
             <Card className="w-full max-w-md">
                 <CardHeader>
                     <CardTitle>{ t("edit_email_title") }</CardTitle>

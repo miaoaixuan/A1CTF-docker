@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import ThemeSwitcher from "@/components/ToggleTheme"
 import Link from "next/link";
 
-import { ArrowUpToLine, ArrowDownToLine, UserRoundMinus, Settings } from 'lucide-react'
+import { ArrowUpToLine, ArrowDownToLine, UserRoundMinus, Settings, Wrench } from 'lucide-react'
 
 import {
     DropdownMenu,
@@ -31,7 +31,7 @@ import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
 import { Skeleton } from "./ui/skeleton";
 import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
 import { useTransitionContext } from "@/contexts/TransitionContext";
-import api from "@/utils/GZApi";
+import api, { Role } from "@/utils/GZApi";
 import { toast } from "sonner";
 
 const PageHeader = () => {
@@ -40,6 +40,8 @@ const PageHeader = () => {
 
     const t = useTranslations();
     const [isOpen, setIsOpen] = useState(false);
+
+    const curPath = usePathname();
 
     const [cookies, setCookie, removeCookie] = useCookies(["uid"])
     const { curProfile, updateProfile } = useGlobalVariableContext()
@@ -65,7 +67,7 @@ const PageHeader = () => {
                 <div className="container-wrapper h-full">
                     <div className="container h-16 items-center header-theme hidden md:flex">
                         <div className="md:flex items-center">
-                            <TransitionLink href={`/${lng}`}>
+                            <TransitionLink href={`/${lng}`} className="flex-shrink-0">
                                 <Image
                                     className="dark:invert"
                                     src="/images/A1natas.svg"
@@ -76,40 +78,45 @@ const PageHeader = () => {
                                 />
                             </TransitionLink>
                             <nav className="flex items-center pl-6 gap-1 text-sm xl:gap-2">
-                                <Button variant={whetherSelected("home")}>
-                                    <TransitionLink className="transition-colors flex items-center gap-2  hover:text-foreground/80 text-foreground/80" href={`/${lng}`}>
-                                        <House />
-                                        <span className="font-bold text-base ml-[-2px]">{t("home")}</span>
-                                    </TransitionLink>
+                                <Button variant={whetherSelected("home")} onClick={() => {
+                                    if (curPath != `/${lng}` ) router.push(`/${lng}`)
+                                }}>
+                                    <House />
+                                    <span className="font-bold text-base ml-[-2px]">{t("home")}</span>
                                 </Button>
-                                <Button variant={whetherSelected("games")}>
-                                    <TransitionLink className="transition-colors flex items-center gap-2 hover:text-foreground/80 text-foreground/80" href={`/${lng}/games`}>
-                                        <Flag />
-                                        <span className="font-bold text-base ml-[-2px]">{t("race")}</span>
-                                    </TransitionLink>
+                                <Button variant={whetherSelected("games")} onClick={() => {
+                                    if (curPath != `/${lng}/games` ) router.push(`/${lng}/games`)
+                                }}>
+                                    <Flag />
+                                    <span className="font-bold text-base ml-[-2px]">{t("race")}</span>
                                 </Button>
-                                <Button variant={whetherSelected("teams")}>
-                                    <TransitionLink className="transition-colors flex items-center gap-2 hover:text-foreground/80 text-foreground/80" href={`/${lng}/teams`}>
-                                        <UsersRound />
-                                        <span className="font-bold text-base ml-[-2px]">{t("team")}</span>
-                                    </TransitionLink>
+                                <Button variant={whetherSelected("teams")} onClick={() => {
+                                    if (curPath != `/${lng}/teams` ) router.push(`/${lng}/teams`)
+                                }}>
+                                    <UsersRound />
+                                    <span className="font-bold text-base ml-[-2px]">{t("team")}</span>
                                 </Button>
-                                <Button variant={whetherSelected("about")}>
-                                    <TransitionLink className="transition-colors flex items-center gap-2 hover:text-foreground/80 text-foreground/80" href={`/${lng}/about`}>
-                                        <Info />
-                                        <span className="font-bold text-base ml-[-2px]">{t("about")}</span>
-                                    </TransitionLink>
+                                <Button variant={whetherSelected("about")} onClick={() => {
+                                    if (curPath != `/${lng}/about` ) router.push(`/${lng}/about`)
+                                }}>
+                                    <Info />
+                                    <span className="font-bold text-base ml-[-2px]">{t("about")}</span>
                                 </Button>
 
-                                <Button variant={whetherSelected("wp")} disabled>
-                                    <TransitionLink className="transition-colors flex items-center gap-2 hover:text-foreground/80 text-foreground/80" href={`/${lng}/wp`}>
-                                        <NotebookText />
-                                        <span className="font-bold text-base ml-[-2px]">{t("wp")}</span>
-                                    </TransitionLink>
+                                <Button variant={whetherSelected("wp")} onClick={() => {
+                                        window.open("https://wp.a1natas.com")
+                                }}>
+                                    <NotebookText />
+                                    <span className="font-bold text-base ml-[-2px]">{t("wp")}</span>
                                 </Button>
                             </nav>
                         </div>
                         <div className="flex flex-1 items-center justify-between gap-3 md:justify-end">
+                            { (curProfile.role == Role.Admin || curProfile.role == Role.Monitor) && (
+                                <Button variant={"outline"} onClick={() => {
+                                    router.push("/admin/games")
+                                }}><Wrench />Admin</Button>
+                            ) }
                             <ThemeSwitcher />
                             { cookies.uid ? (
                                 <>
@@ -200,37 +207,37 @@ const PageHeader = () => {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className="w-54 mr-4 mt-2">
                                     <div className="grid gap-[2px] p-[0.5px]">
-                                        <Button variant={whetherSelected("home")}>
-                                            <TransitionLink className="transition-colors flex items-center gap-2 hover:text-foreground/80 text-foreground/80" href={`/${lng}`}>
-                                                <House />
-                                                <span className="font-bold text-base ml-[-2px]">{t("home")}</span>
-                                            </TransitionLink>
-                                        </Button>
-                                        <Button variant={whetherSelected("games")}>
-                                            <TransitionLink className="transition-colors flex items-center gap-2 hover:text-foreground/80 text-foreground/80" href={`/${lng}/games`}>
-                                                <Flag />
-                                                <span className="font-bold text-base ml-[-2px]">{t("race")}</span>
-                                            </TransitionLink>
-                                        </Button>
-                                        <Button variant={whetherSelected("teams")}>
-                                            <TransitionLink className="transition-colors flex items-center gap-2 hover:text-foreground/80 text-foreground/80" href={`/${lng}/teams`}>
-                                                <UsersRound />
-                                                <span className="font-bold text-base ml-[-2px]">{t("team")}</span>
-                                            </TransitionLink>
-                                        </Button>
-                                        <Button variant={whetherSelected("about")}>
-                                            <TransitionLink className="transition-colors flex items-center gap-2 hover:text-foreground/80 text-foreground/80" href={`/${lng}/about`}>
-                                                <Info />
-                                                <span className="font-bold text-base ml-[-2px]">{t("about")}</span>
-                                            </TransitionLink>
-                                        </Button>
+                                    <Button variant={whetherSelected("home")} onClick={() => {
+                                        if (curPath != `/${lng}` ) router.push(`/${lng}`)
+                                    }}>
+                                        <House />
+                                        <span className="font-bold text-base ml-[-2px]">{t("home")}</span>
+                                    </Button>
+                                    <Button variant={whetherSelected("games")} onClick={() => {
+                                        if (curPath != `/${lng}/games` ) router.push(`/${lng}/games`)
+                                    }}>
+                                        <Flag />
+                                        <span className="font-bold text-base ml-[-2px]">{t("race")}</span>
+                                    </Button>
+                                    <Button variant={whetherSelected("teams")} onClick={() => {
+                                        if (curPath != `/${lng}/teams` ) router.push(`/${lng}/teams`)
+                                    }}>
+                                        <UsersRound />
+                                        <span className="font-bold text-base ml-[-2px]">{t("team")}</span>
+                                    </Button>
+                                    <Button variant={whetherSelected("about")} onClick={() => {
+                                        if (curPath != `/${lng}/about` ) router.push(`/${lng}/about`)
+                                    }}>
+                                        <Info />
+                                        <span className="font-bold text-base ml-[-2px]">{t("about")}</span>
+                                    </Button>
 
-                                        <Button variant={whetherSelected("wp")} disabled>
-                                            <TransitionLink className="transition-colors flex items-center gap-2 hover:text-foreground/80 text-foreground/80" href={`/${lng}/wp`}>
-                                                <NotebookText />
-                                                <span className="font-bold text-base ml-[-2px]">{t("wp")}</span>
-                                            </TransitionLink>
-                                        </Button>
+                                    <Button variant={whetherSelected("wp")} onClick={() => {
+                                        window.open("https://wp.a1natas.com")
+                                    }}>
+                                        <NotebookText />
+                                        <span className="font-bold text-base ml-[-2px]">{t("wp")}</span>
+                                    </Button>
                                         
                                         <DropdownMenuSeparator />
 
