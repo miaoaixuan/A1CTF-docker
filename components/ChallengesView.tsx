@@ -37,7 +37,7 @@ import * as signalR from '@microsoft/signalr'
 import dayjs from "dayjs";
 import { LoadingPage } from "./LoadingPage";
 import { Button } from "./ui/button";
-import { AppWindow, CalendarClock, CircleCheckBig, ClockArrowUp, CloudDownload, Container, Copy, Files, Flag, FlaskConical, FoldHorizontal, Hourglass, Info, Link, LoaderCircle, LoaderPinwheel, PackageOpen, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal, X } from "lucide-react";
+import { AppWindow, Ban, CalendarClock, CircleCheckBig, ClockArrowUp, CloudDownload, Container, Copy, Files, Flag, FlaskConical, FoldHorizontal, Hourglass, Info, Link, LoaderCircle, LoaderPinwheel, PackageOpen, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal, X } from "lucide-react";
 import { AxiosError } from "axios";
 
 import Image from "next/image";
@@ -73,6 +73,7 @@ import {
 import { toast } from "sonner";
 import { TransitionLink } from "./TransitionLink";
 import copy from "copy-to-clipboard";
+import { SolvedAnimation } from "./SolvedAnimation";
 
 const GameTerminal = dynamic(
     () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
@@ -110,6 +111,7 @@ const formatDuration = (duration: number) => {
 export function ChallengesView({ id }: { id: string }) {
 
     const t = useTranslations('challenge_view');
+    const t2 = useTranslations("notices_view")
 
     const lng = useLocale();
 
@@ -195,6 +197,9 @@ export function ChallengesView({ id }: { id: string }) {
     const [containerLaunching, setContainerLaunching] = useState(false)
     const [containerInfo, setContainerInfo] = useState<ContainerInfoModel>({})
     const [containerLeftTime, setContainerLeftTime] = useState("")
+
+    const [blood, setBlood] = useState("")
+    const [bloodMessage, setBloodMessage] = useState("")
 
     const gameID = parseInt(id, 10)
 
@@ -346,10 +351,14 @@ export function ChallengesView({ id }: { id: string }) {
                 const filtedNotices: GameNotice[] = []
                 let curIndex = 0
 
-                res.data.sort((a, b) => b.time - a.time)
+                res.data.sort((a, b) => (b.time - a.time))
 
                 res.data.forEach((obj) => {
                     if (obj.type == NoticeType.Normal) filtedNotices[curIndex++] = obj
+                })
+
+                res.data.forEach((obj) => {
+                    if ([NoticeType.FirstBlood, NoticeType.SecondBlood, NoticeType.ThirdBlood].includes(obj.type)) filtedNotices[curIndex++] = obj
                 })
 
                 noticesRef.current = filtedNotices
@@ -387,6 +396,23 @@ export function ChallengesView({ id }: { id: string }) {
                     setNotices(newNotices)
 
                     toastNewNotice({ title: message.values[0], time: message.time, openNotices: setNoticeOpened })
+                }
+
+                if ([NoticeType.FirstBlood, NoticeType.SecondBlood, NoticeType.ThirdBlood].includes(message.type) && gameInfo.teamName?.toString().trim() == message.values[0].toString().trim()) {
+                    switch (message.type) {
+                        case NoticeType.FirstBlood:
+                            setBloodMessage(`${t2("congratulations")}${t2("blood_message_p1")} ${message.values[1]} ${t2("blood1")}`)
+                            setBlood("gold")
+                            break
+                        case NoticeType.SecondBlood:
+                            setBloodMessage(`${t2("congratulations")}${t2("blood_message_p1")} ${message.values[1]} ${t2("blood2")}`)
+                            setBlood("silver")
+                            break
+                        case NoticeType.ThirdBlood:
+                            setBloodMessage(`${t2("congratulations")}${t2("blood_message_p1")} ${message.values[1]} ${t2("blood3")}`)
+                            setBlood("copper")
+                            break
+                    }
                 }
             })
 
@@ -655,6 +681,7 @@ export function ChallengesView({ id }: { id: string }) {
         <>
             <GameSwitchHover animation={false} />
             <LoadingPage visible={loadingVisiblity} />
+            <SolvedAnimation blood={blood} setBlood={setBlood} bloodMessage={bloodMessage} />
 
             {(gameStatus == "pending" || gameStatus == "ended") && (
                 <div className="absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]">
@@ -757,8 +784,8 @@ export function ChallengesView({ id }: { id: string }) {
                 <div
                     className={`absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]`}
                 >
-                    <div className="flex flex-col items-center gap-4 select-none">
-                        <ShieldX size={80} />
+                    <div className="flex flex-col items-center gap-8 select-none">
+                        <Ban size={80} />
                         <span className="text-3xl">{t("login_first")}</span>
                         <div className="flex gap-6">
                             <Button variant="outline"
@@ -825,7 +852,7 @@ export function ChallengesView({ id }: { id: string }) {
                                     <div className="absolute top-0 left-0 bg-black dark:bg-white transition-colors duration-300"
                                         style={{ width: `${remainTimePercent}%`, height: '100%' }}
                                     />
-                                    <span className="text-white mix-blend-difference z-20 font-mono transition-all duration-500">{remainTime}</span>
+                                    <span className="text-white mix-blend-difference z-20 transition-all duration-500">{remainTime}</span>
                                 </div>
                             </div>
                             <DropdownMenu>
@@ -842,13 +869,13 @@ export function ChallengesView({ id }: { id: string }) {
                                                     className="absolute top-0 left-0 bg-black dark:bg-white"
                                                     style={{ width: `${remainTimePercent}%`, height: '100%' }}
                                                 />
-                                                <span className="text-white mix-blend-difference z-20 font-mono">{remainTime}</span>
+                                                <span className="text-white mix-blend-difference z-20">{remainTime}</span>
                                             </div>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setNoticeOpened(true)} disabled={notices.length == 0}>
                                             <PackageOpen />
                                             <span>{t("open_notices")}</span>
-                                            {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{notices.length}</Badge> : <></>}
+                                            {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{ notices.filter((e) => e.type == NoticeType.Normal).length }</Badge> : <></>}
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setScoreBoardVisible(true)}>
                                             <Presentation />
@@ -858,11 +885,11 @@ export function ChallengesView({ id }: { id: string }) {
 
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                            <Button variant="outline" className="select-none hidden lg:flex" onClick={() => setNoticeOpened(true)} disabled={notices.length == 0}>
+                            <Button variant="outline" className="select-none hidden lg:flex" onClick={() => setNoticeOpened(true)} disabled={ notices.length == 0 }>
                                 <div className="flex items-center gap-1">
                                     <PackageOpen />
                                     <span>{t("open_notices")}</span>
-                                    {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{notices.length}</Badge> : <></>}
+                                    {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{ notices.filter((e) => e.type == NoticeType.Normal).length }</Badge> : <></>}
                                 </div>
                             </Button>
                             <Button variant="outline" className="select-none hidden lg:flex" onClick={() => setScoreBoardVisible(true)}>

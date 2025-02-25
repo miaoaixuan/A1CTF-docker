@@ -34,14 +34,15 @@ export default async function LoginPage() {
             </div>
             <div className="relative hidden bg-muted lg:block">
                 <Image
-                    src="/images/123691039_p0.jpg"
+                    src="/images/p2g7wm.jpg"
                     alt="Image"
                     width={4000}
                     height={2000}
                     placeholder="blur"
-                    blurDataURL="/images/123691039_p0.jpg"
-                    className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.7] dark:grayscale"
+                    blurDataURL="/images/p2g7wm.jpg"
+                    className="absolute inset-0 h-full w-full object-cover"
                 />
+                { /* dark:brightness-[0.7] dark:grayscale */ }
             </div>
         </div>
     )

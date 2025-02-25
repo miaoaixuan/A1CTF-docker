@@ -130,7 +130,7 @@ export function TeamsView() {
         <div className="flex w-full h-full relative">
             <LoadingPage visible={loadingPageVisible} screen={false} absolute={true} />
             <MacScrollbar className="w-full h-full p-5 lg:p-20 overflow-y-auto" skin={theme == "light" ? "light" : "dark"}>
-                <div className={`grid auto-rows-[300px] gap-6 w-full ${ teams.length >= 2 ? "grid-cols-[repeat(auto-fill,minmax(350px,1fr))] lg:grid-cols-[repeat(auto-fill,minmax(600px,1fr))] " : "grid-cols-[repeat(auto-fill,minmax(350px,600px))] lg:grid-cols-[repeat(auto-fill,minmax(500px,600px))]"}`}>
+                <div className={`grid auto-rows-[300px] gap-6 w-full ${ teams.length >= 2 ? "grid-cols-[repeat(auto-fill,minmax(320px,1fr))] lg:grid-cols-[repeat(auto-fill,minmax(600px,1fr))] " : "grid-cols-[repeat(auto-fill,minmax(320px,600px))] lg:grid-cols-[repeat(auto-fill,minmax(500px,600px))]"}`}>
                     { teams.map((e, index) => (
                         <div className="flex flex-col p-6 w-full h-full gap-3 bg-background transition-[background,border-color,box-shadow] duration-300 rounded-2xl border-2 shadow-md hover:shadow-xl shadow-foreground/15 hover:shadow-foreground/15" key={index}>
                             <div className="flex items-center gap-4">
@@ -216,17 +216,17 @@ export function TeamsView() {
                             </div>
                         </div>
                     )) }
-                    <div className="flex w-full gap-6 lg:gap-12 items-center justify-center select-none h-full border-2 border-cyan-500 border-dashed bg-background transition-[background,border-color,box-shadow] duration-300 rounded-2xl">
+                    <div className="flex w-full gap-10 lg:gap-12 items-center justify-center select-none h-full border-2 border-cyan-500 border-dashed bg-background transition-[background,border-color,box-shadow] duration-300 rounded-2xl">
                         <CreateTeamDialog updateTeam={updateTeams}>
-                            <div className="w-32 h-32 flex-col transition-[transform] duration-300 border-2 hover:scale-105 border-cyan-500 border-dashed rounded-2xl flex items-center justify-center p-3">
-                                <Plus className="w-full h-full stroke-cyan-500" />
-                                <span className="text-cyan-500 text-xl">{ t("create_button") }</span>
+                            <div className="w-[100px] h-[100px] lg:w-32 lg:h-32 flex-col transition-[transform] duration-300 border-2 hover:scale-105 border-cyan-500 border-dashed rounded-2xl flex items-center justify-center p-3">
+                                <Plus className="size-9 stroke-cyan-500" />
+                                <span className="text-cyan-500 text-lg lg:text-xl">{ t("create_button") }</span>
                             </div>
                         </CreateTeamDialog>
                         <JoinTeamDialog updateTeam={updateTeams}>
-                            <div className="w-32 h-32 border-2 flex-col transition-[transform] duration-300 hover:scale-105 border-cyan-500 border-dashed rounded-2xl flex items-center justify-center p-3">
-                                <Asterisk className="w-full h-full stroke-cyan-500" />
-                                <span className="text-cyan-500 text-xl">{ t("join_button") }</span>
+                            <div className="w-[100px] h-[100px] lg:w-32 lg:h-32 border-2 flex-col transition-[transform] duration-300 hover:scale-105 border-cyan-500 border-dashed rounded-2xl flex items-center justify-center p-3">
+                                <Asterisk className="size-9 stroke-cyan-500" />
+                                <span className="text-cyan-500 text-lg lg:text-xl">{ t("join_button") }</span>
                             </div>
                         </JoinTeamDialog>
                     </div>

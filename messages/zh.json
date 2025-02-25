@@ -210,6 +210,14 @@
         "container_destory_success": "销毁靶机成功"
     },
 
+    "notices_view": {
+        "blood_message_p1": "获得了",
+        "blood1": "的一血！",
+        "blood2": "的二血！",
+        "blood3": "的三血！",
+        "congratulations": "恭喜你的队伍"
+    },
+
     "game_terminal": {
         "terminal_hint_part1": "使用指令",
         "terminal_hint_part2": "来提交flag, 点击",
@@ -224,6 +232,6 @@
         "help_prefix": "下面是一些有用的命令 :)",
         "format_warn": "格式",
         "help_message_help": "展示这条帮助信息",
-        "help_message_submit": "提交你的flag! 格式: sumit flag"
+        "help_message_submit": "提交你的flag! 格式: submit flag"
     }
 }

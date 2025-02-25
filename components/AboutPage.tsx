@@ -26,7 +26,7 @@ export function AboutPage () {
     return (
         <div className="flex w-full h-full relative">
             <LoadingPage visible={loadingPageVisible} screen={false} absolute={true} />
-            <MacScrollbar className="overflow-y-auto w-full h-full pl-8 lg:pr-20 pt-4 pb-4"
+            <MacScrollbar className="overflow-y-auto w-full h-full pl-3 pr-3 md:pl-8 md:pr-8 lg:pl-20 lg:pr-20 pt-4 pb-4"
                 skin={theme == "light" ? "light" : "dark"}
             >
                 <div className="flex w-full justify-center">

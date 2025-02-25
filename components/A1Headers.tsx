@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import ThemeSwitcher from "@/components/ToggleTheme"
 import Link from "next/link";
 
-import { ArrowUpToLine, ArrowDownToLine, UserRoundMinus, Settings, Wrench } from 'lucide-react'
+import { ArrowUpToLine, ArrowDownToLine, UserRoundMinus, Settings, Wrench, User } from 'lucide-react'
 
 import {
     DropdownMenu,
@@ -90,12 +90,6 @@ const PageHeader = () => {
                                     <Flag />
                                     <span className="font-bold text-base ml-[-2px]">{t("race")}</span>
                                 </Button>
-                                <Button variant={whetherSelected("teams")} onClick={() => {
-                                    if (curPath != `/${lng}/teams` ) router.push(`/${lng}/teams`)
-                                }}>
-                                    <UsersRound />
-                                    <span className="font-bold text-base ml-[-2px]">{t("team")}</span>
-                                </Button>
                                 <Button variant={whetherSelected("about")} onClick={() => {
                                     if (curPath != `/${lng}/about` ) router.push(`/${lng}/about`)
                                 }}>
@@ -145,6 +139,12 @@ const PageHeader = () => {
                                                 <span>{ t("settings") }</span>
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => startTransition(() => {
+                                                router.push(`/${lng}/teams`)
+                                            })}>
+                                                <UsersRound />
+                                                <span>{ t("team") }</span>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => startTransition(() => {
                                                 router.push(`/${lng}/profile/password`)
                                             })}>
                                                 <KeyRound />
@@ -166,12 +166,12 @@ const PageHeader = () => {
                                 </>
                             ) : (
                                 <>
-                                <Button asChild>
-                                    <TransitionLink href={`/${lng}/signup`}>{t("signup")}</TransitionLink>
-                                </Button>
-                                <Button asChild variant="outline">
-                                    <TransitionLink href={`/${lng}/login`}>{t("login")}</TransitionLink>
-                                </Button>
+                                    <Button asChild>
+                                        <TransitionLink href={`/${lng}/signup`}>{t("signup")}</TransitionLink>
+                                    </Button>
+                                    <Button asChild variant="outline">
+                                        <TransitionLink href={`/${lng}/login`}>{t("login")}</TransitionLink>
+                                    </Button>
                                 </>
                             ) }
                         </div>
@@ -219,12 +219,6 @@ const PageHeader = () => {
                                         <Flag />
                                         <span className="font-bold text-base ml-[-2px]">{t("race")}</span>
                                     </Button>
-                                    <Button variant={whetherSelected("teams")} onClick={() => {
-                                        if (curPath != `/${lng}/teams` ) router.push(`/${lng}/teams`)
-                                    }}>
-                                        <UsersRound />
-                                        <span className="font-bold text-base ml-[-2px]">{t("team")}</span>
-                                    </Button>
                                     <Button variant={whetherSelected("about")} onClick={() => {
                                         if (curPath != `/${lng}/about` ) router.push(`/${lng}/about`)
                                     }}>
@@ -241,11 +235,75 @@ const PageHeader = () => {
                                         
                                         <DropdownMenuSeparator />
 
-                                        <Button asChild variant="ghost" className="mt-[0.5px]">
-                                            <TransitionLink href={`/${lng}/login`}>
-                                                <KeyRound /><span className="font-bold">{t("login")}</span>
-                                            </TransitionLink>
-                                        </Button>
+                                        { cookies.uid ? (
+                                            <>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger>
+                                                        <div className="flex w-full h-full items-center justify-center gap-2 pl-2 pr-2 pb-1">
+                                                            <Avatar className="select-none">
+                                                                { curProfile.avatar ? (
+                                                                    <>
+                                                                        <AvatarImage src={curProfile.avatar || "#"} alt="@shadcn"
+                                                                            className={`rounded-2xl`}
+                                                                        />
+                                                                        <AvatarFallback><Skeleton className="h-full w-full rounded-full" /></AvatarFallback>
+                                                                    </>
+                                                                ) : ( 
+                                                                    <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
+                                                                        <span className='text-background text-md'> { curProfile.userName?.substring(0, 2) } </span>
+                                                                    </div>
+                                                                ) }
+                                                            </Avatar>
+                                                            <span className="text-md"> { curProfile.userName } </span>
+                                                        </div>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent className="mt-2">
+                                                        <DropdownMenuItem onClick={() => startTransition(() => {
+                                                            router.push(`/${lng}/profile`)
+                                                        })}>
+                                                            <Settings />
+                                                            <span>{ t("settings") }</span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => startTransition(() => {
+                                                            router.push(`/${lng}/teams`)
+                                                        })}>
+                                                            <UsersRound />
+                                                            <span>{ t("team") }</span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => startTransition(() => {
+                                                            router.push(`/${lng}/profile/password`)
+                                                        })}>
+                                                            <KeyRound />
+                                                            <span>{ t("change_password_header") }</span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => {
+                                                            api.account.accountLogOut().then(() => {
+                                                                updateProfile(() => {
+                                                                    router.push(`/${lng}/`)
+                                                                    toast.success(t("login_out_success"), { position: "top-center" })
+                                                                })
+                                                            })
+                                                        }}>
+                                                            <UserRoundMinus />
+                                                            <span>{ t("login_out") }</span>
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Button asChild variant="ghost" className="mt-[0.5px]">
+                                                    <TransitionLink href={`/${lng}/login`}>
+                                                        <KeyRound /><span className="font-bold">{t("login")}</span>
+                                                    </TransitionLink>
+                                                </Button>
+                                                <Button asChild variant="ghost" className="mt-[0.5px] [&_svg]:size-[18px]">
+                                                    <TransitionLink href={`/${lng}/signup`}>
+                                                        <User /><span className="font-bold">{t("signup")}</span>
+                                                    </TransitionLink>
+                                                </Button>
+                                            </>
+                                        ) }
                                     </div>
                                 </DropdownMenuContent>
                             </DropdownMenu>

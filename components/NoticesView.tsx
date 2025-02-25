@@ -7,6 +7,7 @@ import { CalendarClock, CircleX, X } from "lucide-react";
 import dayjs from "dayjs";
 import { GameNotice, NoticeType } from "@/utils/GZApi";
 import { Mdx } from "./MdxCompoents";
+import { useTranslations } from "next-intl";
 
 let messages: GameNotice[] = []
 
@@ -91,6 +92,8 @@ const shouldAnimated = (index: number) => {
 export function NoticesView({ opened, setOpened, notices }: { opened: boolean, setOpened: Dispatch<SetStateAction<boolean>>, notices: GameNotice[] }) {
 
     messages = notices
+
+    const t = useTranslations("notices_view")
 
     // 消息卡片的可见列表
     const [visible, setVisible] = useState<boolean>(false)
@@ -200,6 +203,19 @@ export function NoticesView({ opened, setOpened, notices }: { opened: boolean, s
         }
     }, [durationTime])
 
+    const getNoticeMessage = (notice: GameNotice) => {
+        switch (notice.type) {
+            case NoticeType.Normal:
+                return (<Mdx source={notice.values[0]}></Mdx>)
+            case NoticeType.FirstBlood:
+                return (<span>{`🥇 ${notice.values[0]} ${t("blood_message_p1")} ${notice.values[1]} ${t("blood1")}`}</span>)
+            case NoticeType.SecondBlood:
+                return (<span>{`🥈 ${notice.values[0]} 获得了 ${notice.values[1]} ${t("blood2")}`}</span>)
+            case NoticeType.ThirdBlood:
+                return (<span>{`🥉 ${notice.values[0]} 获得了 ${notice.values[1]} ${t("blood3")}`}</span>)
+        }
+    }
+
     // 观察器
     const observeItem = (el: HTMLElement, id: string) => {
         if (el && observerRef.current) {
@@ -279,7 +295,7 @@ export function NoticesView({ opened, setOpened, notices }: { opened: boolean, s
                                                     <span>{ dayjs(mes.time).format("YYYY-MM-DD HH:mm:ss") }</span>
                                                 </div>
                                                 <div className="flex flex-col break-words">
-                                                    <Mdx source={mes.values[0]}></Mdx>
+                                                    { getNoticeMessage(mes) }
                                                 </div>
                                             </div>
                                         </motion.div>
