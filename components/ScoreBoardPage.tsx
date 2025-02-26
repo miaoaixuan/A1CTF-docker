@@ -473,19 +473,19 @@ export default function ScoreBoardPage({ gmid, visible, setVisible, gameStatus }
                                                 <div className='flex-1 flex justify-center border-r-2 h-full items-center'>
                                                     <span className=''>Challenge name</span>
                                                 </div>
-                                                <div className='w-[120px] flex-shrink-0 flex justify-center h-full items-center'>
+                                                <div className='w-[100px] flex-shrink-0 flex justify-center h-full items-center'>
                                                     <span className=''>Score</span>
                                                 </div>
                                             </div>
                                             { showUserDetail.solvedChallenges?.map((e, index) => (
-                                                <div key={`solved-problem-${index}`} className={`flex h-9 flex-none items-center border-b-2`}>
+                                                <div key={`solved-problem-${index}`} className={`flex h-9 flex-none items-center border-b-2 gap-2`}>
                                                     <div className='w-[150px] flex-shrink-0 justify-center hidden lg:flex'>
                                                         <span>{ dayjs(e.time).format("MM-DD HH:mm:ss") }</span>
                                                     </div>
                                                     <div className='flex-1 overflow-hidden'>
                                                         <span className='text-nowrap overflow-hidden text-ellipsis'
                                                             data-tooltip-id="challengeTooltip2"
-                                                            data-tooltip-html={ `<div class='text-sm flex flex-col'><span>${dayjs(e.time).format("MM-DD HH:mm:ss")}</span><span>${getChallenge(e.id || 0).title}</span></div>` }
+                                                            data-tooltip-html={ `<div class='text-sm flex flex-col'><span>${dayjs(e.time).format("MM-DD HH:mm:ss")}</span><span>${e.userName}</span><span>${getChallenge(e.id || 0).title}</span></div>` }
                                                         >{ getChallenge(e.id || 0).title }</span>
                                                     </div>
                                                     <div className='w-[100px] flex-shrink-0 flex overflow-hidden'>
@@ -501,6 +501,9 @@ export default function ScoreBoardPage({ gmid, visible, setVisible, gameStatus }
                                                 <div className='w-[150px] flex-shrink-0 flex justify-center border-r-2 h-full items-center'>
                                                     <span>Solved Time</span>
                                                 </div>
+                                                <div className='w-[100px] flex-shrink-0 flex justify-center border-r-2 h-full items-center'>
+                                                    <span>User</span>
+                                                </div>
                                                 <div className='flex-1 flex justify-center border-r-2 h-full items-center'>
                                                     <span className=''>Challenge name</span>
                                                 </div>
@@ -512,6 +515,9 @@ export default function ScoreBoardPage({ gmid, visible, setVisible, gameStatus }
                                                 <div key={`solved-problem-${index}`} className={`flex h-9 flex-none items-center border-b-2`}>
                                                     <div className='w-[150px] flex-shrink-0 flex justify-center'>
                                                         <span>{ dayjs(e.time).format("MM-DD HH:mm:ss") }</span>
+                                                    </div>
+                                                    <div className='w-[100px] flex-shrink-0 flex justify-center overflow-hidden'>
+                                                        <span className='text-nowrap overflow-hidden text-ellipsis'>{ e.userName }</span>
                                                     </div>
                                                     <div className='flex-1 overflow-hidden pl-2 pr-2'>
                                                         <span className='text-nowrap overflow-hidden text-ellipsis'>{ getChallenge(e.id || 0).title }</span>

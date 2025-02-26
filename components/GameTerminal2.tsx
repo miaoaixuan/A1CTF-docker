@@ -207,6 +207,8 @@ export function GameTerminal({ gameid, challenge, pSize, userName, setChallengeS
 
                         terminal.writeln(chalk.ansi256(141)(t("waiting_for_result")));
 
+                        await new Promise((res) => setTimeout(res, 1000))
+
                         const { data: flagStatus } = await api.game.gameStatus(gmid, challenge.id || 0, submitID)
 
                         switch (flagStatus) {

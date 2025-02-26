@@ -13,7 +13,7 @@ export default function Games() {
         <div className="p-0 h-screen flex flex-col">
             <PageHeader />
             <div className="w-full flex-1 overflow-hidden"> 
-                <SafeComponent>
+                <SafeComponent animation={false}>
                     <ChangeGames />
                 </SafeComponent>
             </div>

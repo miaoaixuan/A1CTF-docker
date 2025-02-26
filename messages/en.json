@@ -210,6 +210,14 @@
         "container_destory_success": "The container have been destoried."
     },
 
+    "notices_view": {
+        "blood_message_p1": "You got",
+        "blood1": "'s first blood!",
+        "blood2": "'s second blood!",
+        "blood3": "'s third blood!",
+        "congratulations": "Congralulations!"
+    },
+
     "game_terminal": {
         "terminal_hint_part1": "Use command",
         "terminal_hint_part2": "to submit the flag, click",

@@ -297,3 +297,60 @@ body {
 .xterm-viewport {
     overflow: hidden!important;
 }
+
+
+/* pixel style */
+/* .pixel-border {
+    border-style: solid;
+    border-image-source: url("/images/pixels/border.png");
+    border-image-repeat: repeat;
+    border-image-slice: 6 6 6 6;
+    border-radius: 30px;
+    image-rendering: pixelated;
+    border-image-width: 18px;
+    border-width: 15px;
+    padding: 12px;
+    background: url("/images/pixels/background.png") repeat;
+}
+
+.pixel-button {
+    @apply select-none;
+
+    border-style: solid;
+    border-image-source: url("/images/pixels/border2.png");
+    border-image-repeat: repeat;
+    border-image-slice: 6 6 6 6;
+    border-radius: 30px;
+    image-rendering: pixelated;
+    border-image-width: 10px;
+    border-width: 7px;
+    padding: 2px;
+    padding-left: 5px;
+    padding-right: 5px;
+    min-width: 80px;
+    background: url("/images/pixels/background2.png") repeat;
+
+    transition-property: border-image-source, background;
+    transition-duration: 100ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pixel-button:hover {
+    border-image-source: url("/images/pixels/border2_hover.png");
+    background: url("/images/pixels/background2_hover.png") repeat;
+}
+
+.pixel-button:active {
+    border-image-source: url("/images/pixels/border2.png");
+}
+
+.pixel-tree-border {
+    border-style: solid;
+    border-image-source: url("/images/pixels/tree_border.png");
+    border-image-repeat: repeat;
+    border-image-slice: 8 8 8 8;
+    image-rendering: pixelated;
+    border-image-width: 15px;
+    border-width: 5px;
+    padding: 12px;
+} */
