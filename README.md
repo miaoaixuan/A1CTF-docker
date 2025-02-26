@@ -11,6 +11,6 @@ Nothing more....
 ## Todo
 Write a backend in rust (current I use the API from GZCTF)  
 
-More customized (Now the media resources are deeply binding our team :)  
+More customized (Now the media resources are deeply bound to our team :)  
 
 Maybe change the style to pixel art.(Yes I love this)
