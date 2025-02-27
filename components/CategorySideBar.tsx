@@ -63,6 +63,7 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGame
     const [visibleItems, setVisibleItems] = useState<Record<string, Record<string, boolean>>>({});
 
     const [categoryFolded, setCategoryFolded] = useState<Record<string, boolean>>({});
+    const [categoryPadding, setCategoryPadding] = useState<Record<string, boolean>>({});
 
     let updateChallengeInter: NodeJS.Timeout;
 
@@ -99,7 +100,6 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGame
     useEffect(() => {
         const foldMap: Record<string, boolean> = {};
         Object.keys(colorMap).forEach((key) => foldMap[key] = true);
-        console.log(foldMap)
 
         setCategoryFolded(foldMap)
     }, [])
@@ -246,7 +246,7 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGame
             observerRef.current.observe(el);
         }
     };
-    
+
     return (
         <Sidebar className="backdrop-blur-sm hide-scrollbar select-none transition-all duration-200" onTransitionEnd={() => {
             resizeTrigger(Math.floor(Math.random() * 1000000))
@@ -293,7 +293,11 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGame
                                                     [category.toLowerCase()]: !prev[category.toLowerCase()]
                                                 }))
                                             }}>
-                                                <div className="flex items-center justify-center gap-2">
+                                                <div className="flex items-center justify-center gap-2 transition-colors duration-300"
+                                                    style={{
+                                                        color: !categoryFolded[category.toLowerCase()] ? colorMap[category.toLowerCase()] : ""
+                                                    }}
+                                                >
                                                     { cateIcon[category.toLowerCase()] }
                                                     <span className="font-bold text-[1.1em]" style={{
                                                         // color: colorMap[category.toLowerCase()]
@@ -309,14 +313,34 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGame
                                         </SidebarGroupLabel>
                                         <SidebarGroupContent>
                                             <SidebarMenu className="">
-                                                <motion.div className={`flex flex-col gap-3 overflow-hidden ${categoryFolded[category.toLowerCase()] ? "pointer-events-none" : ""}`}
+                                                <motion.div className={`flex flex-col gap-3 overflow-hidden ${ categoryPadding[category.toLowerCase()] ? "p-2" : "" } ${categoryFolded[category.toLowerCase()] ? "pointer-events-none" : ""}`}
                                                     initial={{
                                                         height: categoryFolded[category.toLowerCase()] ? 0 : "auto",
-                                                        padding: categoryFolded[category.toLowerCase()] ? 0 : "8px"
+                                                        // padding: categoryFolded[category.toLowerCase()] ? 0 : "8px"
                                                     }}
                                                     animate={{
                                                         height: categoryFolded[category.toLowerCase()] ? 0 : "auto",
-                                                        padding: categoryFolded[category.toLowerCase()] ? 0 : "8px"
+                                                        // padding: categoryFolded[category.toLowerCase()] ? 0 : "8px"
+                                                    }}
+                                                    onAnimationComplete={(e: { height: number | string, padding: number }) => {
+                                                        if (e.height === 0) {
+                                                            setCategoryPadding((prev) => ({
+                                                                ...prev,
+                                                                [category.toLowerCase()]: false
+                                                            }))
+                                                        }
+                                                    }}
+                                                    onAnimationStart={(e: { height: number | string, padding: number }) => {
+                                                        if (e.height === "auto") {
+                                                            setCategoryPadding((prev) => ({
+                                                                ...prev,
+                                                                [category.toLowerCase()]: true
+                                                            }))
+                                                        }
+                                                    }}
+                                                    transition={{
+                                                        ease: "linear",
+                                                        duration: challengeList.length > 3 ? 0.3 : 0.2
                                                     }}
                                                 >
                                                     {/* Render all ChallengeItems for this category */}
