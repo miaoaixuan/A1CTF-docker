@@ -295,7 +295,7 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGame
                                             }}>
                                                 <div className="flex items-center justify-center gap-2 transition-colors duration-300"
                                                     style={{
-                                                        color: !categoryFolded[category.toLowerCase()] ? colorMap[category.toLowerCase()] : ""
+                                                        color: (!categoryFolded[category.toLowerCase()] || curChallenge.category?.toString() === category) ? colorMap[category.toLowerCase()] : ""
                                                     }}
                                                 >
                                                     { cateIcon[category.toLowerCase()] }
@@ -349,7 +349,7 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGame
                                                             key={index}
                                                             ref={(el) => observeItem(el!, category, challenge.id?.toString() || "")}
                                                         >
-                                                            {visibleItems[category]?.[challenge.id || 0] ? (
+                                                            { (visibleItems[category]?.[challenge.id || 0] && categoryPadding[category.toLowerCase()]) ? (
                                                                 <ChallengeCard
                                                                     type={challenge.category?.toLocaleLowerCase() || "None"}
                                                                     name={challenge.title || "None"}
