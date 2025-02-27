@@ -15,7 +15,7 @@ export function ClientToaster() {
                 style={{ backgroundColor: "hsl(var(--background))" }}
                 className="z-[400]"
                 richColors
-                visibleToasts={3}
+                visibleToasts={4}
                 closeButton={true}
             />
             <Tooltip id="challengeTooltip3" opacity={0.9} className='z-[200]'/>

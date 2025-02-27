@@ -1006,7 +1006,7 @@ export function ChallengesView({ id }: { id: string }) {
                                                 </div>
                                             </div>
                                         )}
-                                        {curChallenge.type == ChallengeType.DynamicContainer && (
+                                        {(curChallenge.type == ChallengeType.DynamicContainer || curChallenge.type == ChallengeType.StaticContainer) && (
                                             <div className="w-full border-b-[1px] h-[50px] p-2 transition-[border-color] duration-300 flex items-center">
                                                 <div className="flex items-center gap-2 transition-colors duration-300 select-none">
                                                     <Target size={21} />

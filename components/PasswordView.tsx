@@ -71,10 +71,10 @@ export function PasswordView () {
 
     return (
         <div className="w-full h-full flex flex-col items-center justify-center select-none">
-            <div className="w-[20%] mb-10">
+            <div className="w-[80%] md:w-[40%] xl:w-[30%] 3xl:w-[20%] mb-10">
                 <span className="font-bold text-2xl">{ t("form_title_change_your_password") }</span>
             </div>
-            <div className="w-[20%]">
+            <div className="w-[80%] md:w-[40%] xl:w-[30%] 3xl:w-[20%]">
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                         <FormField
