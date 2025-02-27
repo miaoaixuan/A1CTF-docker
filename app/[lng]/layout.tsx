@@ -70,12 +70,12 @@ export default async function RootLayout({
                         {/* <DelayedSuspense> */}
                             <TransitionProvider>
                                 <TransitionLayout>
+                                    <ClientToaster/>
                                     <GlobalVariableProvider>
                                         <GameSwitchProvider>
                                             {children}
                                         </GameSwitchProvider>
                                     </GlobalVariableProvider>
-                                    <ClientToaster/>
                                 </TransitionLayout>
                             </TransitionProvider>
                         {/* </DelayedSuspense> */}
