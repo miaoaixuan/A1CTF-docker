@@ -4,8 +4,9 @@ diesel::table! {
     user (id) {
         id -> Text,
         username -> Text,
-        password -> Nullable<Text>,
-        role -> Nullable<Int4>,
+        password -> Text,
+        salt -> Text,
+        role -> Int4,
         cur_token -> Nullable<Text>,
         phone -> Nullable<Text>,
         student_number -> Nullable<Text>,

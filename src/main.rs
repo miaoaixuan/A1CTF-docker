@@ -3,6 +3,7 @@ use env_logger::Env;
 
 mod controllers;
 mod db;
+mod utils;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -11,9 +12,10 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         let mut app = App::new().wrap(Logger::default()).wrap(Logger::new("%a %{User-Agent}i"));
         
-        app = app.
+        app = app
             // user_controller
-            service(controllers::user::greet);
+            .service(controllers::user::login)
+            .service(controllers::user::register);
         
         app
     })

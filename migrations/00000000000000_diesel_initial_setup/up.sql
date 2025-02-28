@@ -5,8 +5,9 @@
 CREATE TABLE "user" (
   "id" text PRIMARY KEY NOT NULL,
   "username" text NOT NULL,
-  "password" text,
-  "role" int4 DEFAULT 0,
+  "password" text NOT NULL,
+  "salt" text NOT NULL,
+  "role" int4 DEFAULT 0 NOT NULL,
   "cur_token" text,
   "phone" text,
   "student_number" text,
