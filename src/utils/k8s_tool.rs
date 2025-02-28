@@ -1,7 +1,7 @@
 use std::option;
 
 use kube::{api::{Api, DeleteParams, ListParams, PostParams, ResourceExt}, config::Kubeconfig, Client};
-use k8s_openapi::api::core::v1::{Namespace, Pod, Service};
+use k8s_openapi::{api::core::v1::{Namespace, Node, Pod, Service}, List};
 use k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta;
 
 pub async fn get_client() -> Result<Client, Box<dyn std::error::Error>> {
@@ -29,12 +29,17 @@ pub async fn list_pods() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+pub struct PortName {
+    pub name: String,
+    pub port: i32,
+}
+
 pub struct A1Container {
     pub name: String,
     pub image: String,
     pub command: Option<Vec<String>>,
     pub env: Option<Vec<k8s_openapi::api::core::v1::EnvVar>>,
-    pub expose_ports: Option<Vec<i32>>,
+    pub expose_ports: Option<Vec<PortName>>,
 }
 
 pub struct PodInfo {
@@ -62,9 +67,10 @@ pub async fn create_pod(pod_info: &PodInfo) -> Result<(), Box<dyn std::error::Er
         }
 
         if config.expose_ports.is_some() {
-            container.ports = Some(config.expose_ports.clone().unwrap().iter().map(|port| {
+            container.ports = Some(config.expose_ports.as_ref().unwrap().iter().map(|port| {
                 k8s_openapi::api::core::v1::ContainerPort {
-                    container_port: *port,
+                    container_port: port.port,
+                    name: Some(port.name.clone()),
                     ..Default::default()
                 }
             }).collect());
@@ -96,17 +102,20 @@ pub async fn create_pod(pod_info: &PodInfo) -> Result<(), Box<dyn std::error::Er
     let services: Api<Service> = Api::namespaced(get_client().await?, "a1ctf-challenges");
 
     let ports_ = pod_info.containers.iter().map(|config| {
-        config.expose_ports.clone().unwrap().iter().map(|port| {
+        let port_config = config.expose_ports.as_ref().unwrap().iter().map(|port| {
             k8s_openapi::api::core::v1::ServicePort {
-                name: Some(format!("fd-{}-{}-{}", config.name, pod_info.team_hash, port)),
-                port: *port,
-                target_port: Some(k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(
-                    *port
+                name: Some(format!("fd-{}-{}-{}", config.name, pod_info.team_hash, port.port)),
+                port: port.port,
+                target_port: Some(k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::String(
+                    port.name.clone()
                 )),
                 ..Default::default()
             }
-        }).collect::<Vec<k8s_openapi::api::core::v1::ServicePort>>()
+        }).collect::<Vec<k8s_openapi::api::core::v1::ServicePort>>();
+
+        port_config
     }).flatten().collect();
+
 
     match services.create(&PostParams::default(), &Service {
         metadata: ObjectMeta {
@@ -140,13 +149,14 @@ pub async fn get_pod_ports(pod_info: &PodInfo) -> Result<(), Box<dyn std::error:
     let pods: Api<Pod> = Api::namespaced(get_client().await?, "a1ctf-challenges");
     let pod = pods.get(&service_name).await?;
 
-    let host_ip = pod.status.unwrap().host_ip.unwrap();
+
+    let node_name = pod.spec.unwrap().node_name.unwrap();
 
     match services.get(&service_name).await {
         Ok(service) => {
             let ports = service.spec.unwrap().ports.unwrap();
             for port in ports {
-                println!("Service port: {2}:{} -> {2}:{}", port.port, port.node_port.unwrap(), host_ip);
+                println!("Service port: {2}:{} -> {2}:{}", port.port, port.node_port.unwrap(), node_name);
             }
         },
         Err(e) => panic!("Error getting service: {}", e),
