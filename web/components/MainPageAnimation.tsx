@@ -6,7 +6,7 @@ import FuzzyText from "./reactbits/FuzzyText/FuzzyText";
 import { useTheme } from "next-themes";
 import BlurText from "./reactbits/BlurText/BlurText";
 import ASCIIText from "./reactbits/ASCIIText/ASCIIText";
-import Ribbons from "@/compoents/reactbits/Ribbons/Ribbons";
+import Ribbons from "@/components/reactbits/Ribbons/Ribbons";
 
 export function MainPageAnimation() {
 
