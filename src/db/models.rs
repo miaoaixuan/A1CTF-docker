@@ -1,6 +1,7 @@
 use diesel::prelude::*;
 
 #[derive(Debug, Queryable, Selectable)]
+#[allow(dead_code)]
 #[diesel(table_name = crate::db::schema::user)]
 pub struct User {
     pub id: String,
