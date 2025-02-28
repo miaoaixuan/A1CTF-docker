@@ -149,7 +149,6 @@ pub async fn get_pod_ports(pod_info: &PodInfo) -> Result<(), Box<dyn std::error:
     let pods: Api<Pod> = Api::namespaced(get_client().await?, "a1ctf-challenges");
     let pod = pods.get(&service_name).await?;
 
-
     let node_name = pod.spec.unwrap().node_name.unwrap();
 
     match services.get(&service_name).await {
