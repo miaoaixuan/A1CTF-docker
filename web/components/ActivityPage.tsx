@@ -143,6 +143,9 @@ export function ActivityPage() {
     return (
         <>
             <GameSwitchHover animation={true} />
+            <motion.div className="absolute top-0 left-0 w-screen h-screen bg-black">
+
+            </motion.div>
             <motion.div className="absolute flex w-screen h-screen justify-center items-center"
                 initial={{
                     opacity: 0
@@ -162,10 +165,10 @@ export function ActivityPage() {
                     smooth={true}
                 />
             </motion.div>
-            <motion.div className="absolute flex w-screen h-screen justify-center items-center backdrop-blur-[3px] select-none flex-col gap-10 [text-shadow:_hsl(var(--foreground))_1px_1px_10px]">
+            <motion.div className="absolute flex w-screen h-screen justify-center items-center backdrop-blur-[3px] select-none flex-col gap-10 [text-shadow:_#ffffff_1px_1px_10px] text-white">
                 <SplitText
                     text={title}
-                    className="text-[5em] font-semibold text-center"
+                    className="text-[5em] font-semibold text-center text-white"
                     delay={50}
                     animationFrom={{ opacity: 0, filter: "blur(10px)", transform: 'translate3d(0,50px,0)' }}
                     animationTo={{ opacity: 1, filter: "blur(0px)", transform: 'translate3d(0,0,0)'}}
@@ -201,7 +204,7 @@ export function ActivityPage() {
                     </PixelCard>
                 </motion.div>
             </motion.div>
-            <motion.div className="absolute left-8 top-8 flex items-center gap-1 select-none">
+            <motion.div className="absolute left-8 top-8 flex items-center gap-1 select-none text-white">
                 <span className="text-2xl font-bold">Left</span>
                 <Counter
                     value={leftTime}
@@ -214,7 +217,7 @@ export function ActivityPage() {
                 />
                 <span className="text-2xl font-bold">{ unit }</span>
             </motion.div>
-            <motion.div className="absolute flex top-8 right-8 items-center justify-center gap-2">
+            <motion.div className="absolute flex top-8 right-8 items-center justify-center gap-2 text-white">
                 { ((curProfile.role == Role.Admin || curProfile.role == Role.Monitor) && cookies.uid) && (
                     <Button variant={"ghost"} onClick={() => {
                         router.push("/admin/games")
@@ -289,7 +292,7 @@ export function ActivityPage() {
                     </>
                 ) }
             </motion.div>
-            <motion.div className="absolute bottom-3 w-full flex justify-end items-center"
+            <motion.div className="absolute bottom-3 w-full flex justify-end items-center text-white"
                 initial={{
                     opacity: 0
                 }}
