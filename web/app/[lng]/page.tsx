@@ -15,9 +15,11 @@ export default async function Home({ params }: { params: Promise<{ lng: string }
     return (
         <>
             {inActivity ? (
-                <SafeComponent animation={false}>
-                    <ActivityPage></ActivityPage>
-                </SafeComponent>
+                <div className="relative top-0 left-0 w-screen h-screen bg-black">
+                    <SafeComponent animation={false}>
+                        <ActivityPage></ActivityPage>
+                    </SafeComponent>
+                </div>
             ) : (
                 <div className="p-0 h-screen flex flex-col">
                     <PageHeader />
