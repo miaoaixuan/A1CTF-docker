@@ -56,7 +56,10 @@ async fn main() -> std::io::Result<()> {
             .service(controllers::user::login)
             .service(controllers::user::register)
 
-            .use_jwt(authority, web::scope("").service(controllers::user::test));
+            .use_jwt(authority, web::scope("")
+                .service(controllers::user::test)
+                .service(controllers::challenge::list)
+            );
         
         app
     })
