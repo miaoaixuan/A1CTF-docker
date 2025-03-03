@@ -74,6 +74,7 @@ import { toast } from "sonner";
 import { TransitionLink } from "./TransitionLink";
 import copy from "copy-to-clipboard";
 import { SolvedAnimation } from "./SolvedAnimation";
+import { useCookies } from "react-cookie";
 
 const GameTerminal = dynamic(
     () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
@@ -203,6 +204,8 @@ export function ChallengesView({ id }: { id: string }) {
 
     const gameID = parseInt(id, 10)
 
+    const [cookies, setCookie, removeCookie] = useCookies(["uid"])
+
 
     // 更新当前选中题目信息, 根据 Websocket 接收到的信息被动调用
     const updateChallenge = () => {
@@ -281,6 +284,7 @@ export function ChallengesView({ id }: { id: string }) {
     }, [containerInfo])
 
     useEffect(() => {
+
         // 获取比赛信息以及剩余时间
         api.game.gameGame(gameID).then((res) => {
             setGameInfo(res.data)
@@ -855,7 +859,7 @@ export function ChallengesView({ id }: { id: string }) {
                                     <span className="text-white mix-blend-difference z-20 transition-all duration-500">{remainTime}</span>
                                 </div>
                             </div>
-                            <DropdownMenu>
+                            <DropdownMenu modal={false}>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" className="lg:hidden" size="icon">
                                         <AppWindow />
@@ -1043,7 +1047,7 @@ export function ChallengesView({ id }: { id: string }) {
                                                                     <Container size={22} />
                                                                     <span>{containerInfo.entry}</span>
                                                                 </div>
-                                                                <DropdownMenu>
+                                                                <DropdownMenu modal={false}>
                                                                     <DropdownMenuTrigger asChild>
                                                                         <Button variant="outline" size="icon" className="xl:hidden"><Container /></Button>
                                                                     </DropdownMenuTrigger>

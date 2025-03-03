@@ -5,13 +5,155 @@ import PixelCard from "./reactbits/PixelCard/PixelCard";
 import SplitText from "./reactbits/SplitText/SplitText";
 import { useSprings, animated, easings } from '@react-spring/web';
 import SafeComponent from "./SafeComponent";
-import { DoorOpen } from "lucide-react";
+import { Bone, DoorOpen, Flag, Info, Key, KeyRound, Settings, UserRound, UserRoundMinus, UsersRound, Wrench, X } from "lucide-react";
 import { motion } from "framer-motion";
+import { Button } from "./ui/button";
+import Dock from "./reactbits/Dock/Dock";
+import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
+
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import api, { BasicGameInfoModel, Role } from "@/utils/GZApi";
+import { toast } from "sonner";
+import { useLocale, useTranslations } from "next-intl";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Skeleton } from "./ui/skeleton";
+import { useTransitionContext } from "@/contexts/TransitionContext";
+import { useRouter } from "next/navigation";
+import { useCookies } from "react-cookie";
+import { TransitionLink } from "./TransitionLink";
+import GameSwitchHover from "./GameSwitchHover";
+import { useGameSwitchContext } from "@/contexts/GameSwitchContext";
+import Counter from "./reactbits/Counter/Counter";
+import { useEffect, useState } from "react";
+import dayjs from "dayjs";
 
 export function ActivityPage() {
+
+    const lng = useLocale();
+    const t = useTranslations();
+    const { curProfile, updateProfile } = useGlobalVariableContext()
+
+    const [cookies, setCookie, removeCookie] = useCookies(["uid"])
+    const { startTransition } = useTransitionContext();
+    const router = useRouter()
+
+    const [curGame, setCurGame] = useState<BasicGameInfoModel>();
+    const [unit, setUnit] = useState("second");
+    const [leftTime, setLeftTime] = useState(0);
+    const [countColor, setCountColor] = useState("white");
+    const [title, setTitle] = useState("ZJNU CTF 2025 IS COMING")
+
+    const { setIsChangingGame, setCurSwitchingGame, setPosterData } = useGameSwitchContext();
+
+    const items = [
+        { icon: <UsersRound size={22} />, label: t("team"), onClick: () => { router.push(`/${lng}/teams`) } },
+        { icon: <Flag size={22} />, label: t("race"), onClick: () => { router.push(`/${lng}/games`) } },
+        { icon: <Settings size={22} />, label: t("settings"), onClick: () => { router.push(`/${lng}/profile`) } },
+        { icon: <Info size={22} />, label: t("about"), onClick: () => { router.push(`/${lng}/about`) } },
+    ];
+
+    const targetGameID = 50;
+
+    const handleChangeGame = () => {
+        if (curGame) {
+            // 预下载海报，防闪
+            fetch(curGame.poster || "/images/p2g7wm.jpg").then(res => res.blob())
+            .then(blob => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            }).then(dataURL => {
+                setPosterData(dataURL as string)
+                setCurSwitchingGame(curGame)
+                setIsChangingGame(true)
+
+                // 动画时间
+                setTimeout(() => {
+                    router.push(`/zh/games/${curGame.id}`);
+                }, 1800)
+            })
+        }
+    }
+
+    let LeftTimeInter: NodeJS.Timeout;
+
+    useEffect(() => {
+        api.game.gameGame(targetGameID).then((res) => {
+            const curGame = res.data as BasicGameInfoModel;
+            setCurGame(curGame);
+
+            // curGame.end = dayjs().add(10, "seconds").valueOf()
+
+            LeftTimeInter = setInterval(() => {
+                const diffDays = dayjs(curGame.end).diff(dayjs(), "day");
+                if (diffDays >= 2) {
+                    setUnit("days")
+                    setLeftTime(diffDays)
+                    return
+                }
+
+                const diffHours = dayjs(curGame.end).diff(dayjs(), "hour");
+
+                if (diffHours <= 10) {
+                    setCountColor("red")
+                }
+
+                if (diffHours > 0) {
+                    setUnit("hours")
+                    setLeftTime(diffHours)
+                    return
+                }
+
+                const diffMinutes = dayjs(curGame.end).diff(dayjs(), "minute");
+
+                if (diffMinutes > 0) {
+                    setUnit("minutes")
+                    setLeftTime(diffMinutes)
+                    return
+                }
+
+                const diffSeconds = dayjs(curGame.end).diff(dayjs(), "second");
+                if (diffSeconds >= 0) {
+                    setUnit("seconds")
+                    setLeftTime(diffSeconds)
+                    return
+                } else {
+                    clearInterval(LeftTimeInter)
+                    setTitle("ZJNU CTF 2025 IS STARTED")
+                }
+
+            }, 100)
+        })
+
+        return () => {
+            if (LeftTimeInter)
+                clearInterval(LeftTimeInter)
+        }
+    }, [])
+
     return (
         <>
-            <div className="absolute flex w-screen h-screen justify-center items-center">
+            <GameSwitchHover animation={true} />
+            <motion.div className="absolute flex w-screen h-screen justify-center items-center"
+                initial={{
+                    opacity: 0
+                }}
+                animate={{
+                    opacity: 1
+                }}
+                transition={{
+                    duration: 1.5
+                }}
+            >
                 <LetterGlitch
                     glitchSpeed={100}
                     glitchColors={['#CC9117', '#61dca3', '#61b3dc']}
@@ -19,14 +161,14 @@ export function ActivityPage() {
                     outerVignette={true}
                     smooth={true}
                 />
-            </div>
-            <div className="absolute flex w-screen h-screen justify-center items-center backdrop-blur-[3px] select-none flex-col gap-5">
+            </motion.div>
+            <motion.div className="absolute flex w-screen h-screen justify-center items-center backdrop-blur-[3px] select-none flex-col gap-10 [text-shadow:_hsl(var(--foreground))_1px_1px_10px]">
                 <SplitText
-                    text="ZJNU CTF 2025 IS COMING"
+                    text={title}
                     className="text-[5em] font-semibold text-center"
                     delay={50}
                     animationFrom={{ opacity: 0, filter: "blur(10px)", transform: 'translate3d(0,50px,0)' }}
-                    animationTo={{ opacity: 1, filter: "blur(0px)", transform: 'translate3d(0,0,0)' }}
+                    animationTo={{ opacity: 1, filter: "blur(0px)", transform: 'translate3d(0,0,0)'}}
                     easing={ easings.easeInOutCubic }
                     threshold={0.2}
                     rootMargin="-50px"
@@ -47,16 +189,125 @@ export function ActivityPage() {
                         easings: "linear"
                     }}
                 >
-                    <PixelCard variant="pink" className="w-[100px] h-[60px]">
-                        <div className="absolute top-0 left-0 w-full h-full items-center justify-center flex gap-2 opacity-60 hover:opacity-100 duration-300 transition-opacity">
-                            <div className="flex gap-2 items-center">
+                    <PixelCard variant="pink" className="h-[60px] rounded-2xl">
+                        <div className="absolute top-0 left-0 w-full h-full items-center justify-center flex gap-2 opacity-40 hover:opacity-100 duration-300 transition-opacity" onClick={() => {
+                            handleChangeGame()
+                        }}>
+                            <div className="flex gap-3 items-center">
                                 <DoorOpen />
                                 <span className="text-2xl">Join Now</span>
                             </div>
                         </div>
                     </PixelCard>
                 </motion.div>
-            </div>
+            </motion.div>
+            <motion.div className="absolute left-8 top-8 flex items-center gap-1 select-none">
+                <span className="text-2xl font-bold">Left</span>
+                <Counter
+                    value={leftTime}
+                    places={[100, 10, 1]}
+                    fontSize={30}
+                    padding={5}
+                    gap={10}
+                    textColor={countColor}
+                    fontWeight={900}
+                />
+                <span className="text-2xl font-bold">{ unit }</span>
+            </motion.div>
+            <motion.div className="absolute flex top-8 right-8 items-center justify-center gap-2">
+                { ((curProfile.role == Role.Admin || curProfile.role == Role.Monitor) && cookies.uid) && (
+                    <Button variant={"ghost"} onClick={() => {
+                        router.push("/admin/games")
+                    }}><Wrench />Admin</Button>
+                ) }
+                { cookies.uid ? (
+                    <>
+                        <DropdownMenu modal={false}>
+                            <DropdownMenuTrigger>
+                            <Avatar className="select-none">
+                                { curProfile.avatar ? (
+                                    <>
+                                        <AvatarImage src={curProfile.avatar || "#"} alt="@shadcn"
+                                            className={`rounded-2xl`}
+                                        />
+                                        <AvatarFallback><Skeleton className="h-full w-full rounded-full" /></AvatarFallback>
+                                    </>
+                                ) : ( 
+                                    <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
+                                        <span className='text-background text-md'> { curProfile.userName?.substring(0, 2) } </span>
+                                    </div>
+                                ) }
+                            </Avatar>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="mt-2">
+                                <DropdownMenuItem onClick={() => startTransition(() => {
+                                    router.push(`/${lng}/profile`)
+                                })}>
+                                    <Settings />
+                                    <span>{ t("settings") }</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => startTransition(() => {
+                                    router.push(`/${lng}/teams`)
+                                })}>
+                                    <UsersRound />
+                                    <span>{ t("team") }</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => startTransition(() => {
+                                    router.push(`/${lng}/profile/password`)
+                                })}>
+                                    <KeyRound />
+                                    <span>{ t("change_password_header") }</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => {
+                                    api.account.accountLogOut().then(() => {
+                                        updateProfile(() => {
+                                            router.push(`/${lng}/`)
+                                            toast.success(t("login_out_success"), { position: "top-center" })
+                                        })
+                                    })
+                                }}>
+                                    <UserRoundMinus />
+                                    <span>{ t("login_out") }</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </>
+                ) : (
+                    <>
+                        <Button variant="ghost" className='[&_svg]:size-5 text-white' onClick={() => {
+                            router.push(`/${lng}/signup`)
+                        }} >
+                            <Bone />
+                            <span>{t("signup")}</span>
+                        </Button>
+                        <Button variant="ghost" className='[&_svg]:size-5 text-white' onClick={() => {
+                            router.push(`/${lng}/login`)
+                        }} >
+                            <Key />
+                            <span>{t("login")}</span>
+                        </Button>
+                    </>
+                ) }
+            </motion.div>
+            <motion.div className="absolute bottom-3 w-full flex justify-end items-center"
+                initial={{
+                    opacity: 0
+                }}
+                animate={{
+                    opacity: 1
+                }}
+                transition={{
+                    duration: 1.5,
+                    easings: "linear"
+                }}
+            >
+                <Dock 
+                    items={items}
+                    panelHeight={66}
+                    baseItemSize={45}
+                    magnification={70}
+                />
+            </motion.div>
         </>
     )
 }

@@ -179,7 +179,8 @@ export default function ScoreBoardPage({ gmid, visible, setVisible, gameStatus }
     }, [visible])
 
     useEffect(() => {
-        if (gameStatus != "unLogin" && gameStatus != "") {
+        console.log(gameStatus)
+        if (gameStatus != "unLogin" && gameStatus != "" && gameStatus != "pending") {
             api.game.gameGame(gmid).then((res) => { setGameInfo(res.data) })
         }
     }, [gameStatus])

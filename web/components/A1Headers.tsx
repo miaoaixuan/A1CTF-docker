@@ -13,7 +13,7 @@ import {
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-  } from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu"
 
 import { House, Flag, UsersRound, Info, NotebookText, KeyRound } from 'lucide-react'
 
@@ -106,7 +106,7 @@ const PageHeader = () => {
                             </nav>
                         </div>
                         <div className="flex flex-1 items-center justify-between gap-3 md:justify-end">
-                            { (curProfile.role == Role.Admin || curProfile.role == Role.Monitor) && (
+                            { ((curProfile.role == Role.Admin || curProfile.role == Role.Monitor) && cookies.uid) && (
                                 <Button variant={"outline"} onClick={() => {
                                     router.push("/admin/games")
                                 }}><Wrench />Admin</Button>
@@ -114,7 +114,7 @@ const PageHeader = () => {
                             <ThemeSwitcher />
                             { cookies.uid ? (
                                 <>
-                                    <DropdownMenu>
+                                    <DropdownMenu modal={false}>
                                         <DropdownMenuTrigger>
                                         <Avatar className="select-none">
                                             { curProfile.avatar ? (
@@ -237,7 +237,7 @@ const PageHeader = () => {
 
                                         { cookies.uid ? (
                                             <>
-                                                <DropdownMenu>
+                                                <DropdownMenu modal={false}>
                                                     <DropdownMenuTrigger>
                                                         <div className="flex w-full h-full items-center justify-center gap-2 pl-2 pr-2 pb-1">
                                                             <Avatar className="select-none">

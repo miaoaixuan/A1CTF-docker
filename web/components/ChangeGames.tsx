@@ -91,7 +91,7 @@ export function ChangeGames() {
     useEffect(() => {
 
         api.game.gameGames().then((res) => {
-            setCurGames(res.data.toSorted((a, b) => b.end - a.end))
+            setCurGames(res.data.toSorted((a, b) => b.start - a.start))
 
             setTimeout(() => {
                 setLoadingPageVisible(false)
@@ -366,7 +366,7 @@ export function ChangeGames() {
                         <div className="w-full h-full flex flex-col gap-2">
                             <div className="flex w-full h-[65px] border-2 rounded-xl backdrop-blur-sm items-center p-[6px] gap-2 shadow-lg transition-[border-color] duration-300">
                                 <Button variant="ghost" className="w-[49px] h-[49px] [&_svg]:size-6" onClick={() => { handleSwitch("up") }}><ChevronsLeft /></Button>
-                                <DropdownMenu>
+                                <DropdownMenu modal={false}>
                                     <DropdownMenuTrigger asChild className="overflow-hidden flex-1 h-full">
                                         <Button variant="ghost" className="w-full h-full">
                                             <span className="text-[1.1em] font-bold text-ellipsis text-nowrap overflow-hidden">{curGames[curIndex].title}</span>

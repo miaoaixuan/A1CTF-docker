@@ -185,7 +185,7 @@ const Ribbons: React.FC<RibbonsProps> = ({
 
     resize();
 
-    let lastMouse = new Vec3();
+    const lastMouse = new Vec3();
     let stepHook = 300;
     const mouse = new Vec3();
     function updateMouse(e: MouseEvent | TouchEvent) {
