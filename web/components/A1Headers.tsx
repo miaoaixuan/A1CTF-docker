@@ -31,13 +31,10 @@ import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
 import { Skeleton } from "./ui/skeleton";
 import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
 import { useTransitionContext } from "@/contexts/TransitionContext";
-import api, { Role } from "@/utils/GZApi";
+import { api, Role } from "@/utils/GZApi";
 import { toast } from "sonner";
 
-const PageHeader = () => {
-
-    const lng = useLocale();
-
+const PageHeader = ({ lng } : { lng: string }) => {
     const t = useTranslations();
     const [isOpen, setIsOpen] = useState(false);
 
@@ -111,7 +108,7 @@ const PageHeader = () => {
                                     router.push("/admin/games")
                                 }}><Wrench />Admin</Button>
                             ) }
-                            <ThemeSwitcher />
+                            <ThemeSwitcher lng={lng} />
                             { cookies.uid ? (
                                 <>
                                     <DropdownMenu modal={false}>
@@ -191,7 +188,7 @@ const PageHeader = () => {
                             </TransitionLink>
                         </div>
                         <div className="flex justify-end w-full">
-                            <ThemeSwitcher />
+                            <ThemeSwitcher lng={lng} />
                             <div className="mr-2"></div>
                             <DropdownMenu onOpenChange={(open) => setIsOpen(open)}>
                                 <DropdownMenuTrigger asChild>

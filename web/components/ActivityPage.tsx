@@ -5,7 +5,7 @@ import PixelCard from "./reactbits/PixelCard/PixelCard";
 import SplitText from "./reactbits/SplitText/SplitText";
 import { useSprings, animated, easings } from '@react-spring/web';
 import SafeComponent from "./SafeComponent";
-import { Bone, DoorOpen, Flag, Info, Key, KeyRound, Settings, UserRound, UserRoundMinus, UsersRound, Wrench, X } from "lucide-react";
+import { Bone, DoorOpen, Flag, GitPullRequestArrow, Info, Key, KeyRound, Settings, UserRound, UserRoundMinus, UsersRound, Wrench, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "./ui/button";
 import Dock from "./reactbits/Dock/Dock";
@@ -18,7 +18,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import api, { BasicGameInfoModel, Role } from "@/utils/GZApi";
+import { api, BasicGameInfoModel, DetailedGameInfoModel, GameDetailModel, Role } from "@/utils/GZApi";
 import { toast } from "sonner";
 import { useLocale, useTranslations } from "next-intl";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -32,10 +32,10 @@ import { useGameSwitchContext } from "@/contexts/GameSwitchContext";
 import Counter from "./reactbits/Counter/Counter";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
+import { isMobile } from 'react-device-detect';
 
-export function ActivityPage() {
-
-    const lng = useLocale();
+export function ActivityPage({ lng, gameDetailModel } : { lng: string, gameDetailModel: DetailedGameInfoModel }) {
+    
     const t = useTranslations();
     const { curProfile, updateProfile } = useGlobalVariableContext()
 
@@ -54,8 +54,8 @@ export function ActivityPage() {
     const items = [
         { icon: <UsersRound size={22} />, label: t("team"), onClick: () => { router.push(`/${lng}/teams`) } },
         { icon: <Flag size={22} />, label: t("race"), onClick: () => { router.push(`/${lng}/games`) } },
-        { icon: <Settings size={22} />, label: t("settings"), onClick: () => { router.push(`/${lng}/profile`) } },
         { icon: <Info size={22} />, label: t("about"), onClick: () => { router.push(`/${lng}/about`) } },
+        { icon: <GitPullRequestArrow size={22} />, label: t("version"), onClick: () => { router.push(`/${lng}/version`) } }
     ];
 
     const targetGameID = 50;
@@ -87,58 +87,56 @@ export function ActivityPage() {
     let LeftTimeInter: NodeJS.Timeout;
 
     useEffect(() => {
-        api.game.gameGame(targetGameID).then((res) => {
-            const curGame = res.data as BasicGameInfoModel;
-            setCurGame(curGame);
+        const curGame = gameDetailModel as BasicGameInfoModel;
+        setCurGame(curGame);
 
-            // curGame.end = dayjs().add(10, "seconds").valueOf()
+        // curGame.end = dayjs().add(10, "seconds").valueOf()
 
-            LeftTimeInter = setInterval(() => {
-                const diffDays = dayjs(curGame.end).diff(dayjs(), "day");
-                if (diffDays >= 2) {
-                    setUnit("days")
-                    setLeftTime(diffDays)
-                    return
-                }
+        LeftTimeInter = setInterval(() => {
+            const diffDays = dayjs(curGame.end).diff(dayjs(), "day");
+            if (diffDays >= 2) {
+                setUnit("days")
+                setLeftTime(diffDays)
+                return
+            }
 
-                const diffHours = dayjs(curGame.end).diff(dayjs(), "hour");
+            const diffHours = dayjs(curGame.end).diff(dayjs(), "hour");
 
-                if (diffHours <= 10) {
-                    setCountColor("red")
-                }
+            if (diffHours <= 10) {
+                setCountColor("red")
+            }
 
-                if (diffHours > 0) {
-                    setUnit("hours")
-                    setLeftTime(diffHours)
-                    return
-                }
+            if (diffHours > 0) {
+                setUnit("hours")
+                setLeftTime(diffHours)
+                return
+            }
 
-                const diffMinutes = dayjs(curGame.end).diff(dayjs(), "minute");
+            const diffMinutes = dayjs(curGame.end).diff(dayjs(), "minute");
 
-                if (diffMinutes > 0) {
-                    setUnit("minutes")
-                    setLeftTime(diffMinutes)
-                    return
-                }
+            if (diffMinutes > 0) {
+                setUnit("minutes")
+                setLeftTime(diffMinutes)
+                return
+            }
 
-                const diffSeconds = dayjs(curGame.end).diff(dayjs(), "second");
-                if (diffSeconds >= 0) {
-                    setUnit("seconds")
-                    setLeftTime(diffSeconds)
-                    return
-                } else {
-                    clearInterval(LeftTimeInter)
-                    setTitle("ZJNU CTF 2025 IS STARTED")
-                }
+            const diffSeconds = dayjs(curGame.end).diff(dayjs(), "second");
+            if (diffSeconds >= 0) {
+                setUnit("seconds")
+                setLeftTime(diffSeconds)
+                return
+            } else {
+                clearInterval(LeftTimeInter)
+                setTitle("ZJNU CTF 2025 IS STARTED")
+            }
 
-            }, 100)
-        })
+        }, 100)
 
         return () => {
             if (LeftTimeInter)
                 clearInterval(LeftTimeInter)
         }
-    }, [])
+    }, [gameDetailModel])
 
     return (
         <>
@@ -165,10 +163,10 @@ export function ActivityPage() {
                     smooth={true}
                 />
             </motion.div>
-            <motion.div className="absolute flex w-screen h-screen justify-center items-center backdrop-blur-[3px] select-none flex-col gap-10 [text-shadow:_#ffffff_1px_1px_10px] text-white">
+            <motion.div className={`absolute flex w-screen h-screen justify-center items-center backdrop-blur-[3px] select-none flex-col gap-10 text-white ${ isMobile ? "p-5" : "" }`}>
                 <SplitText
                     text={title}
-                    className="text-[5em] font-semibold text-center text-white"
+                    className={`font-semibold text-center transition-all duration-300 [text-shadow:_#ffffff_1px_1px_10px] hover:[text-shadow:_#ffffff_5px_5px_15px] text-white ${ isMobile ? "text-[3em]" : "text-[5em]" }`}
                     delay={50}
                     animationFrom={{ opacity: 0, filter: "blur(10px)", transform: 'translate3d(0,50px,0)' }}
                     animationTo={{ opacity: 1, filter: "blur(0px)", transform: 'translate3d(0,0,0)'}}
@@ -192,7 +190,7 @@ export function ActivityPage() {
                         easings: "linear"
                     }}
                 >
-                    <PixelCard variant="pink" className="h-[60px] rounded-2xl">
+                    <PixelCard variant="pink" className={`h-[60px] rounded-2xl ${ isMobile ? "scale-[0.85]" : "" }`}>
                         <div className="absolute top-0 left-0 w-full h-full items-center justify-center flex gap-2 opacity-40 hover:opacity-100 duration-300 transition-opacity" onClick={() => {
                             handleChangeGame()
                         }}>
@@ -204,20 +202,21 @@ export function ActivityPage() {
                     </PixelCard>
                 </motion.div>
             </motion.div>
-            <motion.div className="absolute left-8 top-8 flex items-center gap-1 select-none text-white">
-                <span className="text-2xl font-bold">Left</span>
-                <Counter
-                    value={leftTime}
-                    places={[100, 10, 1]}
-                    fontSize={30}
-                    padding={5}
-                    gap={10}
-                    textColor={countColor}
-                    fontWeight={900}
-                />
-                <span className="text-2xl font-bold">{ unit }</span>
-            </motion.div>
-            <motion.div className="absolute flex top-8 right-8 items-center justify-center gap-2 text-white">
+            <motion.div className="absolute flex top-8 w-full pl-8 pr-4 items-center justify-center gap-2 text-white select-none">
+                <div className={`flex items-center ${ isMobile ? "gap-0" : "gap-2" }`}>
+                    <span className={`font-bold ${ isMobile ? "text-sm" : "text-2xl" }`}>Left</span>
+                    <Counter
+                        value={leftTime}
+                        places={[100, 10, 1]}
+                        fontSize={isMobile ? 20 : 30}
+                        padding={5}
+                        gap={isMobile ? 2 : 10}
+                        textColor={countColor}
+                        fontWeight={900}
+                    />
+                    <span className={`font-bold ${ isMobile ? "text-sm" : "text-2xl" }`}>{ unit }</span>
+                </div>
+                <div className="flex-1" />
                 { ((curProfile.role == Role.Admin || curProfile.role == Role.Monitor) && cookies.uid) && (
                     <Button variant={"ghost"} onClick={() => {
                         router.push("/admin/games")
@@ -242,7 +241,7 @@ export function ActivityPage() {
                                 ) }
                             </Avatar>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="mt-2">
+                            <DropdownMenuContent className="mt-2 mr-3">
                                 <DropdownMenuItem onClick={() => startTransition(() => {
                                     router.push(`/${lng}/profile`)
                                 })}>

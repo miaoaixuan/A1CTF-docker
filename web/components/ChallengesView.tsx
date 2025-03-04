@@ -29,7 +29,7 @@ import { ResizableScrollablePanel } from "@/components/ResizableScrollablePanel"
 import { Mdx } from "./MdxCompoents";
 import { useEffect, useRef, useState } from "react";
 
-import api, { ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeType, ChallengeInfo, ChallengeType, ErrorMessage, TeamInfoModel, ParticipationStatus, ContainerStatus, ContainerInfoModel } from '@/utils/GZApi'
+import { api, ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeType, ChallengeInfo, ChallengeType, ErrorMessage, TeamInfoModel, ParticipationStatus, ContainerStatus, ContainerInfoModel } from '@/utils/GZApi'
 import { Skeleton } from "./ui/skeleton";
 
 import * as signalR from '@microsoft/signalr'
@@ -109,12 +109,10 @@ const formatDuration = (duration: number) => {
     }
 }
 
-export function ChallengesView({ id }: { id: string }) {
+export function ChallengesView({ id, lng }: { id: string, lng: string }) {
 
     const t = useTranslations('challenge_view');
     const t2 = useTranslations("notices_view")
-
-    const lng = useLocale();
 
     // 所有题目
     const [challenges, setChallenges] = useState<Record<string, ChallengeInfo[]>>({})
@@ -903,7 +901,7 @@ export function ChallengesView({ id }: { id: string }) {
                                 </div>
                             </Button>
                             {/* <Button size="icon" variant="outline" onClick={testFunction}><FlaskConical /></Button> */}
-                            <ToggleTheme />
+                            <ToggleTheme lng={lng} />
                             <Avatar className="select-none">
                                 {curProfile.avatar ? (
                                     <>

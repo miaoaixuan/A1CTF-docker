@@ -1,6 +1,6 @@
 "use client";
 
-import api, { TeamInfoModel } from "@/utils/GZApi";
+import { api, TeamInfoModel } from "@/utils/GZApi";
 import { Avatar } from "@radix-ui/react-avatar";
 import { MacScrollbar } from "mac-scrollbar";
 import { useEffect, useRef, useState } from "react";
@@ -27,7 +27,7 @@ interface ErrorMessage {
     title: string;
 }
 
-export function TeamsView() {
+export function TeamsView({ lng } : { lng: string }) {
 
     const [teams, setTeams] = useState<TeamInfoModel[]>([])
 
@@ -39,7 +39,6 @@ export function TeamsView() {
 
     const t = useTranslations("teams")
 
-    const lng = useLocale()
     const { theme } = useTheme()
     const router = useRouter()
 

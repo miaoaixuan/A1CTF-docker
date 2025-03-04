@@ -3,9 +3,9 @@ import { A1LogoWithoutAnimation } from "@/components/A1LogoWithoutAnimation";
 import { ChallengesView } from '@/components/ChallengesView';
 import Image from "next/image";
 
-export default async function Games({ params }: { params: Promise<{ id: string }>}) {
+export default async function Games({ params }: { params: Promise<{ id: string, lng: string }>}) {
     
-    const { id } = await params;
+    const { id, lng } = await params;
 
     return (
         <div className="p-0 h-screen relative">
@@ -27,7 +27,7 @@ export default async function Games({ params }: { params: Promise<{ id: string }
                     />
                 </div>
             </div> */}
-            <ChallengesView id={id} />
+            <ChallengesView id={id} lng={lng} />
         </div>
     );
 }

@@ -6,13 +6,14 @@ import SafeComponent from "@/components/SafeComponent"
 import { MacScrollbar } from "mac-scrollbar";
 import { AboutPage } from "@/components/AboutPage";
 
-export default async function Home() {
+export default async function Home({ params }: { params: Promise<{ lng: string }>}) {
     
+    const { lng } = await params;
     const source = fs.readFileSync("public/md/about.mdx").toString("utf-8");
 
     return (
         <div className="p-0 h-screen flex flex-col">
-            <PageHeader />
+            <PageHeader lng={lng} />
             <main className="flex flex-1 overflow-hidden">
                 <div className="w-full">
                     <SafeComponent animation={false}>

@@ -6,7 +6,7 @@ import { CalendarPlus, CalendarX2, ChevronDown, ChevronsLeft, ChevronsRight, Che
 import { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion";
 
-import api, { BasicGameInfoModel } from '@/utils/GZApi'
+import { api, BasicGameInfoModel } from '@/utils/GZApi'
 import { MacScrollbar } from "mac-scrollbar";
 import { useTheme } from "next-themes";
 

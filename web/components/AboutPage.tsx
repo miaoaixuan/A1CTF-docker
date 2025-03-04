@@ -4,7 +4,7 @@ import { MacScrollbar } from "mac-scrollbar";
 import { Mdx } from "./MdxCompoents";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-import api from "@/utils/GZApi";
+import { api } from "@/utils/GZApi";
 import { LoadingPage } from "./LoadingPage";
 
 export function AboutPage () {

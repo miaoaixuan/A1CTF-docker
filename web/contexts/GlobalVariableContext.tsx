@@ -1,6 +1,6 @@
 "use client";
 
-import api, { BasicGameInfoModel, ProfileUserInfoModel } from "@/utils/GZApi";
+import { api, BasicGameInfoModel, ProfileUserInfoModel } from "@/utils/GZApi";
 import { AxiosError } from "axios";
 import React, { createContext, Dispatch, SetStateAction, useContext, useEffect, useState } from "react";
 import { useCookies } from "react-cookie";

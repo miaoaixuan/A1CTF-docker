@@ -7,7 +7,7 @@ import { SkeletonCard } from "@/components/SkeletonCard";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 
-import api, { ChallengeDetailModel, AnswerResult } from '@/utils/GZApi'
+import { api, ChallengeDetailModel, AnswerResult } from '@/utils/GZApi'
 import { TerminalContent, TerminalContentCustom } from "./TerminalContent";
 
 import Image from "next/image";

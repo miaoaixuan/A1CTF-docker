@@ -20,9 +20,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 
 import {useLocale, useTranslations} from 'next-intl';
 
-const ThemeSwitcher = () => {
-
-    const lng = useLocale();
+const ThemeSwitcher = ({ lng } : { lng: string }) => {
 
     const [mounted, setMounted] = useState(false)
     const { theme, setTheme } = useTheme()

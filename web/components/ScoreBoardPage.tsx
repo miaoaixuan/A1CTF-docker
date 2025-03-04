@@ -1,6 +1,6 @@
 "use client";
 
-import api, { ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeType, ScoreboardModel, ScoreboardItem, ChallengeInfo } from '@/utils/GZApi'
+import { api, ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeType, ScoreboardModel, ScoreboardItem, ChallengeInfo } from '@/utils/GZApi'
 import { ChartArea, LogOut, X } from 'lucide-react'
 
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts"

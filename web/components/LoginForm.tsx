@@ -28,7 +28,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 
-import api from "@/utils/GZApi";
+import { api } from "@/utils/GZApi";
 
 import Image from "next/image";
 import { useTransitionContext } from "@/contexts/TransitionContext";
@@ -42,9 +42,10 @@ interface ErrorLoginResponse {
 }
 
 export function LoginForm({
+    lng,
     className,
     ...props
-}: React.ComponentPropsWithoutRef<"form">) {
+}: { lng: string } & React.ComponentPropsWithoutRef<"form">) {
     const t = useTranslations("login_form");
 
     const userNameRef = useRef<HTMLInputElement>(null)
@@ -52,7 +53,6 @@ export function LoginForm({
 
     const { startTransition } = useTransitionContext()
     const router = useRouter()
-    const lng = useLocale()
 
     const { updateProfile } = useGlobalVariableContext()
 

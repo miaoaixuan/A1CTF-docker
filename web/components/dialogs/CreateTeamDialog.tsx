@@ -28,7 +28,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useEffect, useState } from "react";
 import { Textarea } from "../ui/textarea";
-import api from "@/utils/GZApi";
+import { api } from "@/utils/GZApi";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
 import { useTranslations } from "next-intl";
