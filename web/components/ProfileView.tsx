@@ -23,15 +23,14 @@ import { MacScrollbar } from "mac-scrollbar";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
-import api, { ErrorMessage } from "@/utils/GZApi";
+import { api, ErrorMessage } from "@/utils/GZApi";
 import { useTransitionContext } from "@/contexts/TransitionContext";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 
-export function ProfileView () {
+export function ProfileView ({ lng } : { lng: string }) {
 
     const { startTransition } = useTransitionContext()
-    const lng = useLocale()
     const router = useRouter()
 
     const [submitDisabled, setSubmitDisabled] = useState(false)

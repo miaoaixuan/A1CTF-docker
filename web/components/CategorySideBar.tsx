@@ -17,7 +17,7 @@ import { motion } from "framer-motion";
 
 import { ChallengeCard } from "./ChallengeCard";
 import { SWRConfiguration } from 'swr'
-import api, { ChallengeInfo, ChallengeDetailModel, GameDetailModel, ErrorMessage, ParticipationStatus } from '@/utils/GZApi'
+import { api, ChallengeInfo, ChallengeDetailModel, GameDetailModel, ErrorMessage, ParticipationStatus } from '@/utils/GZApi'
 
 import { AxiosError } from 'axios';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";

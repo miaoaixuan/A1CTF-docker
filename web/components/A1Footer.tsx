@@ -20,11 +20,10 @@ import { useLocale } from "next-intl";
 import { useTransitionContext } from "@/contexts/TransitionContext";
 import { useRouter } from "next/navigation";
 
-const A1Footer = () => {
+const A1Footer = ({ lng } : { lng: string }) => {
 
     const [infoViewShow, setInfoViewShow] = useState(false)
 
-    const lng = useLocale()
     const router = useRouter()
     const { startTransition } = useTransitionContext()
 

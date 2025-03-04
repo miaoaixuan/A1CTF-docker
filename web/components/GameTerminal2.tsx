@@ -11,7 +11,7 @@ import { Unicode11Addon } from '@xterm/addon-unicode11';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { LinkProvider } from '@/components/LinkProvider';
 
-import api, { ChallengeDetailModel, AnswerResult, FlagSubmitModel } from '@/utils/GZApi'
+import { api, ChallengeDetailModel, AnswerResult, FlagSubmitModel } from '@/utils/GZApi'
 
 import { Chalk } from 'chalk';
 import dayjs from "dayjs";

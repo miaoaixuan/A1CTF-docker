@@ -24,14 +24,15 @@ import { useState } from "react";
 import { useTheme } from "next-themes";
 import { useTransitionContext } from '@/contexts/TransitionContext';
 import { useRouter } from 'next/navigation';
-import api, { ErrorMessage } from '@/utils/GZApi';
+import { api, ErrorMessage } from '@/utils/GZApi';
 import { AxiosError } from 'axios';
 import { toast } from 'sonner';
 
 export function RegisterForm({
+    lng,
     className,
     ...props
-}: React.ComponentPropsWithoutRef<"form">) {
+}: { lng: string } & React.ComponentPropsWithoutRef<"form">) {
     const t = useTranslations("register_form");
 
     const [loading, setLoading] = useState(false)
@@ -42,7 +43,6 @@ export function RegisterForm({
 
     const { startTransition } = useTransitionContext()
     const router = useRouter()
-    const lng = useLocale()
 
     const formSchema = z.object({
         email: z.string().email(t("form_email_valid")),

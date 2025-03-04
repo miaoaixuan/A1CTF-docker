@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
 import { MailCheck } from "lucide-react";
 import { toast } from "sonner";
-import api, { ErrorMessage } from "@/utils/GZApi";
+import { api, ErrorMessage } from "@/utils/GZApi";
 import { AxiosError } from "axios";
 import { useTranslations } from "next-intl";
 

@@ -5,7 +5,7 @@ import { MacScrollbar } from "mac-scrollbar";
 import { useTheme } from "next-themes";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import { Button } from "./ui/button";
-import api, { ChallengeInfo, ScoreboardItem, SubmissionType, ScoreboardModel } from "@/utils/GZApi";
+import { api, ChallengeInfo, ScoreboardItem, SubmissionType, ScoreboardModel } from "@/utils/GZApi";
 import dayjs from "dayjs";
 
 import ReactDOMServer from 'react-dom/server';

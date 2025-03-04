@@ -8,7 +8,9 @@ import ThemeSwitcher from "@/components/ToggleTheme"
 import { TransitionLink } from "@/components/TransitionLink";
 import { RegisterForm } from "@/components/RegisterForm";
 
-export default async function SignupPage() {
+export default async function SignupPage({ params }: { params: Promise<{ lng: string }>}) {
+
+    const { lng } = await params;
 
     return (
         <div className="grid min-h-svh lg:grid-cols-2">
@@ -25,21 +27,23 @@ export default async function SignupPage() {
                         />
                         <span className="font-bold text-lg">A1natas SSO</span>
                     </TransitionLink>
-                    <ThemeSwitcher/>
+                    <ThemeSwitcher lng={lng} />
                 </div>
                 <div className="flex flex-1 items-center justify-center">
                     <div className="w-full max-w-[400px]">
-                        <RegisterForm/>
+                        <RegisterForm lng={lng} />
                     </div>
                 </div>
             </div>
             <div className="relative hidden bg-muted lg:block">
                 <Image
-                    src="/images/123691039_p0.jpg"
+                    src="/images/p2g7wm.jpg"
                     alt="Image"
                     width={4000}
                     height={2000}
-                    className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.7] dark:grayscale"
+                    placeholder="blur"
+                    blurDataURL="/images/p2g7wm.jpg"
+                    className="absolute inset-0 h-full w-full object-cover"
                 />
             </div>
         </div>

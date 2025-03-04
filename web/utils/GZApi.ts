@@ -4060,8 +4060,12 @@ export interface RequestResponseOfRegisterStatus {
     };
   }
   
-  const api = new Api({
+  export const api = new Api({
     // baseURL: "http://a1-test.cn:3000",
     withCredentials: true
   });
-  export default api;
+
+  export const sAPI = new Api({
+    baseURL: "https://www.a1natas.com",
+    withCredentials: true
+  });;

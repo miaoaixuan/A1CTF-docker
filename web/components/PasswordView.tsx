@@ -16,7 +16,7 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
 import { useState } from "react";
-import api, { ErrorMessage } from "@/utils/GZApi";
+import { api, ErrorMessage } from "@/utils/GZApi";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
 import { useTranslations } from "next-intl";

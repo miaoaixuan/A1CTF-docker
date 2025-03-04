@@ -1,7 +1,9 @@
 pub mod user {
     use actix_web::cookie::Cookie;
-    use actix_web::{web, post, HttpResponse, Responder};
+    use actix_web::rt::time;
+    use actix_web::{web, post, get, HttpResponse, Responder};
 
+    use jwt_compact::alg::Hs256;
     use serde_derive::Serialize;
     use serde_derive::Deserialize;
     use serde_json::json;
@@ -10,8 +12,14 @@ pub mod user {
     use crate::db::lib::establish_connection;
     use crate::db::schema::user::dsl::*;
     use crate::db::models::*;
+    use crate::UserClaims;
     use diesel::prelude::*;
     use uuid::Uuid;
+
+    use actix_jwt_auth_middleware::use_jwt::UseJWTOnApp;
+    use actix_jwt_auth_middleware::{AuthResult, Authority, FromRequest, TokenSigner};
+
+    use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
     #[derive(Debug, Serialize, Deserialize)]
     struct LoginPayload {
@@ -21,7 +29,7 @@ pub mod user {
     }
 
     #[post("/api/auth/login")]
-    pub async fn login(payload: web::Json<LoginPayload>) -> impl Responder {
+    pub async fn login(payload: web::Json<LoginPayload>, cookie_signer: web::Data<TokenSigner<UserClaims, Hs256>>) -> impl Responder {
         let connection = &mut establish_connection();
         match user.filter(username.eq(&payload.username).or(email.eq(&payload.username)))
             .limit(1)
@@ -43,34 +51,28 @@ pub mod user {
                         }));
                     }
 
-
-                    let token = random_string(256);
-
-                    let updated_user = UpdateUser {
-                        cur_token: Some(token.clone()),
+                    let new_user = UserClaims { 
+                        username: cur_user.username.clone(),
+                        id: cur_user.id.clone(),
+                        role: match cur_user.role {
+                            0 => crate::Role::User,
+                            1 => crate::Role::Admin,
+                            2 => crate::Role::Monitor,
+                            _ => crate::Role::User
+                        }
                     };
 
-                    match diesel::update(user.filter(id.eq(&cur_user.id)))
-                        .set(updated_user)
-                        .execute(connection) {
-                            Ok(_r) => {
-                                return HttpResponse::Ok().cookie(
-                                    Cookie::build("A1TOKEN", token)
-                                    .path("/")
-                                    .secure(true)
-                                    .http_only(true)
-                                    .finish(),
-                                ).json(json!({
-                                    "code": 200
-                                }));
-                            },
-                            Err(_e) => {
-                                return HttpResponse::InternalServerError().json(json!({
-                                    "code": 500,
-                                    "message": "System error."
-                                }));
-                            }
-                        }
+                    let access_token = cookie_signer.create_signed_token(&new_user, Duration::from_secs(3600 * 48));
+                    let access_cookie = Cookie::build("access_token".to_string(), access_token.unwrap())
+                        .path("/")
+                        .secure(true)
+                        .finish();
+
+                    return HttpResponse::Ok()
+                    .cookie(access_cookie)
+                    .json(json!({
+                        "code": 200
+                    }));
                         
                 }
             },
@@ -104,7 +106,7 @@ pub mod user {
                 if data.len() == 0 {
                     let new_salt = generate_salt();
                     let salted_password = salt_password(&payload.password, &new_salt);
-                    let new_user = SetUser {
+                    let new_user = User {
                         id: Uuid::new_v4().to_string(),
                         username: payload.username.clone(),
                         password: salted_password,
@@ -152,4 +154,13 @@ pub mod user {
         }
         
     }
+
+    #[get("/api/test")]
+    pub async fn test(jwt_user: UserClaims) -> impl Responder {
+        HttpResponse::Ok().json(json!({
+            "code": 200,
+            "user": jwt_user.username
+        }))
+    }
+
 }

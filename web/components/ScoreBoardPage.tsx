@@ -1,6 +1,6 @@
 "use client";
 
-import api, { ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeType, ScoreboardModel, ScoreboardItem, ChallengeInfo } from '@/utils/GZApi'
+import { api, ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeType, ScoreboardModel, ScoreboardItem, ChallengeInfo } from '@/utils/GZApi'
 import { ChartArea, LogOut, X } from 'lucide-react'
 
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
@@ -179,7 +179,8 @@ export default function ScoreBoardPage({ gmid, visible, setVisible, gameStatus }
     }, [visible])
 
     useEffect(() => {
-        if (gameStatus != "unLogin" && gameStatus != "") {
+        console.log(gameStatus)
+        if (gameStatus != "unLogin" && gameStatus != "" && gameStatus != "pending") {
             api.game.gameGame(gmid).then((res) => { setGameInfo(res.data) })
         }
     }, [gameStatus])

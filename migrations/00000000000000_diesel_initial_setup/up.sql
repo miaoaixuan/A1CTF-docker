@@ -34,6 +34,14 @@ COMMENT ON COLUMN "user"."email" IS '邮箱地址';
 COMMENT ON COLUMN "user"."email_verified" IS '邮箱是否验证';
 
 
+CREATE TABLE "challenge" (
+  "id" int4 PRIMARY KEY NOT NULL,
+  "name" text NOT NULL,
+  "score" float8 NOT NULL,
+  "description" text NOT NULL,
+  "category" text NOT NULL,
+  
+);
 
 -- Sets up a trigger for the given table to automatically set a column called
 -- `updated_at` whenever the row is modified (unless `updated_at` was included

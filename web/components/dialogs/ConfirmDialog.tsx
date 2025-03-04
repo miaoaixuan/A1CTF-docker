@@ -28,7 +28,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { ChangeEvent, Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import { Textarea } from "../ui/textarea";
-import api from "@/utils/GZApi";
+import { api } from "@/utils/GZApi";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
 import { CircleAlert, FileUp, Upload } from "lucide-react";

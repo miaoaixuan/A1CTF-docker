@@ -7,7 +7,9 @@ import Image from "next/image";
 import ThemeSwitcher from "@/components/ToggleTheme"
 import { TransitionLink } from "@/components/TransitionLink";
 
-export default async function LoginPage() {
+export default async function LoginPage({ params }: { params: Promise<{ lng: string }>}) {
+
+    const { lng } = await params;
 
     return (
         <div className="grid min-h-svh lg:grid-cols-2 select-none">
@@ -24,11 +26,11 @@ export default async function LoginPage() {
                         />
                         <span className="font-bold text-lg">A1natas SSO</span>
                     </TransitionLink>
-                    <ThemeSwitcher/>
+                    <ThemeSwitcher lng={lng} />
                 </div>
                 <div className="flex flex-1 items-center justify-center">
                     <div className="w-full max-w-[400px]">
-                        <LoginForm/>
+                        <LoginForm lng={lng} />
                     </div>
                 </div>
             </div>

@@ -13,7 +13,7 @@ import {
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-  } from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu"
 
 import { House, Flag, UsersRound, Info, NotebookText, KeyRound } from 'lucide-react'
 
@@ -31,13 +31,10 @@ import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
 import { Skeleton } from "./ui/skeleton";
 import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
 import { useTransitionContext } from "@/contexts/TransitionContext";
-import api, { Role } from "@/utils/GZApi";
+import { api, Role } from "@/utils/GZApi";
 import { toast } from "sonner";
 
-const PageHeader = () => {
-
-    const lng = useLocale();
-
+const PageHeader = ({ lng } : { lng: string }) => {
     const t = useTranslations();
     const [isOpen, setIsOpen] = useState(false);
 
@@ -106,15 +103,15 @@ const PageHeader = () => {
                             </nav>
                         </div>
                         <div className="flex flex-1 items-center justify-between gap-3 md:justify-end">
-                            { (curProfile.role == Role.Admin || curProfile.role == Role.Monitor) && (
+                            { ((curProfile.role == Role.Admin || curProfile.role == Role.Monitor) && cookies.uid) && (
                                 <Button variant={"outline"} onClick={() => {
                                     router.push("/admin/games")
                                 }}><Wrench />Admin</Button>
                             ) }
-                            <ThemeSwitcher />
+                            <ThemeSwitcher lng={lng} />
                             { cookies.uid ? (
                                 <>
-                                    <DropdownMenu>
+                                    <DropdownMenu modal={false}>
                                         <DropdownMenuTrigger>
                                         <Avatar className="select-none">
                                             { curProfile.avatar ? (
@@ -191,7 +188,7 @@ const PageHeader = () => {
                             </TransitionLink>
                         </div>
                         <div className="flex justify-end w-full">
-                            <ThemeSwitcher />
+                            <ThemeSwitcher lng={lng} />
                             <div className="mr-2"></div>
                             <DropdownMenu onOpenChange={(open) => setIsOpen(open)}>
                                 <DropdownMenuTrigger asChild>
@@ -237,7 +234,7 @@ const PageHeader = () => {
 
                                         { cookies.uid ? (
                                             <>
-                                                <DropdownMenu>
+                                                <DropdownMenu modal={false}>
                                                     <DropdownMenuTrigger>
                                                         <div className="flex w-full h-full items-center justify-center gap-2 pl-2 pr-2 pb-1">
                                                             <Avatar className="select-none">

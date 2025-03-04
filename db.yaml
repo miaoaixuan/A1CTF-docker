@@ -1,0 +1,24 @@
+challenge：
+    id int
+    name text
+    description text
+    category text
+    attachments []
+    judge_type text
+    judge_config json
+
+judges:
+    challenge_id int
+    user_id text
+    judge_type text
+    judge_status text
+    judge_id int
+
+games:
+    id int
+    name text
+    description text
+    start_time date
+    end_time date
+    challenges 
+
