@@ -93,14 +93,14 @@ export function ActivityPage({ lng, gameDetailModel } : { lng: string, gameDetai
         // curGame.end = dayjs().add(10, "seconds").valueOf()
 
         LeftTimeInter = setInterval(() => {
-            const diffDays = dayjs(curGame.end).diff(dayjs(), "day");
+            const diffDays = dayjs(curGame.start).diff(dayjs(), "day");
             if (diffDays >= 2) {
                 setUnit("days")
                 setLeftTime(diffDays)
                 return
             }
 
-            const diffHours = dayjs(curGame.end).diff(dayjs(), "hour");
+            const diffHours = dayjs(curGame.start).diff(dayjs(), "hour");
 
             if (diffHours <= 10) {
                 setCountColor("red")
@@ -112,7 +112,7 @@ export function ActivityPage({ lng, gameDetailModel } : { lng: string, gameDetai
                 return
             }
 
-            const diffMinutes = dayjs(curGame.end).diff(dayjs(), "minute");
+            const diffMinutes = dayjs(curGame.start).diff(dayjs(), "minute");
 
             if (diffMinutes > 0) {
                 setUnit("minutes")
@@ -120,7 +120,7 @@ export function ActivityPage({ lng, gameDetailModel } : { lng: string, gameDetai
                 return
             }
 
-            const diffSeconds = dayjs(curGame.end).diff(dayjs(), "second");
+            const diffSeconds = dayjs(curGame.start).diff(dayjs(), "second");
             if (diffSeconds >= 0) {
                 setUnit("seconds")
                 setLeftTime(diffSeconds)
