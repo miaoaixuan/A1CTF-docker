@@ -45,6 +45,7 @@ pub struct A1Container {
     pub expose_ports: Option<Vec<PortName>>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PodInfo {
     pub name: String,
     pub team_hash: String,

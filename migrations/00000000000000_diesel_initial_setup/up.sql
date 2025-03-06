@@ -42,7 +42,7 @@ CREATE TABLE "challenges" (
     "challenge_id" BIGSERIAL NOT NULL,
     "name" text NOT NULL,
     "description" text NOT NULL,
-    "category" int NOT NULL,
+    "category" jsonb NOT NULL,
     "attachments" jsonb NOT NULL,
     "type" int4 NOT NULL,
     "container_config" jsonb,

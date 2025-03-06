@@ -2,7 +2,10 @@ use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde_derive::{Serialize, Deserialize};
 use diesel_json::Json;
-use crate::utils::k8s_tool::A1Container;
+use crate::utils::k8s_tool::{A1Container, PodInfo};
+use std::str::FromStr;
+use strum_macros::{EnumString, Display};
+
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum AttachmentType {
@@ -34,6 +37,37 @@ pub struct JudgeConfig {
     pub flag_template: Option<String>,
 }
 
+#[derive(Debug, EnumString, Display, Serialize, Deserialize)]
+#[strum(ascii_case_insensitive)]
+pub enum ChallengeCategory {
+    #[strum(serialize = "WEB")]
+    WEB = 0,
+    #[strum(serialize = "PWN")]
+    PWN = 1,
+    #[strum(serialize = "REVERSE")]
+    REVERSE = 2,
+    #[strum(serialize = "MISC")]
+    MISC = 3,
+    #[strum(serialize = "CRYPTO")]
+    CRYPTO = 4,
+    #[strum(serialize = "PPC")]
+    PPC = 5,
+    #[strum(serialize = "AI")]
+    AI = 6,
+    #[strum(serialize = "BLOCKCHAIN")]
+    BLOCKCHAIN = 7,
+    #[strum(serialize = "IOT")]
+    IOT = 8,
+    #[strum(serialize = "MOBILE")]
+    MOBILE = 9,
+    #[strum(serialize = "OSINT")]
+    OSINT = 10,
+    #[strum(serialize = "FORENSICS")]
+    FORENSICS = 11,
+    #[strum(serialize = "OTHER")]
+    OTHER = 12,
+}
+
 #[derive(Debug, Serialize, Deserialize, Queryable, Selectable, Insertable, AsChangeset)]
 #[allow(dead_code)]
 #[diesel(table_name = crate::db::schema::challenges)]
@@ -41,10 +75,10 @@ pub struct Challenge {
     pub challenge_id: i64,
     pub name: String,
     pub description: String,
-    pub category: i32,
+    pub category: Json<ChallengeCategory>,
     pub attachments: Json<Vec<AttachmentConfig>>,
     pub type_: i32,
-    pub container_config: Option<Json<A1Container>>,
+    pub container_config: Option<Json<PodInfo>>,
     pub create_time: NaiveDateTime,
     pub judge_config: Option<Json<JudgeConfig>>
 }

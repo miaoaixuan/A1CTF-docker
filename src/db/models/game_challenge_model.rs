@@ -23,6 +23,6 @@ pub struct GameChallenge {
     pub score: f64,
     pub enabled: bool,
     pub solved: Json<Vec<Solve>>,
-    pub hints: Vec<String>,
-    pub judge_config: Option<Json<JudgeConfig>>
+    pub hints: Option<Vec<Option<String>>>,
+    pub judge_config: Json<JudgeConfig>
 }

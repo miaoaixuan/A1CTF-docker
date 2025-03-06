@@ -5,7 +5,7 @@ diesel::table! {
         challenge_id -> Int8,
         name -> Text,
         description -> Text,
-        category -> Int4,
+        category -> Jsonb,
         attachments -> Jsonb,
         #[sql_name = "type"]
         type_ -> Int4,
