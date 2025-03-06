@@ -1,11 +1,49 @@
-challenge：
-    id int
+challenges：
+    challenge_id int
     name text
     description text
     category text
     attachments []
-    judge_type text
+    type text
+    hints text[]
+    container_config json
+    create_time date
+    flag_template text
     judge_config json
+
+games:
+    game_id int
+    name text
+    summary text
+    description text
+    poster text
+    start_time date
+    practice_mode bool
+    team_number_limit int4
+    container_number_limit int4
+    require_wp bool
+    wp_expire_time timestamp
+    stages game_stage[]
+    end_time date
+    solve_list solve[]
+
+game_challenges:
+    game_id int
+    challenge_id int
+    socre double
+    enabled bool
+    
+    
+containers:
+    container_id text
+    game_id int
+    challenge_id int
+    user_id text
+    start_time datestamp
+    expire_time datestamp
+    expose_ports port_info[]
+    container_status text
+    flag_content text
 
 judges:
     challenge_id int
@@ -13,12 +51,4 @@ judges:
     judge_type text
     judge_status text
     judge_id int
-
-games:
-    id int
-    name text
-    description text
-    start_time date
-    end_time date
-    challenges 
 

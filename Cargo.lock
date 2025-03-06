@@ -8,7 +8,9 @@ version = "0.1.0"
 dependencies = [
  "actix-jwt-auth-middleware",
  "actix-web",
+ "chrono",
  "diesel",
+ "diesel_json",
  "dotenvy",
  "env_logger",
  "hex",
@@ -820,9 +822,11 @@ checksum = "04001f23ba8843dc315804fa324000376084dfb1c30794ff68dd279e6e5696d5"
 dependencies = [
  "bitflags",
  "byteorder",
+ "chrono",
  "diesel_derives",
  "itoa",
  "pq-sys",
+ "serde_json",
 ]
 
 [[package]]
@@ -836,6 +840,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.98",
+]
+
+[[package]]
+name = "diesel_json"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fc50de1d729b55dfbb03e2d2db846684e3ab585f4ee9cfc3c675d236f951888"
+dependencies = [
+ "diesel",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

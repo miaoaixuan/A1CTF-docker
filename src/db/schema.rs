@@ -1,6 +1,18 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    games (id) {
+        id -> Int4,
+        name -> Text,
+        description -> Text,
+        poster -> Text,
+        start_time -> Timestamp,
+        end_time -> Timestamp,
+        solve_list -> Jsonb,
+    }
+}
+
+diesel::table! {
     user (id) {
         id -> Text,
         username -> Text,
@@ -18,3 +30,8 @@ diesel::table! {
         email_verified -> Nullable<Bool>,
     }
 }
+
+diesel::allow_tables_to_appear_in_same_query!(
+    games,
+    user,
+);

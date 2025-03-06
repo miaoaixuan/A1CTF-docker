@@ -33,14 +33,14 @@ COMMENT ON COLUMN "user"."sso_data" IS '统一验证的数据';
 COMMENT ON COLUMN "user"."email" IS '邮箱地址';
 COMMENT ON COLUMN "user"."email_verified" IS '邮箱是否验证';
 
-
-CREATE TABLE "challenge" (
-  "id" int4 PRIMARY KEY NOT NULL,
-  "name" text NOT NULL,
-  "score" float8 NOT NULL,
-  "description" text NOT NULL,
-  "category" text NOT NULL,
-  
+CREATE TABLE "games" (
+    "id" int4 PRIMARY KEY NOT NULL,
+    "name" text NOT NULL,
+    "description" text NOT NULL,
+    "poster" text NOT NULL,
+    "start_time" timestamp NOT NULL,
+    "end_time" timestamp NOT NULL,
+    "solve_list" jsonb NOT NULL
 );
 
 -- Sets up a trigger for the given table to automatically set a column called

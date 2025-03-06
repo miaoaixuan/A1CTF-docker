@@ -11,7 +11,7 @@ pub mod user {
     use crate::utils::crypto_helper::*;
     use crate::db::lib::establish_connection;
     use crate::db::schema::user::dsl::*;
-    use crate::db::models::*;
+    use crate::db::models::user_model::*;
     use crate::UserClaims;
     use diesel::prelude::*;
     use uuid::Uuid;
