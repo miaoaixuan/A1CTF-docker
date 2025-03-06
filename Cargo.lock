@@ -827,6 +827,7 @@ dependencies = [
  "itoa",
  "pq-sys",
  "serde_json",
+ "uuid",
 ]
 
 [[package]]

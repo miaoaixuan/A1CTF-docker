@@ -1,0 +1,28 @@
+use chrono::NaiveDateTime;
+use diesel::prelude::*;
+use serde_derive::{Serialize, Deserialize};
+use diesel_json::Json;
+use super::challenge_model::JudgeConfig;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Solve {
+    pub user_id: String,
+    pub game_id: i32,
+    pub solve_time: NaiveDateTime,
+    pub challenge_id: i32,
+    pub score: f64,
+    pub solve_rank: i32
+}
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Selectable, Insertable, AsChangeset)]
+#[allow(dead_code)]
+#[diesel(table_name = crate::db::schema::game_challenges)]
+pub struct GameChallenge {
+    pub game_id: i64,
+    pub challenge_id: i64,
+    pub score: f64,
+    pub enabled: bool,
+    pub solved: Json<Vec<Solve>>,
+    pub hints: Vec<String>,
+    pub judge_config: Option<Json<JudgeConfig>>
+}

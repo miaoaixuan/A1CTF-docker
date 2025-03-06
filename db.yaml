@@ -1,44 +1,59 @@
 challenges：
-    challenge_id int
+    challenge_id BIGSERIAL AUTO_INCREMENT
     name text
     description text
     category text
     attachments []
-    type text
-    hints text[]
+    type int
     container_config json
     create_time date
     flag_template text
     judge_config json
 
 games:
-    game_id int
+    game_id BIGSERIAL AUTO_INCREMENT
     name text
     summary text
     description text
     poster text
+    invite_code text
     start_time date
+    end_time date
     practice_mode bool
     team_number_limit int4
     container_number_limit int4
     require_wp bool
     wp_expire_time timestamp
     stages game_stage[]
-    end_time date
-    solve_list solve[]
 
 game_challenges:
-    game_id int
-    challenge_id int
+    game_id BIGSERIAL foreign key
+    challenge_id BIGSERIAL foreign key
     socre double
     enabled bool
-    
-    
+    solved solve[]
+    hints text[]
+    flag_template text
+    judge_config json
+
+teams:
+    team_id BIGSERIAL primary key AUTO_INCREMENT
+    game_id BIGSERIAL foreign key
+    team_name text NOT NULL,
+    team_avatar text
+    team_slogan text
+    team_description text
+    team_members uuid[]
+    team_score double
+    team_hash text
+    invite_code text
+    team_status int
+
 containers:
-    container_id text
-    game_id int
-    challenge_id int
-    user_id text
+    container_id uuid 
+    game_id BIGSERIAL foreign key
+    challenge_id BIGSERIAL foreign key
+    team_id id foreign key
     start_time datestamp
     expire_time datestamp
     expose_ports port_info[]
@@ -46,9 +61,10 @@ containers:
     flag_content text
 
 judges:
-    challenge_id int
-    user_id text
-    judge_type text
-    judge_status text
-    judge_id int
+    challenge_id BIGSERIAL foreign key
+    team_id uuid foreign key
+    judge_type int
+    judge_status int
+    judge_id uuid primary key
+    judge_result int
 

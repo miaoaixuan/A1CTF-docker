@@ -53,7 +53,7 @@ pub mod user {
 
                     let new_user = UserClaims { 
                         username: cur_user.username.clone(),
-                        id: cur_user.id.clone(),
+                        id: cur_user.user_id.to_string(),
                         role: match cur_user.role {
                             0 => crate::Role::User,
                             1 => crate::Role::Admin,
@@ -107,7 +107,7 @@ pub mod user {
                     let new_salt = generate_salt();
                     let salted_password = salt_password(&payload.password, &new_salt);
                     let new_user = User {
-                        id: Uuid::new_v4().to_string(),
+                        user_id: Uuid::new_v4(),
                         username: payload.username.clone(),
                         password: salted_password,
                         salt: new_salt,
