@@ -16,7 +16,6 @@ import { Button } from "./ui/button"
 import { motion } from "framer-motion";
 
 import { ChallengeCard } from "./ChallengeCard";
-import { SWRConfiguration } from 'swr'
 import { api, ChallengeInfo, ChallengeDetailModel, GameDetailModel, ErrorMessage, ParticipationStatus } from '@/utils/GZApi'
 
 import { AxiosError } from 'axios';

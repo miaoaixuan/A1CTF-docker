@@ -18,6 +18,7 @@ pub struct Solve {
 #[allow(dead_code)]
 #[diesel(table_name = crate::db::schema::game_challenges)]
 pub struct GameChallenge {
+    pub ingame_id: i64,
     pub game_id: i64,
     pub challenge_id: i64,
     pub score: f64,

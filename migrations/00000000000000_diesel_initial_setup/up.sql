@@ -52,6 +52,7 @@ CREATE TABLE "challenges" (
 );
 
 CREATE TABLE "game_challenges" (
+    "ingame_id" BIGSERIAL NOT NULL,
     "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
     "challenge_id" BIGSERIAL NOT NULL REFERENCES challenges(challenge_id),
     "score" double precision DEFAULT 0 NOT NULL,
@@ -59,7 +60,7 @@ CREATE TABLE "game_challenges" (
     "solved" jsonb DEFAULT '[]'::jsonb NOT NULL,
     "hints" text[] DEFAULT '{}'::text[],
     "judge_config" jsonb NOT NULL,
-    PRIMARY KEY (challenge_id)
+    PRIMARY KEY (ingame_id)
 );
 
 CREATE TABLE "teams" (

@@ -30,7 +30,8 @@ diesel::table! {
 }
 
 diesel::table! {
-    game_challenges (challenge_id) {
+    game_challenges (ingame_id) {
+        ingame_id -> Int8,
         game_id -> Int8,
         challenge_id -> Int8,
         score -> Float8,

@@ -1,7 +1,7 @@
 pub mod challenge {
-    use actix_web::{web, post, get, HttpResponse, Responder};
+    use actix_web::{get, post, web, HttpResponse, Responder};
 
-    use chrono::{Local, Duration};
+    use chrono::Local;
     use diesel_json::Json;
     use serde_derive::{Serialize, Deserialize};
     use serde_json::json;
@@ -10,7 +10,6 @@ pub mod challenge {
     use crate::db::lib::establish_connection;
     use crate::db::schema::challenges::dsl::*;
 
-    use crate::utils::k8s_tool::*;
     use crate::UserClaims;
     use diesel::prelude::*;
 
@@ -51,14 +50,8 @@ pub mod challenge {
         }
     }
 
-    #[derive(Debug, Serialize, Deserialize)]
-    struct CreateChallengePayload {
-        game_id: i64,
-        
-    }
-
     #[post("/api/challenge/create")]
-    pub async fn create(jwt_user: UserClaims, payload: web::Json<Challenge>) -> impl Responder {
+    pub async fn create(jwt_user: UserClaims, payload: web::Json<SetChallenge>) -> impl Responder {
 
         let connection = &mut establish_connection();
 
@@ -111,15 +104,113 @@ pub mod challenge {
         //     create_time: Local::now().naive_local()
         // } ];
 
-        let new_chall = vec![ payload.into_inner() ];
+        let mut new_chall = payload.into_inner();
+        new_chall.create_time = Local::now().naive_local();
+        let values = vec![ new_chall ];
 
-        diesel::insert_into(challenges)
-            .values(&new_chall)
-            .execute(connection).expect("Failed to insert challenge");
+        match diesel::insert_into(challenges)
+            .values(&values)
+            .returning(Challenge::as_select())
+            .get_result::<Challenge>(connection) {
+                Ok(challenge) => HttpResponse::Ok().json(json!({
+                    "code": 200,
+                    "data": {
+                        "challenge_id": challenge.challenge_id,
+                        "create_at": challenge.create_time
+                    }
+                })),
+                Err(e) => {
+                    println!("{:?}", e);
 
-        return HttpResponse::Ok().json(json!({
-            "code": 200,
-            "data": "1"
-        }));
+                    HttpResponse::InternalServerError().json(json!({
+                        "code": 500,
+                        "message": "Failed to create challenge"
+                    }))
+                }
+            }
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    struct DeleteChallengePayload {
+        challenge_id: i64,
+    }
+
+    #[post("/api/challenge/delete")]
+    pub async fn delete(jwt_user: UserClaims, payload: web::Json<DeleteChallengePayload>) -> impl Responder {
+        
+        let connection = &mut establish_connection();
+
+        match diesel::delete(challenges.filter(challenge_id.eq(payload.challenge_id)))
+            .execute(connection) {
+                Ok(number) => {
+                    if number == 0 {
+                        return HttpResponse::NotFound().json(json!({
+                            "code": 404,
+                            "message": "Challenge not found"
+                        }));
+                    } else {
+                        return HttpResponse::Ok().json(json!({
+                            "code": 200,
+                            "message": "Challenge deleted"
+                        }));
+                    }
+                },
+                Err(e) => {
+                    println!("{:?}", e);
+
+                    HttpResponse::InternalServerError().json(json!({
+                        "code": 500,
+                        "message": "Failed to delete challenge"
+                    }))
+                }
+            }
+    }
+
+    #[post("/api/challenge/update")]
+    pub async fn update(jwt_user: UserClaims, payload: web::Json<Challenge>) -> impl Responder {
+        
+        let connection = &mut establish_connection();
+        let new_challenge = payload.into_inner();
+
+        match challenges.filter(challenge_id.eq(new_challenge.challenge_id))
+            .select(Challenge::as_select())
+            .load::<Challenge>(connection) {
+                Ok(challenge) => {
+                    if challenge.len() == 0 {
+                        return HttpResponse::NotFound().json(json!({
+                            "code": 404,
+                            "message": "Challenge not found"
+                        }));
+                    } else {
+
+                        match diesel::update(challenges.filter(challenge_id.eq(new_challenge.challenge_id)))
+                            .set(&new_challenge)
+                            .execute(connection) {
+                                Ok(_) => {
+                                    return HttpResponse::Ok().json(json!({
+                                        "code": 200,
+                                        "message": "Updated"
+                                    }));
+                                },
+                                Err(e) => {
+                                    println!("{:?}", e);
+
+                                    HttpResponse::InternalServerError().json(json!({
+                                        "code": 500,
+                                        "message": "Failed to delete challenge"
+                                    }))
+                                }
+                            }
+                    }
+                },
+                Err(e) => {
+                    println!("{:?}", e);
+
+                    return HttpResponse::InternalServerError().json(json!({
+                        "code": 500,
+                        "message": "Failed to delete challenge"
+                    }));
+                }
+            }
     }
 }

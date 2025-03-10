@@ -68,7 +68,7 @@ pub enum ChallengeCategory {
     OTHER = 12,
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Selectable, Insertable, AsChangeset)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Selectable, AsChangeset)]
 #[allow(dead_code)]
 #[diesel(table_name = crate::db::schema::challenges)]
 pub struct Challenge {
@@ -78,7 +78,21 @@ pub struct Challenge {
     pub category: Json<ChallengeCategory>,
     pub attachments: Json<Vec<AttachmentConfig>>,
     pub type_: i32,
-    pub container_config: Option<Json<PodInfo>>,
+    pub container_config: Option<Json<Vec<A1Container>>>,
+    pub create_time: NaiveDateTime,
+    pub judge_config: Option<Json<JudgeConfig>>
+}
+
+#[derive(Debug, Serialize, Deserialize, Insertable, AsChangeset)]
+#[allow(dead_code)]
+#[diesel(table_name = crate::db::schema::challenges)]
+pub struct SetChallenge {
+    pub name: String,
+    pub description: String,
+    pub category: Json<ChallengeCategory>,
+    pub attachments: Json<Vec<AttachmentConfig>>,
+    pub type_: i32,
+    pub container_config: Option<Json<Vec<A1Container>>>,
     pub create_time: NaiveDateTime,
     pub judge_config: Option<Json<JudgeConfig>>
 }

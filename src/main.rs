@@ -60,6 +60,8 @@ async fn main() -> std::io::Result<()> {
                 .service(controllers::user::test)
                 .service(controllers::challenge::list)
                 .service(controllers::challenge::create)
+                .service(controllers::challenge::delete)
+                .service(controllers::challenge::update)
             );
         
         app
