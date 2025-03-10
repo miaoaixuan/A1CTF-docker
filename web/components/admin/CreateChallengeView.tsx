@@ -14,7 +14,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover"
 
-import { useFieldArray, Controller } from "react-hook-form";
+import { useFieldArray, Controller, useWatch } from "react-hook-form";
 
 import {
     Select,
@@ -31,11 +31,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
 
-import { CalendarIcon, FileCode, Github, PlusCircle, ScanBarcode } from "lucide-react"
-import { Calendar } from "../ui/calendar";
-
-import { format } from "date-fns"
-import { ScrollArea, ScrollBar } from "../ui/scroll-area";
+import { CalendarIcon, Cloud, FileCode, Github, PlusCircle, ScanBarcode, TableProperties } from "lucide-react"
 import { Textarea } from "../ui/textarea";
 
 import CodeEditor from '@uiw/react-textarea-code-editor';
@@ -43,6 +39,7 @@ import CodeEditor from '@uiw/react-textarea-code-editor';
 import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { MacScrollbar } from "mac-scrollbar";
 
 interface ContainerFormProps {
     control: any;
@@ -50,8 +47,14 @@ interface ContainerFormProps {
     removeContainer: (index: number) => void;
 }
 
+interface AttachmentFormProps {
+    control: any;
+    index: number;
+    form: any;
+    removeAttachment: (index: number) => void;
+}
+
 function ContainerForm({ control, index, removeContainer }: ContainerFormProps) {
-    // 在子组件中调用 useFieldArray 用于管理当前容器的 expose_ports
     const {
         fields: portFields,
         append: appendPort,
@@ -62,9 +65,9 @@ function ContainerForm({ control, index, removeContainer }: ContainerFormProps) 
     });
 
     return (
-        <div className="border p-4 mb-4 rounded">
+        <div className="border p-6 mb-4 rounded-lg hover:shadow-lg transition-shadow duration-300">
             <div className="flex justify-between items-center mb-2">
-                <h5 className="font-medium">容器 {index + 1}</h5>
+                <span className="font-md font-semibold">容器 {index + 1}</span>
                 <Button variant="destructive" type="button" onClick={() => removeContainer(index)}>
                     删除容器
                 </Button>
@@ -144,8 +147,8 @@ function ContainerForm({ control, index, removeContainer }: ContainerFormProps) 
                 />
             </div>
             <div className="mt-4">
-                <div className="flex items-center mb-4">
-                    <span className="text-lg font-semibold">端口暴露</span>
+                <div className="flex items-center mb-3">
+                    <span className="text-md font-semibold">端口暴露</span>
                     <div className="flex-1"/>
                     <Button
                         type="button"
@@ -203,18 +206,172 @@ function ContainerForm({ control, index, removeContainer }: ContainerFormProps) 
     );
 }
 
+function AttachmentForm({ control, index, form, removeAttachment }: AttachmentFormProps) {
+
+    const attachType = useWatch({
+        control,
+        name: `attachments.${index}.attach_type`, // Watch the specific field
+    });
+
+    return (
+        <div className="border p-6 mb-4 rounded-lg hover:shadow-lg transition-shadow duration-300">
+            <div className="flex justify-between items-center mb-2">
+                <span className="font-md font-semibold">附件 {index + 1}</span>
+                <Button variant="destructive" type="button" onClick={() => removeAttachment(index)}>
+                    删除附件
+                </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <FormField
+                    control={control}
+                    name={`attachments.${index}.attach_name`}
+                    render={({ field }) => (
+                        <FormItem>
+                            <div className="flex items-center h-[20px]">
+                                <FormLabel>附件名称</FormLabel>
+                                <div className="flex-1"/>
+                                <FormMessage className="text-[14px]"/>
+                            </div>
+                            <FormControl>
+                                <Input {...field} value={field.value ?? ""} />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={control}
+                    name={`attachments.${index}.attach_type`}
+                    render={({ field }) => (
+                        <FormItem>
+                            <div className="flex items-center h-[20px]">
+                                <FormLabel>附件类型</FormLabel>
+                                <div className="flex-1"/>
+                                <FormMessage className="text-[14px]"/>
+                            </div>
+                            <Select onValueChange={(e) => {
+                                field.onChange(e)
+
+                            }} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="选择附件类型" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent className="w-full flex">
+                                <SelectContent className="w-full flex">
+                                    <SelectItem value="STATICFILE">
+                                        <div className="w-full flex gap-2 items-center h-[25px]">
+                                            <ScanBarcode />
+                                            <span className="text-[12px] font-bold">静态附件</span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="DYNAMICFILE" disabled>
+                                        <div className="w-full flex gap-2 items-center h-[25px]">
+                                            <FileCode />
+                                            <span className="text-[12px] font-bold">动态附件</span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="REMOTEFILE">
+                                        <div className="w-full flex gap-2 items-center h-[25px]">
+                                            <Cloud />
+                                            <span className="text-[12px] font-bold">远程附件</span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="ATTACHMENTPOOR" disabled>
+                                        <div className="w-full flex gap-2 items-center h-[25px]">
+                                            <TableProperties />
+                                            <span className="text-[12px] font-bold">附件池(随机)</span>
+                                        </div>
+                                    </SelectItem>
+                                </SelectContent>
+                                </SelectContent>
+                            </Select>
+                            <FormDescription>
+                                请选择一个类别
+                            </FormDescription>
+                        </FormItem>
+                    )}
+                />
+            </div>
+            { attachType == "REMOTEFILE" && (
+                    <FormField
+                        control={control}
+                        name={`attachments.${index}.attach_url`}
+                        render={({ field }) => (
+                            <FormItem>
+                                <div className="flex items-center h-[20px]">
+                                    <FormLabel>附件下载地址</FormLabel>
+                                    <div className="flex-1"/>
+                                    <FormMessage className="text-[14px]"/>
+                                </div>
+                                <FormControl>
+                                    <Input {...field} value={field.value ?? ""} />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                    />
+                ) }
+
+                { attachType == "STATICFILE" && (
+                    <div className="grid grid-cols-8 gap-4 items-end">
+                        <div className="col-span-7">
+                            <FormField
+                                control={control}
+                                name={`attachments.${index}.attach_hash`}
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <div className="flex items-center h-[20px]">
+                                            <FormLabel>附件哈希</FormLabel>
+                                            <div className="flex-1"/>
+                                            <FormMessage className="text-[14px]"/>
+                                        </div>
+                                        <FormControl>
+                                            <Input {...field} value={field.value ?? ""} />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                        <Button>
+                            上传附件
+                        </Button>
+                    </div>
+                ) }
+        </div>
+    );
+}
+
 export function CreateChallengeView() {
 
+    const categories: { [key: string]: any } = {
+        "misc": <Radar size={21} />,
+        "crypto": <MessageSquareLock size={21} />,
+        "pwn": <Bug size={21} />,
+        "web": <GlobeLock size={21} />,
+        "reverse": <Binary size={21} />,
+        "forensics": <FileSearch size={21} />,
+        "hardware": <HardDrive size={21} />,
+        "mobile": <Smartphone size={21} />,
+        "ppc": <SquareCode size={21} />,
+        "ai": <Bot size={21} />,
+        "pentent": <BadgeCent size={21} />,
+        "osint": <Github size={21} />
+    };
+
     const formSchema = z.object({
-        challenge_name: z.string().min(2, { message: "名字太短了" }),
+        name: z.string().min(2, { message: "名字最短要两个字符" }),
         description: z.string(),
-        category: z.string({
-            required_error: "需要选择一个题目类别",
+        create_time: z.date().optional(),
+        challenge_id: z.number().optional(),
+        category: z.enum(Object.keys(categories) as [string, ...string[]], {
+            errorMap: () => ({ message: "需要选择一个有效的题目类别" })
         }),
-        judge_type: z.string({
-            required_error: "请选择评测规则",
+        judge_config: z.object({
+            judge_type: z.enum(["DYNAMIC", "SCRIPT"], {
+                errorMap: () => ({ message: "需要选择一个有效的题目类别" })
+            }),
+            judge_script: z.string().optional(),
         }),
-        judge_script: z.string().optional(),
         // 新增 container_config 部分
         container_config: z.array(
             z.object({
@@ -227,22 +384,37 @@ export function CreateChallengeView() {
                         name: z.string().min(1, { message: "请输入端口名称" }),
                         port: z.preprocess(
                             (a) => parseInt(a as string, 10),
-                            z.number({ invalid_type_error: "请输入数字" })
+                            z.number({ invalid_type_error: "请输入数字" }).min(1, { message: "端口号不能小于 1" }).max(65535, { message: "端口号不能大于 65535" })
                         ),
                     })
                 ),
             })
         ),
+        attachments: z.array(
+            z.object({
+                attach_hash: z.string().nullable(),
+                attach_name: z.string().min(2, { message: "附件名称最少2个字符" }),
+                attach_type: z.enum(["STATICFILE", "DYNAMICFILE", "REMOTEFILE", "ATTACHMENTPOOR"], {
+                    errorMap: () => ({ message: "需要选择一个有效的附件类型" })
+                }),
+                attach_url: z.string().nullable(),
+                download_hash: z.string().nullable(),
+                generate_script: z.string().nullable(),
+            })
+        )
     });
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            challenge_name: "",
+            name: "",
             description: "",
             category: "",
-            judge_type: "",
-            judge_script: "",
+            challenge_id: 0,
+            judge_config: {
+                judge_type: "DYNAMIC",
+                judge_script: "",
+            },
             container_config: [
                 // 可以预置一个空容器作为示例
                 // {
@@ -258,7 +430,8 @@ export function CreateChallengeView() {
                 //     ],
                 // },
             ],
-        },
+            attachments: []
+        }
     })
 
     const {
@@ -268,6 +441,15 @@ export function CreateChallengeView() {
     } = useFieldArray({
         control: form.control,
         name: "container_config",
+    });
+
+    const {
+        fields: attachmentsFields,
+        append: appendAttachment,
+        remove: removeAttachment,
+    } = useFieldArray({
+        control: form.control,
+        name: "attachments",
     });
 
     const [showScript, setShowScript] = useState(false);
@@ -300,31 +482,17 @@ export function CreateChallengeView() {
         // 可将 finalData 提交到后端接口
     }
 
-    const categories: { [key: string]: any } = {
-        "misc": <Radar size={23} />,
-        "crypto": <MessageSquareLock size={23} />,
-        "pwn": <Bug size={23} />,
-        "web": <GlobeLock size={23} />,
-        "reverse": <Binary size={23} />,
-        "forensics": <FileSearch size={23} />,
-        "hardware": <HardDrive size={23} />,
-        "mobile": <Smartphone size={23} />,
-        "ppc": <SquareCode size={23} />,
-        "ai": <Bot size={23} />,
-        "pentent": <BadgeCent size={23} />,
-        "osint": <Github size={23} />
-    };
-
     return (
-        <div className="absolute w-screen h-screen bg-background items-center justify-center flex select-none overflow-x-hidden">
-            <div className="w-[80%] h-[90%]">
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20">
+        <div className="absolute w-screen h-screen bg-background items-center justify-center flex select-none overflow-x-hidden overflow-hidden">
+            <Form {...form}>
+                <MacScrollbar className="h-full w-full flex flex-col items-center">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20 pt-20 w-[80%]">
+                        <span className="text-lg font-semibold">基本信息</span>
                         <div className="flex gap-10 items-center">
                             <div className="w-1/3">
                                 <FormField
                                     control={form.control}
-                                    name="challenge_name"
+                                    name="name"
                                     render={({ field }) => (
                                         <FormItem>
                                             <div className="flex items-center h-[20px]">
@@ -364,7 +532,7 @@ export function CreateChallengeView() {
                                                         <SelectItem key={category} value={category}>
                                                             <div className="w-full flex gap-2 items-center h-[30px]">
                                                                 {categories[category]}
-                                                                <span className="text-[15px] font-bold">{category.toUpperCase()}</span>
+                                                                <span className="text-[14px] font-bold">{category.toUpperCase()}</span>
                                                             </div>
                                                         </SelectItem>
                                                     ))}
@@ -380,7 +548,7 @@ export function CreateChallengeView() {
                             <div className="w-1/3">
                                 <FormField
                                     control={form.control}
-                                    name="judge_type"
+                                    name="judge_config.judge_type"
                                     render={({ field }) => (
                                         <FormItem>
                                             <div className="flex items-center h-[20px]">
@@ -446,7 +614,7 @@ export function CreateChallengeView() {
                         {showScript && (
                             <FormField
                                 control={form.control}
-                                name="judge_script"
+                                name="judge_config.judge_script"
                                 render={({ field }) => (
                                     <FormItem>
                                         <div className="flex items-center h-[20px]">
@@ -488,11 +656,11 @@ export function CreateChallengeView() {
                                     className="[&_svg]:size-5"
                                     onClick={() =>
                                         appendContainer({
-                                        name: "",
-                                        image: "",
-                                        command: null,
-                                        env: null,
-                                        expose_ports: [],
+                                            name: "",
+                                            image: "",
+                                            command: null,
+                                            env: null,
+                                            expose_ports: [],
                                         })
                                     }
                                     >
@@ -500,20 +668,58 @@ export function CreateChallengeView() {
                                     添加容器
                                 </Button>
                             </div>
-                            {containerFields.map((container, index) => (
+                            { containerFields.length > 0 ? containerFields.map((container, index) => (
                                 <ContainerForm
                                     key={container.id}
                                     control={form.control}
                                     index={index}
                                     removeContainer={removeContainer}
                                 />
-                            ))}
+                            )) : (
+                                <span className="text-sm text-foreground/70">还没有容器哦</span>
+                            ) }
                         </div>
 
+                        <div className="mt-6">
+                            <div className="flex items-center mb-4">
+                                <span className="text-lg font-semibold">附件列表</span>
+                                <div className="flex-1"/>
+                                <Button
+                                    type="button"
+                                    variant={"outline"}
+                                    className="[&_svg]:size-5"
+                                    onClick={() =>
+                                        appendAttachment({
+                                            attach_hash: null,
+                                            attach_name: "",
+                                            attach_type: "STATICFILE",
+                                            attach_url: "",
+                                            download_hash: "",
+                                            generate_script: ""
+                                        })
+                                    }
+                                    >
+                                    <PlusCircle />
+                                    添加附件
+                                </Button>
+                            </div>
+                            { attachmentsFields.length > 0 ? attachmentsFields.map((attachment, index) => (
+                                <AttachmentForm
+                                    key={index}
+                                    control={form.control}
+                                    index={index}
+                                    form={form}
+                                    removeAttachment={removeAttachment}
+                                />
+                            )) : (
+                                <span className="text-sm text-foreground/70">还没有附件哦</span>
+                            ) }
+                        </div>
+                        
                         <Button type="submit">提交</Button>
                     </form>
-                </Form>
-            </div>
+                </MacScrollbar>
+            </Form>
         </div>
     );
 }
