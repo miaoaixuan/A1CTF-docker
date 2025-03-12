@@ -357,7 +357,7 @@ export function CreateChallengeView() {
         "pentent": <BadgeCent size={21} />,
         "osint": <Github size={21} />
     };
-
+    
     const formSchema = z.object({
         name: z.string().min(2, { message: "名字最短要两个字符" }),
         description: z.string(),
@@ -371,6 +371,7 @@ export function CreateChallengeView() {
                 errorMap: () => ({ message: "需要选择一个有效的题目类别" })
             }),
             judge_script: z.string().optional(),
+            flag_template: z.string().optional(),
         }),
         // 新增 container_config 部分
         container_config: z.array(
@@ -414,6 +415,7 @@ export function CreateChallengeView() {
             judge_config: {
                 judge_type: "DYNAMIC",
                 judge_script: "",
+                flag_template: ""
             },
             container_config: [
                 // 可以预置一个空容器作为示例
@@ -611,7 +613,7 @@ export function CreateChallengeView() {
                                 </FormItem>
                             )}
                         />
-                        {showScript && (
+                        {showScript ? (
                             <FormField
                                 control={form.control}
                                 name="judge_config.judge_script"
@@ -643,7 +645,30 @@ export function CreateChallengeView() {
                                     </FormItem>
                                 )}
                             />
-                        )}
+                        ) : (
+                            <FormField
+                                control={form.control}
+                                name="judge_config.flag_template"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <div className="flex items-center h-[20px]">
+                                            <FormLabel>Flag</FormLabel>
+                                            <div className="flex-1"/>
+                                            <FormMessage className="text-[14px]"/>
+                                        </div>
+                                        <FormControl>
+                                            <Input {...field} />
+                                        </FormControl>
+                                        <div className="flex flex-col text-[12px] text-foreground/60">
+                                            <span>Flag支持模板变量</span>
+                                            <span>[TEAMHASH] 部分会被替换成队伍唯一标识符</span>
+                                            <span>[UUID] 部分会被替换成随机UUID</span>
+                                            <span>在Flag头加上[LEET] 会把花括号内的内容用LEET替换字符</span>
+                                        </div>
+                                    </FormItem>
+                                )}
+                            />
+                        ) }
 
                         {/* 动态容器列表 */}
                         <div className="mt-6">
