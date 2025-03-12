@@ -1,0 +1,64 @@
+openapi: '3.0.3'
+info:
+  title: API Title
+  version: '1.0'
+servers:
+  - url: http://localhost:8080/api
+paths:
+  /auth/login:
+    post:
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: User Not Found
+        '401':
+          description: Password Incorrect
+        '500':
+          description: Server Error
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+  /auth/register:
+    post:
+      responses:
+        '200':
+          description: OK
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegister'
+components:
+  schemas:
+    UserLogin:
+      description: User login form
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        captcha:
+          type: string
+      required:
+        - username
+        - password
+    UserRegister:
+      description: User register form
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        captcha:
+          type: string
+        email:
+          type: string
+      required:
+        - email
+        - password
+        - username

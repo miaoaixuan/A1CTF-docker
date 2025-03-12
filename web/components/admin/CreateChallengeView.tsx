@@ -31,7 +31,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
 
-import { CalendarIcon, Cloud, FileCode, Github, PlusCircle, ScanBarcode, TableProperties } from "lucide-react"
+import { CalendarIcon, Cloud, FileCode, Github, PlusCircle, Save, ScanBarcode, TableProperties } from "lucide-react"
 import { Textarea } from "../ui/textarea";
 
 import CodeEditor from '@uiw/react-textarea-code-editor';
@@ -80,8 +80,8 @@ function ContainerForm({ control, index, removeContainer }: ContainerFormProps) 
                         <FormItem>
                             <div className="flex items-center h-[20px]">
                                 <FormLabel>容器名称</FormLabel>
-                                <div className="flex-1"/>
-                                <FormMessage className="text-[14px]"/>
+                                <div className="flex-1" />
+                                <FormMessage className="text-[14px]" />
                             </div>
                             <FormControl>
                                 <Input {...field} value={field.value ?? ""} />
@@ -96,8 +96,8 @@ function ContainerForm({ control, index, removeContainer }: ContainerFormProps) 
                         <FormItem>
                             <div className="flex items-center h-[20px]">
                                 <FormLabel>镜像名称</FormLabel>
-                                <div className="flex-1"/>
-                                <FormMessage className="text-[14px]"/>
+                                <div className="flex-1" />
+                                <FormMessage className="text-[14px]" />
                             </div>
                             <FormControl>
                                 <Input {...field} value={field.value ?? ""} />
@@ -114,8 +114,8 @@ function ContainerForm({ control, index, removeContainer }: ContainerFormProps) 
                         <FormItem>
                             <div className="flex items-center h-[20px]">
                                 <FormLabel>启动命令</FormLabel>
-                                <div className="flex-1"/>
-                                <FormMessage className="text-[14px]"/>
+                                <div className="flex-1" />
+                                <FormMessage className="text-[14px]" />
                             </div>
                             <FormControl>
                                 <Input {...field} value={field.value ?? ""} />
@@ -133,8 +133,8 @@ function ContainerForm({ control, index, removeContainer }: ContainerFormProps) 
                         <FormItem>
                             <div className="flex items-center h-[20px]">
                                 <FormLabel>环境变量</FormLabel>
-                                <div className="flex-1"/>
-                                <FormMessage className="text-[14px]"/>
+                                <div className="flex-1" />
+                                <FormMessage className="text-[14px]" />
                             </div>
                             <FormControl>
                                 <Input {...field} value={field.value ?? ""} />
@@ -149,7 +149,7 @@ function ContainerForm({ control, index, removeContainer }: ContainerFormProps) 
             <div className="mt-4">
                 <div className="flex items-center mb-3">
                     <span className="text-md font-semibold">端口暴露</span>
-                    <div className="flex-1"/>
+                    <div className="flex-1" />
                     <Button
                         type="button"
                         variant={"outline"}
@@ -161,7 +161,7 @@ function ContainerForm({ control, index, removeContainer }: ContainerFormProps) 
                     </Button>
                 </div>
                 <span className="text-sm text-foreground/50">端口名称是你需要映射出来的端口的名称, 这会显示给选手, 端口号是容器内服务的端口, A1CTF会自动映射随机端口到宿主机上, 注意！一道题的不同容器不能同时暴露相同的端口! 比如: 容器1和容器2同时要求暴露80端口, 这会导致映射出问题! 请你在制作docker的时候选择不同的监听端口</span>
-                <div className="h-4"/>
+                <div className="h-4" />
                 {portFields.map((port, portIndex) => (
                     <div key={port.id} className="flex gap-2 items-end mb-2">
                         <FormField
@@ -171,8 +171,8 @@ function ContainerForm({ control, index, removeContainer }: ContainerFormProps) 
                                 <FormItem className="flex-1">
                                     <div className="flex items-center w- h-[20px]">
                                         <FormLabel>端口名称</FormLabel>
-                                        <div className="flex-1"/>
-                                        <FormMessage className="text-[14px]"/>
+                                        <div className="flex-1" />
+                                        <FormMessage className="text-[14px]" />
                                     </div>
                                     <FormControl>
                                         <Input {...field} value={field.value ?? ""} />
@@ -187,8 +187,8 @@ function ContainerForm({ control, index, removeContainer }: ContainerFormProps) 
                                 <FormItem className="flex-1">
                                     <div className="flex items-center w- h-[20px]">
                                         <FormLabel>端口号</FormLabel>
-                                        <div className="flex-1"/>
-                                        <FormMessage className="text-[14px]"/>
+                                        <div className="flex-1" />
+                                        <FormMessage className="text-[14px]" />
                                     </div>
                                     <FormControl>
                                         <Input type="number" {...field} value={field.value ?? 0} />
@@ -229,8 +229,8 @@ function AttachmentForm({ control, index, form, removeAttachment }: AttachmentFo
                         <FormItem>
                             <div className="flex items-center h-[20px]">
                                 <FormLabel>附件名称</FormLabel>
-                                <div className="flex-1"/>
-                                <FormMessage className="text-[14px]"/>
+                                <div className="flex-1" />
+                                <FormMessage className="text-[14px]" />
                             </div>
                             <FormControl>
                                 <Input {...field} value={field.value ?? ""} />
@@ -245,8 +245,8 @@ function AttachmentForm({ control, index, form, removeAttachment }: AttachmentFo
                         <FormItem>
                             <div className="flex items-center h-[20px]">
                                 <FormLabel>附件类型</FormLabel>
-                                <div className="flex-1"/>
-                                <FormMessage className="text-[14px]"/>
+                                <div className="flex-1" />
+                                <FormMessage className="text-[14px]" />
                             </div>
                             <Select onValueChange={(e) => {
                                 field.onChange(e)
@@ -258,32 +258,32 @@ function AttachmentForm({ control, index, form, removeAttachment }: AttachmentFo
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent className="w-full flex">
-                                <SelectContent className="w-full flex">
-                                    <SelectItem value="STATICFILE">
-                                        <div className="w-full flex gap-2 items-center h-[25px]">
-                                            <ScanBarcode />
-                                            <span className="text-[12px] font-bold">静态附件</span>
-                                        </div>
-                                    </SelectItem>
-                                    <SelectItem value="DYNAMICFILE" disabled>
-                                        <div className="w-full flex gap-2 items-center h-[25px]">
-                                            <FileCode />
-                                            <span className="text-[12px] font-bold">动态附件</span>
-                                        </div>
-                                    </SelectItem>
-                                    <SelectItem value="REMOTEFILE">
-                                        <div className="w-full flex gap-2 items-center h-[25px]">
-                                            <Cloud />
-                                            <span className="text-[12px] font-bold">远程附件</span>
-                                        </div>
-                                    </SelectItem>
-                                    <SelectItem value="ATTACHMENTPOOR" disabled>
-                                        <div className="w-full flex gap-2 items-center h-[25px]">
-                                            <TableProperties />
-                                            <span className="text-[12px] font-bold">附件池(随机)</span>
-                                        </div>
-                                    </SelectItem>
-                                </SelectContent>
+                                    <SelectContent className="w-full flex">
+                                        <SelectItem value="STATICFILE">
+                                            <div className="w-full flex gap-2 items-center h-[25px]">
+                                                <ScanBarcode />
+                                                <span className="text-[12px] font-bold">静态附件</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="DYNAMICFILE" disabled>
+                                            <div className="w-full flex gap-2 items-center h-[25px]">
+                                                <FileCode />
+                                                <span className="text-[12px] font-bold">动态附件</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="REMOTEFILE">
+                                            <div className="w-full flex gap-2 items-center h-[25px]">
+                                                <Cloud />
+                                                <span className="text-[12px] font-bold">远程附件</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="ATTACHMENTPOOR" disabled>
+                                            <div className="w-full flex gap-2 items-center h-[25px]">
+                                                <TableProperties />
+                                                <span className="text-[12px] font-bold">附件池(随机)</span>
+                                            </div>
+                                        </SelectItem>
+                                    </SelectContent>
                                 </SelectContent>
                             </Select>
                             <FormDescription>
@@ -293,50 +293,50 @@ function AttachmentForm({ control, index, form, removeAttachment }: AttachmentFo
                     )}
                 />
             </div>
-            { attachType == "REMOTEFILE" && (
-                    <FormField
-                        control={control}
-                        name={`attachments.${index}.attach_url`}
-                        render={({ field }) => (
-                            <FormItem>
-                                <div className="flex items-center h-[20px]">
-                                    <FormLabel>附件下载地址</FormLabel>
-                                    <div className="flex-1"/>
-                                    <FormMessage className="text-[14px]"/>
-                                </div>
-                                <FormControl>
-                                    <Input {...field} value={field.value ?? ""} />
-                                </FormControl>
-                            </FormItem>
-                        )}
-                    />
-                ) }
+            {attachType == "REMOTEFILE" && (
+                <FormField
+                    control={control}
+                    name={`attachments.${index}.attach_url`}
+                    render={({ field }) => (
+                        <FormItem>
+                            <div className="flex items-center h-[20px]">
+                                <FormLabel>附件下载地址</FormLabel>
+                                <div className="flex-1" />
+                                <FormMessage className="text-[14px]" />
+                            </div>
+                            <FormControl>
+                                <Input {...field} value={field.value ?? ""} />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
+            )}
 
-                { attachType == "STATICFILE" && (
-                    <div className="grid grid-cols-8 gap-4 items-end">
-                        <div className="col-span-7">
-                            <FormField
-                                control={control}
-                                name={`attachments.${index}.attach_hash`}
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <div className="flex items-center h-[20px]">
-                                            <FormLabel>附件哈希</FormLabel>
-                                            <div className="flex-1"/>
-                                            <FormMessage className="text-[14px]"/>
-                                        </div>
-                                        <FormControl>
-                                            <Input {...field} value={field.value ?? ""} />
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-                        <Button>
-                            上传附件
-                        </Button>
+            {attachType == "STATICFILE" && (
+                <div className="grid grid-cols-8 gap-4 items-end">
+                    <div className="col-span-7">
+                        <FormField
+                            control={control}
+                            name={`attachments.${index}.attach_hash`}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <div className="flex items-center h-[20px]">
+                                        <FormLabel>附件哈希</FormLabel>
+                                        <div className="flex-1" />
+                                        <FormMessage className="text-[14px]" />
+                                    </div>
+                                    <FormControl>
+                                        <Input {...field} value={field.value ?? ""} />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
                     </div>
-                ) }
+                    <Button>
+                        上传附件
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }
@@ -357,7 +357,7 @@ export function CreateChallengeView() {
         "pentent": <BadgeCent size={21} />,
         "osint": <Github size={21} />
     };
-    
+
     const formSchema = z.object({
         name: z.string().min(2, { message: "名字最短要两个字符" }),
         description: z.string(),
@@ -457,31 +457,18 @@ export function CreateChallengeView() {
     const [showScript, setShowScript] = useState(false);
 
     function onSubmit(values: z.infer<typeof formSchema>) {
-        // const finalData = {
-        //   attachments: [
-        //     {
-        //       attach_hash: null,
-        //       attach_name: "flag",
-        //       attach_type: "STATICFILE",
-        //       attach_url: "flag{test}",
-        //       generate_script: null,
-        //     },
-        //   ],
-        //   category: values.category.toUpperCase(),
-        //   challenge_id: 1,
-        //   container_config: values.container_config,
-        //   create_time: new Date().toISOString(),
-        //   description: values.description,
-        //   judge_config: {
-        //     flag_template: "flag{TEST}",
-        //     judge_script: values.judge_type === "SCRIPT" ? values.judge_script : null,
-        //     judge_type: values.judge_type === "SCRIPT" ? "SCRIPT" : "STATIC",
-        //   },
-        //   name: values.challenge_name,
-        //   type_: 0,
-        // };
-        console.log("最终生成的 JSON 数据：", values);
-        // 可将 finalData 提交到后端接口
+        const finalData = {
+            attachments: values.attachments,
+            category: values.category.toUpperCase(),
+            challenge_id: 1,
+            container_config: values.container_config,
+            create_time: new Date().toISOString(),
+            description: values.description,
+            judge_config: values.judge_config,
+            name: values.name,
+            type_: 0,
+        };
+        console.log(finalData)
     }
 
     return (
@@ -499,8 +486,8 @@ export function CreateChallengeView() {
                                         <FormItem>
                                             <div className="flex items-center h-[20px]">
                                                 <FormLabel>题目名称</FormLabel>
-                                                <div className="flex-1"/>
-                                                <FormMessage className="text-[14px]"/>
+                                                <div className="flex-1" />
+                                                <FormMessage className="text-[14px]" />
                                             </div>
                                             <FormControl>
                                                 <Input {...field} />
@@ -520,8 +507,8 @@ export function CreateChallengeView() {
                                         <FormItem>
                                             <div className="flex items-center h-[20px]">
                                                 <FormLabel>题目类型</FormLabel>
-                                                <div className="flex-1"/>
-                                                <FormMessage className="text-[14px]"/>
+                                                <div className="flex-1" />
+                                                <FormMessage className="text-[14px]" />
                                             </div>
                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                 <FormControl>
@@ -555,8 +542,8 @@ export function CreateChallengeView() {
                                         <FormItem>
                                             <div className="flex items-center h-[20px]">
                                                 <FormLabel>评测模式</FormLabel>
-                                                <div className="flex-1"/>
-                                                <FormMessage className="text-[14px]"/>
+                                                <div className="flex-1" />
+                                                <FormMessage className="text-[14px]" />
                                             </div>
                                             <Select onValueChange={(e) => {
                                                 field.onChange(e)
@@ -578,7 +565,7 @@ export function CreateChallengeView() {
                                                             <span className="text-[12px] font-bold">文字匹配</span>
                                                         </div>
                                                     </SelectItem>
-                                                    <SelectItem value="SCRIPT">
+                                                    <SelectItem value="SCRIPT" disabled>
                                                         <div className="w-full flex gap-2 items-center h-[25px]">
                                                             <FileCode />
                                                             <span className="text-[12px] font-bold">脚本匹配</span>
@@ -601,8 +588,8 @@ export function CreateChallengeView() {
                                 <FormItem>
                                     <div className="flex items-center h-[20px]">
                                         <FormLabel>题目简介</FormLabel>
-                                        <div className="flex-1"/>
-                                        <FormMessage className="text-[14px]"/>
+                                        <div className="flex-1" />
+                                        <FormMessage className="text-[14px]" />
                                     </div>
                                     <FormControl>
                                         <Textarea {...field} />
@@ -621,8 +608,8 @@ export function CreateChallengeView() {
                                     <FormItem>
                                         <div className="flex items-center h-[20px]">
                                             <FormLabel>评测脚本</FormLabel>
-                                            <div className="flex-1"/>
-                                            <FormMessage className="text-[14px]"/>
+                                            <div className="flex-1" />
+                                            <FormMessage className="text-[14px]" />
                                         </div>
                                         <FormControl>
                                             <CodeEditor
@@ -653,8 +640,8 @@ export function CreateChallengeView() {
                                     <FormItem>
                                         <div className="flex items-center h-[20px]">
                                             <FormLabel>Flag</FormLabel>
-                                            <div className="flex-1"/>
-                                            <FormMessage className="text-[14px]"/>
+                                            <div className="flex-1" />
+                                            <FormMessage className="text-[14px]" />
                                         </div>
                                         <FormControl>
                                             <Input {...field} />
@@ -668,13 +655,13 @@ export function CreateChallengeView() {
                                     </FormItem>
                                 )}
                             />
-                        ) }
+                        )}
 
                         {/* 动态容器列表 */}
                         <div className="mt-6">
                             <div className="flex items-center mb-4">
                                 <span className="text-lg font-semibold">容器列表</span>
-                                <div className="flex-1"/>
+                                <div className="flex-1" />
                                 <Button
                                     type="button"
                                     variant={"outline"}
@@ -688,12 +675,12 @@ export function CreateChallengeView() {
                                             expose_ports: [],
                                         })
                                     }
-                                    >
+                                >
                                     <PlusCircle />
                                     添加容器
                                 </Button>
                             </div>
-                            { containerFields.length > 0 ? containerFields.map((container, index) => (
+                            {containerFields.length > 0 ? containerFields.map((container, index) => (
                                 <ContainerForm
                                     key={container.id}
                                     control={form.control}
@@ -702,13 +689,13 @@ export function CreateChallengeView() {
                                 />
                             )) : (
                                 <span className="text-sm text-foreground/70">还没有容器哦</span>
-                            ) }
+                            )}
                         </div>
 
                         <div className="mt-6">
                             <div className="flex items-center mb-4">
                                 <span className="text-lg font-semibold">附件列表</span>
-                                <div className="flex-1"/>
+                                <div className="flex-1" />
                                 <Button
                                     type="button"
                                     variant={"outline"}
@@ -723,12 +710,12 @@ export function CreateChallengeView() {
                                             generate_script: ""
                                         })
                                     }
-                                    >
+                                >
                                     <PlusCircle />
                                     添加附件
                                 </Button>
                             </div>
-                            { attachmentsFields.length > 0 ? attachmentsFields.map((attachment, index) => (
+                            {attachmentsFields.length > 0 ? attachmentsFields.map((attachment, index) => (
                                 <AttachmentForm
                                     key={index}
                                     control={form.control}
@@ -738,10 +725,13 @@ export function CreateChallengeView() {
                                 />
                             )) : (
                                 <span className="text-sm text-foreground/70">还没有附件哦</span>
-                            ) }
+                            )}
                         </div>
-                        
-                        <Button type="submit">提交</Button>
+
+                        <Button type="submit">
+                            <Save />
+                            提交
+                        </Button>
                     </form>
                 </MacScrollbar>
             </Form>

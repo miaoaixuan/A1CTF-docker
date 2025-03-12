@@ -37,7 +37,7 @@ pub mod user {
             .load::<User>(connection) {
             Ok(data) => {
                 if data.len() == 0 {
-                    return HttpResponse::InternalServerError().json(json!({
+                    return HttpResponse::NotFound().json(json!({
                         "code": 404,
                         "message": "User not found"
                     }));

@@ -38,6 +38,7 @@
     "dayjs": "^1.11.13",
     "dotenv": "^16.4.7",
     "echarts-for-react": "^3.0.2",
+    "fast-average-color": "^9.4.0",
     "framer-motion": "^11.15.0",
     "i18next": "^24.2.0",
     "lucide-react": "^0.468.0",

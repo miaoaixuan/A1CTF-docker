@@ -73,7 +73,6 @@ export function TeamsView({ lng } : { lng: string }) {
     }
 
     useEffect(() => {
-
         updateTeams(true)
 
         const updateInter = setInterval(() => {

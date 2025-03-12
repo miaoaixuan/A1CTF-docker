@@ -12,9 +12,6 @@ export default async function Home ({ params }: { params: Promise<{ lng: string 
                 <div className="w-full">
                     <SafeComponent animation={false}>
                         <AdminHeader lng={lng} />
-                        <div className="w-full h-full p-8 flex items-center justify-center">
-                            <span className="text-3xl font-bold">Admin</span>
-                        </div>
                     </SafeComponent>
                 </div>
             </main>
