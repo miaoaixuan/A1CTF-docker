@@ -2,7 +2,7 @@
 
 import { MacScrollbar } from "mac-scrollbar";
 import { Button } from "../ui/button";
-import { CirclePlus, GalleryVerticalEnd, Search, Squirrel, Volleyball } from "lucide-react";
+import { CirclePlus, Copy, GalleryVerticalEnd, Pencil, Search, Squirrel, Trash2, Volleyball } from "lucide-react";
 import { useTheme } from "next-themes";
 
 import { BadgeCent, Binary, Bot, Bug, ChevronDown, ChevronUp, Chrome, CircleArrowLeft, Earth, FileSearch, Github, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
@@ -97,17 +97,30 @@ export function ChallengesManageView() {
                 </div>
                 {/* <div className="flex-1 overflow-hidden"> */}
                 { filtedData.length ? (
-                    <MacScrollbar className="overflow-y-auto flex flex-col gap-4 w-full p-6 pt-2">
+                    <MacScrollbar className="overflow-y-auto w-full">
+                        <div className="flex flex-col gap-4 w-full p-6 pt-2">
                         {
                             filtedData.map((chal, index) => (
-                                <div className="w-full h-[100px] flex border-2 shadow-lg rounded-lg p-4 flex-none" key={index}>
-                                    <div className="flex gap-2">
+                                <div className="w-full flex border-2 shadow-lg rounded-lg p-4 flex-none justify-between items-center" key={index}>
+                                    <div className="flex gap-3">
                                         { cateIcon[chal.category?.toLowerCase() || "misc"] }
                                         <span>{ chal.title }</span>
+                                    </div>
+                                    <div className="flex gap-1">
+                                        <Button variant={"ghost"} size={"icon"}>
+                                            <Copy />
+                                        </Button>
+                                        <Button variant={"ghost"} size={"icon"}>
+                                            <Pencil />
+                                        </Button>
+                                        <Button variant={"ghost"} size={"icon"} className="hover:text-red-500">
+                                            <Trash2 />
+                                        </Button>
                                     </div>
                                 </div>
                             ))
                         }
+                        </div>
                     </MacScrollbar>
                 ) : (
                     <div className="flex w-full h-full items-center justify-center">
