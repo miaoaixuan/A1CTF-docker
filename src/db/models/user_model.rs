@@ -1,10 +1,11 @@
 use diesel::prelude::*;
+use uuid::Uuid;
 
 #[derive(Debug, Queryable, Selectable, Insertable)]
 #[allow(dead_code)]
 #[diesel(table_name = crate::db::schema::user)]
 pub struct User {
-    pub id: String,
+    pub user_id: Uuid,
     pub username: String,
     pub password: String,
     pub salt: String,

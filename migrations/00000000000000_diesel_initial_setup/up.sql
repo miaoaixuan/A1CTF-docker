@@ -3,7 +3,7 @@
 -- changes will be added to existing projects as new migrations.
 
 CREATE TABLE "user" (
-  "id" text PRIMARY KEY NOT NULL,
+  "user_id" uuid NOT NULL,
   "username" text NOT NULL,
   "password" text NOT NULL,
   "salt" text NOT NULL,
@@ -16,31 +16,91 @@ CREATE TABLE "user" (
   "avatar" text,
   "sso_data" text,
   "email" text,
-  "email_verified" bool DEFAULT false
+  "email_verified" bool DEFAULT false,
+  PRIMARY KEY (user_id)
 );
 
-COMMENT ON COLUMN "user"."id" IS '用户ID';
-COMMENT ON COLUMN "user"."username" IS '用户名';
-COMMENT ON COLUMN "user"."password" IS '密码';
-COMMENT ON COLUMN "user"."role" IS '角色';
-COMMENT ON COLUMN "user"."cur_token" IS '当前登录的Token';
-COMMENT ON COLUMN "user"."phone" IS '电话号码';
-COMMENT ON COLUMN "user"."student_number" IS '学号';
-COMMENT ON COLUMN "user"."realname" IS '姓名';
-COMMENT ON COLUMN "user"."slogan" IS '签名';
-COMMENT ON COLUMN "user"."avatar" IS '头像';
-COMMENT ON COLUMN "user"."sso_data" IS '统一验证的数据';
-COMMENT ON COLUMN "user"."email" IS '邮箱地址';
-COMMENT ON COLUMN "user"."email_verified" IS '邮箱是否验证';
+CREATE TABLE "games" (
+    "game_id" BIGSERIAL NOT NULL,
+    "name" text NOT NULL,
+    "summary" text,
+    "description" text,
+    "poster" text,
+    "invite_code" text,
+    "start_time" timestamp NOT NULL,
+    "end_time" timestamp NOT NULL,
+    "practice_mode" bool DEFAULT false NOT NULL,
+    "team_number_limit" int4 NOT NULL,
+    "container_number_limit" int4 NOT NULL,
+    "require_wp" bool DEFAULT false NOT NULL,
+    "wp_expire_time" timestamp NOT NULL,
+    "stages" jsonb NOT NULL,
+    PRIMARY KEY (game_id)
+);
 
+CREATE TABLE "challenges" (
+    "challenge_id" BIGSERIAL NOT NULL,
+    "name" text NOT NULL,
+    "description" text NOT NULL,
+    "category" jsonb NOT NULL,
+    "attachments" jsonb NOT NULL,
+    "type" int4 NOT NULL,
+    "container_config" jsonb,
+    "create_time" timestamp NOT NULL,
+    "judge_config" jsonb,
+    PRIMARY KEY (challenge_id)
+);
 
-CREATE TABLE "challenge" (
-  "id" int4 PRIMARY KEY NOT NULL,
-  "name" text NOT NULL,
-  "score" float8 NOT NULL,
-  "description" text NOT NULL,
-  "category" text NOT NULL,
-  
+CREATE TABLE "game_challenges" (
+    "ingame_id" BIGSERIAL NOT NULL,
+    "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
+    "challenge_id" BIGSERIAL NOT NULL REFERENCES challenges(challenge_id),
+    "score" double precision DEFAULT 0 NOT NULL,
+    "enabled" bool DEFAULT false NOT NULL,
+    "solved" jsonb DEFAULT '[]'::jsonb NOT NULL,
+    "hints" text[] DEFAULT '{}'::text[],
+    "judge_config" jsonb NOT NULL,
+    PRIMARY KEY (ingame_id)
+);
+
+CREATE TABLE "teams" (
+    "team_id" BIGSERIAL NOT NULL,
+    "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
+    "team_name" text NOT NULL,
+    "team_avatar" text,
+    "team_slogan" text,
+    "team_description" text,
+    "team_members" uuid[],
+    "team_score" double precision DEFAULT 0 NOT NULL,
+    "team_hash" text NOT NULL,
+    "invite_code" text,
+    "team_status" int4 DEFAULT 0 NOT NULL,
+    PRIMARY KEY (team_id)
+);
+
+CREATE TABLE "containers" (
+    "container_id" uuid NOT NULL,
+    "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
+    "team_id" BIGSERIAL NOT NULL REFERENCES teams(team_id),
+    "challenge_id" BIGSERIAL NOT NULL REFERENCES challenges(challenge_id),
+    "start_time" timestamp NOT NULL,
+    "expire_time" timestamp NOT NULL,
+    "expose_ports" jsonb NOT NULL,
+    "container_status" int4 DEFAULT 0 NOT NULL,
+    "flag_content" text NOT NULL,
+    PRIMARY KEY (container_id)
+);
+
+CREATE TABLE "judges" (
+    "challenge_id" BIGSERIAL NOT NULL REFERENCES challenges(challenge_id),
+    "team_id" BIGSERIAL NOT NULL REFERENCES teams(team_id),
+    "judge_type" int4 NOT NULL,
+    "judge_status" int4 NOT NULL,
+    "judge_result" int4 NOT NULL,
+    "judge_id" uuid NOT NULL,
+    "judge_time" timestamp NOT NULL,
+    "judge_content" text NOT NULL,
+    PRIMARY KEY (judge_id)
 );
 
 -- Sets up a trigger for the given table to automatically set a column called

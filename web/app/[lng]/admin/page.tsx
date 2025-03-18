@@ -1,0 +1,23 @@
+import SafeComponent from "@/components/SafeComponent"
+import { AdminHeader } from "@/components/admin/AdminHeader";
+import { ChallengePage } from "@/components/admin/ChallengePage";
+
+export default async function Home ({ params }: { params: Promise<{ lng: string }>}) {
+
+    const { lng } = await params;
+
+    return (
+        <div className="p-0 h-screen flex flex-col">
+            <main className="flex flex-1 overflow-hidden">
+                <div className="w-full">
+                    <SafeComponent animation={false}>
+                        <AdminHeader lng={lng} />
+                        <div className="w-full h-full p-8 flex items-center justify-center">
+                            <span className="text-3xl font-bold">Admin</span>
+                        </div>
+                    </SafeComponent>
+                </div>
+            </main>
+        </div>
+    );
+}

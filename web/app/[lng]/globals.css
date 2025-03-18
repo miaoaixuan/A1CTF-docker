@@ -298,6 +298,16 @@ body {
     overflow: hidden!important;
 }
 
+::-moz-selection {
+    background: hsl(var(--foreground) / 0.9);
+    color: hsl(var(--background));
+}
+
+::selection {
+    background: hsl(var(--foreground) / 0.9);
+    color: hsl(var(--background));
+}
+
 
 /* pixel style */
 /* .pixel-border {

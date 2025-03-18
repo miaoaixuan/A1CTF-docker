@@ -59,6 +59,9 @@ async fn main() -> std::io::Result<()> {
             .use_jwt(authority, web::scope("")
                 .service(controllers::user::test)
                 .service(controllers::challenge::list)
+                .service(controllers::challenge::create)
+                .service(controllers::challenge::delete)
+                .service(controllers::challenge::update)
             );
         
         app

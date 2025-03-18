@@ -3,6 +3,7 @@ use std::option;
 use kube::{api::{Api, DeleteParams, ListParams, PostParams, ResourceExt}, config::Kubeconfig, Client};
 use k8s_openapi::{api::core::v1::{Namespace, Node, Pod, Service}, List};
 use k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta;
+use serde_derive::{Deserialize, Serialize};
 
 pub async fn get_client() -> Result<Client, Box<dyn std::error::Error>> {
     let kubeconfig = Kubeconfig::read_from("k8sconfig.yaml")?;
@@ -29,11 +30,13 @@ pub async fn list_pods() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PortName {
     pub name: String,
     pub port: i32,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct A1Container {
     pub name: String,
     pub image: String,
@@ -42,6 +45,7 @@ pub struct A1Container {
     pub expose_ports: Option<Vec<PortName>>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PodInfo {
     pub name: String,
     pub team_hash: String,
