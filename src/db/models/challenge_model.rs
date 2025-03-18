@@ -21,12 +21,13 @@ pub struct AttachmentConfig {
     pub attach_type: AttachmentType,
     pub attach_url: Option<String>,
     pub attach_hash: Option<String>,
+    pub download_hash: Option<String>,
     pub generate_script: Option<String>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum JudgeType {
-    STATIC,
+    DYNAMIC,
     SCRIPT
 }
 

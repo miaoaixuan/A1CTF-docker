@@ -7,13 +7,18 @@ import { useTheme } from "next-themes";
 
 import { BadgeCent, Binary, Bot, Bug, ChevronDown, ChevronUp, Chrome, CircleArrowLeft, Earth, FileSearch, Github, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
 import { useEffect, useState } from "react";
-import { api, ChallengeInfoModel } from "@/utils/GZApi";
+import { api, ErrorMessage } from "@/utils/ApiHelper";
+import { ChallengeCategory, ChallengeSimpleInfo } from "@/utils/A1API";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { AxiosError } from "axios";
 
-export function ChallengesManageView() {
+export function ChallengesManageView({ lng } : { lng: string }) {
 
     const { theme } = useTheme()
+    const router = useRouter()
 
     const colorMap : { [key: string]: string } = {
         "misc": "rgb(32, 201, 151)",
@@ -47,11 +52,11 @@ export function ChallengesManageView() {
     };
 
     const [ curChoicedCategory, setCurChoicedCategory ] = useState("all")
-    const [ challenges, setChallenges ] = useState<ChallengeInfoModel[]>([])
+    const [ challenges, setChallenges ] = useState<ChallengeSimpleInfo[]>([])
 
     useEffect(() => {
-        api.edit.editGetGameChallenges(37).then((res) => {
-            setChallenges(res.data)
+        api.admin.listChallenge({ size: 100, offset: 0 }).then((res) => {
+            setChallenges(res.data.data)
         })
     }, [])
 
@@ -59,7 +64,7 @@ export function ChallengesManageView() {
 
     const filtedData = challenges.filter((chl) => {
         if (searchContent == "") return curChoicedCategory == "all" || chl.category?.toLowerCase() == curChoicedCategory;
-        else return chl.title.toLowerCase().includes(searchContent.toLowerCase()) && (curChoicedCategory == "all" || chl.category?.toLowerCase() == curChoicedCategory)
+        else return chl.name.toLowerCase().includes(searchContent.toLowerCase()) && (curChoicedCategory == "all" || chl.category?.toLowerCase() == curChoicedCategory)
     })
 
     return (
@@ -75,7 +80,9 @@ export function ChallengesManageView() {
                     </div>
                     <Input value={searchContent} onChange={(e) => setSearchContent(e.target.value)} placeholder="在这里输入就可以搜索题目标题了"></Input>
                 </div>
-                <Button>
+                <Button onClick={() => {
+                    router.push(`/${lng}/admin/challenges/create`)
+                }}>
                     <CirclePlus />
                     添加题目
                 </Button>
@@ -104,16 +111,30 @@ export function ChallengesManageView() {
                                 <div className="w-full flex border-2 shadow-lg rounded-lg p-4 flex-none justify-between items-center" key={index}>
                                     <div className="flex gap-3">
                                         { cateIcon[chal.category?.toLowerCase() || "misc"] }
-                                        <span>{ chal.title }</span>
+                                        <span>{ chal.name }</span>
                                     </div>
                                     <div className="flex gap-1">
                                         <Button variant={"ghost"} size={"icon"}>
                                             <Copy />
                                         </Button>
-                                        <Button variant={"ghost"} size={"icon"}>
+                                        <Button variant={"ghost"} size={"icon"} onClick={() => {
+                                            router.push(`/${lng}/admin/challenges/${chal.challenge_id}`)
+                                        }}>
                                             <Pencil />
                                         </Button>
-                                        <Button variant={"ghost"} size={"icon"} className="hover:text-red-500">
+                                        <Button variant={"ghost"} size={"icon"} className="hover:text-red-500" onClick={() => {
+                                            api.admin.deleteChallenge({ challenge_id: chal.challenge_id }).then(() => {
+                                                toast.success("删除成功", { position: "top-center" })
+                                                setChallenges(challenges.filter((res) => res.challenge_id !== chal.challenge_id))
+                                            }).catch((error: AxiosError) => {
+                                                if (error.response?.status) {
+                                                    const errorMessage: ErrorMessage = error.response.data as ErrorMessage
+                                                    toast.error(errorMessage.message, { position: "top-center" })
+                                                } else {
+                                                    toast.error("Unknow Error", { position: "top-center" })
+                                                }
+                                            })
+                                        }}>
                                             <Trash2 />
                                         </Button>
                                     </div>

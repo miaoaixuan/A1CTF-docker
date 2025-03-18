@@ -1,6 +1,6 @@
 import SafeComponent from "@/components/SafeComponent"
 import { AdminHeader } from "@/components/admin/AdminHeader";
-import { ChallengePage } from "@/components/admin/ChallengePage";
+import { EditChallengePage } from "@/components/admin/EditChallengePage";
 import { GameManagePage } from "@/components/admin/GameManagePage";
 
 export default async function Home ({ params }: { params: Promise<{ lng: string }>}) {

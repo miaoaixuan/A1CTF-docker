@@ -1,0 +1,414 @@
+openapi: '3.0.3'
+info:
+  title: API Title
+  version: '1.0'
+servers:
+  - url: http://localhost:8080/api
+paths:
+  /api/auth/login:
+    post:
+      tags: [auth]
+      operationId: userLogin
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: User Not Found
+        '401':
+          description: Password Incorrect
+        '500':
+          description: Server Error
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+  /api/auth/register:
+    post:
+      tags: [auth]
+      operationId: userRegister
+      responses:
+        '200':
+          description: OK
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegister'
+  /api/admin/challenge/create:
+    post:
+      tags: [admin]
+      operationId: createChallenge
+      summary: Create a new challenge
+      description: Create a new challenge with attachments, container configurations and judge configuration.
+      responses:
+        '200':
+          description: Challenge created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  challenge_id:
+                    type: integer
+                  create_at:
+                    type: string
+                    format: date-time
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChallengeConfig'
+  /api/admin/challenge/update:
+    post:
+      tags: [admin]
+      operationId: updateChallenge
+      summary: Update a exist challenge
+      responses:
+        '200':
+          description: Challenge update successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+        '404':
+          description: Challenge not found
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChallengeConfig'
+  /api/admin/challenge/delete:
+    post:
+      tags: [admin]
+      operationId: deleteChallenge
+      summary: Delete a exist challenge
+      responses:
+        '200':
+          description: Challenge delete successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+        '404':
+          description: Challenge not found
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                challenge_id:
+                  type: integer
+              required:
+                - challenge_id
+  /api/admin/challenge/get:
+    post:
+      tags: [admin]
+      operationId: getChallengeInfo
+      summary: Get challenge info
+      responses:
+        '200':
+          description: Challenge info get
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: '#/components/schemas/ChallengeConfig'
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                challenge_id:
+                  type: integer
+              required:
+                - challenge_id
+  /api/admin/challenge/list:
+    post:
+      tags: [admin]
+      operationId: listChallenge
+      summary: List challenges
+      responses:
+        '200':
+          description: Challenge listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ChallengeSimpleInfo'
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                size:
+                  type: integer
+                offset:
+                  type: integer
+                category:
+                  $ref: '#/components/schemas/ChallengeCategory'
+              required:
+                - size
+                - offset
+components:
+  schemas:
+    UserLogin:
+      description: User login form
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        captcha:
+          type: string
+      required:
+        - username
+        - password
+    UserRegister:
+      description: User register form
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        captcha:
+          type: string
+        email:
+          type: string
+      required:
+        - email
+        - password
+        - username
+    AttachmentType:
+      type: string
+      enum:
+        - STATICFILE
+        - DYNAMICFILE
+        - REMOTEFILE
+    Attachment:
+      type: object
+      properties:
+        attach_hash:
+          type: string
+          nullable: true
+        attach_name:
+          type: string
+        attach_type:
+          $ref: '#/components/schemas/AttachmentType'
+        attach_url:
+          type: string
+        generate_script:
+          type: string
+          nullable: true
+      required:
+        - attach_name
+        - attach_type
+        - attach_url
+    ExposePort:
+      type: object
+      properties:
+        name:
+          type: string
+        port:
+          type: integer
+      required:
+        - name
+        - port
+    Container:
+      type: object
+      properties:
+        command:
+          type: string
+          nullable: true
+        env:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnvItem'
+        expose_ports:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExposePort'
+        image:
+          type: string
+        name:
+          type: string
+      required:
+        - expose_ports
+        - image
+        - name
+    JudgeType:
+      type: string
+      enum:
+        - DYNAMIC
+        - SCRIPT
+    JudgeConfig:
+      type: object
+      properties:
+        flag_template:
+          type: string
+        judge_script:
+          type: string
+          nullable: true
+        judge_type:
+          $ref: '#/components/schemas/JudgeType'
+      required:
+        - flag_template
+        - judge_type
+    ChallengeCategory:
+      type: string
+      enum:
+        - MISC
+        - CRYPTO
+        - PWN
+        - WEB
+        - REVERSE
+        - FORENSICS
+        - HARDWARE
+        - MOBILE
+        - PPC
+        - AI
+        - PENTENT
+        - OSINT
+    EnvItem:
+      type: object
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+      required:
+        - name
+        - value
+    ChallengeSimpleInfo:
+      type: object
+      properties:
+        challenge_id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          $ref: '#/components/schemas/ChallengeCategory'
+        create_time:
+          type: string
+          format: date-time
+      required:
+        - challenge_id
+        - name
+        - description
+        - category
+        - create_time
+    ChallengeConfig:
+      type: object
+      properties:
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+        category:
+          $ref: '#/components/schemas/ChallengeCategory'
+        challenge_id:
+          type: integer
+        container_config:
+          type: array
+          items:
+            $ref: '#/components/schemas/Container'
+        create_time:
+          type: string
+          format: date-time
+        description:
+          type: string
+        judge_config:
+          $ref: '#/components/schemas/JudgeConfig'
+        name:
+          type: string
+        type_:
+          type: integer
+      required:
+        - name
+        - description
+        - category
+        - container_config
+        - judge_config
+    ErrorMessage:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+      required:
+        - code
+        - message

@@ -349,7 +349,7 @@ function AttachmentForm({ control, index, form, removeAttachment }: AttachmentFo
     );
 }
 
-export function CreateChallengeView({ lng } : { lng: string }) {
+export function EditChallengeView({ challenge_info, lng } : { challenge_info: ChallengeConfig, lng: string }) {
 
     const categories: { [key: string]: any } = {
         "MISC": <Radar size={21} />,
@@ -414,6 +414,7 @@ export function CreateChallengeView({ lng } : { lng: string }) {
     });
 
     const env_to_string = (data: { name: string, value: string }[]) => {
+        console.log(data)
         let env = ""
         data.forEach((item) => {
             env += `${item.name}=${item.value},`
@@ -435,17 +436,35 @@ export function CreateChallengeView({ lng } : { lng: string }) {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            name: "",
-            description: "",
-            category: "",
+            name: challenge_info.name,
+            description: challenge_info.description,
+            category: challenge_info.category,
             challenge_id: 0,
             judge_config: {
-                judge_type: "DYNAMIC",
-                judge_script: "",
-                flag_template: ""
+                judge_type: challenge_info.judge_config.judge_type,
+                judge_script: challenge_info.judge_config.judge_script || "",
+                flag_template: challenge_info.judge_config.flag_template
             },
-            container_config: [],
-            attachments: []
+            container_config: challenge_info.container_config.map((e) => ({
+                name: e.name,
+                image: e.image,
+                command: e.command,
+                env: e.env ? env_to_string(e.env) : "",
+                expose_ports: e.expose_ports.map((e2) => (
+                    {
+                        name: e2.name,
+                        port: e2.port,
+                    }
+                )),
+            })) || [],
+            attachments: challenge_info.attachments?.map((e) => ({
+                attach_hash: e.attach_hash || "",
+                attach_name: e.attach_name || "",
+                attach_type: e.attach_type || "",
+                download_hash: "",
+                attach_url: e.attach_url || "",
+                generate_script: e.generate_script || ""
+            })) || []
         }
     })
 
@@ -470,29 +489,25 @@ export function CreateChallengeView({ lng } : { lng: string }) {
     const [showScript, setShowScript] = useState(false);
 
     function onSubmit(values: z.infer<typeof formSchema>) {
-
-        let data_time = dayjs().toISOString();
-        
         const finalData = {
             attachments: values.attachments,
             category: values.category.toUpperCase(),
-            challenge_id: 0,
-            container_config: values.container_config.map((c) => ({
-                command: c.command != "" ? c.command : null,
-                env: c.env != "" ? string_to_env(c.env || "") : [],
-                expose_ports: c.expose_ports,
-                image: c.image,
-                name: c.name    
+            challenge_id: challenge_info.challenge_id,
+            container_config: values.container_config.map((e) => ({
+                name: e.name,
+                image: e.image,
+                command: e.command != "" ? e.command : null,
+                env: e.env != "" ? string_to_env(e.env || "") : [],
+                expose_ports: e.expose_ports,
             })),
-            create_time: data_time.substring(0, data_time.length - 1),
+            create_time: challenge_info.create_time,
             description: values.description,
             judge_config: values.judge_config,
             name: values.name,
-            type_: 0
+            type_: challenge_info.type_,
         };
-
-        api.admin.createChallenge(finalData as ChallengeConfig).then((res) => {
-            toast.success("创建成功", { position: "top-center" })
+        api.admin.updateChallenge(finalData as ChallengeConfig).then((res) => {
+            toast.success("更新成功", { position: "top-center" })
         }).catch((error: AxiosError) => {
             if (error.response?.status) {
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
@@ -523,7 +538,7 @@ export function CreateChallengeView({ lng } : { lng: string }) {
                                 Back to challenges
                             </Button>
                         </div>
-                        <span className="text-3xl font-bold">Create Challenge</span>
+                        <span className="text-3xl font-bold">Edit - { challenge_info.name }</span>
                         <span className="text-lg font-semibold">基本信息</span>
                         <div className="flex gap-10 items-center">
                             <div className="w-1/3">

@@ -1,6 +1,10 @@
 use actix_web::{middleware::Logger, App, HttpServer, web};
 use dotenvy::dotenv;
 use env_logger::Env;
+
+use utils::k8s_tool::*;
+use utils::crypto_helper::*;
+
 use std::env;
 
 use jwt_compact::alg::{Hs256, Hs256Key};
@@ -29,6 +33,31 @@ pub enum Role {
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
+
+    // let pod_config = PodInfo {
+    //     name: format!("testpod-{}", random_string_lower(0)),
+    //     team_hash: "f489bfadc7284".to_string(),
+    //     containers: vec![
+    //         A1Container {
+    //             name: "eval".to_string(),
+    //             image: "127.0.0.1:6440/ez_eval".to_string(),
+    //             command: None,
+    //             env: Some(vec![
+    //                 k8s_openapi::api::core::v1::EnvVar {
+    //                     name: "SUPER_SECRET".to_string(),
+    //                     value: Some("env".to_string()),
+    //                     value_from: None
+    //                 }
+    //             ]),
+    //             expose_ports: Some(vec![PortName {
+    //                 name: "http1".to_string(),
+    //                 port: 80,
+    //             }]),
+    //         }
+    //     ]
+    // };
+
+    // println!("{}", serde_json::to_string(&pod_config).unwrap());
     
     env_logger::init_from_env(Env::default().default_filter_or("info"));
 
@@ -62,6 +91,8 @@ async fn main() -> std::io::Result<()> {
                 .service(controllers::challenge::create)
                 .service(controllers::challenge::delete)
                 .service(controllers::challenge::update)
+                .service(controllers::challenge::get)
+                
             );
         
         app

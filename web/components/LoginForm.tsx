@@ -28,7 +28,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 
-import { api } from "@/utils/GZApi";
+import { api } from "@/utils/ApiHelper";
 
 import Image from "next/image";
 import { useTransitionContext } from "@/contexts/TransitionContext";
@@ -75,8 +75,8 @@ export function LoginForm({
 
     function onSubmit(values: z.infer<typeof formSchema>) {
         setLoading(true)
-        api.account.accountLogIn({
-            userName: values.userName,
+        api.auth.userLogin({
+            username: values.userName,
             password: values.password,
         }).then(response => {
             updateProfile(() => {

@@ -15,11 +15,12 @@ pub mod challenge {
 
     #[derive(Debug, Serialize, Deserialize)]
     struct ListChallengePayload {
-        game_id: i64,
+        size: i64,
+        offset: i64,
         category: Option<ChallengeCategory>
     }
 
-    #[get("/api/challenge/list")]
+    #[post("/api/admin/challenge/list")]
     pub async fn list(jwt_user: UserClaims, payload: web::Json<ListChallengePayload>) -> impl Responder {
 
         let connection = &mut establish_connection();
@@ -37,7 +38,15 @@ pub mod challenge {
         match challenges_result {
             Ok(data) => HttpResponse::Ok().json(json!({
                 "code": 200,
-                "data": data
+                "data": data.iter().map(|x| {
+                    json!({
+                        "challenge_id": x.challenge_id,
+                        "name": x.name,
+                        "description": x.description,
+                        "category": x.category,
+                        "create_time": x.create_time
+                    })
+                }).collect::<Vec<serde_json::Value>>()
             })),
             Err(e) => {
                 println!("{:?}", e);
@@ -50,7 +59,38 @@ pub mod challenge {
         }
     }
 
-    #[post("/api/challenge/create")]
+    #[derive(Debug, Serialize, Deserialize)]
+    struct ChallengeInfoPayload {
+        challenge_id: i64
+    }
+
+    #[post("/api/admin/challenge/get")]
+    pub async fn get(jwt_user: UserClaims, payload: web::Json<ChallengeInfoPayload>) -> impl Responder {
+
+        let connection = &mut establish_connection();
+
+        let challenges_result = challenges.filter(challenge_id.eq(payload.challenge_id))
+                .select(Challenge::as_select())
+                .limit(1)
+                .load::<Challenge>(connection);
+
+        match challenges_result {
+            Ok(data) => HttpResponse::Ok().json(json!({
+                "code": 200,
+                "data": data[0]
+            })),
+            Err(e) => {
+                println!("{:?}", e);
+
+                HttpResponse::InternalServerError().json(json!({
+                    "code": 500,
+                    "message": "Failed to load challenges"
+                }))
+            },
+        }
+    }
+
+    #[post("/api/admin/challenge/create")]
     pub async fn create(jwt_user: UserClaims, payload: web::Json<SetChallenge>) -> impl Responder {
 
         let connection = &mut establish_connection();
@@ -135,7 +175,7 @@ pub mod challenge {
         challenge_id: i64,
     }
 
-    #[post("/api/challenge/delete")]
+    #[post("/api/admin/challenge/delete")]
     pub async fn delete(jwt_user: UserClaims, payload: web::Json<DeleteChallengePayload>) -> impl Responder {
         
         let connection = &mut establish_connection();
@@ -166,7 +206,7 @@ pub mod challenge {
             }
     }
 
-    #[post("/api/challenge/update")]
+    #[post("/api/admin/challenge/update")]
     pub async fn update(jwt_user: UserClaims, payload: web::Json<Challenge>) -> impl Responder {
         
         let connection = &mut establish_connection();

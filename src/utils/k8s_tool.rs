@@ -40,7 +40,7 @@ pub struct PortName {
 pub struct A1Container {
     pub name: String,
     pub image: String,
-    pub command: Option<Vec<String>>,
+    pub command: Option<String>,
     pub env: Option<Vec<k8s_openapi::api::core::v1::EnvVar>>,
     pub expose_ports: Option<Vec<PortName>>,
 }

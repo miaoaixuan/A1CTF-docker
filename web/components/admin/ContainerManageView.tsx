@@ -39,26 +39,25 @@ import {
     TableRow,
 } from "@/components/ui/table"
 
-import { api, Role, UserInfoModel } from "@/utils/GZApi";
+import { api, ContainerInfoModel, Role, UserInfoModel } from "@/utils/GZApi";
 import { MacScrollbar } from "mac-scrollbar";
 import { Avatar } from "@radix-ui/react-avatar";
 import { AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Skeleton } from "../ui/skeleton";
 import { Badge } from "../ui/badge";
+import dayjs from "dayjs";
 
-export type UserModel = {
-    id: string,
-    Role: "admin" | "monitor" | "user",
-    Email: string,
-    Username: string,
-    StudentID: string,
-    RealName: string,
-    IP: string
+export type ContainerModel = {
+    ID: string,
+    TeamName: string,
+    GameName: string,
+    LifeCycle: string,
+    Entry: string
 }
 
-export function UserManageView() {
+export function ContainerManageView() {
 
-    const [data, setData] = React.useState<UserModel[]>([])
+    const [data, setData] = React.useState<ContainerModel[]>([])
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
         []
@@ -71,9 +70,9 @@ export function UserManageView() {
     const [curPage, setCurPage] = React.useState(0);
     const [totalCount, setTotalCount] = React.useState(0);
 
-    const [curPageData, setCurPageData] = React.useState<UserInfoModel[]>([])
+    const [curPageData, setCurPageData] = React.useState<ContainerInfoModel[]>([])
 
-    const columns: ColumnDef<UserModel>[] = [
+    const columns: ColumnDef<ContainerModel>[] = [
         {
             id: "select",
             header: ({ table }) => (
@@ -97,80 +96,42 @@ export function UserManageView() {
             enableHiding: false,
         },
         {
-            accessorKey: "Username",
-            header: "Username",
-            cell: ({ row }) => {
-                const avatar_url = curPageData.find((user) => user.email == row.getValue("Email"))?.avatar
-    
+            accessorKey: "TeamName",
+            header: "TeamName",
+            cell: ({ row }) => {    
                 return (
-                    <div className="flex gap-3 items-center">
-                        <Avatar className="select-none w-[35px] h-[35px]">
-                            { avatar_url ? (
-                                <>
-                                    <AvatarImage src={avatar_url || "#"} alt="@shadcn"
-                                        className={`rounded-2xl`}
-                                    />
-                                    <AvatarFallback><Skeleton className="h-full w-full rounded-full" /></AvatarFallback>
-                                </>
-                            ) : ( 
-                                <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
-                                    <span className='text-background text-md'> { (row.getValue("Username") as string).substring(0, 2) } </span>
-                                </div>
-                            ) }
-                        </Avatar>
-                        {row.getValue("Username")}
+                    <div>
+                        {row.getValue("TeamName")}
                     </div>
                 )
             },
         },
         {
-            accessorKey: "Role",
-            header: "Role",
+            accessorKey: "GameName",
+            header: "GameName",
             cell: ({ row }) => (
-                <Badge 
-                    className="capitalize w-[50px] flex justify-center select-none"
-                    style={{
-                        backgroundColor: row.getValue("Role") == "admin" ? "#FF4D4F" : row.getValue("Role") == "monitor" ? "#1890FF" : "#52C41A"
-                    }}
-                >
-                    { row.getValue("Role") }
-                </Badge>
+                <div>
+                    { row.getValue("GameName") }
+                </div>
             ),
         },
         {
-            accessorKey: "Email",
-            header: ({ column }) => {
-                return (
-                    <Button
-                        variant="ghost"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
-                        Email
-                        <ArrowUpDown />
-                    </Button>
-                )
-            },
-            cell: ({ row }) => <div className="lowercase">{row.getValue("Email")}</div>,
+            accessorKey: "LifeCycle",
+            header: "LifeCycle",
+            cell: ({ row }) => <div className="lowercase">{row.getValue("LifeCycle")}</div>,
         },
         {
-            accessorKey: "IP",
-            header: "IP",
+            accessorKey: "ID",
+            header: "ID",
             cell: ({ row }) => (
-                <div>{row.getValue("IP")}</div>
+                <div>{row.getValue("ID")}</div>
             ),
         },
         {
-            accessorKey: "RealName",
-            header: "RealName",
+            accessorKey: "Entry",
+            header: "Entry",
             cell: ({ row }) => (
-                <div>{row.getValue("RealName")}</div>
-            ),
-        },
-        {
-            accessorKey: "StudentID",
-            header: "StudentID",
-            cell: ({ row }) => (
-                <div>{row.getValue("StudentID")}</div>
+                <div>{row.getValue("Entry")}</div>
             ),
         },
         {
@@ -196,7 +157,7 @@ export function UserManageView() {
                             <DropdownMenuContent align="end" >
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                 <DropdownMenuItem
-                                    onClick={() => navigator.clipboard.writeText(payment.id)}
+                                    onClick={() => navigator.clipboard.writeText(payment.ID)}
                                 >
                                     Copy payment ID
                                 </DropdownMenuItem>
@@ -232,19 +193,19 @@ export function UserManageView() {
 
     React.useEffect(() => {
         table.setPageSize(pageSize)
-        api.admin.adminUsers({ count: pageSize, skip: pageSize * curPage }).then((res) => {
+
+        api.admin.adminInstances().then((res) => {
+
             setTotalCount(res.data.total ?? 0)
             setCurPageData(res.data.data)
-            const data: UserModel[] = []
-            res.data.data.forEach((user) => {
+            const data: ContainerModel[] = []
+            res.data.data.forEach((container) => {
                 data.push({
-                    "Email": user.email ?? "",
-                    "id": user.id ?? "",
-                    "IP": user.ip ?? "",
-                    "RealName": user.realName?? "",
-                    "Role": user.role == Role.Admin ? "admin" : user.role == Role.Monitor ? "monitor" : "user",
-                    "StudentID": user.stdNumber ?? "",
-                    "Username": user.userName ?? ""
+                    "Entry": `${container.ip}:${container.port}`,
+                    "ID": container.containerId ?? "",
+                    "LifeCycle": `${ dayjs(container.startedAt).format() } - ${ dayjs(container.expectStopAt).format() }`,
+                    "GameName": container.challenge?.title ?? "",
+                    "TeamName": container.team?.name ?? ""
                 })
             })
 
@@ -285,10 +246,10 @@ export function UserManageView() {
                     </div>
                     <div className="flex items-center py-4">
                         <Input
-                            placeholder="Filter emails..."
-                            value={(table.getColumn("Email")?.getFilterValue() as string) ?? ""}
+                            placeholder="Filter team names..."
+                            value={(table.getColumn("TeamName")?.getFilterValue() as string) ?? ""}
                             onChange={(event) =>
-                                table.getColumn("Email")?.setFilterValue(event.target.value)
+                                table.getColumn("TeamName")?.setFilterValue(event.target.value)
                             }
                             className="max-w-sm"
                         />
