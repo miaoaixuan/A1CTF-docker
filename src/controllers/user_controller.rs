@@ -1,11 +1,9 @@
 pub mod user {
     use actix_web::cookie::Cookie;
-    use actix_web::rt::time;
     use actix_web::{web, post, get, HttpResponse, Responder};
 
     use jwt_compact::alg::Hs256;
-    use serde_derive::Serialize;
-    use serde_derive::Deserialize;
+    use serde_derive::{Serialize, Deserialize};
     use serde_json::json;
 
     use crate::utils::crypto_helper::*;
@@ -16,10 +14,9 @@ pub mod user {
     use diesel::prelude::*;
     use uuid::Uuid;
 
-    use actix_jwt_auth_middleware::use_jwt::UseJWTOnApp;
-    use actix_jwt_auth_middleware::{AuthResult, Authority, FromRequest, TokenSigner};
+    use actix_jwt_auth_middleware::TokenSigner;
 
-    use std::time::{Duration, SystemTime, UNIX_EPOCH};
+    use std::time::Duration;
 
     #[derive(Debug, Serialize, Deserialize)]
     struct LoginPayload {

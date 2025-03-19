@@ -154,7 +154,7 @@ async fn main() -> std::io::Result<()> {
                 })
             })
             .wrap(Logger::default())
-            .wrap(Logger::new("%a %{User-Agent}i"))
+            // .wrap(Logger::new("%a %{User-Agent}i"))
             .app_data(
                 MultipartFormConfig::default()
                     .total_limit(10 * 1024 * 1024 * 1024) // 10 GB

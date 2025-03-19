@@ -2,8 +2,7 @@ use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde_derive::{Serialize, Deserialize};
 use diesel_json::Json;
-use crate::utils::k8s_tool::{A1Container, PodInfo};
-use std::str::FromStr;
+use crate::utils::k8s_tool::A1Container;
 use strum_macros::{EnumString, Display};
 
 
