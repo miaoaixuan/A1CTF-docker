@@ -109,6 +109,49 @@ export interface ErrorMessage {
   message: string;
 }
 
+export interface GameStage {
+  stage_name: string;
+  /** @format date-time */
+  start_time: string;
+  /** @format date-time */
+  end_time: string;
+}
+
+export interface GameInfo {
+  /** @format int64 */
+  game_id: number;
+  name: string;
+  summary?: string | null;
+  description?: string | null;
+  poster?: string | null;
+  invite_code?: string | null;
+  /** @format date-time */
+  start_time: string;
+  /** @format date-time */
+  end_time: string;
+  practice_mode: boolean;
+  team_number_limit: number;
+  container_number_limit: number;
+  require_wp: boolean;
+  /** @format date-time */
+  wp_expire_time: string;
+  visible: boolean;
+  stages: GameStage[];
+}
+
+export interface GameSimpleInfo {
+  /** @format int64 */
+  game_id: number;
+  name: string;
+  summary: string | null;
+  poster?: string | null;
+  /** @format date-time */
+  start_time: string;
+  /** @format date-time */
+  end_time: string;
+  visible: boolean;
+}
+
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse, HeadersDefaults, ResponseType } from "axios";
 import axios from "axios";
 
@@ -414,6 +457,36 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         void | ErrorMessage
       >({
         path: `/api/admin/challenge/list`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags admin
+     * @name ListGames
+     * @summary List games
+     * @request POST:/api/admin/game/list
+     */
+    listGames: (
+      data: {
+        size: number;
+        offset?: number;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: GameSimpleInfo[];
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/admin/game/list`,
         method: "POST",
         body: data,
         type: ContentType.Json,

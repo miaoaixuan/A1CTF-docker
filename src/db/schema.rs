@@ -39,6 +39,7 @@ diesel::table! {
         solved -> Jsonb,
         hints -> Nullable<Array<Nullable<Text>>>,
         judge_config -> Jsonb,
+        belong_stage -> Nullable<Int4>,
     }
 }
 
@@ -58,6 +59,7 @@ diesel::table! {
         require_wp -> Bool,
         wp_expire_time -> Timestamp,
         stages -> Jsonb,
+        visible -> Bool,
     }
 }
 

@@ -27,5 +27,6 @@ pub struct Game {
     pub container_number_limit: i32,
     pub require_wp: bool,
     pub wp_expire_time: NaiveDateTime,
-    pub stages: Json<Vec<GameStage>>
+    pub stages: Json<Vec<GameStage>>,
+    pub visible: bool
 }

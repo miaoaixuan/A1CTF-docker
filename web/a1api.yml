@@ -219,6 +219,48 @@ paths:
               required:
                 - size
                 - offset
+  /api/admin/game/list:
+    post:
+      tags: [admin]
+      operationId: listGames
+      summary: List games
+      responses:
+        '200':
+          description: game listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GameSimpleInfo'
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                size:
+                  type: integer
+                offset:
+                  type: integer
+              required:
+                - size
 components:
   schemas:
     UserLogin:
@@ -412,3 +454,102 @@ components:
       required:
         - code
         - message
+    GameStage:
+      type: object
+      properties:
+        stage_name:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+      required:
+        - stage_name
+        - start_time
+        - end_time
+    GameInfo:
+      type: object
+      properties:
+        game_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        summary:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        poster:
+          type: string
+          nullable: true
+        invite_code:
+          type: string
+          nullable: true
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        practice_mode:
+          type: boolean
+        team_number_limit:
+          type: integer
+        container_number_limit:
+          type: integer
+        require_wp:
+          type: boolean
+        wp_expire_time:
+          type: string
+          format: date-time
+        visible:
+          type: boolean
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameStage'
+      required:
+        - game_id
+        - name
+        - start_time
+        - end_time
+        - practice_mode
+        - team_number_limit
+        - container_number_limit
+        - require_wp
+        - wp_expire_time
+        - stages
+        - visible
+    GameSimpleInfo:
+      type: object
+      properties:
+        game_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        summary:
+          type: string
+          nullable: true
+        poster:
+          type: string
+          nullable: true
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        visible:
+          type: boolean
+      required:
+        - game_id
+        - name
+        - start_time
+        - end_time
+        - summary
+        - visible

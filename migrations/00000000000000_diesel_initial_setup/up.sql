@@ -35,6 +35,7 @@ CREATE TABLE "games" (
     "require_wp" bool DEFAULT false NOT NULL,
     "wp_expire_time" timestamp NOT NULL,
     "stages" jsonb NOT NULL,
+    "visible" bool DEFAULT false NOT NULL,
     PRIMARY KEY (game_id)
 );
 
@@ -60,6 +61,7 @@ CREATE TABLE "game_challenges" (
     "solved" jsonb DEFAULT '[]'::jsonb NOT NULL,
     "hints" text[] DEFAULT '{}'::text[],
     "judge_config" jsonb NOT NULL,
+    "belong_stage" int4 DEFAULT 0,
     PRIMARY KEY (ingame_id)
 );
 
