@@ -2,22 +2,22 @@
 -- and other internal bookkeeping. This file is safe to edit, any future
 -- changes will be added to existing projects as new migrations.
 
-CREATE TABLE "user" (
-  "user_id" uuid NOT NULL,
-  "username" text NOT NULL,
-  "password" text NOT NULL,
-  "salt" text NOT NULL,
-  "role" int4 DEFAULT 0 NOT NULL,
-  "cur_token" text,
-  "phone" text,
-  "student_number" text,
-  "realname" text,
-  "slogan" text,
-  "avatar" text,
-  "sso_data" text,
-  "email" text,
-  "email_verified" bool DEFAULT false,
-  PRIMARY KEY (user_id)
+CREATE TABLE "users" (
+    "user_id" uuid NOT NULL,
+    "username" text NOT NULL,
+    "password" text NOT NULL,
+    "salt" text NOT NULL,
+    "role" int4 DEFAULT 0 NOT NULL,
+    "cur_token" text,
+    "phone" text,
+    "student_number" text,
+    "realname" text,
+    "slogan" text,
+    "avatar" text,
+    "sso_data" text,
+    "email" text,
+    "email_verified" bool DEFAULT false,
+    PRIMARY KEY (user_id)
 );
 
 CREATE TABLE "games" (
@@ -101,6 +101,18 @@ CREATE TABLE "judges" (
     "judge_time" timestamp NOT NULL,
     "judge_content" text NOT NULL,
     PRIMARY KEY (judge_id)
+);
+
+CREATE TABLE "uploads" (
+    "file_id" uuid NOT NULL,
+    "user_id" uuid NOT NULL REFERENCES users(user_id),
+    "file_name" text NOT NULL,
+    "file_path" text NOT NULL,
+    "file_hash" text NOT NULL,
+    "file_type" text NOT NULL,
+    "file_size" int4 NOT NULL,
+    "upload_time" timestamp NOT NULL,
+    PRIMARY KEY (file_id)
 );
 
 -- Sets up a trigger for the given table to automatically set a column called

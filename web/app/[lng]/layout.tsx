@@ -26,7 +26,6 @@ import { CookiesProvider } from 'react-cookie';
 import { GlobalVariableProvider } from '@/contexts/GlobalVariableContext';
 import { Tooltip } from 'react-tooltip';
 import SafeComponent from '@/components/SafeComponent';
-
 // fonts
 
 export async function generateMetadata({ params }: { params: any }) {
@@ -68,16 +67,16 @@ export default async function RootLayout({
                         enableSystem
                     >
                         {/* <DelayedSuspense> */}
-                            <TransitionProvider>
-                                <TransitionLayout>
-                                    <ClientToaster/>
-                                    <GlobalVariableProvider>
-                                        <GameSwitchProvider>
-                                            {children}
-                                        </GameSwitchProvider>
-                                    </GlobalVariableProvider>
-                                </TransitionLayout>
-                            </TransitionProvider>
+                        <TransitionProvider>
+                            <TransitionLayout>
+                                <ClientToaster />
+                                <GlobalVariableProvider>
+                                    <GameSwitchProvider>
+                                        {children}
+                                    </GameSwitchProvider>
+                                </GlobalVariableProvider>
+                            </TransitionLayout>
+                        </TransitionProvider>
                         {/* </DelayedSuspense> */}
                     </ThemeProvider>
                 </NextIntlClientProvider>

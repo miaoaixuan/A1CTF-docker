@@ -10,7 +10,7 @@ pub mod user {
 
     use crate::utils::crypto_helper::*;
     use crate::db::lib::establish_connection;
-    use crate::db::schema::user::dsl::*;
+    use crate::db::schema::users::dsl::*;
     use crate::db::models::user_model::*;
     use crate::UserClaims;
     use diesel::prelude::*;
@@ -31,7 +31,7 @@ pub mod user {
     #[post("/api/auth/login")]
     pub async fn login(payload: web::Json<LoginPayload>, cookie_signer: web::Data<TokenSigner<UserClaims, Hs256>>) -> impl Responder {
         let connection = &mut establish_connection();
-        match user.filter(username.eq(&payload.username).or(email.eq(&payload.username)))
+        match users.filter(username.eq(&payload.username).or(email.eq(&payload.username)))
             .limit(1)
             .select(User::as_select())
             .load::<User>(connection) {
@@ -46,7 +46,7 @@ pub mod user {
 
                     if salt_password(&payload.password, &cur_user.salt) != cur_user.password {
                         return HttpResponse::Unauthorized().json(json!({
-                            "code": 403,
+                            "code": 401,
                             "message": "Password incorrect."
                         }));
                     }
@@ -97,7 +97,7 @@ pub mod user {
     #[post("/api/auth/register")]
     pub async fn register(payload: web::Json<RegisterPayload>) -> impl Responder {
         let connection = &mut establish_connection();
-        let results = user.filter(username.eq(&payload.username).or(email.eq(&payload.email)))
+        let results = users.filter(username.eq(&payload.username).or(email.eq(&payload.email)))
             .select(User::as_select())
             .load::<User>(connection);
 
@@ -123,7 +123,7 @@ pub mod user {
                         email_verified: Some(false)
                     };
 
-                    match diesel::insert_into(user)
+                    match diesel::insert_into(users)
                         .values(&new_user)
                         .execute(connection) {
                             Ok(_r) => {

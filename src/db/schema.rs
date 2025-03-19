@@ -91,7 +91,20 @@ diesel::table! {
 }
 
 diesel::table! {
-    user (user_id) {
+    uploads (file_id) {
+        file_id -> Uuid,
+        user_id -> Uuid,
+        file_name -> Text,
+        file_path -> Text,
+        file_hash -> Text,
+        file_type -> Text,
+        file_size -> Int4,
+        upload_time -> Timestamp,
+    }
+}
+
+diesel::table! {
+    users (user_id) {
         user_id -> Uuid,
         username -> Text,
         password -> Text,
@@ -117,6 +130,7 @@ diesel::joinable!(game_challenges -> games (game_id));
 diesel::joinable!(judges -> challenges (challenge_id));
 diesel::joinable!(judges -> teams (team_id));
 diesel::joinable!(teams -> games (game_id));
+diesel::joinable!(uploads -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     challenges,
@@ -125,5 +139,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     games,
     judges,
     teams,
-    user,
+    uploads,
+    users,
 );

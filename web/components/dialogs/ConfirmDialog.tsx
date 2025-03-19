@@ -91,7 +91,7 @@ export const ConfirmDialog: React.FC<DialogSettings> = ({ settings: {
                             if (onConfirm) onConfirm()
                         }}
                     >{ t("continue_button") }</Button>
-                    <Button variant="ghost"
+                    <Button variant="secondary"
                         onClick={() => {
                             setIsOpen(false)
                             if (onCancel) onCancel()

@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 #[derive(Debug, Queryable, Selectable, Insertable)]
 #[allow(dead_code)]
-#[diesel(table_name = crate::db::schema::user)]
+#[diesel(table_name = crate::db::schema::users)]
 pub struct User {
     pub user_id: Uuid,
     pub username: String,
@@ -22,7 +22,7 @@ pub struct User {
 }
 
 #[derive(AsChangeset)]
-#[diesel(table_name = crate::db::schema::user)]
+#[diesel(table_name = crate::db::schema::users)]
 pub struct UpdateUser {
     pub cur_token: Option<String>
 }
