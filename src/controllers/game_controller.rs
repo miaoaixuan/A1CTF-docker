@@ -1,23 +1,23 @@
 pub mod game {
-    use actix_web::{web, post, get, HttpResponse, Responder, HttpRequest};
+    use std::any;
 
-    use actix_multipart::form::{tempfile::TempFile, MultipartForm};
-    use diesel::query_dsl::methods::{FilterDsl, LimitDsl, OffsetDsl, SelectDsl};
-    use diesel::{ExpressionMethods, RunQueryDsl, SelectableHelper};
+    use actix_web::{web, post, get, HttpResponse, Responder};
+
+    // use diesel::query_dsl::methods::{FilterDsl};
+    use diesel::{allow_tables_to_appear_in_same_query, joinable, ExpressionMethods, JoinOnDsl, NullableExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
     use serde_json::json;
-    use mime;
 
     use crate::db::lib::establish_connection;
+    use crate::db::models::challenge_model::Challenge;
     use crate::db::models::game_model::{Game, GameModel};
-    use crate::db::schema::games::dsl::*;
+    use crate::db::models::game_challenge_model::{GameChallenge, GameSimpleChallenge};
+    use crate::db::schema::game_challenges as game_challenges_schema;
+    use crate::db::schema::games as games_schema;
+    use crate::db::schema::challenges as challenges_schema;
+
     use crate::UserClaims;
-    use chrono::{Datelike, Local};
-    use actix_files::NamedFile;
 
     use serde_derive::{Serialize, Deserialize};
-
-    use std::path::Path;
-    use std::fs;
 
     #[derive(Debug, Serialize, Deserialize)]
     struct ListGamePayload {
@@ -27,9 +27,8 @@ pub mod game {
 
     #[post("/api/admin/game/list")]
     pub async fn list(jwt_user: UserClaims, payload: web::Json<ListGamePayload>,) -> impl Responder {
-
         let connection = &mut establish_connection();
-        let game_results = games
+        let game_results = games_schema::dsl::games
             .select(Game::as_select())
             .offset(payload.offset.unwrap_or(0) as i64)
             .limit(payload.size as i64)
@@ -66,10 +65,10 @@ pub mod game {
 
         let connection = &mut establish_connection();
         
-        let mut game_model = payload.into_inner() as Game;
+        let game_model: Game = payload.into_inner().into();
         let values = vec![ game_model ];
 
-        match diesel::insert_into(games)
+        match diesel::insert_into(games_schema::dsl::games)
             .values(&values)
             .returning(Game::as_select())
             .get_result::<Game>(connection) {
@@ -88,6 +87,63 @@ pub mod game {
                     }))
                 }
             }
+    }
+
+    #[get("/api/admin/game/{game_id}")]
+    pub async fn get(jwt_user: UserClaims, payload_game_id: web::Path<String>,) -> impl Responder {
+        let connection = &mut establish_connection();
+        
+        let game_record_result = games_schema::dsl::games
+            .filter(games_schema::dsl::game_id.eq(payload_game_id.parse::<i64>().unwrap()))
+            .first::<Game>(connection);
+
+        // challenges_schema::dsl::challenges.on(on)
+
+        let game_challenges_result: Result<Vec<(GameChallenge, Option<Challenge>)>, diesel::result::Error> = game_challenges_schema::dsl::game_challenges
+            .inner_join(challenges_schema::dsl::challenges.on(game_challenges_schema::challenge_id.eq(challenges_schema::challenge_id)))
+            .select((
+                game_challenges_schema::all_columns,
+                challenges_schema::all_columns.nullable()
+            ))
+            .filter(game_challenges_schema::game_id.eq(payload_game_id.parse::<i64>().unwrap()))
+            .load::<(GameChallenge, Option<Challenge>)>(connection);
+
+        match game_record_result {
+            Ok(game_record) => {
+                match game_challenges_result {
+                    Ok(game_challenges) => {
+                        let result: GameModel = game_record.into();
+                        result.challenges = game_challenges.iter().map(|(gc, c)| {
+                            GameSimpleChallenge {
+                                challenge_id: c.unwrap().challenge_id,
+                                challenge_name:c.unwrap().name,
+                                score: gc.score,
+                                solved: gc.solved.len() as i32,
+                                category: c.unwrap().category,
+                                judge_config: gc.judge_config.is_some() ? 
+                            }
+                        }).collect::<Vec<_>>();
+
+                        return HttpResponse::Ok().json(json!({
+                            "code": 200,
+                            "data": result
+                        }));
+                    },
+                    Err(_) => {
+                        return HttpResponse::InternalServerError().json(json!({
+                            "code": 500,
+                            "message": "Server error"
+                        }));
+                    }
+                }
+            },
+            Err(_) => {
+                return HttpResponse::InternalServerError().json(json!({
+                    "code": 500,
+                    "message": "Server error"
+                }));
+            }
+        }
     }
 
 }

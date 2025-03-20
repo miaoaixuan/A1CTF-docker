@@ -25,7 +25,7 @@ pub struct GameChallenge {
     pub enabled: bool,
     pub solved: Json<Vec<Solve>>,
     pub hints: Option<Vec<Option<String>>>,
-    pub judge_config: Json<JudgeConfig>,
+    pub judge_config: Option<Json<JudgeConfig>>,
     pub belong_stage: Option<i32>
 }
 

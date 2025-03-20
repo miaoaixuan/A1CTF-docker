@@ -38,7 +38,7 @@ diesel::table! {
         enabled -> Bool,
         solved -> Jsonb,
         hints -> Nullable<Array<Nullable<Text>>>,
-        judge_config -> Jsonb,
+        judge_config -> Nullable<Jsonb>,
         belong_stage -> Nullable<Int4>,
     }
 }

@@ -179,7 +179,9 @@ async fn main() -> std::io::Result<()> {
                     .service(controllers::challenge::search)
 
                     .service(controllers::file::upload)
-                    .service(controllers::game::list),
+                    .service(controllers::game::list)
+                    .service(controllers::game::create)
+                    .service(controllers::game::get)
             );
 
         app

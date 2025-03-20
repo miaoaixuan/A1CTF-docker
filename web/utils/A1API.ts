@@ -557,7 +557,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @tags admin
      * @name CreateGame
      * @summary Create a new game
-     * @request POST:/api/admin/games/create
+     * @request POST:/api/admin/game/create
      */
     createGame: (data: GameInfo, params: RequestParams = {}) =>
       this.request<
@@ -568,7 +568,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         },
         void | ErrorMessage
       >({
-        path: `/api/admin/games/create`,
+        path: `/api/admin/game/create`,
         method: "POST",
         body: data,
         type: ContentType.Json,

@@ -53,3 +53,48 @@ pub struct GameModel {
     pub visible: bool,
     pub challenges: Vec<GameSimpleChallenge>
 }
+
+impl From<GameModel> for Game {
+    fn from(game_model: GameModel) -> Self {
+        Game {
+            game_id: game_model.game_id,
+            name: game_model.name,
+            summary: game_model.summary,
+            description: game_model.description,
+            poster: game_model.poster,
+            invite_code: game_model.invite_code,
+            start_time: game_model.start_time,
+            end_time: game_model.end_time,
+            practice_mode: game_model.practice_mode,
+            team_number_limit: game_model.team_number_limit,
+            container_number_limit: game_model.container_number_limit,
+            require_wp: game_model.require_wp,
+            wp_expire_time: game_model.wp_expire_time,
+            stages: game_model.stages,
+            visible: game_model.visible,
+        }
+    }
+}
+
+impl From<Game> for GameModel {
+    fn from(game_model: Game) -> Self {
+        GameModel {
+            game_id: game_model.game_id,
+            name: game_model.name,
+            summary: game_model.summary,
+            description: game_model.description,
+            poster: game_model.poster,
+            invite_code: game_model.invite_code,
+            start_time: game_model.start_time,
+            end_time: game_model.end_time,
+            practice_mode: game_model.practice_mode,
+            team_number_limit: game_model.team_number_limit,
+            container_number_limit: game_model.container_number_limit,
+            require_wp: game_model.require_wp,
+            wp_expire_time: game_model.wp_expire_time,
+            stages: game_model.stages,
+            visible: game_model.visible,
+            challenges: vec![]
+        }
+    }
+}

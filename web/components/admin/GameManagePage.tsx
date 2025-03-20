@@ -8,11 +8,14 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import { GameInfo, GameSimpleInfo } from "@/utils/A1API";
 import { api } from "@/utils/ApiHelper";
+import { useRouter } from "next/navigation";
 
-export function GameManagePage() { 
+export function GameManagePage({ lng } : { lng: string }) { 
 
     const { theme } = useTheme()
     const [ games, setGames ] = useState<GameSimpleInfo[]>([])
+
+    const router = useRouter()
 
     const [ primaryColorMap, setPrimaryColorMap ] = useState<{ [key: number]: string }>({});
 
@@ -79,7 +82,7 @@ export function GameManagePage() {
                                 { (visibleItems[index.toString()] || isLoaded[index.toString()]) && (
                                     <>
                                         <div className="absolute top-0 left-0 w-full h-full">
-                                            <img src={game.poster || "#"} className={`w-full h-full object-cover`} onLoad={(e) => {
+                                            <img src={game.poster || "/images/p2g7wm.jpg"} className={`w-full h-full object-cover`} onLoad={(e) => {
                                                 const FastAverageColor = require('fast-average-color').FastAverageColor;
                                                 const fac = new FastAverageColor();
                                                 const container = e.target as HTMLImageElement; 
@@ -125,7 +128,11 @@ export function GameManagePage() {
                                                         <EyeClosed />
                                                     ) }
                                                 </div>
-                                                <div className="w-[60px] h-[60px] rounded-full hover:text-cyan-500 flex items-center justify-center transition-colors duration-300 [&_svg]:size-10">
+                                                <div className="w-[60px] h-[60px] rounded-full hover:text-cyan-500 flex items-center justify-center transition-colors duration-300 [&_svg]:size-10"
+                                                    onClick={() => {
+                                                        router.push(`/${lng}/admin/games/${game.game_id}`)
+                                                    }}
+                                                >
                                                     <FilePenLine />
                                                 </div>
                                                 <div className="w-[60px] h-[60px] rounded-full hover:text-red-500 flex items-center justify-center transition-colors duration-300 [&_svg]:size-10">

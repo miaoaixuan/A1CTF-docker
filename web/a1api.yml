@@ -316,7 +316,7 @@ paths:
                   type: integer
               required:
                 - size
-  /api/admin/games/create:
+  /api/admin/game/create:
     post:
       tags: [admin]
       operationId: createGame
