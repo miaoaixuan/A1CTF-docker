@@ -176,6 +176,8 @@ async fn main() -> std::io::Result<()> {
                     .service(controllers::challenge::delete)
                     .service(controllers::challenge::update)
                     .service(controllers::challenge::get)
+                    .service(controllers::challenge::search)
+
                     .service(controllers::file::upload)
                     .service(controllers::game::list),
             );

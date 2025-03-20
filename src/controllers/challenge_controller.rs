@@ -253,4 +253,42 @@ pub mod challenge {
                 }
             }
     }
+
+
+    #[derive(Debug, Serialize, Deserialize)]
+    struct ChallengeSearchPayload {
+        keyword: String
+    }
+
+    #[post("/api/admin/challenge/search")]
+    pub async fn search(jwt_user: UserClaims, payload: web::Json<ChallengeSearchPayload>) -> impl Responder {
+
+        let connection = &mut establish_connection();
+
+        let challenges_result = challenges.filter(name.ilike(format!("%{}%", payload.keyword)))
+                .select(Challenge::as_select())
+                .load::<Challenge>(connection);
+
+        match challenges_result {
+            Ok(data) => HttpResponse::Ok().json(json!({
+                "code": 200,
+                "data": data.iter().map(|x| {
+                    json!({
+                        "challenge_id": x.challenge_id,
+                        "name": x.name,
+                        "category": x.category,
+                        "create_time": x.create_time
+                    })
+                }).collect::<Vec<serde_json::Value>>()
+            })),
+            Err(e) => {
+                println!("{:?}", e);
+
+                HttpResponse::InternalServerError().json(json!({
+                    "code": 500,
+                    "message": "Failed to load challenges"
+                }))
+            },
+        }
+    }
 }

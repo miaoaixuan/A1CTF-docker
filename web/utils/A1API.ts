@@ -117,6 +117,16 @@ export interface GameStage {
   end_time: string;
 }
 
+export interface GameChallenge {
+  challenge_id?: number;
+  challenge_name?: string;
+  /** @format double */
+  score?: number;
+  solved?: number;
+  category?: ChallengeCategory;
+  judge_config?: JudgeConfig;
+}
+
 export interface GameInfo {
   /** @format int64 */
   game_id: number;
@@ -137,6 +147,7 @@ export interface GameInfo {
   wp_expire_time: string;
   visible: boolean;
   stages: GameStage[];
+  challenges?: GameChallenge[];
 }
 
 export interface GameSimpleInfo {
@@ -150,6 +161,17 @@ export interface GameSimpleInfo {
   /** @format date-time */
   end_time: string;
   visible: boolean;
+}
+
+export interface Solve {
+  user_id: string;
+  game_id: number;
+  /** @format date-time */
+  solve_time: string;
+  challenge_id: number;
+  /** @format float */
+  score: number;
+  solve_rank: number;
 }
 
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse, HeadersDefaults, ResponseType } from "axios";
@@ -468,6 +490,41 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * No description
      *
      * @tags admin
+     * @name SearchChallenges
+     * @summary Search a challenge
+     * @request POST:/api/admin/challenge/search
+     */
+    searchChallenges: (
+      data: {
+        keyword: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: {
+            challenge_id: number;
+            name: string;
+            category: ChallengeCategory;
+            /** @format date-time */
+            create_time: string;
+          }[];
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/admin/challenge/search`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags admin
      * @name ListGames
      * @summary List games
      * @request POST:/api/admin/game/list
@@ -487,6 +544,31 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         void | ErrorMessage
       >({
         path: `/api/admin/game/list`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Create a new game.
+     *
+     * @tags admin
+     * @name CreateGame
+     * @summary Create a new game
+     * @request POST:/api/admin/games/create
+     */
+    createGame: (data: GameInfo, params: RequestParams = {}) =>
+      this.request<
+        {
+          game_id?: number;
+          /** @format date-time */
+          create_at?: string;
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/admin/games/create`,
         method: "POST",
         body: data,
         type: ContentType.Json,

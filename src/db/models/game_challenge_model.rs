@@ -2,7 +2,7 @@ use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde_derive::{Serialize, Deserialize};
 use diesel_json::Json;
-use super::challenge_model::JudgeConfig;
+use super::challenge_model::{ChallengeCategory, JudgeConfig};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Solve {
@@ -27,4 +27,15 @@ pub struct GameChallenge {
     pub hints: Option<Vec<Option<String>>>,
     pub judge_config: Json<JudgeConfig>,
     pub belong_stage: Option<i32>
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[allow(dead_code)]
+pub struct GameSimpleChallenge {
+    pub challenge_id: i64,
+    pub challenge_name: String,
+    pub score: f64,
+    pub solved: i32,
+    pub category: ChallengeCategory,
+    pub judge_config: JudgeConfig
 }

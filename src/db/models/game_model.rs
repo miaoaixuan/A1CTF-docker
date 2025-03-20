@@ -3,6 +3,8 @@ use diesel::prelude::*;
 use serde_derive::{Serialize, Deserialize};
 use diesel_json::Json;
 
+use super::game_challenge_model::{GameChallenge, GameSimpleChallenge};
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GameStage {
     pub stage_name: String,
@@ -29,4 +31,25 @@ pub struct Game {
     pub wp_expire_time: NaiveDateTime,
     pub stages: Json<Vec<GameStage>>,
     pub visible: bool
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[allow(dead_code)]
+pub struct GameModel {
+    pub game_id: i64,
+    pub name: String,
+    pub summary: Option<String>,
+    pub description: Option<String>,
+    pub poster: Option<String>,
+    pub invite_code: Option<String>,
+    pub start_time: NaiveDateTime,
+    pub end_time: NaiveDateTime,
+    pub practice_mode: bool,
+    pub team_number_limit: i32,
+    pub container_number_limit: i32,
+    pub require_wp: bool,
+    pub wp_expire_time: NaiveDateTime,
+    pub stages: Json<Vec<GameStage>>,
+    pub visible: bool,
+    pub challenges: Vec<GameSimpleChallenge>
 }

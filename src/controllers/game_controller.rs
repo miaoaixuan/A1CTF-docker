@@ -8,7 +8,7 @@ pub mod game {
     use mime;
 
     use crate::db::lib::establish_connection;
-    use crate::db::models::game_model::Game;
+    use crate::db::models::game_model::{Game, GameModel};
     use crate::db::schema::games::dsl::*;
     use crate::UserClaims;
     use chrono::{Datelike, Local};
@@ -59,6 +59,35 @@ pub mod game {
                 }));
             }
         }
+    }
+
+    #[post("/api/admin/game/create")]
+    pub async fn create(jwt_user: UserClaims, payload: web::Json<GameModel>,) -> impl Responder {
+
+        let connection = &mut establish_connection();
+        
+        let mut game_model = payload.into_inner() as Game;
+        let values = vec![ game_model ];
+
+        match diesel::insert_into(games)
+            .values(&values)
+            .returning(Game::as_select())
+            .get_result::<Game>(connection) {
+                Ok(game) => HttpResponse::Ok().json(json!({
+                    "code": 200,
+                    "data": {
+                        "game_id": game.game_id
+                    }
+                })),
+                Err(e) => {
+                    println!("{:?}", e);
+
+                    HttpResponse::InternalServerError().json(json!({
+                        "code": 500,
+                        "message": "Failed to create challenge"
+                    }))
+                }
+            }
     }
 
 }
