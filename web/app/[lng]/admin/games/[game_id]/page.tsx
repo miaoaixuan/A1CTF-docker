@@ -6,12 +6,12 @@ export default async function Home ({ params }: { params: Promise<{ lng: string,
 
     const { lng, game_id } = await params;
 
-    const cid = parseInt(game_id);
+    const gid = parseInt(game_id);
 
     return (
         <div className="p-0 h-screen flex flex-col">
             <SafeComponent animation={false}>
-                <EditGamePage lng={lng} challenge_id={cid} />
+                <EditGamePage lng={lng} game_id={gid} />
             </SafeComponent>
         </div>
     );

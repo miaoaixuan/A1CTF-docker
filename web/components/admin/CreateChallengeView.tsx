@@ -648,7 +648,7 @@ export function CreateChallengeView({ lng } : { lng: string }) {
                                 </FormItem>
                             )}
                         />
-                        {showScript ? (
+                        { showScript ? (
                             <FormField
                                 control={form.control}
                                 name="judge_config.judge_script"

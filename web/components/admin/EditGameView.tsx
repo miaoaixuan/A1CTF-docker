@@ -33,7 +33,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
 
-import { ArrowLeft, ArrowRight, ArrowUpDown, CalendarIcon, CircleArrowLeft, Cloud, FileCode, Github, LoaderPinwheel, PlusCircle, Save, ScanBarcode, Squirrel, TableProperties, Tag, Underline, Upload } from "lucide-react"
+import { ArrowLeft, ArrowRight, ArrowUpDown, CalendarIcon, CircleArrowLeft, Cloud, FileCode, FileUser, Github, Layers2, LoaderPinwheel, Pencil, PlusCircle, Save, ScanBarcode, Squirrel, TableProperties, Tag, Trash2, Underline, Upload } from "lucide-react"
 import { Textarea } from "../ui/textarea";
 
 import CodeEditor from '@uiw/react-textarea-code-editor';
@@ -42,7 +42,7 @@ import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageS
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { MacScrollbar } from "mac-scrollbar";
-import { ChallengeConfig, GameInfo } from "@/utils/A1API";
+import { ChallengeConfig, GameChallenge, GameInfo, GameSimpleInfo } from "@/utils/A1API";
 import { api, ErrorMessage } from "@/utils/ApiHelper";
 import dayjs from "dayjs";
 import { toast } from "sonner";
@@ -96,13 +96,6 @@ interface GameStageFormProps {
     index: number;
     form: any,
     removeStage: (index: number) => void;
-}
-
-interface GameChallengeFormProps {
-    control: any;
-    index: number;
-    form: any;
-    removeGameChallenge: (index: number) => void;
 }
 
 function GameStageForm({ control, index, removeStage, form }: GameStageFormProps) {
@@ -361,11 +354,189 @@ function GameStageForm({ control, index, removeStage, form }: GameStageFormProps
     );
 }
 
-function GameChallengeForm({ control, index, form, removeGameChallenge }: GameChallengeFormProps) {
+interface JudgeConfigFormProps {
+    control: any;
+    index: number;
+    form: any;
+}
+
+function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) {
+
+    const attachType = useWatch({
+        control,
+        name: `challenges.${index}.judge_config.judge_type`, // Watch the specific field
+    });
 
     return (
-        <div className="border-[1px] rounded-lg h-full w-full shadow-md">
+        <>
+            <FormField
+                control={form.control}
+                name={`challenges.${index}.judge_config.judge_type`}
+                render={({ field }) => (
+                    <FormItem className="select-none">
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>评测模式</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
+                        <Select onValueChange={(e) => {
+                            field.onChange(e)
+                        }} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="选择一个评测模式" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="w-full flex">
+                                <SelectItem value="DYNAMIC">
+                                    <div className="w-full flex gap-2 items-center h-[25px]">
+                                        <ScanBarcode />
+                                        <span className="text-[12px] font-bold">文字匹配</span>
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="SCRIPT" disabled>
+                                    <div className="w-full flex gap-2 items-center h-[25px]">
+                                        <FileCode />
+                                        <span className="text-[12px] font-bold">脚本匹配</span>
+                                    </div>
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <FormDescription>
+                            请选择一个类别
+                        </FormDescription>
+                    </FormItem>
+                )}
+            />
 
+            { attachType == "SCRIPT" ? (
+                <FormField
+                    control={form.control}
+                    name={`challenges.${index}.judge_config.judge_script`}
+                    render={({ field }) => (
+                        <FormItem className="select-none">
+                            <div className="flex items-center h-[20px]">
+                                <FormLabel>评测脚本</FormLabel>
+                                <div className="flex-1" />
+                                <FormMessage className="text-[14px]" />
+                            </div>
+                            <FormControl>
+                                <CodeEditor
+                                    value={field.value}
+                                    language="js"
+                                    placeholder="在这里输入你的评测脚本"
+                                    onChange={(evn) => field.onChange(evn.target.value)}
+                                    padding={15}
+                                    style={{
+                                        // backgroundColor: "#f5f5f5",
+                                        minHeight: 200,
+                                        borderRadius: 5,
+                                        // fontFamily: 'ui-monospace,SFMono-Regular,SF Mono,Consolas,Liberation Mono,Menlo,monospace',
+                                    }}
+                                />
+                            </FormControl>
+                            <FormDescription>
+                                如果你选择了动态评测, 你需要提供一份符合格式要求的评测脚本
+                            </FormDescription>
+                        </FormItem>
+                    )}
+                />
+            ) : (
+                <FormField
+                    control={form.control}
+                    name={`challenges.${index}.judge_config.flag_template`}
+                    render={({ field }) => (
+                        <FormItem className="select-none">
+                            <div className="flex items-center h-[20px]">
+                                <FormLabel>Flag</FormLabel>
+                                <div className="flex-1" />
+                                <FormMessage className="text-[14px]" />
+                            </div>
+                            <FormControl>
+                                <Input {...field} />
+                            </FormControl>
+                            <div className="flex flex-col text-[12px] text-foreground/60">
+                                <span>Flag支持模板变量</span>
+                                <span>[TEAMHASH] 部分会被替换成队伍唯一标识符</span>
+                                <span>[UUID] 部分会被替换成随机UUID</span>
+                                <span>在Flag头加上[LEET] 会把花括号内的内容用LEET替换字符</span>
+                            </div>
+                        </FormItem>
+                    )}
+                />
+            )}
+        </>
+    )
+}
+
+
+const colorMap: { [key: string]: string } = {
+    "misc": "rgb(32, 201, 151)",
+    "crypto": "rgb(132, 94, 247)",
+    "pwn": "rgb(255, 107, 107)",
+    "web": "rgb(51, 154, 240)",
+    "reverse": "rgb(252, 196, 25)",
+    "forensics": "rgb(92, 124, 250)",
+    "hardware": "rgb(208, 208, 208)",
+    "mobile": "rgb(240, 101, 149)",
+    "ppc": "rgb(34, 184, 207)",
+    "ai": "rgb(148, 216, 45)",
+    "pentent": "rgb(204, 93, 232)",
+    "osint": "rgb(255, 146, 43)"
+};
+
+const cateIcon: { [key: string]: any } = {
+    "all": <Squirrel size={23} />,
+    "misc": <Radar size={23} />,
+    "crypto": <MessageSquareLock size={23} />,
+    "pwn": <Bug size={23} />,
+    "web": <GlobeLock size={23} />,
+    "reverse": <Binary size={23} />,
+    "forensics": <FileSearch size={23} />,
+    "hardware": <HardDrive size={23} />,
+    "mobile": <Smartphone size={23} />,
+    "PPC": <SquareCode size={23} />,
+    "ai": <Bot size={23} />,
+    "pentent": <BadgeCent size={23} />,
+    "osint": <Github size={23} />
+};
+
+interface GameChallengeFormProps {
+    control: any;
+    index: number;
+    form: any;
+    gameData: GameChallenge;
+    onEditChallenge: (index: number) => void;
+    removeGameChallenge: (index: number) => void;
+}
+
+function GameChallengeForm({ control, index, form, removeGameChallenge, gameData, onEditChallenge }: GameChallengeFormProps) {
+
+    return (
+        <div className="border-[1px] rounded-lg h-full w-full shadow-md flex items-center p-4 gap-3 px-6">
+            {cateIcon[gameData.category?.toLowerCase() || "misc"]}
+            <span className="font-bold" >{gameData.challenge_name}</span>
+            <span>/</span>
+            <div className="flex gap-4 w-full">
+                <div className="flex items-center gap-2">
+                    <Layers2 size={18} />
+                    <span className="text-sm">{gameData.score}pts</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <FileUser size={18} />
+                    <span>{gameData.solved}</span>
+                    <span className="text-sm">solves</span>
+                </div>
+                <div className="flex-1" />
+                <div className="flex gap-1">
+                    <Button variant={"ghost"} size={"icon"} onClick={() => onEditChallenge(index)}>
+                        <Pencil />
+                    </Button>
+                    <Button variant={"ghost"} size={"icon"}>
+                        <Trash2 />
+                    </Button>
+                </div>
+            </div>
         </div>
     );
 }
@@ -492,7 +663,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                 start_time: z.date(),
                 end_time: z.date(),
             })
-        ),
+        ).optional(),
         visible: z.boolean(),
         challenges: z.array(
             z.object({
@@ -548,13 +719,17 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
             require_wp: game_info.require_wp,
             wp_expire_time: game_info.wp_expire_time ? dayjs(game_info.wp_expire_time).toDate() : new Date(),
             visible: game_info.visible,
-            stages: game_info.stages.map((stage) => ({
+            stages: game_info.stages ? game_info.stages.map((stage) => ({
                 stage_name: stage.stage_name,
                 start_time: dayjs(stage.start_time).toDate(),
                 end_time: dayjs(stage.end_time).toDate(),
-            })),
+            })) : [],
             challenges: game_info.challenges?.map((challenge) => ({
                 challenge_id: challenge.challenge_id,
+                challenge_name: challenge.challenge_name,
+                category: challenge.category,
+                score: challenge.score,
+                solved: challenge.solved,
                 judge_config: {
                     judge_type: challenge.judge_config?.judge_type,
                     judge_script: challenge.judge_config?.judge_script || "",
@@ -584,66 +759,32 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
 
     const [showScript, setShowScript] = useState(false);
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
-        // const finalData = {
-        //     attachments: values.attachments,
-        //     category: values.category.toUpperCase(),
-        //     challenge_id: challenge_info.challenge_id,
-        //     container_config: values.container_config.map((e) => ({
-        //         name: e.name,
-        //         image: e.image,
-        //         command: e.command != "" ? e.command : null,
-        //         env: e.env != "" ? string_to_env(e.env || "") : [],
-        //         expose_ports: e.expose_ports,
-        //     })),
-        //     create_time: challenge_info.create_time,
-        //     description: values.description,
-        //     judge_config: values.judge_config,
-        //     name: values.name,
-        //     type_: challenge_info.type_,
-        // };
-        // api.admin.updateChallenge(finalData as ChallengeConfig).then((res) => {
-        //     toast.success("更新成功", { position: "top-center" })
-        // }).catch((error: AxiosError) => {
-        //     if (error.response?.status) {
-        //         const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-        //         toast.error(errorMessage.message, { position: "top-center" })
-        //     } else {
-        //         toast.error("Unknow Error", { position: "top-center" })
-        //     }
-        // })
+    const format_date = (dt: Date) => {
+        return dt.toISOString().substring(0, dt.toISOString().length - 1);
     }
 
-    const colorMap: { [key: string]: string } = {
-        "misc": "rgb(32, 201, 151)",
-        "crypto": "rgb(132, 94, 247)",
-        "pwn": "rgb(255, 107, 107)",
-        "web": "rgb(51, 154, 240)",
-        "reverse": "rgb(252, 196, 25)",
-        "forensics": "rgb(92, 124, 250)",
-        "hardware": "rgb(208, 208, 208)",
-        "mobile": "rgb(240, 101, 149)",
-        "ppc": "rgb(34, 184, 207)",
-        "ai": "rgb(148, 216, 45)",
-        "pentent": "rgb(204, 93, 232)",
-        "osint": "rgb(255, 146, 43)"
-    };
+    function onSubmit(values: z.infer<typeof formSchema>) {
+        const finalData = {
+            game_id: 0,
+            name: values.name,
+            summary: values.summary,
+            description: values.description,
+            poster: values.poster,
+            invite_code: values.invite_code,
+            start_time: format_date(values.start_time ?? new Date()),
+            end_time: format_date(values.end_time ?? new Date()),
+            practice_mode: values.practice_mode,
+            team_number_limit: values.team_number_limit,
+            container_number_limit: values.container_number_limit,
+            require_wp: values.require_wp,
+            wp_expire_time: format_date(values.wp_expire_time ?? new Date()),
+            stages: values.stages,
+            visible: values.visible,
+            challenges: values.challenges
+        };
 
-    const cateIcon: { [key: string]: any } = {
-        "all": <Squirrel size={23} />,
-        "misc": <Radar size={23} />,
-        "crypto": <MessageSquareLock size={23} />,
-        "pwn": <Bug size={23} />,
-        "web": <GlobeLock size={23} />,
-        "reverse": <Binary size={23} />,
-        "forensics": <FileSearch size={23} />,
-        "hardware": <HardDrive size={23} />,
-        "mobile": <Smartphone size={23} />,
-        "PPC": <SquareCode size={23} />,
-        "ai": <Bot size={23} />,
-        "pentent": <BadgeCent size={23} />,
-        "osint": <Github size={23} />
-    };
+        console.log(finalData)
+    }
 
     const [searchContent, setSearchContent] = useState("")
     const [curChoicedCategory, setCurChoicedCategory] = useState("all")
@@ -678,7 +819,9 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
         },
     })
 
-    const [isOpen, setIsOpen] = useState(false)
+    const [ isOpen, setIsOpen ] = useState(false)
+    const [ curEditChallengeID, setCurEditChallengeID ] = useState(0)
+    const [ isJudgeConfigOpen, setIsJudgeOpen ] = useState(false)
 
     const setInputState = (value: string) => {
         setAddChallengeInput(value)
@@ -740,7 +883,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20 pt-20 w-[80%] flex flex-col">
                         <div className="flex">
                             <Button type="button" variant={"default"} onClick={() => {
-                                router.push(`/${lng}/admin/challenges`)
+                                router.push(`/${lng}/admin/games`)
                             }}>
                                 <CircleArrowLeft />
                                 Back to games
@@ -1245,10 +1388,10 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                             <div className="w-1/2 h-full py-4">
                                 <div className="w-full h-full rounded-lg border shadow-md relative overflow-hidden">
                                     <div className="absolute top-0 left-0 w-full h-full opacity-0 hover:bg-background hover:opacity-85 z-20 transition-all duration-300 flex items-center justify-center cursor-pointer" >
-                                       <div className="flex gap-5 hover:text-cyan-500 transition-colors duration-300 items-center">
+                                        <div className="flex gap-5 hover:text-cyan-500 transition-colors duration-300 items-center">
                                             <Upload size={60} />
-                                            <span className="text-3xl font-bold">上传海报</span> 
-                                       </div>
+                                            <span className="text-3xl font-bold">上传海报</span>
+                                        </div>
                                     </div>
                                     <div className="absolute top-0 left-0 w-full h-full" style={{ background: `url(${form.getValues("poster") || "/images/p2g7wm.jpg"})`, backgroundSize: "cover", backgroundPosition: "center" }} >
                                     </div>
@@ -1423,6 +1566,23 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                                     </DialogContent>
                                 </Dialog>
                             </div>
+                            <Dialog open={isJudgeConfigOpen} onOpenChange={(status) => {
+                                setIsJudgeOpen(status)
+                            }}>
+                                <DialogContent className="sm:max-w-[825px]" onInteractOutside={(e) => e.preventDefault()}>
+                                    <DialogHeader className="select-none">
+                                        <DialogTitle>覆盖题目评测</DialogTitle>
+                                        <DialogDescription>
+                                            这里可以覆盖题目的评测设置, 编辑完成后直接关闭, 外面点保存即可
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <JudgeConfigForm
+                                        control={form.control}
+                                        index={curEditChallengeID}
+                                        form={form}
+                                    />
+                                </DialogContent>
+                            </Dialog>
                             <div className="flex w-full gap-4 h-[600px]">
                                 <div className="flex flex-col w-[150px] gap-1 select-none flex-none">
                                     <span className="font-bold mb-2">Categories</span>
@@ -1443,13 +1603,18 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                                     {filtedData.length > 0 ? (
                                         <MacScrollbar className="max-h-[600px] overflow-y-auto p-6">
                                             <div className={`grid auto-rows-[70px] gap-4 w-full grid-cols-[repeat(auto-fill,minmax(320px,1fr))] lg:grid-cols-[repeat(auto-fill,minmax(600px,1fr))] "}`}>
-                                                {filtedData.map((challenge, index) => (
+                                                {filtedData.map((gameData, index) => (
                                                     <GameChallengeForm
                                                         key={index}
                                                         control={form.control}
                                                         form={form}
-                                                        index={index}
+                                                        gameData={gameData as any}
+                                                        index={challengeFields.findIndex((e) => e.id == gameData.id)}
                                                         removeGameChallenge={removeChallenge}
+                                                        onEditChallenge={(idx) => {
+                                                            setCurEditChallengeID(idx)
+                                                            setIsJudgeOpen(true)
+                                                        }}
                                                     />
                                                 ))}
                                             </div>

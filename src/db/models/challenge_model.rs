@@ -24,20 +24,20 @@ pub struct AttachmentConfig {
     pub generate_script: Option<String>
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum JudgeType {
     DYNAMIC,
     SCRIPT
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JudgeConfig {
     pub judge_type: JudgeType,
     pub judge_script: Option<String>,
     pub flag_template: Option<String>,
 }
 
-#[derive(Debug, EnumString, Display, Serialize, Deserialize)]
+#[derive(Debug, EnumString, Display, Serialize, Deserialize, Clone)]
 #[strum(ascii_case_insensitive)]
 pub enum ChallengeCategory {
     #[strum(serialize = "WEB")]

@@ -575,5 +575,27 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         format: "json",
         ...params,
       }),
+
+    /**
+     * @description Get a game info
+     *
+     * @tags admin
+     * @name GeteGameInfo
+     * @summary Get a game info
+     * @request GET:/api/admin/game/{game_id}
+     */
+    geteGameInfo: (gameId: number, params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+          data: GameInfo;
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/admin/game/${gameId}`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
   };
 }

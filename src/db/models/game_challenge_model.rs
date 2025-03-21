@@ -14,11 +14,25 @@ pub struct Solve {
     pub solve_rank: i32
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable, Selectable, Insertable, AsChangeset)]
+#[derive(Debug, Serialize, Deserialize, Queryable, Selectable, AsChangeset)]
 #[allow(dead_code)]
 #[diesel(table_name = crate::db::schema::game_challenges)]
 pub struct GameChallenge {
     pub ingame_id: i64,
+    pub game_id: i64,
+    pub challenge_id: i64,
+    pub score: f64,
+    pub enabled: bool,
+    pub solved: Json<Vec<Solve>>,
+    pub hints: Option<Vec<Option<String>>>,
+    pub judge_config: Option<Json<JudgeConfig>>,
+    pub belong_stage: Option<i32>
+}
+
+#[derive(Debug, Serialize, Deserialize, Insertable, AsChangeset)]
+#[allow(dead_code)]
+#[diesel(table_name = crate::db::schema::game_challenges)]
+pub struct InsertGameChallenge {
     pub game_id: i64,
     pub challenge_id: i64,
     pub score: f64,

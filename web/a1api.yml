@@ -348,6 +348,43 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/GameInfo'
+  /api/admin/game/{game_id}:
+    get:
+      tags: [admin]
+      operationId: geteGameInfo
+      summary: Get a game info
+      description: Get a game info
+      responses:
+        '200':
+          description: Game get successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    $ref: '#/components/schemas/GameInfo'
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to retrieve
+          schema:
+            type: integer
 components:
   schemas:
     UserLogin:
