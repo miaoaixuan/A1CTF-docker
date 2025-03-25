@@ -33,7 +33,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
 
-import { ArrowLeft, ArrowRight, ArrowUpDown, CalendarIcon, CircleArrowLeft, Cloud, FileCode, FileUser, Github, Layers2, LoaderPinwheel, Pencil, PlusCircle, Save, ScanBarcode, Squirrel, TableProperties, Tag, Trash2, Underline, Upload } from "lucide-react"
+import { ArrowLeft, ArrowRight, ArrowUpDown, CalendarIcon, CircleArrowLeft, ClockArrowUp, Cloud, FileCode, FileUser, Github, Layers2, LoaderPinwheel, Pencil, PlusCircle, Save, ScanBarcode, Squirrel, TableProperties, Tag, Trash2, Underline, Upload } from "lucide-react"
 import { Textarea } from "../ui/textarea";
 
 import CodeEditor from '@uiw/react-textarea-code-editor';
@@ -367,8 +367,18 @@ function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) {
         name: `challenges.${index}.judge_config.judge_type`, // Watch the specific field
     });
 
+    const {
+        fields: hintFields,
+        append: appendHint,
+        remove: removeHint,
+    } = useFieldArray({
+        control,
+        name: `challenges.${index}.hints`,
+    });
+
     return (
         <>
+            <span className="text-lg font-bold">评测设置: </span>
             <FormField
                 control={form.control}
                 name={`challenges.${index}.judge_config.judge_type`}
@@ -465,6 +475,93 @@ function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) {
                     )}
                 />
             )}
+            <FormField
+                control={form.control}
+                name={`challenges.${index}.judge_config.total_score`}
+                render={({ field }) => (
+                    <FormItem className="select-none">
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>题目总分</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
+                        <FormControl>
+                            <Input {...field} />
+                        </FormControl>
+                        <div className="flex flex-col text-[12px] text-foreground/60">
+                            <span>这里是题目的最大分数</span>
+                            <span>在开启动态积分的情况下，积分会自动衰减</span>
+                        </div>
+                    </FormItem>
+                )}
+            />
+            
+            <div className="flex items-center w-full gap-2">
+                <span className="text-lg font-bold">Hints: </span>
+                <div className="flex-1" />
+                <Button
+                    type="button"
+                    variant={"outline"}
+                    className="[&_svg]:size-5"
+                    onClick={() => {
+                        appendHint({
+                            text: "114514",
+                            create_time: new Date()
+                        })
+                        
+                    }}
+                >
+                    <PlusCircle />
+                    添加Hint
+                </Button>
+            </div>
+            <MacScrollbar className="w-full overflow-y-auto max-h-[200px]">
+                <div className="flex flex-col gap-4 px-6 pb-2">
+                    { hintFields.map((e, hintIndex) => (
+                        <div className="w-full flex flex-col" key={e.id} >
+                            <div className="flex gap-2 items-center mb-2">
+                                <ClockArrowUp />
+                                <span>创建时间</span>
+                                <FormField
+                                    control={control}
+                                    name={`challenges.${index}.hints.${hintIndex}.create_time`}
+                                    render={({ field }) => (
+                                        <FormItem className="flex-1">
+                                            {/* <div className="flex items-center w- h-[20px]">
+                                                <FormLabel>提示</FormLabel>
+                                                <div className="flex-1" />
+                                                <FormMessage className="text-[14px]" />
+                                            </div> */}
+                                            <FormControl>
+                                                <span>{ field.value ? dayjs(field.value).format("YYYY-MM-DD HH:mm:ss") : "" }</span>
+                                            </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
+                                <Button variant="destructive" type="button" onClick={() => removeHint(hintIndex)}>
+                                    删除提示
+                                </Button>
+                            </div>
+                            <FormField
+                                control={control}
+                                name={`challenges.${index}.hints.${hintIndex}.content`}
+                                render={({ field }) => (
+                                    <FormItem className="flex-1">
+                                        {/* <div className="flex items-center w- h-[20px]">
+                                            <FormLabel>提示</FormLabel>
+                                            <div className="flex-1" />
+                                            <FormMessage className="text-[14px]" />
+                                        </div> */}
+                                        <FormControl>
+                                            <Textarea {...field} value={field.value ?? ""} />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                    )) }
+                </div>
+            </ MacScrollbar>
         </>
     )
 }
@@ -515,16 +612,16 @@ function GameChallengeForm({ control, index, form, removeGameChallenge, gameData
     return (
         <div className="border-[1px] rounded-lg h-full w-full shadow-md flex items-center p-4 gap-3 px-6">
             {cateIcon[gameData.category?.toLowerCase() || "misc"]}
-            <span className="font-bold" >{gameData.challenge_name}</span>
+            <span className="font-bold text-nowrap" >{gameData.challenge_name}</span>
             <span>/</span>
             <div className="flex gap-4 w-full">
                 <div className="flex items-center gap-2">
                     <Layers2 size={18} />
-                    <span className="text-sm">{gameData.score}pts</span>
+                    <span className="text-sm">{gameData.cur_score}pts</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <FileUser size={18} />
-                    <span>{gameData.solved}</span>
+                    <span>{gameData.solve_count}</span>
                     <span className="text-sm">solves</span>
                 </div>
                 <div className="flex-1" />
@@ -672,6 +769,11 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                 category: z.enum(Object.keys(categories) as [string, ...string[]], {
                     errorMap: () => ({ message: "需要选择一个有效的题目类别" })
                 }),
+                total_score: z.number(),
+                hints: z.array(z.object({
+                    content: z.string(),
+                    create_time: z.date()
+                })),
                 judge_config: z.object({
                     judge_type: z.enum(["DYNAMIC", "SCRIPT"], {
                         errorMap: () => ({ message: "需要选择一个有效的题目类别" })
@@ -728,8 +830,9 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                 challenge_id: challenge.challenge_id,
                 challenge_name: challenge.challenge_name,
                 category: challenge.category,
-                score: challenge.score,
-                solved: challenge.solved,
+                cur_score: challenge.cur_score,
+                solve_count: challenge.solve_count,
+                hints: [],
                 judge_config: {
                     judge_type: challenge.judge_config?.judge_type,
                     judge_script: challenge.judge_config?.judge_script || "",
@@ -1569,7 +1672,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                             <Dialog open={isJudgeConfigOpen} onOpenChange={(status) => {
                                 setIsJudgeOpen(status)
                             }}>
-                                <DialogContent className="sm:max-w-[825px]" onInteractOutside={(e) => e.preventDefault()}>
+                                <DialogContent className="sm:max-w-[825px] max-w-[90%]" onInteractOutside={(e) => e.preventDefault()}>
                                     <DialogHeader className="select-none">
                                         <DialogTitle>覆盖题目评测</DialogTitle>
                                         <DialogDescription>

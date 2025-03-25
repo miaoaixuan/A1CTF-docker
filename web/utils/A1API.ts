@@ -118,11 +118,15 @@ export interface GameStage {
 }
 
 export interface GameChallenge {
-  challenge_id?: number;
-  challenge_name?: string;
+  challenge_id: number;
+  challenge_name: string;
   /** @format double */
-  score?: number;
-  solved?: number;
+  total_score: number;
+  /** @format double */
+  cur_score: number;
+  hints?: string[];
+  belong_stage?: number;
+  solve_count?: number;
   category?: ChallengeCategory;
   judge_config?: JudgeConfig;
 }

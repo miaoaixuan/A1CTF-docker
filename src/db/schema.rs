@@ -34,12 +34,13 @@ diesel::table! {
         ingame_id -> Int8,
         game_id -> Int8,
         challenge_id -> Int8,
-        score -> Float8,
+        total_score -> Float8,
         enabled -> Bool,
         solved -> Jsonb,
         hints -> Nullable<Array<Nullable<Text>>>,
         judge_config -> Nullable<Jsonb>,
         belong_stage -> Nullable<Int4>,
+        cur_score -> Float8,
     }
 }
 

@@ -600,15 +600,29 @@ components:
           type: integer
         challenge_name:
           type: string
-        score:
+        total_score:
           type: number
           format: double
-        solved:
+        cur_score:
+          type: number
+          format: double
+        hints:
+          type: array
+          items:
+            type: string
+        belong_stage:
+          type: integer
+        solve_count:
           type: number
         category:
           $ref: '#/components/schemas/ChallengeCategory'
         judge_config:
           $ref: '#/components/schemas/JudgeConfig'
+      required:
+        - challenge_id
+        - challenge_name
+        - total_score
+        - cur_score
     GameInfo:
       type: object
       properties:

@@ -117,8 +117,8 @@ pub mod game {
         let game_challenges_result: Result<Vec<(GameChallenge, Option<Challenge>)>, diesel::result::Error> = game_challenges_schema::dsl::game_challenges
             .inner_join(challenges_schema::dsl::challenges.on(game_challenges_schema::challenge_id.eq(challenges_schema::challenge_id)))
             .select((
-                game_challenges_schema::all_columns,
-                challenges_schema::all_columns.nullable()
+                GameChallenge::as_select(),
+                Option::<Challenge>::as_select()
             ))
             .filter(game_challenges_schema::game_id.eq(payload_game_id.parse::<i64>().unwrap()))
             .load::<(GameChallenge, Option<Challenge>)>(connection);
@@ -139,10 +139,13 @@ pub mod game {
                             return GameSimpleChallenge {
                                 challenge_id: c.as_ref().unwrap().challenge_id,
                                 challenge_name:c.as_ref().unwrap().name.clone(),
-                                score: gc.score,
-                                solved: gc.solved.len() as i32,
+                                total_score: gc.total_score,
+                                cur_score: gc.cur_score,
+                                hints: gc.hints.clone(),
+                                solve_count: gc.solved.len() as i32,
                                 category: c.as_ref().unwrap().category.0.clone(),
-                                judge_config: judge_config_data
+                                judge_config: judge_config_data,
+                                belong_stage: gc.belong_stage
                             }
                         }).collect::<Vec<_>>();
 
@@ -194,7 +197,8 @@ pub mod game {
                         let new_value = InsertGameChallenge {
                             game_id: game_record.game_id,
                             challenge_id: payload.challenge_id,
-                            score: 500f64,
+                            total_score: 500f64,
+                            cur_score: 500f64,
                             enabled: false,
                             solved: Json::new(vec![]),
                             hints: Some(vec![]),
