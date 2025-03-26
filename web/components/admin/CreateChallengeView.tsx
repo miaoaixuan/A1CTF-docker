@@ -484,7 +484,7 @@ export function CreateChallengeView({ lng } : { lng: string }) {
                 image: c.image,
                 name: c.name    
             })),
-            create_time: data_time.substring(0, data_time.length - 1),
+            create_time: data_time,
             description: values.description,
             judge_config: values.judge_config,
             name: values.name,

@@ -194,17 +194,20 @@ func GetGame(c *gin.Context) {
 }
 
 func AddGameChallenge(c *gin.Context) {
-	var payload AddGameChallengePayload
-	if err := c.ShouldBindJSON(&payload); err != nil {
+	gameIDStr := c.Param("game_id")
+	gameID, err1 := strconv.ParseInt(gameIDStr, 10, 64)
+	challengeIDStr := c.Param("challenge_id")
+	challengeID, err2 := strconv.ParseInt(challengeIDStr, 10, 64)
+	if err1 != nil || err2 != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": err.Error(),
+			"message": "Invalid game ID",
 		})
 		return
 	}
 
 	var game models.Game
-	if err := dbtool.DB().Where("game_id = ?", payload.GameID).First(&game).Error; err != nil {
+	if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
 				"code":    404,
@@ -220,7 +223,7 @@ func AddGameChallenge(c *gin.Context) {
 	}
 
 	var challenge models.Challenge
-	if err := dbtool.DB().Where("challenge_id = ?", payload.ChallengeID).First(&challenge).Error; err != nil {
+	if err := dbtool.DB().Where("challenge_id = ?", challengeID).First(&challenge).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
 				"code":    404,
@@ -235,9 +238,15 @@ func AddGameChallenge(c *gin.Context) {
 		return
 	}
 
+	var ingameID struct {
+		ingame_id int64
+	}
+	dbtool.DB().Where("game_id = ?", gameID).Order("ingame_id desc").Scan(&ingameID)
+	println(ingameID.ingame_id)
+
 	gameChallenge := models.GameChallenge{
-		GameID:      payload.GameID,
-		ChallengeID: payload.ChallengeID,
+		GameID:      gameID,
+		ChallengeID: challengeID,
 		TotalScore:  500,
 		CurScore:    500,
 		Enabled:     false,
@@ -256,8 +265,6 @@ func AddGameChallenge(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
-		"data": gin.H{
-			"ingame_id": gameChallenge.IngameID,
-		},
+		"data": gameChallenge,
 	})
 }

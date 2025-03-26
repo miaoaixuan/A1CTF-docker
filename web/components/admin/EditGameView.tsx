@@ -42,7 +42,7 @@ import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageS
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { MacScrollbar } from "mac-scrollbar";
-import { ChallengeConfig, GameChallenge, GameInfo, GameSimpleInfo } from "@/utils/A1API";
+import { ChallengeCategory, ChallengeConfig, GameChallenge, GameInfo, GameSimpleInfo, JudgeType } from "@/utils/A1API";
 import { api, ErrorMessage } from "@/utils/ApiHelper";
 import dayjs from "dayjs";
 import { toast } from "sonner";
@@ -478,7 +478,7 @@ function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) {
             )}
             <FormField
                 control={form.control}
-                name={`challenges.${index}.judge_config.total_score`}
+                name={`challenges.${index}.total_score`}
                 render={({ field }) => (
                     <FormItem className="select-none">
                         <div className="flex items-center h-[20px]">
@@ -487,7 +487,7 @@ function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) {
                             <FormMessage className="text-[14px]" />
                         </div>
                         <FormControl>
-                            <Input {...field} />
+                            <Input {...field} value={field.value ?? ""}/>
                         </FormControl>
                         <div className="flex flex-col text-[12px] text-foreground/60">
                             <span>这里是题目的最大分数</span>
@@ -667,87 +667,9 @@ export type ChallengeSearchResult = {
     ChallengeID: number,
     Category: string,
     Name: string,
-    CreateTime: string
+    CreateTime: string,
+    GameID: number
 }
-
-export const columns: ColumnDef<ChallengeSearchResult>[] = [
-    {
-        id: "select",
-        header: ({ table }) => (
-            <Checkbox
-                checked={
-                    table.getIsAllPageRowsSelected() ||
-                    (table.getIsSomePageRowsSelected() && "indeterminate")
-                }
-                onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                aria-label="Select all"
-            />
-        ),
-        cell: ({ row }) => (
-            <Checkbox
-                checked={row.getIsSelected()}
-                onCheckedChange={(value) => row.toggleSelected(!!value)}
-                aria-label="Select row"
-            />
-        ),
-        enableSorting: false,
-        enableHiding: false,
-    },
-    {
-        accessorKey: "ChallengeID",
-        header: "ChallengeID",
-        cell: ({ row }) => (
-            <div>{row.getValue("ChallengeID")}</div>
-        ),
-    },
-    {
-        accessorKey: "Name",
-        header: ({ column }) => {
-            return (
-                <Button
-                    variant="ghost"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                >
-                    Name
-                    <ArrowUpDown />
-                </Button>
-            )
-        },
-        cell: ({ row }) => <div>{row.getValue("Name")}</div>,
-    },
-    {
-        accessorKey: "CreateTime",
-        header: ({ column }) => {
-            return (
-                <Button
-                    variant="ghost"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                >
-                    CreateTime
-                    <ArrowUpDown />
-                </Button>
-            )
-        },
-        cell: ({ row }) => <div>{row.getValue("CreateTime")}</div>,
-    },
-    {
-        accessorKey: "Category",
-        header: "Category",
-        cell: ({ row }) => (
-            <div>{row.getValue("Category")}</div>
-        ),
-    },
-    {
-        id: "Actions",
-        header: "Actions",
-        enableHiding: false,
-        cell: ({ row }) => {
-            return (
-                <Button variant={"outline"} size={"sm"} className="select-none" >Select</Button>
-            )
-        },
-    },
-]
 
 export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: string }) {
 
@@ -775,8 +697,8 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
         start_time: z.date().optional(),
         end_time: z.date().optional(),
         practice_mode: z.boolean(),
-        team_number_limit: z.number(),
-        container_number_limit: z.number(),
+        team_number_limit: z.coerce.number().min(1),
+        container_number_limit: z.coerce.number().min(1),
         require_wp: z.boolean(),
         wp_expire_time: z.date().optional(),
         stages: z.array(
@@ -794,7 +716,9 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                 category: z.enum(Object.keys(categories) as [string, ...string[]], {
                     errorMap: () => ({ message: "需要选择一个有效的题目类别" })
                 }),
-                total_score: z.number(),
+                total_score: z.coerce.number({ message: "请输入一个有效的数字" }),
+                cur_score: z.number(),
+                solve_count: z.number(),
                 hints: z.array(z.object({
                     content: z.string(),
                     create_time: z.date(),
@@ -858,6 +782,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                 challenge_id: challenge.challenge_id,
                 challenge_name: challenge.challenge_name,
                 category: challenge.category,
+                total_score: challenge.total_score,
                 cur_score: challenge.cur_score,
                 solve_count: challenge.solve_count,
                 hints: [],
@@ -887,6 +812,109 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
         control: form.control,
         name: "stages",
     });
+
+    const columns: ColumnDef<ChallengeSearchResult>[] = [
+        {
+            id: "select",
+            header: ({ table }) => (
+                <Checkbox
+                    checked={
+                        table.getIsAllPageRowsSelected() ||
+                        (table.getIsSomePageRowsSelected() && "indeterminate")
+                    }
+                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                    aria-label="Select all"
+                />
+            ),
+            cell: ({ row }) => (
+                <Checkbox
+                    checked={row.getIsSelected()}
+                    onCheckedChange={(value) => row.toggleSelected(!!value)}
+                    aria-label="Select row"
+                />
+            ),
+            enableSorting: false,
+            enableHiding: false,
+        },
+        {
+            accessorKey: "ChallengeID",
+            header: "ChallengeID",
+            cell: ({ row }) => (
+                <div>{row.getValue("ChallengeID")}</div>
+            ),
+        },
+        {
+            accessorKey: "Name",
+            header: ({ column }) => {
+                return (
+                    <Button
+                        variant="ghost"
+                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    >
+                        Name
+                        <ArrowUpDown />
+                    </Button>
+                )
+            },
+            cell: ({ row }) => <div>{row.getValue("Name")}</div>,
+        },
+        {
+            accessorKey: "CreateTime",
+            header: ({ column }) => {
+                return (
+                    <Button
+                        variant="ghost"
+                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    >
+                        CreateTime
+                        <ArrowUpDown />
+                    </Button>
+                )
+            },
+            cell: ({ row }) => <div>{row.getValue("CreateTime")}</div>,
+        },
+        {
+            accessorKey: "Category",
+            header: "Category",
+            cell: ({ row }) => (
+                <div>{row.getValue("Category")}</div>
+            ),
+        },
+        {
+            id: "Actions",
+            header: "Actions",
+            enableHiding: false,
+            cell: ({ row }) => {
+    
+                const data = row.original
+    
+                return (
+                    <Button variant={"outline"} size={"sm"} className="select-none"
+                        onClick={() => {
+                            api.admin.addGameChallenge(data.GameID, data.ChallengeID).then((res) => {
+                                const challenge = res.data.data
+                                appendChallenge({
+                                    challenge_id: challenge.challenge_id,
+                                    challenge_name: challenge.challenge_name,
+                                    category: challenge.category || ChallengeCategory.MISC,
+                                    total_score: challenge.total_score,
+                                    cur_score: challenge.cur_score,
+                                    solve_count: challenge.solve_count || 0,
+                                    hints: [],
+                                    judge_config: {
+                                        judge_type: challenge.judge_config?.judge_type || JudgeType.DYNAMIC,
+                                        judge_script: challenge.judge_config?.judge_script || "",
+                                        flag_template: challenge.judge_config?.flag_template || "",
+                                    }
+                                })
+                            })
+                            // console.log(data)
+                        }}
+                    >Select</Button>
+                )
+            },
+        },
+    ]
 
     const [showScript, setShowScript] = useState(false);
 
@@ -972,6 +1000,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                         "Category": c.category,
                         "ChallengeID": c.challenge_id || 0,
                         "Name": c.name,
+                        "GameID": game_info.game_id,
                         "CreateTime": c.create_time
                     })))
                     setTotalCount(res.data.data.length)
@@ -1577,6 +1606,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                                             setSearchResult(res.data.data.map((c) => ({
                                                 "Category": c.category,
                                                 "ChallengeID": c.challenge_id || 0,
+                                                "GameID": game_info.game_id,
                                                 "Name": c.name,
                                                 "CreateTime": c.create_time
                                             })))
@@ -1697,8 +1727,12 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                                     </DialogContent>
                                 </Dialog>
                             </div>
-                            <Dialog open={isJudgeConfigOpen} onOpenChange={(status) => {
-                                setIsJudgeOpen(status)
+                            <Dialog open={isJudgeConfigOpen} onOpenChange={async (status) => {
+                                const checkResult = await form.trigger(`challenges.${curEditChallengeID}`)
+                                if (checkResult) setIsJudgeOpen(status)
+                                else {
+                                    toast.error("请检查题目设置是否正确", { position: "top-center" })
+                                }
                             }}>
                                 <DialogContent className="sm:max-w-[825px] p-0" onInteractOutside={(e) => e.preventDefault()}>
                                     <DialogHeader className="select-none px-8 pt-8">

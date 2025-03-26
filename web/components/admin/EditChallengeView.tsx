@@ -457,9 +457,9 @@ export function EditChallengeView({ challenge_info, lng } : { challenge_info: Ch
                         ),
                     })
                 ),
-                cpu_limit: z.number({ message: "请输入 CPU 限制" }),
-                memory_limit: z.number({ message: "请输入内存限制" }),
-                storage_limit: z.number({ message: "请输入存储空间限制" })
+                cpu_limit: z.coerce.number({ message: "请输入 CPU 限制" }),
+                memory_limit: z.coerce.number({ message: "请输入内存限制" }),
+                storage_limit: z.coerce.number({ message: "请输入存储空间限制" })
             })
         ),
         attachments: z.array(

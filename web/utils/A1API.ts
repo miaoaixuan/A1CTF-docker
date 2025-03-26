@@ -135,6 +135,11 @@ export interface GameChallenge {
   judge_config?: JudgeConfig;
 }
 
+export interface AddGameChallengePayload {
+  challenge_id: number;
+  game_id: number;
+}
+
 export interface GameInfo {
   /** @format int64 */
   game_id: number;
@@ -602,6 +607,28 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       >({
         path: `/api/admin/game/${gameId}`,
         method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Add a challenge to a game
+     *
+     * @tags admin
+     * @name AddGameChallenge
+     * @summary Add a challenge to a game
+     * @request PUT:/api/admin/game/{game_id}/challenge/{challenge_id}
+     */
+    addGameChallenge: (gameId: number, challengeId: number, params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+          data: GameChallenge;
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/admin/game/${gameId}/challenge/${challengeId}`,
+        method: "PUT",
         format: "json",
         ...params,
       }),

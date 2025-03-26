@@ -1,6 +1,8 @@
 package dbtool
 
 import (
+	"os"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -12,7 +14,7 @@ func DB() *gorm.DB {
 		return db
 	}
 
-	dsn := "host=localhost user=postgres password=root dbname=a1ctf port=5000 sslmode=disable TimeZone=Asia/Shanghai"
+	dsn := os.Getenv("DSN")
 	db_local, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic(err)

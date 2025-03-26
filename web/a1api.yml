@@ -385,6 +385,50 @@ paths:
           description: The ID of the game to retrieve
           schema:
             type: integer
+  /api/admin/game/{game_id}/challenge/{challenge_id}:
+    put:
+      tags: [admin]
+      operationId: addGameChallenge
+      summary: Add a challenge to a game
+      description: Add a challenge to a game
+      responses:
+        '200':
+          description: GameChallenge add successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    $ref: '#/components/schemas/GameChallenge'
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to add
+          schema:
+            type: integer
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge to add
+          schema:
+            type: integer
+
 components:
   schemas:
     UserLogin:
@@ -629,6 +673,16 @@ components:
         - challenge_name
         - total_score
         - cur_score
+    AddGameChallengePayload:
+      type: object
+      properties:
+        challenge_id:
+          type: integer
+        game_id:
+          type: integer
+      required:
+        - challenge_id
+        - game_id
     GameInfo:
       type: object
       properties:

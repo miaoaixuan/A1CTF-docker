@@ -12,7 +12,7 @@ const nextConfig = {
           // },
           {
             source: '/api/:path*',
-            destination: 'http://127.0.0.1:7777/api/:path*',
+            destination: 'http://localhost:7777/api/:path*',
           },
           {
             source: '/hub/:path*',

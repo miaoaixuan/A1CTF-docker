@@ -15,6 +15,8 @@ import (
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron/v2"
+
+	"github.com/joho/godotenv"
 )
 
 func Index(c *gin.Context) {
@@ -101,10 +103,10 @@ var PermissionMap = map[string][]string{
 	"/api/admin/challenge/update": {"ADMIN"},
 	"/api/admin/challenge/search": {"ADMIN"},
 
-	"/api/admin/game/list":          {"ADMIN"},
-	"/api/admin/game/create":        {"ADMIN"},
-	"\\/api\\/admin\\/game/[\\d]$":  {"ADMIN"},
-	"/api/admin/game/challenge/add": {"ADMIN"},
+	"/api/admin/game/list":                                 {"ADMIN"},
+	"/api/admin/game/create":                               {"ADMIN"},
+	"\\/api\\/admin\\/game\\/[\\d]+$":                      {"ADMIN"},
+	"\\/api\\/admin\\/game\\/[\\d]+\\/challenge\\/[\\d]+$": {"ADMIN"},
 }
 
 // Helper function to check if a slice contains a value
@@ -182,6 +184,8 @@ func StartLoopEvent() {
 }
 
 func main() {
+	godotenv.Load()
+
 	r := gin.Default()
 
 	authMiddleware, err := jwt.New(initParams())
@@ -223,7 +227,7 @@ func main() {
 			gameGroup.POST("/list", controllers.ListGames)
 			gameGroup.POST("/create", controllers.CreateGame)
 			gameGroup.GET("/:game_id", controllers.GetGame)
-			gameGroup.POST("/challenge/add", controllers.AddGameChallenge)
+			gameGroup.PUT("/:game_id/challenge/:challenge_id", controllers.AddGameChallenge)
 		}
 	}
 
