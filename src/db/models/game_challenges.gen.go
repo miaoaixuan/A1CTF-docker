@@ -36,7 +36,8 @@ type GameChallenge struct {
 	IngameID    int64        `gorm:"column:ingame_id;primaryKey;autoIncrement:true" json:"ingame_id"`
 	GameID      int64        `gorm:"column:game_id;not null" json:"game_id"`
 	ChallengeID int64        `gorm:"column:challenge_id;not null" json:"challenge_id"`
-	Score       float64      `gorm:"column:score;not null" json:"score"`
+	TotalScore  float64      `gorm:"column:total_score;not null" json:"total_score"`
+	CurScore    float64      `gorm:"column:cur_score;not null" json:"cur_score"`
 	Enabled     bool         `gorm:"column:enabled;not null" json:"enabled"`
 	Solved      Solves       `gorm:"column:solved;not null;default:[]" json:"solved"`
 	Hints       *[]string    `gorm:"column:hints;default:{}" json:"hints"`

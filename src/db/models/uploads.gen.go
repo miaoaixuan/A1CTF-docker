@@ -14,7 +14,7 @@ type Upload struct {
 	FilePath   string    `gorm:"column:file_path;not null" json:"file_path"`
 	FileHash   string    `gorm:"column:file_hash;not null" json:"file_hash"`
 	FileType   string    `gorm:"column:file_type;not null" json:"file_type"`
-	FileSize   int32     `gorm:"column:file_size;not null" json:"file_size"`
+	FileSize   int64     `gorm:"column:file_size;not null" json:"file_size"`
 	UploadTime time.Time `gorm:"column:upload_time;not null" json:"upload_time"`
 }
 

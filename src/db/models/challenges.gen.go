@@ -98,7 +98,7 @@ func (e *ChallengeCategory) Scan(value interface{}) error {
 
 // Challenge mapped from table <challenges>
 type Challenge struct {
-	ChallengeID     int64                 `gorm:"column:challenge_id;primaryKey;autoIncrement:true" json:"challenge_id"`
+	ChallengeID     *int64                `gorm:"column:challenge_id;primaryKey;autoIncrement:true" json:"challenge_id"`
 	Name            string                `gorm:"column:name;not null" json:"name"`
 	Description     string                `gorm:"column:description;not null" json:"description"`
 	Category        ChallengeCategory     `gorm:"column:category;not null" json:"category"`
