@@ -154,6 +154,66 @@ function ContainerForm({ control, index, removeContainer }: ContainerFormProps) 
                     )}
                 />
             </div>
+            {/* <span className="text-md font-semibold mt-4">资源限制</span> */}
+            <div className="grid grid-cols-3 gap-4 mt-4">
+                <FormField
+                    control={control}
+                    name={`container_config.${index}.cpu_limit`}
+                    render={({ field }) => (
+                        <FormItem>
+                            <div className="flex items-center h-[20px]">
+                                <FormLabel>CPU 资源限制 (毫核)</FormLabel>
+                                <div className="flex-1" />
+                                <FormMessage className="text-[14px]" />
+                            </div>
+                            <FormControl>
+                                <Input {...field} value={field.value ?? ""} />
+                            </FormControl>
+                            <FormDescription>
+                                1000 毫核 为 1 核心
+                            </FormDescription>
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={control}
+                    name={`container_config.${index}.memory_limit`}
+                    render={({ field }) => (
+                        <FormItem>
+                            <div className="flex items-center h-[20px]">
+                                <FormLabel>内存限制 (M)</FormLabel>
+                                <div className="flex-1" />
+                                <FormMessage className="text-[14px]" />
+                            </div>
+                            <FormControl>
+                                <Input {...field} value={field.value ?? ""} />
+                            </FormControl>
+                            <FormDescription>
+                                单位为 MB
+                            </FormDescription>
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={control}
+                    name={`container_config.${index}.storage_limit`}
+                    render={({ field }) => (
+                        <FormItem>
+                            <div className="flex items-center h-[20px]">
+                                <FormLabel>存储限制 (M)</FormLabel>
+                                <div className="flex-1" />
+                                <FormMessage className="text-[14px]" />
+                            </div>
+                            <FormControl>
+                                <Input {...field} value={field.value ?? ""} />
+                            </FormControl>
+                            <FormDescription>
+                                单位为 MB
+                            </FormDescription>
+                        </FormItem>
+                    )}
+                />
+            </div>
             <div className="mt-4">
                 <div className="flex items-center mb-3">
                     <span className="text-md font-semibold">端口暴露</span>
@@ -397,6 +457,9 @@ export function EditChallengeView({ challenge_info, lng } : { challenge_info: Ch
                         ),
                     })
                 ),
+                cpu_limit: z.number({ message: "请输入 CPU 限制" }),
+                memory_limit: z.number({ message: "请输入内存限制" }),
+                storage_limit: z.number({ message: "请输入存储空间限制" })
             })
         ),
         attachments: z.array(
@@ -456,6 +519,9 @@ export function EditChallengeView({ challenge_info, lng } : { challenge_info: Ch
                         port: e2.port,
                     }
                 )),
+                cpu_limit: e.cpu_limit,
+                memory_limit: e.memory_limit,
+                storage_limit: e.storage_limit
             })) || [],
             attachments: challenge_info.attachments?.map((e) => ({
                 attach_hash: e.attach_hash || "",
@@ -497,8 +563,11 @@ export function EditChallengeView({ challenge_info, lng } : { challenge_info: Ch
                 name: e.name,
                 image: e.image,
                 command: e.command != "" ? e.command : null,
-                env: e.env != "" ? string_to_env(e.env || "") : [],
+                env: (e.env && e.env != "") ? string_to_env(e.env || "") : [],
                 expose_ports: e.expose_ports,
+                cpu_limit: e.cpu_limit,
+                memory_limit: e.memory_limit,
+                storage_limit: e.storage_limit
             })),
             create_time: challenge_info.create_time,
             description: values.description,
@@ -736,6 +805,9 @@ export function EditChallengeView({ challenge_info, lng } : { challenge_info: Ch
                                             command: null,
                                             env: null,
                                             expose_ports: [],
+                                            cpu_limit: 100,
+                                            memory_limit: 64,
+                                            storage_limit: 128
                                         })
                                     }
                                 >

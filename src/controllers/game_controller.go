@@ -12,13 +12,13 @@ import (
 )
 
 type ListGamePayload struct {
-	Size   int `json:"size" binding:"required"`
+	Size   int `json:"size" binding:"min=0"`
 	Offset int `json:"offset"`
 }
 
 type AddGameChallengePayload struct {
-	GameID      int64 `json:"game_id" binding:"required"`
-	ChallengeID int64 `json:"challenge_id" binding:"required"`
+	GameID      int64 `json:"game_id" binding:"min=0"`
+	ChallengeID int64 `json:"challenge_id" binding:"min=0"`
 }
 
 func ListGames(c *gin.Context) {
@@ -72,12 +72,20 @@ func CreateGame(c *gin.Context) {
 	}
 
 	game := models.Game{
-		Name:      payload.Name,
-		Summary:   payload.Summary,
-		StartTime: payload.StartTime,
-		EndTime:   payload.EndTime,
-		Visible:   payload.Visible,
-		Poster:    payload.Poster,
+		Name:                 payload.Name,
+		Summary:              payload.Summary,
+		StartTime:            payload.StartTime,
+		EndTime:              payload.EndTime,
+		Visible:              payload.Visible,
+		Poster:               payload.Poster,
+		WpExpireTime:         payload.WpExpireTime,
+		Stages:               payload.Stages,
+		RequireWp:            payload.RequireWp,
+		ContainerNumberLimit: payload.ContainerNumberLimit,
+		TeamNumberLimit:      payload.TeamNumberLimit,
+		PracticeMode:         payload.PracticeMode,
+		InviteCode:           payload.InviteCode,
+		Description:          payload.Description,
 	}
 
 	if err := dbtool.DB().Create(&game).Error; err != nil {
@@ -125,14 +133,15 @@ func GetGame(c *gin.Context) {
 
 	var gameChallenges []struct {
 		models.GameChallenge
-		Challenge models.Challenge `gorm:"embedded"`
+		models.Challenge
 	}
 
-	if err := dbtool.DB().
-		Table("game_challenges").
-		Joins("JOIN challenges ON game_challenges.challenge_id = challenges.challenge_id").
-		Where("game_challenges.game_id = ?", gameID).
-		Find(&gameChallenges).Error; err != nil {
+	// 使用 Preload 进行关联查询
+	if err := dbtool.DB().Table("game_challenges").
+		Joins("LEFT JOIN challenges ON game_challenges.challenge_id = challenges.challenge_id").
+		Where("game_id = ?", gameID).
+		Scan(&gameChallenges).Error; err != nil {
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"message": "Failed to load game challenges",
@@ -141,18 +150,26 @@ func GetGame(c *gin.Context) {
 	}
 
 	result := gin.H{
-		"game_id":    game.GameID,
-		"name":       game.Name,
-		"summary":    game.Summary,
-		"start_time": game.StartTime,
-		"end_time":   game.EndTime,
-		"visible":    game.Visible,
-		"poster":     game.Poster,
-		"challenges": make([]gin.H, 0, len(gameChallenges)),
+		"game_id":                game.GameID,
+		"name":                   game.Name,
+		"summary":                game.Summary,
+		"description":            game.Description,
+		"poster":                 game.Poster,
+		"invite_code":            game.InviteCode,
+		"start_time":             game.StartTime,
+		"end_time":               game.EndTime,
+		"practice_mode":          game.PracticeMode,
+		"team_number_limit":      game.TeamNumberLimit,
+		"container_number_limit": game.ContainerNumberLimit,
+		"require_wp":             game.RequireWp,
+		"wp_expire_time":         game.WpExpireTime,
+		"stages":                 game.Stages,
+		"visible":                game.Visible,
+		"challenges":             make([]gin.H, 0, len(gameChallenges)),
 	}
 
 	for _, gc := range gameChallenges {
-		judgeConfig := gc.JudgeConfig
+		judgeConfig := gc.GameChallenge.JudgeConfig
 		if judgeConfig == nil {
 			judgeConfig = gc.Challenge.JudgeConfig
 		}
@@ -160,13 +177,13 @@ func GetGame(c *gin.Context) {
 		result["challenges"] = append(result["challenges"].([]gin.H), gin.H{
 			"challenge_id":   gc.Challenge.ChallengeID,
 			"challenge_name": gc.Challenge.Name,
-			"total_score":    gc.TotalScore,
-			"cur_score":      gc.CurScore,
-			"hints":          gc.Hints,
+			"total_score":    gc.GameChallenge.TotalScore,
+			"cur_score":      gc.GameChallenge.CurScore,
+			"hints":          gc.GameChallenge.Hints,
 			"solve_count":    len(gc.Solved),
 			"category":       gc.Challenge.Category,
 			"judge_config":   judgeConfig,
-			"belong_stage":   gc.BelongStage,
+			"belong_stage":   gc.GameChallenge.BelongStage,
 		})
 	}
 
@@ -225,7 +242,7 @@ func AddGameChallenge(c *gin.Context) {
 		CurScore:    500,
 		Enabled:     false,
 		Solved:      models.Solves{},
-		Hints:       &[]string{},
+		Hints:       &models.StringArray{},
 		JudgeConfig: challenge.JudgeConfig,
 	}
 

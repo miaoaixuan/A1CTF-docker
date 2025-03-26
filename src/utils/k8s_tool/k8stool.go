@@ -11,6 +11,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -26,11 +27,14 @@ type PortName struct {
 }
 
 type A1Container struct {
-	Name        string          `json:"name"`
-	Image       string          `json:"image"`
-	Command     []string        `json:"command"`
-	Env         []corev1.EnvVar `json:"env"`
-	ExposePorts []PortName      `json:"expose_ports"`
+	Name         string          `json:"name"`
+	Image        string          `json:"image"`
+	Command      []string        `json:"command"`
+	Env          []corev1.EnvVar `json:"env"`
+	ExposePorts  []PortName      `json:"expose_ports"`
+	CPULimit     int64           `json:"cpu_limit"`
+	MemoryLimit  int64           `json:"memory_limit"`
+	StorageLimit int64           `json:"storage_limit"`
 }
 
 type A1Containers []A1Container
@@ -105,7 +109,7 @@ func CreatePod(podInfo *PodInfo) error {
 	// 构造 Pod 中的容器列表
 	var containers []corev1.Container
 	for _, c := range podInfo.Containers {
-		containerName := fmt.Sprintf("%s-%s", c.Name, podInfo.TeamHash)
+		containerName := c.Name
 		container := corev1.Container{
 			Name:  containerName,
 			Image: c.Image,
@@ -126,6 +130,14 @@ func CreatePod(podInfo *PodInfo) error {
 			}
 			container.Ports = containerPorts
 		}
+
+		// 限制资源
+		container.Resources.Limits = corev1.ResourceList{
+			corev1.ResourceCPU:     *resource.NewMilliQuantity(c.CPULimit, resource.DecimalSI),
+			corev1.ResourceMemory:  *resource.NewQuantity(c.MemoryLimit*1024*1024, resource.BinarySI),
+			corev1.ResourceStorage: *resource.NewQuantity(c.StorageLimit*1024*1024, resource.BinarySI),
+		}
+
 		containers = append(containers, container)
 	}
 

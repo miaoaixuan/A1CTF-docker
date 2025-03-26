@@ -90,6 +90,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "../ui/checkbox";
 import { size } from "mathjs";
+import { useTheme } from "next-themes";
 
 interface GameStageFormProps {
     control: any;
@@ -505,8 +506,9 @@ function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) {
                     className="[&_svg]:size-5"
                     onClick={() => {
                         appendHint({
-                            text: "114514",
-                            create_time: new Date()
+                            content: "",
+                            create_time: new Date(),
+                            visible: false
                         })
                         
                     }}
@@ -515,29 +517,50 @@ function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) {
                     添加Hint
                 </Button>
             </div>
-            <MacScrollbar className="w-full overflow-y-auto max-h-[200px]">
-                <div className="flex flex-col gap-4 px-6 pb-2">
+            { hintFields.length > 0 ? (
+                 <div className="flex flex-col gap-4">
                     { hintFields.map((e, hintIndex) => (
                         <div className="w-full flex flex-col" key={e.id} >
-                            <div className="flex gap-2 items-center mb-2">
-                                <ClockArrowUp />
-                                <span>创建时间</span>
+                            <div className="flex gap-2 items-center mb-4 select-none">
                                 <FormField
                                     control={control}
-                                    name={`challenges.${index}.hints.${hintIndex}.create_time`}
+                                    name={`challenges.${index}.hints.${hintIndex}.visible`}
                                     render={({ field }) => (
-                                        <FormItem className="flex-1">
+                                        <FormItem className="flex">
                                             {/* <div className="flex items-center w- h-[20px]">
                                                 <FormLabel>提示</FormLabel>
                                                 <div className="flex-1" />
                                                 <FormMessage className="text-[14px]" />
                                             </div> */}
                                             <FormControl>
-                                                <span>{ field.value ? dayjs(field.value).format("YYYY-MM-DD HH:mm:ss") : "" }</span>
+                                                <Switch 
+                                                    checked={field.value}
+                                                    onCheckedChange={field.onChange} 
+                                                />
                                             </FormControl>
                                         </FormItem>
                                     )}
                                 />
+                                <FormField
+                                    control={control}
+                                    name={`challenges.${index}.hints.${hintIndex}.create_time`}
+                                    render={({ field }) => (
+                                        <FormItem className="flex">
+                                            {/* <div className="flex items-center w- h-[20px]">
+                                                <FormLabel>提示</FormLabel>
+                                                <div className="flex-1" />
+                                                <FormMessage className="text-[14px]" />
+                                            </div> */}
+                                            <FormControl>
+                                                <div className="bg-foreground/[0.03] flex gap-2 items-center px-[9px] py-[5px] rounded-full">
+                                                    <ClockArrowUp size={20} />
+                                                    <span className="text-sm">{ field.value ? dayjs(field.value).format("YYYY-MM-DD HH:mm:ss") : "" }</span>
+                                                </div>
+                                            </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
+                                <div className="flex-1" />
                                 <Button variant="destructive" type="button" onClick={() => removeHint(hintIndex)}>
                                     删除提示
                                 </Button>
@@ -561,7 +584,9 @@ function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) {
                         </div>
                     )) }
                 </div>
-            </ MacScrollbar>
+            ) : (
+                <span className="text-sm mt-[-10px]">还没有提示哦</span>
+            ) }
         </>
     )
 }
@@ -772,7 +797,8 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                 total_score: z.number(),
                 hints: z.array(z.object({
                     content: z.string(),
-                    create_time: z.date()
+                    create_time: z.date(),
+                    visible: z.boolean()
                 })),
                 judge_config: z.object({
                     judge_type: z.enum(["DYNAMIC", "SCRIPT"], {
@@ -784,6 +810,8 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
             })
         )
     });
+
+    const { theme } = useTheme()
 
     const env_to_string = (data: { name: string, value: string }[]) => {
         console.log(data)
@@ -863,7 +891,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
     const [showScript, setShowScript] = useState(false);
 
     const format_date = (dt: Date) => {
-        return dt.toISOString().substring(0, dt.toISOString().length - 1);
+        return dt.toISOString();
     }
 
     function onSubmit(values: z.infer<typeof formSchema>) {
@@ -1672,18 +1700,26 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                             <Dialog open={isJudgeConfigOpen} onOpenChange={(status) => {
                                 setIsJudgeOpen(status)
                             }}>
-                                <DialogContent className="sm:max-w-[825px] max-w-[90%]" onInteractOutside={(e) => e.preventDefault()}>
-                                    <DialogHeader className="select-none">
+                                <DialogContent className="sm:max-w-[825px] p-0" onInteractOutside={(e) => e.preventDefault()}>
+                                    <DialogHeader className="select-none px-8 pt-8">
                                         <DialogTitle>覆盖题目评测</DialogTitle>
                                         <DialogDescription>
                                             这里可以覆盖题目的评测设置, 编辑完成后直接关闭, 外面点保存即可
                                         </DialogDescription>
                                     </DialogHeader>
-                                    <JudgeConfigForm
-                                        control={form.control}
-                                        index={curEditChallengeID}
-                                        form={form}
-                                    />
+                                    <MacScrollbar className="w-full max-h-[84vh] overflow-y-auto"
+                                        skin={theme ==  "light" ? "light" : "dark"}
+                                        trackStyle={(horizontal) => ({ [horizontal ? "height" : "width"]: 0, borderWidth: 0})}
+                                        thumbStyle={(horizontal) => ({ [horizontal ? "height" : "width"]: 6})}
+                                    >
+                                        <div className="flex flex-col gap-4 pl-8 pr-8 pb-8">
+                                            <JudgeConfigForm
+                                                control={form.control}
+                                                index={curEditChallengeID}
+                                                form={form}
+                                            />
+                                        </div>
+                                    </MacScrollbar>
                                 </DialogContent>
                             </Dialog>
                             <div className="flex w-full gap-4 h-[600px]">

@@ -113,7 +113,7 @@ CREATE TABLE "uploads" (
     "file_path" text NOT NULL,
     "file_hash" text NOT NULL,
     "file_type" text NOT NULL,
-    "file_size" int4 NOT NULL,
+    "file_size" int8 NOT NULL,
     "upload_time" timestamp NOT NULL,
     PRIMARY KEY (file_id)
 );

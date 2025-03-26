@@ -469,6 +469,12 @@ components:
           type: string
         name:
           type: string
+        cpu_limit:
+          type: integer
+        memory_limit:
+          type: integer
+        storage_limit:
+          type: integer
       required:
         - expose_ports
         - image

@@ -26,7 +26,7 @@ type DeleteChallengePayload struct {
 }
 
 type ChallengeSearchPayload struct {
-	Keyword string `json:"keyword" binding:"required"`
+	Keyword string `json:"keyword"`
 }
 
 func ListChallenges(c *gin.Context) {

@@ -1,5 +1,6 @@
 /* eslint-disable */
 /* tslint:disable */
+// @ts-nocheck
 /*
  * ---------------------------------------------------------------
  * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API        ##
@@ -49,6 +50,9 @@ export interface Container {
   expose_ports: ExposePort[];
   image: string;
   name: string;
+  cpu_limit?: number;
+  memory_limit?: number;
+  storage_limit?: number;
 }
 
 export enum JudgeType {

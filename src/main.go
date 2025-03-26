@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"regexp"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -98,6 +99,12 @@ var PermissionMap = map[string][]string{
 	"/api/admin/challenge/delete": {"ADMIN"},
 	"/api/admin/challenge/get":    {"ADMIN"},
 	"/api/admin/challenge/update": {"ADMIN"},
+	"/api/admin/challenge/search": {"ADMIN"},
+
+	"/api/admin/game/list":          {"ADMIN"},
+	"/api/admin/game/create":        {"ADMIN"},
+	"\\/api\\/admin\\/game/[\\d]$":  {"ADMIN"},
+	"/api/admin/game/challenge/add": {"ADMIN"},
 }
 
 // Helper function to check if a slice contains a value
@@ -112,21 +119,27 @@ func contains(slice []string, value string) bool {
 
 func authorizator() func(data interface{}, c *gin.Context) bool {
 	return func(data interface{}, c *gin.Context) bool {
-		allowed_user := PermissionMap[c.Request.URL.Path]
 		if v, ok := data.(*models.JWTUser); ok {
 
-			if allowed_user == nil {
-				return false
-			}
+			for k, rules := range PermissionMap {
+				match, _ := regexp.MatchString(k, c.Request.URL.Path)
+				if match {
+					// println(k, c.Request.URL.Path)
 
-			if len(allowed_user) == 0 {
-				return true
-			}
+					if rules == nil {
+						return false
+					}
 
-			if contains(allowed_user, v.Role) {
-				return true
-			} else {
-				return false
+					if len(rules) == 0 {
+						return true
+					}
+
+					if contains(rules, v.Role) {
+						return true
+					} else {
+						return false
+					}
+				}
 			}
 		}
 		return false
@@ -139,15 +152,6 @@ func unauthorized() func(c *gin.Context, code int, message string) {
 			"code":    code,
 			"message": message,
 		})
-	}
-}
-
-func handlerMiddleware(authMiddleware *jwt.GinJWTMiddleware) gin.HandlerFunc {
-	return func(context *gin.Context) {
-		errInit := authMiddleware.MiddlewareInit()
-		if errInit != nil {
-			log.Fatal("authMiddleware.MiddlewareInit() Error:" + errInit.Error())
-		}
 	}
 }
 
@@ -211,6 +215,7 @@ func main() {
 			challengeGroup.POST("/delete", controllers.DeleteChallenge)
 			challengeGroup.POST("/get", controllers.GetChallenge)
 			challengeGroup.POST("/update", controllers.UpdateChallenge)
+			challengeGroup.POST("/search", controllers.SearchChallenges)
 		}
 
 		gameGroup := auth.Group("/admin/game")

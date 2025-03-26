@@ -574,7 +574,7 @@ export function CreateGameView({ lng }: { lng: string }) {
     });
 
     const format_date = (dt: Date) => {
-        return dt.toISOString().substring(0, dt.toISOString().length - 1);
+        return dt.toISOString()
     }
 
     const [showScript, setShowScript] = useState(false);
