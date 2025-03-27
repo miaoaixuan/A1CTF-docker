@@ -99,17 +99,17 @@ type PermissionSetting struct {
 }
 
 var PermissionMap = map[string]PermissionSetting{
-	"/api/Login":                  {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	"/api/file/upload":            {RequestMethod: []string{"POST"}, Permissions: []string{}},
-	"/api/admin/challenge/list":   {RequestMethod: []string{"GET", "POST"}, Permissions: []string{"ADMIN"}},
-	"/api/admin/challenge/create": {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	"/api/admin/challenge/delete": {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	"/api/admin/challenge/get":    {RequestMethod: []string{"GET", "POST"}, Permissions: []string{"ADMIN"}},
-	"/api/admin/challenge/update": {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	"/api/admin/challenge/search": {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	"\\/api\\/Login":                      {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	"\\/api\\/file\\/upload":              {RequestMethod: []string{"POST"}, Permissions: []string{}},
+	"\\/api\\/admin\\/challenge\\/list":   {RequestMethod: []string{"GET", "POST"}, Permissions: []string{"ADMIN"}},
+	"\\/api\\/admin\\/challenge\\/create": {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	// "\\/api\\/admin\\/challenge\\/delete":  {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	"\\/api\\/admin\\/challenge\\/[\\d]+$": {RequestMethod: []string{"GET", "PUT", "DELETE"}, Permissions: []string{"ADMIN"}},
+	// "\\/api\\/admin\\/challenge\\/update":  {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	"\\/api\\/admin\\/challenge\\/search": {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
 
-	"/api/admin/game/list":                                 {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	"/api/admin/game/create":                               {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	"\\/api\\/admin\\/game\\/list":                         {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	"\\/api\\/admin\\/game\\/create":                       {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
 	"\\/api\\/admin\\/game\\/[\\d]+$":                      {RequestMethod: []string{"GET", "POST", "PUT"}, Permissions: []string{"ADMIN"}},
 	"\\/api\\/admin\\/game\\/[\\d]+\\/challenge\\/[\\d]+$": {RequestMethod: []string{"PUT"}, Permissions: []string{"ADMIN"}},
 }
@@ -223,21 +223,23 @@ func main() {
 
 		challengeGroup := auth.Group("/admin/challenge")
 		{
-			challengeGroup.POST("/list", controllers.ListChallenges)
-			challengeGroup.POST("/create", controllers.CreateChallenge)
-			challengeGroup.POST("/delete", controllers.DeleteChallenge)
-			challengeGroup.POST("/get", controllers.GetChallenge)
-			challengeGroup.POST("/update", controllers.UpdateChallenge)
-			challengeGroup.POST("/search", controllers.SearchChallenges)
+			challengeGroup.POST("/list", controllers.AdminListChallenges)
+			challengeGroup.POST("/create", controllers.AdminCreateChallenge)
+
+			challengeGroup.DELETE("/:challenge_id", controllers.AdminDeleteChallenge)
+			challengeGroup.GET("/:challenge_id", controllers.AdminGetChallenge)
+			challengeGroup.PUT("/:challenge_id", controllers.AdminUpdateChallenge)
+
+			challengeGroup.POST("/search", controllers.AdminSearchChallenges)
 		}
 
 		gameGroup := auth.Group("/admin/game")
 		{
-			gameGroup.POST("/list", controllers.ListGames)
-			gameGroup.POST("/create", controllers.CreateGame)
-			gameGroup.GET("/:game_id", controllers.GetGame)
-			gameGroup.PUT("/:game_id/challenge/:challenge_id", controllers.AddGameChallenge)
-			gameGroup.PUT("/:game_id", controllers.UpdateGame)
+			gameGroup.POST("/list", controllers.AdminListGames)
+			gameGroup.POST("/create", controllers.AdminCreateGame)
+			gameGroup.GET("/:game_id", controllers.AdminGetGame)
+			gameGroup.PUT("/:game_id/challenge/:challenge_id", controllers.AdminAddGameChallenge)
+			gameGroup.PUT("/:game_id", controllers.AdminUpdateGame)
 		}
 	}
 

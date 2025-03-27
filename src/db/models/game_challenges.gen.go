@@ -62,7 +62,7 @@ type GameChallenge struct {
 	Solved      Solves       `gorm:"column:solved;not null;default:[]" json:"solved"`
 	Hints       *Hints       `gorm:"column:hints;default:{}" json:"hints"`
 	JudgeConfig *JudgeConfig `gorm:"column:judge_config" json:"judge_config"`
-	BelongStage *int32       `gorm:"column:belong_stage" json:"belong_stage"`
+	BelongStage int32        `gorm:"column:belong_stage" json:"belong_stage"`
 
 	// Challenge Challenge `gorm:"foreignKey:challenge_id;references:challenges.challenge_id"`
 }

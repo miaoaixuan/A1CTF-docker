@@ -8,7 +8,7 @@ import { useTheme } from "next-themes";
 import { BadgeCent, Binary, Bot, Bug, ChevronDown, ChevronUp, Chrome, CircleArrowLeft, Earth, FileSearch, Github, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
 import { useEffect, useState } from "react";
 import { api, ErrorMessage } from "@/utils/ApiHelper";
-import { ChallengeCategory, ChallengeSimpleInfo } from "@/utils/A1API";
+import { ChallengeCategory, AdminChallengeSimpleInfo } from "@/utils/A1API";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 import { useRouter } from "next/navigation";
@@ -54,7 +54,7 @@ export function ChallengesManageView({ lng }: { lng: string }) {
     };
 
     const [curChoicedCategory, setCurChoicedCategory] = useState("all")
-    const [challenges, setChallenges] = useState<ChallengeSimpleInfo[]>([])
+    const [challenges, setChallenges] = useState<AdminChallengeSimpleInfo[]>([])
 
     useEffect(() => {
         api.admin.listChallenge({ size: 100, offset: 0 }).then((res) => {
@@ -136,7 +136,7 @@ export function ChallengesManageView({ lng }: { lng: string }) {
                                                         isOpen: true,
                                                         message: "你确定要删除这道题目吗?",
                                                         onConfirm: () => {
-                                                            api.admin.deleteChallenge({ challenge_id: chal.challenge_id }).then(() => {
+                                                            api.admin.deleteChallenge(chal.challenge_id).then(() => {
                                                                 toast.success("删除成功", { position: "top-center" })
                                                                 setChallenges(challenges.filter((res) => res.challenge_id !== chal.challenge_id))
                                                             }).catch((error: AxiosError) => {

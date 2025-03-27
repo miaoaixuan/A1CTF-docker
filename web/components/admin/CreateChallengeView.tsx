@@ -42,7 +42,7 @@ import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageS
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MacScrollbar } from "mac-scrollbar";
-import { ChallengeConfig } from "@/utils/A1API";
+import { AdminChallengeConfig } from "@/utils/A1API";
 import { api, ErrorMessage } from "@/utils/ApiHelper";
 import dayjs from "dayjs";
 import { toast } from "sonner";
@@ -491,7 +491,7 @@ export function CreateChallengeView({ lng } : { lng: string }) {
             type_: 0
         };
 
-        api.admin.createChallenge(finalData as ChallengeConfig).then((res) => {
+        api.admin.createChallenge(finalData as AdminChallengeConfig).then((res) => {
             toast.success("创建成功", { position: "top-center" })
         }).catch((error: AxiosError) => {
             if (error.response?.status) {

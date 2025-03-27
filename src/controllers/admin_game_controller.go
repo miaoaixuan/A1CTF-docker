@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -21,7 +22,7 @@ type AddGameChallengePayload struct {
 	ChallengeID int64 `json:"challenge_id" binding:"min=0"`
 }
 
-func ListGames(c *gin.Context) {
+func AdminListGames(c *gin.Context) {
 	var payload ListGamePayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -61,7 +62,7 @@ func ListGames(c *gin.Context) {
 	})
 }
 
-func CreateGame(c *gin.Context) {
+func AdminCreateGame(c *gin.Context) {
 	var payload models.Game
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -104,7 +105,7 @@ func CreateGame(c *gin.Context) {
 	})
 }
 
-func GetGame(c *gin.Context) {
+func AdminGetGame(c *gin.Context) {
 	gameIDStr := c.Param("game_id")
 	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
 	if err != nil {
@@ -198,7 +199,7 @@ type UpdateGamePayload struct {
 	Challenges []models.GameChallenge `json:"challenges"`
 }
 
-func UpdateGame(c *gin.Context) {
+func AdminUpdateGame(c *gin.Context) {
 	gameIDStr := c.Param("game_id")
 	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
 	if err != nil {
@@ -262,10 +263,19 @@ func UpdateGame(c *gin.Context) {
 			TotalScore:  chal.TotalScore,
 			Hints:       chal.Hints,
 			JudgeConfig: chal.JudgeConfig,
-			BelongStage: chal.BelongStage,
 		}
 
+		log.Printf("Update game challenge: %+v", updateModel)
+
 		if err := dbtool.DB().Model(&models.GameChallenge{}).Where("challenge_id = ? AND game_id = ?", chal.ChallengeID, gameID).Updates(updateModel).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to save challenge",
+			})
+			return
+		}
+
+		if err := dbtool.DB().Model(&models.GameChallenge{}).Where("challenge_id = ? AND game_id = ?", chal.ChallengeID, gameID).Updates(map[string]interface{}{"belong_stage": chal.BelongStage}).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":    500,
 				"message": "Failed to save challenge",
@@ -280,7 +290,7 @@ func UpdateGame(c *gin.Context) {
 
 }
 
-func AddGameChallenge(c *gin.Context) {
+func AdminAddGameChallenge(c *gin.Context) {
 	gameIDStr := c.Param("game_id")
 	gameID, err1 := strconv.ParseInt(gameIDStr, 10, 64)
 	challengeIDStr := c.Param("challenge_id")
@@ -350,6 +360,7 @@ func AddGameChallenge(c *gin.Context) {
 		Solved:      models.Solves{},
 		Hints:       &models.Hints{},
 		JudgeConfig: challenge.JudgeConfig,
+		BelongStage: -1,
 	}
 
 	if err := dbtool.DB().Create(&gameChallenge).Error; err != nil {

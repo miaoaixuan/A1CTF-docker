@@ -46,7 +46,7 @@ export interface ExposePort {
 
 export interface Container {
   command?: string | null;
-  env?: EnvItem[];
+  env?: EnvironmentItem[];
   expose_ports: ExposePort[];
   image: string;
   name: string;
@@ -81,12 +81,12 @@ export enum ChallengeCategory {
   OSINT = "OSINT",
 }
 
-export interface EnvItem {
+export interface EnvironmentItem {
   name: string;
   value: string;
 }
 
-export interface ChallengeSimpleInfo {
+export interface AdminChallengeSimpleInfo {
   challenge_id: number;
   name: string;
   description: string;
@@ -95,7 +95,7 @@ export interface ChallengeSimpleInfo {
   create_time: string;
 }
 
-export interface ChallengeConfig {
+export interface AdminChallengeConfig {
   attachments?: Attachment[];
   category: ChallengeCategory;
   challenge_id?: number;
@@ -121,7 +121,7 @@ export interface GameStage {
   end_time: string;
 }
 
-export interface GameChallenge {
+export interface AdminDetailGameChallenge {
   challenge_id: number;
   challenge_name: string;
   /** @format double */
@@ -145,7 +145,7 @@ export interface AddGameChallengePayload {
   game_id: number;
 }
 
-export interface GameInfo {
+export interface AdminFullGameInfo {
   /** @format int64 */
   game_id: number;
   name: string;
@@ -165,7 +165,7 @@ export interface GameInfo {
   wp_expire_time: string;
   visible: boolean;
   stages: GameStage[];
-  challenges?: GameChallenge[];
+  challenges?: AdminDetailGameChallenge[];
 }
 
 export interface GameSimpleInfo {
@@ -181,7 +181,7 @@ export interface GameSimpleInfo {
   visible: boolean;
 }
 
-export interface Solve {
+export interface SolveRecord {
   user_id: string;
   game_id: number;
   /** @format date-time */
@@ -327,7 +327,7 @@ export class HttpClient<SecurityDataType = unknown> {
 }
 
 /**
- * @title API Title
+ * @title A1CTF API
  * @version 1.0
  * @baseUrl http://localhost:8080/api
  */
@@ -338,6 +338,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      *
      * @tags auth
      * @name UserLogin
+     * @summary Login
      * @request POST:/api/auth/login
      */
     userLogin: (data: UserLogin, params: RequestParams = {}) =>
@@ -354,6 +355,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      *
      * @tags auth
      * @name UserRegister
+     * @summary Register
      * @request POST:/api/auth/register
      */
     userRegister: (data: UserRegister, params: RequestParams = {}) =>
@@ -374,7 +376,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @summary Create a new challenge
      * @request POST:/api/admin/challenge/create
      */
-    createChallenge: (data: ChallengeConfig, params: RequestParams = {}) =>
+    createChallenge: (data: AdminChallengeConfig, params: RequestParams = {}) =>
       this.request<
         {
           challenge_id?: number;
@@ -395,22 +397,20 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * No description
      *
      * @tags admin
-     * @name UpdateChallenge
-     * @summary Update a exist challenge
-     * @request POST:/api/admin/challenge/update
+     * @name GetChallengeInfo
+     * @summary Get challenge info
+     * @request GET:/api/admin/challenge/{challenge_id}
      */
-    updateChallenge: (data: ChallengeConfig, params: RequestParams = {}) =>
+    getChallengeInfo: (challengeId: number, params: RequestParams = {}) =>
       this.request<
         {
-          code?: number;
-          message?: string;
+          code: number;
+          data: AdminChallengeConfig;
         },
         void | ErrorMessage
       >({
-        path: `/api/admin/challenge/update`,
-        method: "POST",
-        body: data,
-        type: ContentType.Json,
+        path: `/api/admin/challenge/${challengeId}`,
+        method: "GET",
         format: "json",
         ...params,
       }),
@@ -421,14 +421,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @tags admin
      * @name DeleteChallenge
      * @summary Delete a exist challenge
-     * @request POST:/api/admin/challenge/delete
+     * @request DELETE:/api/admin/challenge/{challenge_id}
      */
-    deleteChallenge: (
-      data: {
-        challenge_id: number;
-      },
-      params: RequestParams = {},
-    ) =>
+    deleteChallenge: (challengeId: number, params: RequestParams = {}) =>
       this.request<
         {
           code?: number;
@@ -436,10 +431,8 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         },
         void | ErrorMessage
       >({
-        path: `/api/admin/challenge/delete`,
-        method: "POST",
-        body: data,
-        type: ContentType.Json,
+        path: `/api/admin/challenge/${challengeId}`,
+        method: "DELETE",
         format: "json",
         ...params,
       }),
@@ -448,25 +441,20 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * No description
      *
      * @tags admin
-     * @name GetChallengeInfo
-     * @summary Get challenge info
-     * @request POST:/api/admin/challenge/get
+     * @name UpdateChallenge
+     * @summary Update a exist challenge
+     * @request PUT:/api/admin/challenge/{challenge_id}
      */
-    getChallengeInfo: (
-      data: {
-        challenge_id: number;
-      },
-      params: RequestParams = {},
-    ) =>
+    updateChallenge: (challengeId: number, data: AdminChallengeConfig, params: RequestParams = {}) =>
       this.request<
         {
-          code: number;
-          data: ChallengeConfig;
+          code?: number;
+          message?: string;
         },
         void | ErrorMessage
       >({
-        path: `/api/admin/challenge/get`,
-        method: "POST",
+        path: `/api/admin/challenge/${challengeId}`,
+        method: "PUT",
         body: data,
         type: ContentType.Json,
         format: "json",
@@ -492,7 +480,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       this.request<
         {
           code: number;
-          data: ChallengeSimpleInfo[];
+          data: AdminChallengeSimpleInfo[];
         },
         void | ErrorMessage
       >({
@@ -577,7 +565,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @summary Create a new game
      * @request POST:/api/admin/game/create
      */
-    createGame: (data: GameInfo, params: RequestParams = {}) =>
+    createGame: (data: AdminFullGameInfo, params: RequestParams = {}) =>
       this.request<
         {
           game_id?: number;
@@ -598,15 +586,15 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @description Get a game info
      *
      * @tags admin
-     * @name GeteGameInfo
+     * @name GetGameInfo
      * @summary Get a game info
      * @request GET:/api/admin/game/{game_id}
      */
-    geteGameInfo: (gameId: number, params: RequestParams = {}) =>
+    getGameInfo: (gameId: number, params: RequestParams = {}) =>
       this.request<
         {
           code: number;
-          data: GameInfo;
+          data: AdminFullGameInfo;
         },
         void | ErrorMessage
       >({
@@ -624,7 +612,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @summary Update a game
      * @request PUT:/api/admin/game/{game_id}
      */
-    updateGame: (gameId: number, data: GameInfo, params: RequestParams = {}) =>
+    updateGame: (gameId: number, data: AdminFullGameInfo, params: RequestParams = {}) =>
       this.request<
         {
           code: number;
@@ -652,7 +640,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       this.request<
         {
           code: number;
-          data: GameChallenge;
+          data: AdminDetailGameChallenge;
         },
         void | ErrorMessage
       >({

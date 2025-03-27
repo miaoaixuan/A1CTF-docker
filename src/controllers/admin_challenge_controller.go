@@ -2,9 +2,11 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 
 	"a1ctf/src/db/models"
@@ -17,10 +19,6 @@ type ListChallengePayload struct {
 	Category *models.ChallengeCategory `json:"category,omitempty"`
 }
 
-type ChallengeInfoPayload struct {
-	ChallengeID int64 `json:"challenge_id" binding:"required"`
-}
-
 type DeleteChallengePayload struct {
 	ChallengeID int64 `json:"challenge_id" binding:"required"`
 }
@@ -29,7 +27,7 @@ type ChallengeSearchPayload struct {
 	Keyword string `json:"keyword"`
 }
 
-func ListChallenges(c *gin.Context) {
+func AdminListChallenges(c *gin.Context) {
 	var payload ListChallengePayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -71,18 +69,19 @@ func ListChallenges(c *gin.Context) {
 	})
 }
 
-func GetChallenge(c *gin.Context) {
-	var payload ChallengeInfoPayload
-	if err := c.ShouldBindJSON(&payload); err != nil {
+func AdminGetChallenge(c *gin.Context) {
+	challengeIDStr := c.Param("challenge_id")
+	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid request payload",
+			"message": "Invalid challenge ID",
 		})
 		return
 	}
 
 	var challenge models.Challenge
-	if err := dbtool.DB().Where("challenge_id = ?", payload.ChallengeID).First(&challenge).Error; err != nil {
+	if err := dbtool.DB().Where("challenge_id = ?", challengeID).First(&challenge).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
 				"code":    404,
@@ -103,7 +102,7 @@ func GetChallenge(c *gin.Context) {
 	})
 }
 
-func CreateChallenge(c *gin.Context) {
+func AdminCreateChallenge(c *gin.Context) {
 	var payload models.Challenge
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -134,22 +133,31 @@ func CreateChallenge(c *gin.Context) {
 	})
 }
 
-func DeleteChallenge(c *gin.Context) {
-	var payload DeleteChallengePayload
-	if err := c.ShouldBindJSON(&payload); err != nil {
+func AdminDeleteChallenge(c *gin.Context) {
+	challengeIDStr := c.Param("challenge_id")
+	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid request payload",
+			"message": "Invalid challenge ID",
 		})
 		return
 	}
 
-	result := dbtool.DB().Where("challenge_id = ?", payload.ChallengeID).Delete(&models.Challenge{})
+	result := dbtool.DB().Where("challenge_id = ?", challengeID).Delete(&models.Challenge{})
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "Failed to delete challenge",
-		})
+		// 外键关联
+		if result.Error.(*pgconn.PgError).Code == "23503" {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    400,
+				"message": "This challenge is used in game",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to delete challenge",
+			})
+		}
 		return
 	}
 
@@ -167,9 +175,19 @@ func DeleteChallenge(c *gin.Context) {
 	})
 }
 
-func UpdateChallenge(c *gin.Context) {
+func AdminUpdateChallenge(c *gin.Context) {
+	challengeIDStr := c.Param("challenge_id")
+	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid challenge ID",
+		})
+		return
+	}
+
 	var payload models.Challenge
-	if err := c.ShouldBindJSON(&payload); err != nil {
+	if err := c.ShouldBindJSON(&payload); err != nil || challengeID != *payload.ChallengeID {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
 			"message": "Invalid request payload",
@@ -207,7 +225,7 @@ func UpdateChallenge(c *gin.Context) {
 	})
 }
 
-func SearchChallenges(c *gin.Context) {
+func AdminSearchChallenges(c *gin.Context) {
 	var payload ChallengeSearchPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{

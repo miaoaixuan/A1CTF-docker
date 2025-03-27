@@ -6,7 +6,7 @@ import { MacScrollbar } from "mac-scrollbar";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
-import { GameInfo, GameSimpleInfo } from "@/utils/A1API";
+import { GameSimpleInfo } from "@/utils/A1API";
 import { api } from "@/utils/ApiHelper";
 import { useRouter } from "next/navigation";
 

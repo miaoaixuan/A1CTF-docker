@@ -1,6 +1,6 @@
 openapi: '3.0.3'
 info:
-  title: API Title
+  title: A1CTF API
   version: '1.0'
 servers:
   - url: http://localhost:8080/api
@@ -9,6 +9,7 @@ paths:
     post:
       tags: [auth]
       operationId: userLogin
+      summary: Login
       responses:
         '200':
           description: OK
@@ -27,6 +28,7 @@ paths:
     post:
       tags: [auth]
       operationId: userRegister
+      summary: Register
       responses:
         '200':
           description: OK
@@ -66,9 +68,76 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChallengeConfig'
-  /api/admin/challenge/update:
-    post:
+              $ref: '#/components/schemas/AdminChallengeConfig'
+  /api/admin/challenge/{challenge_id}:
+    get:
+      tags: [admin]
+      operationId: getChallengeInfo
+      summary: Get challenge info
+      responses:
+        '200':
+          description: Challenge info get
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: '#/components/schemas/AdminChallengeConfig'
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge to retrieve
+          schema:
+            type: integer
+    delete:
+      tags: [admin]
+      operationId: deleteChallenge
+      summary: Delete a exist challenge
+      responses:
+        '200':
+          description: Challenge delete successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+        '404':
+          description: Challenge not found
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge to retrieve
+          schema:
+            type: integer
+    put:
       tags: [admin]
       operationId: updateChallenge
       summary: Update a exist challenge
@@ -98,82 +167,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChallengeConfig'
-  /api/admin/challenge/delete:
-    post:
-      tags: [admin]
-      operationId: deleteChallenge
-      summary: Delete a exist challenge
-      responses:
-        '200':
-          description: Challenge delete successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code:
-                    type: integer
-                  message:
-                    type: string
-        '404':
-          description: Challenge not found
-        '400':
-          description: Bad request
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorMessage'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                challenge_id:
-                  type: integer
-              required:
-                - challenge_id
-  /api/admin/challenge/get:
-    post:
-      tags: [admin]
-      operationId: getChallengeInfo
-      summary: Get challenge info
-      responses:
-        '200':
-          description: Challenge info get
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code:
-                    type: integer
-                  data:
-                    $ref: '#/components/schemas/ChallengeConfig'
-                required:
-                  - code
-                  - data
-        '400':
-          description: Bad request
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorMessage'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                challenge_id:
-                  type: integer
-              required:
-                - challenge_id
+              $ref: '#/components/schemas/AdminChallengeConfig'
+      parameters:
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge to retrieve
+          schema:
+            type: integer
   /api/admin/challenge/list:
     post:
       tags: [admin]
@@ -192,7 +193,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/ChallengeSimpleInfo'
+                      $ref: '#/components/schemas/AdminChallengeSimpleInfo'
                 required:
                   - code
                   - data
@@ -347,11 +348,11 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GameInfo'
+              $ref: '#/components/schemas/AdminFullGameInfo'
   /api/admin/game/{game_id}:
     get:
       tags: [admin]
-      operationId: geteGameInfo
+      operationId: getGameInfo
       summary: Get a game info
       description: Get a game info
       responses:
@@ -365,8 +366,7 @@ paths:
                   code:
                     type: integer
                   data:
-                    type: object
-                    $ref: '#/components/schemas/GameInfo'
+                    $ref: '#/components/schemas/AdminFullGameInfo'
                 required:
                   - code
                   - data
@@ -417,7 +417,7 @@ paths:
         content:
           application/json:
               schema:
-                $ref: '#/components/schemas/GameInfo'
+                $ref: '#/components/schemas/AdminFullGameInfo'
       parameters:
         - name: game_id
           in: path
@@ -433,7 +433,7 @@ paths:
       description: Add a challenge to a game
       responses:
         '200':
-          description: GameChallenge add successfully
+          description: AdminDetailGameChallenge add successfully
           content:
             application/json:
               schema:
@@ -442,8 +442,7 @@ paths:
                   code:
                     type: integer
                   data:
-                    type: object
-                    $ref: '#/components/schemas/GameChallenge'
+                    $ref: '#/components/schemas/AdminDetailGameChallenge'
                 required:
                   - code
                   - data
@@ -544,7 +543,7 @@ components:
         env:
           type: array
           items:
-            $ref: '#/components/schemas/EnvItem'
+            $ref: '#/components/schemas/EnvironmentItem'
         expose_ports:
           type: array
           items:
@@ -596,7 +595,7 @@ components:
         - AI
         - PENTENT
         - OSINT
-    EnvItem:
+    EnvironmentItem:
       type: object
       properties:
         name:
@@ -606,7 +605,7 @@ components:
       required:
         - name
         - value
-    ChallengeSimpleInfo:
+    AdminChallengeSimpleInfo:
       type: object
       properties:
         challenge_id:
@@ -626,7 +625,7 @@ components:
         - description
         - category
         - create_time
-    ChallengeConfig:
+    AdminChallengeConfig:
       type: object
       properties:
         attachments:
@@ -683,7 +682,7 @@ components:
         - stage_name
         - start_time
         - end_time
-    GameChallenge:
+    AdminDetailGameChallenge:
       type: object
       properties:
         challenge_id:
@@ -735,7 +734,7 @@ components:
       required:
         - challenge_id
         - game_id
-    GameInfo:
+    AdminFullGameInfo:
       type: object
       properties:
         game_id:
@@ -781,7 +780,7 @@ components:
         challenges:
           type: array
           items:
-            $ref: '#/components/schemas/GameChallenge'
+            $ref: '#/components/schemas/AdminDetailGameChallenge'
       required:
         - game_id
         - name
@@ -823,7 +822,7 @@ components:
         - end_time
         - summary
         - visible
-    Solve:
+    SolveRecord:
       type: object
       properties:
         user_id:

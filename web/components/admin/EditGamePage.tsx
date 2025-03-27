@@ -2,17 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { EditChallengeView } from "./EditChallengeView";
-import { ChallengeConfig, GameInfo } from "@/utils/A1API";
+import { AdminChallengeConfig, AdminFullGameInfo } from "@/utils/A1API";
 import { api } from "@/utils/ApiHelper";
 import { EditGameView } from "./EditGameView";
 
 export function EditGamePage ({ game_id, lng }: { game_id: number, lng: string })
 {
-    const [ gameInfo, setGameInfo ] = useState<GameInfo>();
+    const [ gameInfo, setGameInfo ] = useState<AdminFullGameInfo>();
 
     useEffect(() => {
         // Fetch challenge info
-        api.admin.geteGameInfo(game_id).then((res) => {
+        api.admin.getGameInfo(game_id).then((res) => {
             setGameInfo(res.data.data);
         })
     }, [game_id])

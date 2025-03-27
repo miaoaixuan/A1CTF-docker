@@ -42,7 +42,7 @@ import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageS
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MacScrollbar } from "mac-scrollbar";
-import { ChallengeConfig } from "@/utils/A1API";
+import { AdminChallengeConfig } from "@/utils/A1API";
 import { api, ErrorMessage } from "@/utils/ApiHelper";
 import dayjs from "dayjs";
 import { toast } from "sonner";
@@ -409,7 +409,7 @@ function AttachmentForm({ control, index, form, removeAttachment }: AttachmentFo
     );
 }
 
-export function EditChallengeView({ challenge_info, lng } : { challenge_info: ChallengeConfig, lng: string }) {
+export function EditChallengeView({ challenge_info, lng } : { challenge_info: AdminChallengeConfig, lng: string }) {
 
     const categories: { [key: string]: any } = {
         "MISC": <Radar size={21} />,
@@ -575,7 +575,7 @@ export function EditChallengeView({ challenge_info, lng } : { challenge_info: Ch
             name: values.name,
             type_: challenge_info.type_,
         };
-        api.admin.updateChallenge(finalData as ChallengeConfig).then((res) => {
+        api.admin.updateChallenge(challenge_info.challenge_id!, finalData as AdminChallengeConfig).then((res) => {
             toast.success("更新成功", { position: "top-center" })
         }).catch((error: AxiosError) => {
             if (error.response?.status) {

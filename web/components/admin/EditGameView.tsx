@@ -27,13 +27,13 @@ import {
 } from "@/components/ui/select"
 
 import { Input } from "../ui/input";
-import { z } from "zod"
+import { number, z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
 
-import { ArrowLeft, ArrowRight, ArrowUpDown, CalendarIcon, CircleArrowLeft, ClockArrowUp, Cloud, FileCode, FileUser, Github, Layers2, LoaderPinwheel, Pencil, PlusCircle, Save, ScanBarcode, Squirrel, TableProperties, Tag, Trash2, Underline, Upload } from "lucide-react"
+import { ArrowLeft, ArrowRight, ArrowUpDown, CalendarIcon, CircleArrowLeft, ClockArrowDown, ClockArrowUp, Cloud, FileCode, FileUser, Github, Layers2, LoaderPinwheel, Pencil, PlusCircle, Save, ScanBarcode, Squirrel, TableProperties, Tag, Trash2, Underline, Upload } from "lucide-react"
 import { Textarea } from "../ui/textarea";
 
 import CodeEditor from '@uiw/react-textarea-code-editor';
@@ -42,7 +42,7 @@ import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageS
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { MacScrollbar } from "mac-scrollbar";
-import { ChallengeCategory, ChallengeConfig, GameChallenge, GameInfo, GameSimpleInfo, JudgeType } from "@/utils/A1API";
+import { ChallengeCategory, AdminChallengeConfig, AdminFullGameInfo, GameSimpleInfo, JudgeType, AdminDetailGameChallenge } from "@/utils/A1API";
 import { api, ErrorMessage } from "@/utils/ApiHelper";
 import dayjs from "dayjs";
 import { toast } from "sonner";
@@ -478,6 +478,62 @@ function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) {
             )}
             <FormField
                 control={form.control}
+                name={`challenges.${index}.belong_stage`}
+                render={({ field }) => (
+                    <FormItem className="select-none">
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>所属阶段</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
+                        <Select onValueChange={(e) => {
+                            field.onChange(parseInt(e, 10))
+                        }} defaultValue={field.value.toString()}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="选择一个评测模式" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="w-full flex">
+                                <SelectItem value="-1">
+                                    <div className="w-full flex gap-2 items-center h-[25px]">
+                                        <span className="text-[14px] font-bold">全局</span>
+                                    </div>
+                                </SelectItem>
+                                <FormField
+                                    control={form.control}
+                                    name={`stages`}
+                                    render={({ field }) => (
+                                        <FormItem className="select-none">
+                                            { Object.keys(field.value).map((e: any, idx: number) => (
+                                                <SelectItem value={e} key={`${idx}`}>
+                                                    <div className="w-full flex gap-2 items-center h-[25px]">
+                                                        <span className="text-[14px] font-bold">{ field.value[e].stage_name }</span>
+                                                        <div className="bg-foreground/[0.03] flex gap-2 items-center px-[9px] py-[5px] rounded-full">
+                                                            <ClockArrowUp size={20} />
+                                                            <span className="text-sm">{ dayjs(field.value[e].start_time).format("YYYY-MM-DD HH:mm:ss")}</span>
+                                                        </div>
+                                                        <span>-</span>
+                                                        <div className="bg-foreground/[0.03] flex gap-2 items-center px-[9px] py-[5px] rounded-full">
+                                                            <ClockArrowDown size={20} />
+                                                            <span className="text-sm">{ dayjs(field.value[e].end_time).format("YYYY-MM-DD HH:mm:ss")}</span>
+                                                        </div>
+                                                    </div>
+                                                </SelectItem>
+                                            )) }
+                                        </FormItem>
+                                    )}
+                                />
+                            </SelectContent>
+                        </Select>
+                        <FormDescription>
+                            请选择题目所属阶段
+                        </FormDescription>
+                    </FormItem>
+                )}
+            />
+            <FormField
+                control={form.control}
                 name={`challenges.${index}.total_score`}
                 render={({ field }) => (
                     <FormItem className="select-none">
@@ -627,7 +683,7 @@ interface GameChallengeFormProps {
     control: any;
     index: number;
     form: any;
-    gameData: GameChallenge;
+    gameData: AdminDetailGameChallenge;
     onEditChallenge: (index: number) => void;
     removeGameChallenge: (index: number) => void;
 }
@@ -671,7 +727,7 @@ export type ChallengeSearchResult = {
     GameID: number
 }
 
-export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: string }) {
+export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo, lng: string }) {
 
     const categories: { [key: string]: any } = {
         "MISC": <Radar size={21} />,
@@ -724,6 +780,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                     create_time: z.date(),
                     visible: z.boolean()
                 })),
+                belong_stage: z.coerce.number({ message: "请选择一个有效的阶段" }),
                 judge_config: z.object({
                     judge_type: z.enum(["DYNAMIC", "SCRIPT"], {
                         errorMap: () => ({ message: "需要选择一个有效的题目类别" })
@@ -790,6 +847,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                     create_time: dayjs(hint.create_time).toDate(),
                     visible: hint.visible
                 })),
+                belong_stage: challenge.belong_stage!,
                 judge_config: {
                     judge_type: challenge.judge_config?.judge_type,
                     judge_script: challenge.judge_config?.judge_script || "",
@@ -906,6 +964,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                                     total_score: challenge.total_score,
                                     cur_score: challenge.cur_score,
                                     solve_count: challenge.solve_count || 0,
+                                    belong_stage: -1,
                                     hints: [],
                                     judge_config: {
                                         judge_type: challenge.judge_config?.judge_type || JudgeType.DYNAMIC,
@@ -956,7 +1015,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
             challenges: values.challenges
         };
 
-        api.admin.updateGame(game_info.game_id ,  finalData as any as GameInfo).then((res) => {
+        api.admin.updateGame(game_info.game_id ,  finalData as any as AdminFullGameInfo).then((res) => {
             toast.success("比赛信息更新成功", { position: "top-center" })
         }).catch((err: AxiosError) => {
             toast.error(err.response?.data as string, { position: "top-center" })
