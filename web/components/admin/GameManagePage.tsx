@@ -70,7 +70,9 @@ export function GameManagePage({ lng } : { lng: string }) {
             <MacScrollbar className="w-full h-full p-5 lg:p-10 overflow-y-auto" skin={theme == "light" ? "light" : "dark"}>
                 <div className="flex items-center justify-between mb-6 select-none">
                     <span className="font-bold text-3xl">比赛列表</span>
-                    <Button>
+                    <Button onClick={() => {
+                        router.push(`/${lng}/admin/games/create`)
+                    }}>
                         <CirclePlus />
                         添加比赛
                     </Button>

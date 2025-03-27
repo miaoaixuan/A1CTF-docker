@@ -93,20 +93,25 @@ func payloadFunc() func(data interface{}) jwt.MapClaims {
 	}
 }
 
-var PermissionMap = map[string][]string{
-	"/api/Login":                  {"ADMIN", "ADMIN2"},
-	"/api/file/upload":            {},
-	"/api/admin/challenge/list":   {"ADMIN"},
-	"/api/admin/challenge/create": {"ADMIN"},
-	"/api/admin/challenge/delete": {"ADMIN"},
-	"/api/admin/challenge/get":    {"ADMIN"},
-	"/api/admin/challenge/update": {"ADMIN"},
-	"/api/admin/challenge/search": {"ADMIN"},
+type PermissionSetting struct {
+	RequestMethod []string
+	Permissions   []string
+}
 
-	"/api/admin/game/list":                                 {"ADMIN"},
-	"/api/admin/game/create":                               {"ADMIN"},
-	"\\/api\\/admin\\/game\\/[\\d]+$":                      {"ADMIN"},
-	"\\/api\\/admin\\/game\\/[\\d]+\\/challenge\\/[\\d]+$": {"ADMIN"},
+var PermissionMap = map[string]PermissionSetting{
+	"/api/Login":                  {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	"/api/file/upload":            {RequestMethod: []string{"POST"}, Permissions: []string{}},
+	"/api/admin/challenge/list":   {RequestMethod: []string{"GET", "POST"}, Permissions: []string{"ADMIN"}},
+	"/api/admin/challenge/create": {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	"/api/admin/challenge/delete": {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	"/api/admin/challenge/get":    {RequestMethod: []string{"GET", "POST"}, Permissions: []string{"ADMIN"}},
+	"/api/admin/challenge/update": {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	"/api/admin/challenge/search": {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+
+	"/api/admin/game/list":                                 {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	"/api/admin/game/create":                               {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	"\\/api\\/admin\\/game\\/[\\d]+$":                      {RequestMethod: []string{"GET", "POST", "PUT"}, Permissions: []string{"ADMIN"}},
+	"\\/api\\/admin\\/game\\/[\\d]+\\/challenge\\/[\\d]+$": {RequestMethod: []string{"PUT"}, Permissions: []string{"ADMIN"}},
 }
 
 // Helper function to check if a slice contains a value
@@ -128,15 +133,19 @@ func authorizator() func(data interface{}, c *gin.Context) bool {
 				if match {
 					// println(k, c.Request.URL.Path)
 
-					if rules == nil {
+					// if len(rules.Permissions) ==  {
+					// 	return false
+					// }
+
+					if !contains(rules.RequestMethod, c.Request.Method) {
 						return false
 					}
 
-					if len(rules) == 0 {
+					if len(rules.Permissions) == 0 {
 						return true
 					}
 
-					if contains(rules, v.Role) {
+					if contains(rules.Permissions, v.Role) {
 						return true
 					} else {
 						return false
@@ -228,6 +237,7 @@ func main() {
 			gameGroup.POST("/create", controllers.CreateGame)
 			gameGroup.GET("/:game_id", controllers.GetGame)
 			gameGroup.PUT("/:game_id/challenge/:challenge_id", controllers.AddGameChallenge)
+			gameGroup.PUT("/:game_id", controllers.UpdateGame)
 		}
 	}
 

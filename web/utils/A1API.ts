@@ -128,7 +128,12 @@ export interface GameChallenge {
   total_score: number;
   /** @format double */
   cur_score: number;
-  hints?: string[];
+  hints?: {
+    content: string;
+    /** @format date-time */
+    create_time: string;
+    visible: boolean;
+  }[];
   belong_stage?: number;
   solve_count?: number;
   category?: ChallengeCategory;
@@ -607,6 +612,30 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       >({
         path: `/api/admin/game/${gameId}`,
         method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Update a game
+     *
+     * @tags admin
+     * @name UpdateGame
+     * @summary Update a game
+     * @request PUT:/api/admin/game/{game_id}
+     */
+    updateGame: (gameId: number, data: GameInfo, params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+          data: string;
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/admin/game/${gameId}`,
+        method: "PUT",
+        body: data,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),

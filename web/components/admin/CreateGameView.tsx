@@ -737,7 +737,7 @@ export function CreateGameView({ lng }: { lng: string }) {
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20 pt-20 w-[80%] flex flex-col">
                         <div className="flex">
                             <Button type="button" variant={"default"} onClick={() => {
-                                router.push(`/${lng}/admin/challenges`)
+                                router.push(`/${lng}/admin/games`)
                             }}>
                                 <CircleArrowLeft />
                                 Back to games

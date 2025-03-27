@@ -706,7 +706,7 @@ export function CreateChallengeView({ lng } : { lng: string }) {
                         )}
 
                         {/* 动态容器列表 */}
-                        <div className="mt-6">
+                        {/* <div className="mt-6">
                             <div className="flex items-center mb-4">
                                 <span className="text-lg font-semibold">容器列表</span>
                                 <div className="flex-1" />
@@ -774,7 +774,7 @@ export function CreateChallengeView({ lng } : { lng: string }) {
                             )) : (
                                 <span className="text-sm text-foreground/70">还没有附件哦</span>
                             )}
-                        </div>
+                        </div> */}
 
                         <div className="flex">
                             <Button type="submit">

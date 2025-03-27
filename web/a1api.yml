@@ -385,6 +385,46 @@ paths:
           description: The ID of the game to retrieve
           schema:
             type: integer
+    put:
+      tags: [admin]
+      operationId: updateGame
+      summary: Update a game
+      description: Update a game
+      responses:
+        '200':
+          description: Game update successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: string
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+              schema:
+                $ref: '#/components/schemas/GameInfo'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to retrieve
+          schema:
+            type: integer
   /api/admin/game/{game_id}/challenge/{challenge_id}:
     put:
       tags: [admin]
@@ -659,7 +699,19 @@ components:
         hints:
           type: array
           items:
-            type: string
+            type: object
+            properties:
+              content:
+                type: string
+              create_time:
+                type: string
+                format: date-time
+              visible:
+                type: boolean
+            required:
+              - content
+              - create_time
+              - visible
         belong_stage:
           type: integer
         solve_count:

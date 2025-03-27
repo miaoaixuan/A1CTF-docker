@@ -193,6 +193,93 @@ func GetGame(c *gin.Context) {
 	})
 }
 
+type UpdateGamePayload struct {
+	models.Game
+	Challenges []models.GameChallenge `json:"challenges"`
+}
+
+func UpdateGame(c *gin.Context) {
+	gameIDStr := c.Param("game_id")
+	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid game ID",
+		})
+		return
+	}
+
+	var payload UpdateGamePayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	var game models.Game
+	if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"code":    404,
+				"message": "Game not found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to load game",
+			})
+		}
+		return
+	}
+
+	// 更新比赛信息
+	game.Name = payload.Name
+	game.Summary = payload.Summary
+	game.Description = payload.Description
+	game.InviteCode = payload.InviteCode
+	game.StartTime = payload.StartTime
+	game.EndTime = payload.EndTime
+	game.PracticeMode = payload.PracticeMode
+	game.TeamNumberLimit = payload.TeamNumberLimit
+	game.ContainerNumberLimit = payload.ContainerNumberLimit
+	game.RequireWp = payload.RequireWp
+	game.WpExpireTime = payload.WpExpireTime
+	game.Stages = payload.Stages
+	game.Visible = payload.Visible
+
+	if err := dbtool.DB().Save(&game).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to save game",
+		})
+		return
+	}
+
+	for _, chal := range payload.Challenges {
+		updateModel := models.GameChallenge{
+			TotalScore:  chal.TotalScore,
+			Hints:       chal.Hints,
+			JudgeConfig: chal.JudgeConfig,
+			BelongStage: chal.BelongStage,
+		}
+
+		if err := dbtool.DB().Model(&models.GameChallenge{}).Where("challenge_id = ? AND game_id = ?", chal.ChallengeID, gameID).Updates(updateModel).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to save challenge",
+			})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+	})
+
+}
+
 func AddGameChallenge(c *gin.Context) {
 	gameIDStr := c.Param("game_id")
 	gameID, err1 := strconv.ParseInt(gameIDStr, 10, 64)
@@ -261,7 +348,7 @@ func AddGameChallenge(c *gin.Context) {
 		CurScore:    500,
 		Enabled:     false,
 		Solved:      models.Solves{},
-		Hints:       &models.StringArray{},
+		Hints:       &models.Hints{},
 		JudgeConfig: challenge.JudgeConfig,
 	}
 

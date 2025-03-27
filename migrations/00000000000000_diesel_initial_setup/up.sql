@@ -60,7 +60,7 @@ CREATE TABLE "game_challenges" (
     "cur_score" double precision DEFAULT 0 NOT NULL,
     "enabled" bool DEFAULT false NOT NULL,
     "solved" jsonb DEFAULT '[]'::jsonb NOT NULL,
-    "hints" text[] DEFAULT '{}'::text[],
+    "hints" jsonb DEFAULT '[]'::jsonb,
     "judge_config" jsonb,
     "belong_stage" int4 DEFAULT 0,
     PRIMARY KEY (ingame_id)

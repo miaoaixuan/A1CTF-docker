@@ -651,10 +651,10 @@ function GameChallengeForm({ control, index, form, removeGameChallenge, gameData
                 </div>
                 <div className="flex-1" />
                 <div className="flex gap-1">
-                    <Button variant={"ghost"} size={"icon"} onClick={() => onEditChallenge(index)}>
+                    <Button variant={"ghost"} size={"icon"} type="button" onClick={() => onEditChallenge(index)}>
                         <Pencil />
                     </Button>
-                    <Button variant={"ghost"} size={"icon"}>
+                    <Button variant={"ghost"} size={"icon"} type="button">
                         <Trash2 />
                     </Button>
                 </div>
@@ -785,7 +785,11 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                 total_score: challenge.total_score,
                 cur_score: challenge.cur_score,
                 solve_count: challenge.solve_count,
-                hints: [],
+                hints: challenge.hints?.map((hint) => ({
+                    content: hint.content,
+                    create_time: dayjs(hint.create_time).toDate(),
+                    visible: hint.visible
+                })),
                 judge_config: {
                     judge_type: challenge.judge_config?.judge_type,
                     judge_script: challenge.judge_config?.judge_script || "",
@@ -849,6 +853,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                 return (
                     <Button
                         variant="ghost"
+                        type="button"
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
                         Name
@@ -864,6 +869,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                 return (
                     <Button
                         variant="ghost"
+                        type="button"
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
                         CreateTime
@@ -889,7 +895,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                 const data = row.original
     
                 return (
-                    <Button variant={"outline"} size={"sm"} className="select-none"
+                    <Button variant={"outline"} size={"sm"} type="button" className="select-none"
                         onClick={() => {
                             api.admin.addGameChallenge(data.GameID, data.ChallengeID).then((res) => {
                                 const challenge = res.data.data
@@ -932,11 +938,11 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
 
     function onSubmit(values: z.infer<typeof formSchema>) {
         const finalData = {
-            game_id: 0,
+            game_id: game_info.game_id,
             name: values.name,
             summary: values.summary,
             description: values.description,
-            poster: values.poster,
+            // poster: values.poster,
             invite_code: values.invite_code,
             start_time: format_date(values.start_time ?? new Date()),
             end_time: format_date(values.end_time ?? new Date()),
@@ -950,7 +956,11 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
             challenges: values.challenges
         };
 
-        console.log(finalData)
+        api.admin.updateGame(game_info.game_id ,  finalData as any as GameInfo).then((res) => {
+            toast.success("比赛信息更新成功", { position: "top-center" })
+        }).catch((err: AxiosError) => {
+            toast.error(err.response?.data as string, { position: "top-center" })
+        })
     }
 
     const [searchContent, setSearchContent] = useState("")
@@ -1093,6 +1103,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                                                     <FormControl>
                                                         <Button
                                                             variant={"outline"}
+                                                            type="button"
                                                             className={cn(
                                                                 "w-full pl-3 text-left font-normal",
                                                                 !field.value && "text-muted-foreground"
@@ -1122,6 +1133,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                                                                         .reverse()
                                                                         .map((hour) => (
                                                                             <Button
+                                                                                type="button"
                                                                                 key={hour}
                                                                                 size="icon"
                                                                                 variant={
@@ -1148,6 +1160,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                                                                     {Array.from({ length: 60 }, (_, i) => i).map(
                                                                         (minute) => (
                                                                             <Button
+                                                                                type="button"
                                                                                 key={minute}
                                                                                 size="icon"
                                                                                 variant={
@@ -1194,6 +1207,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                                                 <PopoverTrigger asChild>
                                                     <FormControl>
                                                         <Button
+                                                            type="button"
                                                             variant={"outline"}
                                                             className={cn(
                                                                 "w-full pl-3 text-left font-normal",
@@ -1224,6 +1238,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                                                                         .reverse()
                                                                         .map((hour) => (
                                                                             <Button
+                                                                                type="button"
                                                                                 key={hour}
                                                                                 size="icon"
                                                                                 variant={
@@ -1250,6 +1265,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                                                                     {Array.from({ length: 60 }, (_, i) => i).map(
                                                                         (minute) => (
                                                                             <Button
+                                                                                type="button"
                                                                                 key={minute}
                                                                                 size="icon"
                                                                                 variant={
@@ -1424,6 +1440,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                                                 <PopoverTrigger asChild>
                                                     <FormControl>
                                                         <Button
+                                                            type="button"
                                                             variant={"outline"}
                                                             className={cn(
                                                                 "w-full pl-3 text-left font-normal",
@@ -1454,6 +1471,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                                                                         .reverse()
                                                                         .map((hour) => (
                                                                             <Button
+                                                                                type="button"
                                                                                 key={hour}
                                                                                 size="icon"
                                                                                 variant={
@@ -1480,6 +1498,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                                                                     {Array.from({ length: 60 }, (_, i) => i).map(
                                                                         (minute) => (
                                                                             <Button
+                                                                                type="button"
                                                                                 key={minute}
                                                                                 size="icon"
                                                                                 variant={
@@ -1706,6 +1725,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                                             </div>
                                             <div className="flex gap-3 items-center">
                                                 <Button
+                                                    type="button"
                                                     variant="outline"
                                                     size="icon"
                                                     onClick={() => {
@@ -1720,6 +1740,7 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                                                     {curPage + 1} / {Math.ceil(totalCount / 5)}
                                                 </div>
                                                 <Button
+                                                    type="button"
                                                     variant="outline"
                                                     size="icon"
                                                     onClick={() => {
