@@ -238,11 +238,21 @@ func AddGameChallenge(c *gin.Context) {
 		return
 	}
 
-	var ingameID struct {
-		ingame_id int64
+	var gameChallenges []models.GameChallenge
+	if err := dbtool.DB().Where("challenge_id = ? AND game_id = ?", challengeID, gameID).Find(&gameChallenges).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Server error",
+		})
 	}
-	dbtool.DB().Where("game_id = ?", gameID).Order("ingame_id desc").Scan(&ingameID)
-	println(ingameID.ingame_id)
+
+	if len(gameChallenges) > 0 {
+		c.JSON(http.StatusConflict, gin.H{
+			"code":    409,
+			"message": "Challenge already added to game",
+		})
+		return
+	}
 
 	gameChallenge := models.GameChallenge{
 		GameID:      gameID,
@@ -265,6 +275,16 @@ func AddGameChallenge(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
-		"data": gameChallenge,
+		"data": gin.H{
+			"challenge_id":   challenge.ChallengeID,
+			"challenge_name": challenge.Name,
+			"total_score":    gameChallenge.TotalScore,
+			"cur_score":      gameChallenge.CurScore,
+			"hints":          gameChallenge.Hints,
+			"solve_count":    len(gameChallenge.Solved),
+			"category":       challenge.Category,
+			"judge_config":   gameChallenge.JudgeConfig,
+			"belong_stage":   gameChallenge.BelongStage,
+		},
 	})
 }

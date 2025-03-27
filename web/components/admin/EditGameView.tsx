@@ -907,6 +907,14 @@ export function EditGameView({ game_info, lng }: { game_info: GameInfo, lng: str
                                         flag_template: challenge.judge_config?.flag_template || "",
                                     }
                                 })
+                                toast.success("题目添加成功", { position: "top-center" })
+                            }).catch((err: AxiosError) => {
+                                const errorMessage: ErrorMessage = err.response?.data as ErrorMessage
+                                if (err.response?.status == 409) {
+                                    toast.error("此题目已经添加到比赛中了", { position: "top-center" })
+                                } else {
+                                    toast.error(errorMessage.message, { position: "top-center" })
+                                }
                             })
                             // console.log(data)
                         }}
