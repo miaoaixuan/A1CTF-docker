@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 
@@ -264,8 +263,6 @@ func AdminUpdateGame(c *gin.Context) {
 			Hints:       chal.Hints,
 			JudgeConfig: chal.JudgeConfig,
 		}
-
-		log.Printf("Update game challenge: %+v", updateModel)
 
 		if err := dbtool.DB().Model(&models.GameChallenge{}).Where("challenge_id = ? AND game_id = ?", chal.ChallengeID, gameID).Updates(updateModel).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{

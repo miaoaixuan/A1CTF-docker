@@ -99,12 +99,12 @@ type PermissionSetting struct {
 }
 
 var PermissionMap = map[string]PermissionSetting{
-	"\\/api\\/Login":                      {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/file\\/upload":              {RequestMethod: []string{"POST"}, Permissions: []string{}},
-	"\\/api\\/admin\\/challenge\\/list":   {RequestMethod: []string{"GET", "POST"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/admin\\/challenge\\/create": {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	"\\/api\\/Login":                    {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	"\\/api\\/file\\/upload":            {RequestMethod: []string{"POST"}, Permissions: []string{}},
+	"\\/api\\/admin\\/challenge\\/list": {RequestMethod: []string{"GET", "POST"}, Permissions: []string{"ADMIN"}},
+	// "\\/api\\/admin\\/challenge\\/create": {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
 	// "\\/api\\/admin\\/challenge\\/delete":  {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/admin\\/challenge\\/[\\d]+$": {RequestMethod: []string{"GET", "PUT", "DELETE"}, Permissions: []string{"ADMIN"}},
+	"\\/api\\/admin\\/challenge\\/[\\d]+$": {RequestMethod: []string{"GET", "PUT", "DELETE", "POST"}, Permissions: []string{"ADMIN"}},
 	// "\\/api\\/admin\\/challenge\\/update":  {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
 	"\\/api\\/admin\\/challenge\\/search": {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
 
@@ -224,8 +224,8 @@ func main() {
 		challengeGroup := auth.Group("/admin/challenge")
 		{
 			challengeGroup.POST("/list", controllers.AdminListChallenges)
-			challengeGroup.POST("/create", controllers.AdminCreateChallenge)
 
+			challengeGroup.POST("/:challenge_id", controllers.AdminCreateChallenge)
 			challengeGroup.DELETE("/:challenge_id", controllers.AdminDeleteChallenge)
 			challengeGroup.GET("/:challenge_id", controllers.AdminGetChallenge)
 			challengeGroup.PUT("/:challenge_id", controllers.AdminUpdateChallenge)
