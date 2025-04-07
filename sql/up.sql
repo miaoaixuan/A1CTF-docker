@@ -54,9 +54,11 @@ CREATE TABLE "game_challenges" (
     "challenge_id" BIGSERIAL NOT NULL REFERENCES challenges(challenge_id),
     "total_score" double precision DEFAULT 0 NOT NULL,
     "cur_score" double precision DEFAULT 0 NOT NULL,
+    "minimal_score" double precision DEFAULT 0 NOT NULL,
     "enabled" bool DEFAULT false NOT NULL,
-    "solved" jsonb DEFAULT '[]'::jsonb NOT NULL,
+    "difficulty" double precision DEFAULT 5 NOT NULL,
     "hints" jsonb DEFAULT '[]'::jsonb,
+    "solve_count" int4 DEFAULT 0 NOT NULL,
     "judge_config" jsonb,
     "belong_stage" int4 DEFAULT 0,
     PRIMARY KEY (ingame_id)
@@ -113,3 +115,15 @@ CREATE TABLE "uploads" (
     "upload_time" timestamp NOT NULL,
     PRIMARY KEY (file_id)
 );
+
+CREATE TABLE "solves" (
+    "solve_id" uuid NOT NULL,
+    "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
+    "challenge_id" BIGSERIAL NOT NULL REFERENCES challenges(challenge_id),
+    "team_id" BIGSERIAL NOT NULL REFERENCES teams(team_id),
+    "container_id" uuid REFERENCES containers(container_id),
+    "solve_status" int4 NOT NULL,
+    "solve_time" timestamp NOT NULL,
+    "rank" int4 NOT NULL,
+    PRIMARY KEY (solve_id)
+)
