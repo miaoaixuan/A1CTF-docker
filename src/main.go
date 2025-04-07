@@ -17,6 +17,9 @@ import (
 	"github.com/go-co-op/gocron/v2"
 
 	"github.com/joho/godotenv"
+
+	cache "github.com/chenyahui/gin-cache"
+	"github.com/chenyahui/gin-cache/persist"
 )
 
 func Index(c *gin.Context) {
@@ -112,6 +115,8 @@ var PermissionMap = map[string]PermissionSetting{
 	"\\/api\\/admin\\/game\\/create":                       {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
 	"\\/api\\/admin\\/game\\/[\\d]+$":                      {RequestMethod: []string{"GET", "POST", "PUT"}, Permissions: []string{"ADMIN"}},
 	"\\/api\\/admin\\/game\\/[\\d]+\\/challenge\\/[\\d]+$": {RequestMethod: []string{"PUT"}, Permissions: []string{"ADMIN"}},
+
+	"\\/api\\/game\\/list": {RequestMethod: []string{"POST"}, Permissions: []string{}},
 }
 
 // Helper function to check if a slice contains a value
@@ -195,7 +200,11 @@ func StartLoopEvent() {
 func main() {
 	godotenv.Load()
 
+	memoryStore := persist.NewMemoryStore(1 * time.Minute)
 	r := gin.Default()
+
+	// 关闭日志输出
+	// r := gin.New()
 
 	authMiddleware, err := jwt.New(initParams())
 	if err != nil {
@@ -240,6 +249,12 @@ func main() {
 			gameGroup.GET("/:game_id", controllers.AdminGetGame)
 			gameGroup.PUT("/:game_id/challenge/:challenge_id", controllers.AdminAddGameChallenge)
 			gameGroup.PUT("/:game_id", controllers.AdminUpdateGame)
+		}
+
+		// 用户相关接口
+		userGameGroup := auth.Group("/game")
+		{
+			userGameGroup.POST("/list", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.UserListGames)
 		}
 	}
 
