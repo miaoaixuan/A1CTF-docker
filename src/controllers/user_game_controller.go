@@ -154,7 +154,7 @@ func UserGetGameDetailWithChallenges(c *gin.Context) {
 			"total_score":    gc.GameChallenge.TotalScore,
 			"cur_score":      gc.GameChallenge.CurScore,
 			"hints":          gc.GameChallenge.Hints,
-			"solve_count":    len(gc.Solved),
+			"solve_count":    gc.SolveCount,
 			"category":       gc.Challenge.Category,
 			"judge_config":   judgeConfig,
 			"belong_stage":   gc.GameChallenge.BelongStage,

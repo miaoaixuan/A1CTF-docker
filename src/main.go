@@ -11,6 +11,7 @@ import (
 
 	"a1ctf/src/controllers"
 	"a1ctf/src/db/models"
+	"a1ctf/src/jobs"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
@@ -186,11 +187,7 @@ func StartLoopEvent() {
 			1*time.Second,
 		),
 		gocron.NewTask(
-			func(a string, b int) {
-				println(time.Time.String(time.Now()))
-			},
-			"hello",
-			1,
+			jobs.UpdateActivateGames,
 		),
 	)
 
@@ -262,7 +259,7 @@ func main() {
 	r.NoRoute(authMiddleware.MiddlewareFunc(), handleNoRoute())
 
 	// 任务线程
-	// StartLoopEvent()
+	StartLoopEvent()
 
 	log.Fatal(r.Run(":7777"))
 
