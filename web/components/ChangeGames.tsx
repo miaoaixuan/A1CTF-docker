@@ -6,7 +6,11 @@ import { CalendarPlus, CalendarX2, ChevronDown, ChevronsLeft, ChevronsRight, Che
 import { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion";
 
-import { api, BasicGameInfoModel } from '@/utils/GZApi'
+// import { api, GameSimpleInfo } from '@/utils/GZApi'
+
+import { GameSimpleInfo } from '@/utils/A1API'
+import { api } from "@/utils/ApiHelper";
+
 import { MacScrollbar } from "mac-scrollbar";
 import { useTheme } from "next-themes";
 
@@ -47,7 +51,7 @@ export function ChangeGames() {
 
     const [width, setWidth] = useState<number>(0)
 
-    const [curGames, setCurGames] = useState<BasicGameInfoModel[]>()
+    const [curGames, setCurGames] = useState<GameSimpleInfo[]>()
 
     const { setIsChangingGame, setCurSwitchingGame, setPosterData } = useGameSwitchContext();
 
@@ -90,8 +94,8 @@ export function ChangeGames() {
 
     useEffect(() => {
 
-        api.game.gameGames().then((res) => {
-            setCurGames(res.data.toSorted((a, b) => b.start - a.start))
+        api.user.userListGames().then((res) => {
+            setCurGames(res.data.data.toSorted((a, b) => dayjs(b.start_time).unix() - dayjs(a.start_time).unix()))
 
             setTimeout(() => {
                 setLoadingPageVisible(false)
@@ -132,17 +136,17 @@ export function ChangeGames() {
         }
     }, [])
 
-    const checkTime = (game: BasicGameInfoModel) => {
+    const checkTime = (game: GameSimpleInfo) => {
         const curTime = dayjs()
-        const start = dayjs(game.start)
-        const end = dayjs(game.end)
+        const start = dayjs(game.start_time)
+        const end = dayjs(game.end_time)
 
         if (curTime < start) return -1
         else if (curTime > start && curTime < end) return 0
         else return 1
     }
 
-    const getGameFlag = (game: BasicGameInfoModel) => {
+    const getGameFlag = (game: GameSimpleInfo) => {
         switch (checkTime(game)) {
             case -1:
                 return "bg-blue-500"
@@ -155,7 +159,7 @@ export function ChangeGames() {
         }
     }
 
-    const getGameStatus = (game: BasicGameInfoModel) => {
+    const getGameStatus = (game: GameSimpleInfo) => {
         switch (checkTime(game)) {
             case -1:
                 return t("game_status_pending")
@@ -188,7 +192,7 @@ export function ChangeGames() {
 
             // 动画时间
             setTimeout(() => {
-                router.push(`/zh/games/${curGame.id}`);
+                router.push(`/zh/games/${curGame.game_id}`);
             }, 1800)
         })
     }
@@ -236,7 +240,7 @@ export function ChangeGames() {
                                         >
                                             <Dices size={index == curIndex ? 28 : 20} className="transition-all duration-300 flex-none" />
                                             <div className="flex flex-col gap-1 overflow-hidden w-full">
-                                                <span className={`${index == curIndex ? "text-lg" : "text-[16px]"} transition-all duration-300 text-ellipsis overflow-hidden whitespace-nowrap`}>{game.title}</span>
+                                                <span className={`${index == curIndex ? "text-lg" : "text-[16px]"} transition-all duration-300 text-ellipsis overflow-hidden whitespace-nowrap`}>{game.name}</span>
                                                 <span className={`mt-[-8px] ${index == curIndex ? "text-[12px]" : "text-[10px]"} transition-all duration-300`}>{game.summary}</span>
                                             </div>
                                         </div>
@@ -278,7 +282,7 @@ export function ChangeGames() {
                                                     >
                                                         <Dices size={index == curIndex ? 28 : 20} className="transition-all duration-300 flex-none" />
                                                         <div className="flex flex-col gap-1 overflow-hidden w-full">
-                                                            <span className={`${index == curIndex ? "text-lg" : "text-[16px]"} transition-all duration-300 text-ellipsis overflow-hidden whitespace-nowrap`}>{game.title}</span>
+                                                            <span className={`${index == curIndex ? "text-lg" : "text-[16px]"} transition-all duration-300 text-ellipsis overflow-hidden whitespace-nowrap`}>{game.name}</span>
                                                             <span className={`mt-[-8px] ${index == curIndex ? "text-[12px]" : "text-[10px]"} transition-all duration-300`}>{game.summary}</span>
                                                         </div>
                                                     </div>
@@ -314,11 +318,11 @@ export function ChangeGames() {
                                                     >
                                                         <div className={`transition-[border-color,transform,background] duration-300 absolute border-2 border-[#121212] dark:border-white w-[40%] h-[20%] rounded-[8px] z-10 ${width >= 1200 ? "translate-x-[-25%] translate-y-[-50%]" : "top-2 left-2"}`}>
                                                             <div className="flex max-w-[400px] flex-col w-full h-full pl-6 pr-6 justify-center bg-background/95 dark:bg-background/85 rounded-[8px]">
-                                                                <span className="font-bold text-nowrap overflow-hidden text-ellipsis" title={game.title}
+                                                                <span className="font-bold text-nowrap overflow-hidden text-ellipsis" title={game.name}
                                                                     style={{
                                                                         fontSize: "clamp(10px, 2.3vw, 24px)"
                                                                     }}
-                                                                >{game.title}</span>
+                                                                >{game.name}</span>
                                                                 <span
                                                                     style={{
                                                                         fontSize: "clamp(6px, 1.8vw, 18px)"
@@ -340,8 +344,8 @@ export function ChangeGames() {
                                                             </div>
                                                         </div>
                                                         <div className="absolute z-10 bottom-5 left-5 rounded-xl flex flex-col items-center justify-center border-foreground/80 bg-background/20 backdrop-blur-sm    transition-transform duration-300 p-2 pl-4 pr-4">
-                                                            <span className="font-bold text-green-400" >{ dayjs(game.start).format("YYYY/MM/DD HH:mm:ss") }</span>
-                                                            <span className="font-bold text-red-400" >{ dayjs(game.end).format("YYYY/MM/DD HH:mm:ss") }</span>
+                                                            <span className="font-bold text-green-400" >{ dayjs(game.start_time).format("YYYY/MM/DD HH:mm:ss") }</span>
+                                                            <span className="font-bold text-red-400" >{ dayjs(game.end_time).format("YYYY/MM/DD HH:mm:ss") }</span>
                                                         </div>
                                                         <Image
                                                             className="select-none"
@@ -369,7 +373,7 @@ export function ChangeGames() {
                                 <DropdownMenu modal={false}>
                                     <DropdownMenuTrigger asChild className="overflow-hidden flex-1 h-full">
                                         <Button variant="ghost" className="w-full h-full">
-                                            <span className="text-[1.1em] font-bold text-ellipsis text-nowrap overflow-hidden">{curGames[curIndex].title}</span>
+                                            <span className="text-[1.1em] font-bold text-ellipsis text-nowrap overflow-hidden">{curGames[curIndex].name}</span>
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent className="backdrop-blur-lg border-foreground/5 rounded-lg mt-[10px] bg-background/30">
@@ -388,7 +392,7 @@ export function ChangeGames() {
                                                         }} 
                                                     >
                                                         <Flag className={`flex-none transition-all duration-300 ${ curIndex == index ? "fill-foreground" : "" }`} size={20}/>
-                                                        <span className={`overflow-hidden text-ellipsis text-nowrap transition-colors duration-300 font-bold`}>{ ele.title }</span>
+                                                        <span className={`overflow-hidden text-ellipsis text-nowrap transition-colors duration-300 font-bold`}>{ ele.name }</span>
                                                     </div>
                                                 )) }
                                             </div>
@@ -425,18 +429,18 @@ export function ChangeGames() {
                             <div className="w-full border-2 rounded-xl relative overflow-hidden shadow-lg transition-[border-color] duration-300 p-4 pl-7 pr-7">
                                 <div className="w-full h-full">
                                     <MacScrollbar className="flex flex-col gap-1 h-full overflow-hidden" skin={theme == "light" ? "light" : "dark"}>
-                                        <span className="text-2xl font-bold mb-[5px]">{curGames[curIndex].title}</span>
+                                        <span className="text-2xl font-bold mb-[5px]">{curGames[curIndex].name}</span>
                                         <div className="flex items-center gap-2">
                                             <NotebookTabs size={22} />
                                             <span className="text-sm font-bold">{curGames[curIndex].summary || t("game_nocontext")}</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <CalendarPlus size={22} />
-                                            <span className="text-sm font-bold">{dayjs(curGames[curIndex].start).format("YYYY-MM-DD HH:mm:ss")}</span>
+                                            <span className="text-sm font-bold">{dayjs(curGames[curIndex].start_time).format("YYYY-MM-DD HH:mm:ss")}</span>
                                         </div>
                                         <div className="flex items-center gap-2 mb-[5px]">
                                             <CalendarX2 size={22} />
-                                            <span className="text-sm font-bold">{dayjs(curGames[curIndex].end).format("YYYY-MM-DD HH:mm:ss")}</span>
+                                            <span className="text-sm font-bold">{dayjs(curGames[curIndex].end_time).format("YYYY-MM-DD HH:mm:ss")}</span>
                                         </div>
                                     </MacScrollbar>
                                 </div>

@@ -29,7 +29,11 @@ import { ResizableScrollablePanel } from "@/components/ResizableScrollablePanel"
 import { Mdx } from "./MdxCompoents";
 import { useEffect, useRef, useState } from "react";
 
-import { api, ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeType, ChallengeInfo, ChallengeType, ErrorMessage, TeamInfoModel, ParticipationStatus, ContainerStatus, ContainerInfoModel } from '@/utils/GZApi'
+// import { api, ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeCategory, ChallengeInfo, ChallengeType, ErrorMessage, TeamInfoModel, ParticipationStatus, ContainerStatus, ContainerInfoModel } from '@/utils/GZApi'
+
+import { api } from "@/utils/ApiHelper"
+import { ErrorMessage, GameNotice, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "@/utils/A1API"
+
 import { Skeleton } from "./ui/skeleton";
 
 import * as signalR from '@microsoft/signalr'
@@ -115,24 +119,24 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     const t2 = useTranslations("notices_view")
 
     // 所有题目
-    const [challenges, setChallenges] = useState<Record<string, ChallengeInfo[]>>({})
+    const [challenges, setChallenges] = useState<Record<string, UserSimpleGameChallenge[]>>({})
 
     // 当前选中的题目
-    const [curChallenge, setCurChallenge] = useState<ChallengeDetailModel>({})
-    const curChallengeDetail = useRef<ChallengeInfo>({})
+    const [curChallenge, setCurChallenge] = useState<UserDetailGameChallenge>()
+    const curChallengeDetail = useRef<UserDetailGameChallenge>()
 
     // 比赛信息
-    const [gameDetail, setGameDeatail] = useState<GameDetailModel>({
-        teamToken: "",
-        writeupRequired: false,
-        writeupDeadline: 0,
-        challenges: undefined,
-        challengeCount: undefined,
-        rank: null,
-    })
+    // const [gameDetail, setGameDeatail] = useState<GameDetailModel>({
+    //     teamToken: "",
+    //     writeupRequired: false,
+    //     writeupDeadline: 0,
+    //     challenges: undefined,
+    //     challengeCount: undefined,
+    //     rank: null,
+    // })
 
     // 前一个题目
-    const prevChallenge = useRef<ChallengeDetailModel>({});
+    const prevChallenge = useRef<UserDetailGameChallenge>();
 
     // 头像 URL
     const [avatarURL, setAvatarURL] = useState("#")
@@ -145,7 +149,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     const [userName, setUserName] = useState("")
 
     // 比赛详细信息
-    const [gameInfo, setGameInfo] = useState<DetailedGameInfoModel>({})
+    const [gameInfo, setGameInfo] = useState<UserFullGameInfo>()
 
     // 加载动画
     const [loadingVisiblity, setLoadingVisibility] = useState(true)
@@ -188,13 +192,15 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
 
     const checkInterStarted = useRef(false)
 
-    const [availableTeams, setAvailableTeams] = useState<TeamInfoModel[]>([])
+    // FIXME TeamInfoModel
+    // const [availableTeams, setAvailableTeams] = useState<TeamInfoModel[]>([])
     const [preJoinDataPrepared, setPreJoinDataPrepared] = useState(false)
 
     const [curChoosedTeam, setCurChoosedTeam] = useState<number>(-1)
 
     const [containerLaunching, setContainerLaunching] = useState(false)
-    const [containerInfo, setContainerInfo] = useState<ContainerInfoModel>({})
+    // FIXME ContainerInfoModel
+    // const [containerInfo, setContainerInfo] = useState<ContainerInfoModel>({})
     const [containerLeftTime, setContainerLeftTime] = useState("")
 
     const [blood, setBlood] = useState("")
@@ -207,9 +213,9 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
 
     // 更新当前选中题目信息, 根据 Websocket 接收到的信息被动调用
     const updateChallenge = () => {
-        if (!prevChallenge.current.title) return
-        api.game.gameGetChallenge(gameID, prevChallenge.current.id || 0).then((response) => {
-            setCurChallenge(response.data || {})
+        if (!prevChallenge.current) return
+        api.user.userGetGameChallenge(gameID, prevChallenge.current.challenge_id || 0).then((response) => {
+            setCurChallenge(response.data.data || {})
         }).catch((error: AxiosError) => { })
     }
 
@@ -230,29 +236,30 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
 
     useEffect(() => {
 
-        if (curChallenge.context?.closeTime) {
-            setContainerInfo({
-                entry: curChallenge.context.instanceEntry || "",
-                status: ContainerStatus.Running,
-                expectStopAt: curChallenge.context?.closeTime
-            })
-            setContainerLaunching(true)
-        } else {
-            setContainerLaunching(false)
-            setContainerInfo({})
-        }
+        // TODO 初始化阶段的靶机存活判断重写
+        // if (curChallenge.context?.closeTime) {
+        //     setContainerInfo({
+        //         entry: curChallenge.context.instanceEntry || "",
+        //         status: ContainerStatus.Running,
+        //         expectStopAt: curChallenge.context?.closeTime
+        //     })
+        //     setContainerLaunching(true)
+        // } else {
+        //     setContainerLaunching(false)
+        //     setContainerInfo({})
+        // }
 
         // 切换题目重置折叠状态
         if (JSON.stringify(curChallenge) == JSON.stringify(prevChallenge.current)) return
         prevChallenge.current = curChallenge
 
         Object.keys(challenges).forEach((obj) => {
-            const detail = challenges[obj].find((obj) => obj.id == curChallenge.id)
+            const detail = challenges[obj].find((obj) => obj.challenge_id == curChallenge?.challenge_id)
             if (detail) curChallengeDetail.current = detail
         })
 
         const noneDict: Record<number, boolean> = {}
-        for (let i = 0; i < (curChallenge.hints?.length || 0); i++) {
+        for (let i = 0; i < (curChallenge?.hints?.length || 0); i++) {
             noneDict[i] = true
         }
         setFoldedItems(noneDict)
@@ -264,52 +271,53 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
         }
     }, [curChallenge]);
 
-    useEffect(() => {
-        if (dayjs(containerInfo.expectStopAt) > dayjs()) {
-            setContainerLeftTime(formatDuration(dayjs(containerInfo.expectStopAt).diff(dayjs()) / 1000))
-            const leftTimeInter = setInterval(() => {
-                if (dayjs(containerInfo.expectStopAt) > dayjs()) {
-                    setContainerLeftTime(formatDuration(dayjs(containerInfo.expectStopAt).diff(dayjs()) / 1000))
-                } else {
-                    setContainerInfo({})
-                }
-            }, 500)
+    // TODO 靶机生存时间判断重写
+    // useEffect(() => {
+    //     if (dayjs(containerInfo.expectStopAt) > dayjs()) {
+    //         setContainerLeftTime(formatDuration(dayjs(containerInfo.expectStopAt).diff(dayjs()) / 1000))
+    //         const leftTimeInter = setInterval(() => {
+    //             if (dayjs(containerInfo.expectStopAt) > dayjs()) {
+    //                 setContainerLeftTime(formatDuration(dayjs(containerInfo.expectStopAt).diff(dayjs()) / 1000))
+    //             } else {
+    //                 setContainerInfo({})
+    //             }
+    //         }, 500)
 
-            return () => clearInterval(leftTimeInter)
-        } else if (dayjs(containerInfo.expectStopAt) < dayjs()) {
-            setContainerInfo({})
-        }
-    }, [containerInfo])
+    //         return () => clearInterval(leftTimeInter)
+    //     } else if (dayjs(containerInfo.expectStopAt) < dayjs()) {
+    //         setContainerInfo({})
+    //     }
+    // }, [containerInfo])
 
     useEffect(() => {
 
         // 获取比赛信息以及剩余时间
-        api.game.gameGame(gameID).then((res) => {
-            setGameInfo(res.data)
+        api.user.userGetGameInfoWithTeamInfo(gameID).then((res) => {
+            setGameInfo(res.data.data)
 
             // 第一步 检查是否报名
-            if (res.data.status == ParticipationStatus.Unsubmitted) {
+            if (res.data.data.team_status == ParticipationStatus.UnRegistered) {
                 // 未报名
                 setGameStatus("unRegistered")
-            } else if (res.data.status == ParticipationStatus.Pending) {
+            } else if (res.data.data.team_status == ParticipationStatus.Pending) {
                 // 审核中
                 setGameStatus("waitForProcess")
-            } else if (res.data.status == ParticipationStatus.Accepted) {
-                if (dayjs() < dayjs(res.data.start)) {
+            } else if (res.data.data.team_status == ParticipationStatus.Approved) {
+                if (dayjs() < dayjs(res.data.data.start_time)) {
                     // 等待比赛开始
                     setGameStatus("pending")
-                } else if (dayjs() < dayjs(res.data.end)) {
+                } else if (dayjs() < dayjs(res.data.data.end_time)) {
                     // 比赛进行中
                     setGameStatus("running")
-                } else if (dayjs() > dayjs(res.data.end)) {
-                    if (!res.data.practiceMode) {
+                } else if (dayjs() > dayjs(res.data.data.end_time)) {
+                    if (!res.data.data.practice_mode) {
                         setGameStatus("ended")
                     } else {
                         // 练习模式
                         setGameStatus("practiceMode")
                     }
                 }
-            } else if (res.data.status == ParticipationStatus.Suspended) {
+            } else if (res.data.data.team_status == ParticipationStatus.Banned) {
                 // 禁赛
                 setGameStatus("banned")
             }
@@ -326,17 +334,17 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     }, [id])
 
     useEffect(() => {
-
+        console.log("GameStatus", gameStatus)
         // 根据比赛状态处理事件
         if (gameStatus == "running" || gameStatus == "practiceMode") {
 
-            const totalTime = Math.floor(dayjs(gameInfo.end).diff(dayjs(gameInfo.start)) / 1000)
+            const totalTime = Math.floor(dayjs(gameInfo?.end_time).diff(dayjs(gameInfo?.start_time)) / 1000)
             let timeIter: NodeJS.Timeout;
 
             // 比赛时间倒计时
             if (gameStatus != "practiceMode") {
                 timeIter = setInterval(() => {
-                    const curLeft = Math.floor(dayjs(gameInfo.end).diff(dayjs()) / 1000)
+                    const curLeft = Math.floor(dayjs(gameInfo?.end_time).diff(dayjs()) / 1000)
 
                     setRemainTime(formatDuration(curLeft))
                     setRemainTimePercent(Math.floor((curLeft / totalTime) * 100))
@@ -349,18 +357,18 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             setTimeout(() => setLoadingVisibility(false), 200)
 
             // 获取比赛通知
-            api.game.gameNotices(gameID).then((res) => {
+            api.user.userGetGameNotices(gameID).then((res) => {
                 const filtedNotices: GameNotice[] = []
                 let curIndex = 0
 
-                res.data.sort((a, b) => (b.time - a.time))
+                res.data.data.sort((a, b) => (dayjs(b.create_time).unix() - dayjs(a.create_time).unix()))
 
-                res.data.forEach((obj) => {
-                    if (obj.type == NoticeType.Normal) filtedNotices[curIndex++] = obj
+                res.data.data.forEach((obj) => {
+                    if (obj.notice_category == NoticeCategory.NewAnnouncement) filtedNotices[curIndex++] = obj
                 })
 
-                res.data.forEach((obj) => {
-                    if ([NoticeType.FirstBlood, NoticeType.SecondBlood, NoticeType.ThirdBlood].includes(obj.type)) filtedNotices[curIndex++] = obj
+                res.data.data.forEach((obj) => {
+                    if ([NoticeCategory.FirstBlood, NoticeCategory.SecondBlood, NoticeCategory.ThirdBlood].includes(obj.notice_category)) filtedNotices[curIndex++] = obj
                 })
 
                 noticesRef.current = filtedNotices
@@ -380,12 +388,12 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             connection.on('ReceivedGameNotice', (message: GameNotice) => {
                 console.log(message)
 
-                if (message.type == NoticeType.NewHint && message.values[0] == prevChallenge.current.title) {
+                if (message.notice_category == NoticeCategory.NewHint && message.data[0] == prevChallenge.current?.challenge_name) {
                     // 防止并发
                     setTimeout(updateChallenge, randomInt(200, 600))
                 }
 
-                if (message.type == NoticeType.Normal) {
+                if (message.notice_category == NoticeCategory.NewAnnouncement) {
 
                     const newNotices: GameNotice[] = []
 
@@ -397,21 +405,21 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                     noticesRef.current = newNotices
                     setNotices(newNotices)
 
-                    toastNewNotice({ title: message.values[0], time: message.time, openNotices: setNoticeOpened })
+                    toastNewNotice({ title: message.data[0], time: dayjs(message.create_time).unix(), openNotices: setNoticeOpened })
                 }
 
-                if ([NoticeType.FirstBlood, NoticeType.SecondBlood, NoticeType.ThirdBlood].includes(message.type) && gameInfo.teamName?.toString().trim() == message.values[0].toString().trim()) {
-                    switch (message.type) {
-                        case NoticeType.FirstBlood:
-                            setBloodMessage(`${t2("congratulations")}${t2("blood_message_p1")} ${message.values[1]} ${t2("blood1")}`)
+                if ([NoticeCategory.FirstBlood, NoticeCategory.SecondBlood, NoticeCategory.ThirdBlood].includes(message.notice_category) && gameInfo?.team_info?.team_name?.toString().trim() == message.data[0].toString().trim()) {
+                    switch (message.notice_category) {
+                        case NoticeCategory.FirstBlood:
+                            setBloodMessage(`${t2("congratulations")}${t2("blood_message_p1")} ${message.data[1]} ${t2("blood1")}`)
                             setBlood("gold")
                             break
-                        case NoticeType.SecondBlood:
-                            setBloodMessage(`${t2("congratulations")}${t2("blood_message_p1")} ${message.values[1]} ${t2("blood2")}`)
+                        case NoticeCategory.SecondBlood:
+                            setBloodMessage(`${t2("congratulations")}${t2("blood_message_p1")} ${message.data[1]} ${t2("blood2")}`)
                             setBlood("silver")
                             break
-                        case NoticeType.ThirdBlood:
-                            setBloodMessage(`${t2("congratulations")}${t2("blood_message_p1")} ${message.values[1]} ${t2("blood3")}`)
+                        case NoticeCategory.ThirdBlood:
+                            setBloodMessage(`${t2("congratulations")}${t2("blood_message_p1")} ${message.data[1]} ${t2("blood3")}`)
                             setBlood("copper")
                             break
                     }
@@ -434,31 +442,35 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
 
         } else if (gameStatus == "unRegistered") {
             // 未注册 先获取队伍信息
-            api.team.teamGetTeamsInfo().then((res) => {
-                setAvailableTeams(res.data)
 
-                // 设置加载遮罩状态
-                setPreJoinDataPrepared(true)
-                setTimeout(() => setLoadingVisibility(false), 200)
-            }).catch((error: AxiosError) => {
-                if (error.response?.status) {
-                    if (error.response.status == 401) {
-                        setGameStatus("unLogin")
-                    }
-                }
-            })
+            // TODO 修改每场比赛创建一个队伍
+            
+            // api.team.teamGetTeamsInfo().then((res) => {
+            //     setAvailableTeams(res.data)
+
+            //     // 设置加载遮罩状态
+            //     setPreJoinDataPrepared(true)
+            //     setTimeout(() => setLoadingVisibility(false), 200)
+            // }).catch((error: AxiosError) => {
+            //     if (error.response?.status) {
+            //         if (error.response.status == 401) {
+            //             setGameStatus("unLogin")
+            //         }
+            //     }
+            // })
+            setTimeout(() => setLoadingVisibility(false), 200)
         } else if (gameStatus == "waitForProcess") {
             // 启动一个监听进程
             const refershTeamStatusInter = setInterval(() => {
-                api.game.gameGame(gameID).then((res) => {
-                    if (res.data.status == ParticipationStatus.Accepted) {
-                        if (dayjs() < dayjs(res.data.start)) {
+                api.user.userGetGameInfoWithTeamInfo(gameID).then((res) => {
+                    if (res.data.data.team_status == ParticipationStatus.Approved) {
+                        if (dayjs() < dayjs(res.data.data.start_time)) {
                             // 等待比赛开始
                             setGameStatus("pending")
-                        } else if (dayjs() < dayjs(res.data.end)) {
+                        } else if (dayjs() < dayjs(res.data.data.end_time)) {
                             // 比赛进行中
                             setGameStatus("running")
-                        } else if (dayjs() > dayjs(res.data.end)) {
+                        } else if (dayjs() > dayjs(res.data.data.end_time)) {
                             setGameStatus("ended")
                         }
                         // 结束监听
@@ -473,10 +485,10 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
         } else if (gameStatus == "pending") {
             const penddingTimeInter = setInterval(() => {
                 // 如果当前时间大于开始时间
-                if (dayjs() > dayjs(gameInfo.start)) {
+                if (dayjs() > dayjs(gameInfo?.start_time)) {
                     clearInterval(penddingTimeInter)
                     const checkGameStartedInter = setInterval(() => {
-                        api.game.gameChallengesWithTeamInfo(gameID).then((res) => {
+                        api.user.userGetGameChallenges(gameID).then((res) => {
                             clearInterval(checkGameStartedInter)
 
                             // 防卡
@@ -486,7 +498,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                         }).catch((error: AxiosError) => { })
                     }, 2000)
                 } else {
-                    setBeforeGameTime(formatDuration(Math.floor(dayjs(gameInfo.start).diff(dayjs()) / 1000)))
+                    setBeforeGameTime(formatDuration(Math.floor(dayjs(gameInfo?.start_time).diff(dayjs()) / 1000)))
                 }
             }, 500)
 
@@ -517,129 +529,132 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     }
 
     const handleDownload = () => {
-        if (curChallenge.context?.url) {
-            const url = curChallenge.context?.url;
+        // TODO 下载文件逻辑重写
+        // if (curChallenge.context?.url) {
+        //     const url = curChallenge.context?.url;
 
-            // 判断是否是本地附件
-            if (curChallenge.context.fileSize) {
-                const fileName = getAttachmentName(url);
-                setDownloadName(fileName);
+        //     // 判断是否是本地附件
+        //     if (curChallenge.context.fileSize) {
+        //         const fileName = getAttachmentName(url);
+        //         setDownloadName(fileName);
 
-                // 开始下载
-                const fetchFile = async () => {
-                    try {
-                        const response = await fetch(url);
-                        const contentLength = response.headers.get("Content-Length") || "";
-                        if (!response.ok) {
-                            throw new Error("Network response was not ok");
-                        }
+        //         // 开始下载
+        //         const fetchFile = async () => {
+        //             try {
+        //                 const response = await fetch(url);
+        //                 const contentLength = response.headers.get("Content-Length") || "";
+        //                 if (!response.ok) {
+        //                     throw new Error("Network response was not ok");
+        //                 }
 
-                        const reader = response.body!.getReader();
-                        const totalBytes = parseInt(contentLength, 10);
-                        let receivedBytes = 0;
+        //                 const reader = response.body!.getReader();
+        //                 const totalBytes = parseInt(contentLength, 10);
+        //                 let receivedBytes = 0;
 
-                        // 创建一个新的 Blob 来保存文件内容
-                        const chunks: Uint8Array[] = [];
-                        const pump = async () => {
-                            const { done, value } = await reader.read();
-                            if (done) {
-                                const blob = new Blob(chunks);
-                                const downloadUrl = URL.createObjectURL(blob);
+        //                 // 创建一个新的 Blob 来保存文件内容
+        //                 const chunks: Uint8Array[] = [];
+        //                 const pump = async () => {
+        //                     const { done, value } = await reader.read();
+        //                     if (done) {
+        //                         const blob = new Blob(chunks);
+        //                         const downloadUrl = URL.createObjectURL(blob);
 
-                                setTimeout(() => {
-                                    setDownloadName("");  // 清除文件名
-                                    setAttachDownloadProgress(0); // 重置进度条
+        //                         setTimeout(() => {
+        //                             setDownloadName("");  // 清除文件名
+        //                             setAttachDownloadProgress(0); // 重置进度条
 
-                                    setTimeout(() => {
-                                        const a = document.createElement("a");
-                                        a.href = downloadUrl;
-                                        a.download = dayjs().format("HHmmss") + "_" + fileName;
-                                        a.click();
-                                        URL.revokeObjectURL(downloadUrl);
-                                    }, 300)
-                                }, 1500)
+        //                             setTimeout(() => {
+        //                                 const a = document.createElement("a");
+        //                                 a.href = downloadUrl;
+        //                                 a.download = dayjs().format("HHmmss") + "_" + fileName;
+        //                                 a.click();
+        //                                 URL.revokeObjectURL(downloadUrl);
+        //                             }, 300)
+        //                         }, 1500)
 
-                                return;
-                            }
+        //                         return;
+        //                     }
 
-                            // 保存当前的下载进度
-                            chunks.push(value);
-                            receivedBytes += value.length;
-                            const progress = Math.min(100, (receivedBytes / totalBytes) * 100);
-                            if (progress < 100) {
-                                setAttachDownloadProgress(progress);
-                            } else {
-                                setAttachDownloadProgress(100);
-                                setTimeout(() => {
-                                    setAttachDownloadProgress(101);
-                                }, 500)
-                            }
+        //                     // 保存当前的下载进度
+        //                     chunks.push(value);
+        //                     receivedBytes += value.length;
+        //                     const progress = Math.min(100, (receivedBytes / totalBytes) * 100);
+        //                     if (progress < 100) {
+        //                         setAttachDownloadProgress(progress);
+        //                     } else {
+        //                         setAttachDownloadProgress(100);
+        //                         setTimeout(() => {
+        //                             setAttachDownloadProgress(101);
+        //                         }, 500)
+        //                     }
 
-                            pump();  // 继续读取数据
-                        };
+        //                     pump();  // 继续读取数据
+        //                 };
 
-                        pump();
-                    } catch (error) {
-                        console.error("Download failed:", error);
-                        setDownloadName("");  // 清除文件名
-                        setAttachDownloadProgress(0); // 重置进度条
-                    }
-                };
+        //                 pump();
+        //             } catch (error) {
+        //                 console.error("Download failed:", error);
+        //                 setDownloadName("");  // 清除文件名
+        //                 setAttachDownloadProgress(0); // 重置进度条
+        //             }
+        //         };
 
-                setTimeout(() => {
-                    fetchFile();
-                }, 500)
-            } else {
-                // 如果是直接通过 URL 打开文件
-                setRedirectURL(url)
-            }
-        }
+        //         setTimeout(() => {
+        //             fetchFile();
+        //         }, 500)
+        //     } else {
+        //         // 如果是直接通过 URL 打开文件
+        //         setRedirectURL(url)
+        //     }
+        // }
     };
 
     const submitTeam = () => {
-        if (curChoosedTeam != -1) {
-            api.game.gameJoinGame(gameID, {
-                teamId: curChoosedTeam
-            }).then((res) => {
-                // 更新队伍信息
-                api.game.gameGame(gameID).then((res) => {
-                    setGameInfo(res.data)
-                    toast.success(t("team_submitted"), { position: "top-center" })
+        // TODO 创建比赛队伍逻辑重写
+        // if (curChoosedTeam != -1) {
+        //     api.game.gameJoinGame(gameID, {
+        //         teamId: curChoosedTeam
+        //     }).then((res) => {
+        //         // 更新队伍信息
+        //         api.game.gameGame(gameID).then((res) => {
+        //             setGameInfo(res.data)
+        //             toast.success(t("team_submitted"), { position: "top-center" })
 
-                    setGameStatus("waitForProcess")
-                }).catch((error: AxiosError) => {
-                    if (error.response?.status) {
-                        const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                        toast.error(errorMessage.title, { position: "top-center" })
-                    } else {
-                        toast.error(t("unknow_error"), { position: "top-center" })
-                    }
-                })
-            })
-        } else {
-            toast.error(t("choose_team_first"), { position: "top-center" })
-        }
+        //             setGameStatus("waitForProcess")
+        //         }).catch((error: AxiosError) => {
+        //             if (error.response?.status) {
+        //                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
+        //                 toast.error(errorMessage.title, { position: "top-center" })
+        //             } else {
+        //                 toast.error(t("unknow_error"), { position: "top-center" })
+        //             }
+        //         })
+        //     })
+        // } else {
+        //     toast.error(t("choose_team_first"), { position: "top-center" })
+        // }
     }
 
     const updateContainer = (inter?: NodeJS.Timeout) => {
-        api.game.gameCreateContainer(gameID, curChallenge.id!).then((res) => {
-            setContainerInfo(res.data)
+        // TODO 创建靶机逻辑重写
+        // api.game.gameCreateContainer(gameID, curChallenge.challenge_id!).then((res) => {
+        //     setContainerInfo(res.data)
 
-            if (res.data.status == ContainerStatus.Running || res.data.status == ContainerStatus.Destroyed) {
-                toast.success(t("container_start_success"), { position: "top-center" })
-                if (inter) clearInterval(inter)
-            }
-        }).catch((error: AxiosError) => {
-            if (error.response?.status) {
-                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.title, { position: "top-center" })
-            } else {
-                toast.error(t("unknow_error"), { position: "top-center" })
-            }
+        //     if (res.data.status == ContainerStatus.Running || res.data.status == ContainerStatus.Destroyed) {
+        //         toast.success(t("container_start_success"), { position: "top-center" })
+        //         if (inter) clearInterval(inter)
+        //     }
+        // }).catch((error: AxiosError) => {
+        //     if (error.response?.status) {
+        //         const errorMessage: ErrorMessage = error.response.data as ErrorMessage
+        //         toast.error(errorMessage.title, { position: "top-center" })
+        //     } else {
+        //         toast.error(t("unknow_error"), { position: "top-center" })
+        //     }
 
-            if (inter) clearInterval(inter)
-            setContainerLaunching(false)
-        })
+        //     if (inter) clearInterval(inter)
+        //     setContainerLaunching(false)
+        // })
     }
 
     const handleLaunchContainer = () => {
@@ -651,32 +666,34 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     }
 
     const handleExtendContainer = () => {
-        api.game.gameExtendContainerLifetime(gameID, curChallenge.id!).then((res) => {
-            setContainerInfo(res.data)
-            toast.success(t("container_extend_success"), { position: "top-center" })
-        }).catch((error: AxiosError) => {
-            if (error.response?.status) {
-                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.title, { position: "top-center" })
-            } else {
-                toast.error(t("unknow_error"), { position: "top-center" })
-            }
-        })
+        // TODO 延长靶机逻辑重写
+        // api.game.gameExtendContainerLifetime(gameID, curChallenge.challenge_id!).then((res) => {
+        //     setContainerInfo(res.data)
+        //     toast.success(t("container_extend_success"), { position: "top-center" })
+        // }).catch((error: AxiosError) => {
+        //     if (error.response?.status) {
+        //         const errorMessage: ErrorMessage = error.response.data as ErrorMessage
+        //         toast.error(errorMessage.title, { position: "top-center" })
+        //     } else {
+        //         toast.error(t("unknow_error"), { position: "top-center" })
+        //     }
+        // })
     }
 
     const handleDestoryContainer = () => {
-        api.game.gameDeleteContainer(gameID, curChallenge.id!).then((res) => {
-            toast.success(t("container_destory_success"), { position: "top-center" })
-            setContainerInfo({})
-            setContainerLaunching(false)
-        }).catch((error: AxiosError) => {
-            if (error.response?.status) {
-                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.title, { position: "top-center" })
-            } else {
-                toast.error(t("unknow_error"), { position: "top-center" })
-            }
-        })
+        // TOOD 销毁靶机逻辑重写
+        // api.game.gameDeleteContainer(gameID, curChallenge.challenge_id!).then((res) => {
+        //     toast.success(t("container_destory_success"), { position: "top-center" })
+        //     setContainerInfo({})
+        //     setContainerLaunching(false)
+        // }).catch((error: AxiosError) => {
+        //     if (error.response?.status) {
+        //         const errorMessage: ErrorMessage = error.response.data as ErrorMessage
+        //         toast.error(errorMessage.title, { position: "top-center" })
+        //     } else {
+        //         toast.error(t("unknow_error"), { position: "top-center" })
+        //     }
+        // })
     }
 
     return (
@@ -737,7 +754,9 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                     <div className="flex flex-col items-center gap-4 select-none">
                         <Info size={80} />
                         <span className="text-3xl">{t("not_participated")}</span>
-                        {availableTeams.length ? (
+                        {
+                        // TODO 创建队伍 UI 重写
+                        /* {availableTeams.length ? (
                             <>
                                 <div className="flex w-full mb-[-12px]">
                                     <span>{t("team_name")}</span>
@@ -766,7 +785,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                             <TransitionLink className="transition-colors" href={`/${lng}/games`}>
                                 <Button variant="outline">{t("back_to_main")}</Button>
                             </TransitionLink>
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             )}
@@ -828,7 +847,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                         gameid={id}
                         curChallenge={curChallenge}
                         setCurChallenge={setCurChallenge}
-                        setGameDetail={setGameDeatail}
+                        // setGameDetail={setGameDeatail}
                         resizeTrigger={setResizeTrigger}
                         setPageSwitching={setPageSwitch}
                         lng={lng}
@@ -845,7 +864,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                         <div className="flex items-center min-w-0 h-[32px]">
                             <SidebarTrigger className="transition-colors duration-300" />
                             {/* <span className="font-bold ml-3">{ challenge.category } - { challenge.title }</span> */}
-                            <span className="font-bold ml-1 text-ellipsis overflow-hidden text-nowrap transition-colors duration-300">{gameInfo.title}</span>
+                            <span className="font-bold ml-1 text-ellipsis overflow-hidden text-nowrap transition-colors duration-300">{gameInfo?.name}</span>
                         </div>
                         <div className="flex-1" />
                         <div id="rightArea" className="justify-end flex h-ful gap-[6px] lg:gap-[10px] items-center pointer-events-auto">
@@ -877,7 +896,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                         <DropdownMenuItem onClick={() => setNoticeOpened(true)} disabled={notices.length == 0}>
                                             <PackageOpen />
                                             <span>{t("open_notices")}</span>
-                                            {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{ notices.filter((e) => e.type == NoticeType.Normal).length }</Badge> : <></>}
+                                            {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{ notices.filter((e) => e.notice_category == NoticeCategory.NewAnnouncement).length }</Badge> : <></>}
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setScoreBoardVisible(true)}>
                                             <Presentation />
@@ -891,7 +910,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                 <div className="flex items-center gap-1">
                                     <PackageOpen />
                                     <span>{t("open_notices")}</span>
-                                    {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{ notices.filter((e) => e.type == NoticeType.Normal).length }</Badge> : <></>}
+                                    {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{ notices.filter((e) => e.notice_category == NoticeCategory.NewAnnouncement).length }</Badge> : <></>}
                                 </div>
                             </Button>
                             <Button variant="outline" className="select-none hidden lg:flex" onClick={() => setScoreBoardVisible(true)}>
@@ -937,10 +956,10 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                         <ResizableScrollablePanel defaultSize={60} minSize={20} className="relative" onResize={(size, prevSize) => {
                             setResizeTrigger(size)
                         }}>
-                            {!curChallenge.title ? (
+                            {!curChallenge ? (
                                 <div className="absolute top-0 left-0 w-full h-full flex p-7 flex-col">
-                                    {gameInfo.content ? (
-                                        <Mdx source={gameInfo.content || ""}></Mdx>
+                                    {gameInfo?.description ? (
+                                        <Mdx source={gameInfo.description || ""}></Mdx>
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center select-none">
                                             <span className="font-bold text-lg">{t("choose_something")}</span>
@@ -950,7 +969,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                             ) : <></>}
                             <div className="absolute bottom-2 right-2 flex flex-col gap-2 p-2 opacity-100 ease-in-out">
                                 {
-                                    curChallenge.hints?.map((value, index) => {
+                                    curChallenge && curChallenge.hints?.map((value, index) => {
                                         return (
                                             <div className="flex" key={index}>
                                                 <div className="flex-1" />
@@ -968,7 +987,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                     }
                                                     <div className="inline-flex gap-1">
                                                         <span className="font-bold w-[50px] flex-shrink-0 overflow-hidden font-mono select-none">Hint{index + 1}</span>
-                                                        <span className="font-bold">{value}</span>
+                                                        <span className="font-bold">{value.content}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -982,15 +1001,17 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                         className="pl-5 pr-5 lg:pl-20 lg:pr-20 pt-5 pb-5 w-full flex flex-col"
                                         skin={theme === "dark" ? "dark" : "light"}
                                     >
-                                        {curChallenge.title && (
+                                        {
+                                        // TODO 靶机状态重写
+                                        /* {curChallenge.challenge_name && (
                                             <div className="w-full border-b-[1px] h-[50px] p-2 transition-[border-color] duration-300 flex items-center gap-1">
                                                 <div className="flex items-center gap-2 transition-colors duration-300 overflow-hidden">
                                                     <Info size={21} className="flex-none" />
-                                                    <span className="text-lg overflow-hidden text-ellipsis text-nowrap">{curChallenge.title}</span>
+                                                    <span className="text-lg overflow-hidden text-ellipsis text-nowrap">{curChallenge.challenge_name}</span>
                                                 </div>
                                                 <div className="flex-1" />
                                                 <div className="flex justify-end gap-4 transition-colors duration-300">
-                                                    {challengeSolvedList[curChallenge.id || 0] ? (
+                                                    {challengeSolvedList[curChallenge.challenge_id || 0] ? (
                                                         <div className="flex items-center gap-2 text-purple-600">
                                                             <ScanHeart className="flex-none" />
                                                             <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current.score} pts</span>
@@ -1083,8 +1104,10 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                     )}
                                                 </div>
                                             </div>
-                                        )}
-                                        {curChallenge.context?.url ? (
+                                        )} */}
+                                        {
+                                        // TODO 附件列表逻辑重写
+                                        /* {curChallenge.context?.url ? (
                                             <div className="w-full border-b-[1px] h-[50px] p-2 flex items-center gap-4 transition-[border-color] duration-300">
                                                 <div className="flex items-center gap-2 transition-colors duration-300">
                                                     <Files size={21} />
@@ -1111,7 +1134,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                 </div>
                                             </div>
                                         ) : (<></>)}
-                                        {curChallenge.title && (
+                                        {curChallenge.challenge_name && (
                                             <div className="w-full p-8 flex-1">
                                                 {curChallenge.content ? (
                                                     <Mdx source={curChallenge.content} />
@@ -1129,18 +1152,20 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                 )}
 
                                             </div>
-                                        )}
+                                        )} */}
                                     </MacScrollbar>
                                 </SafeComponent>
                             </div>
                         </ResizableScrollablePanel>
-                        {curChallenge.title ? (
+                        {curChallenge?.challenge_name ? (
                             <>
                                 <ResizableHandle withHandle={true} className="transition-colors duration-300" />
                                 <ResizableScrollablePanel defaultSize={40} minSize={10}>
                                     <div className="flex flex-col p-0 h-full resize-y">
                                         {userName ? (
-                                            <GameTerminal challenge={curChallenge} gameid={id} pSize={resizeTrigger!} userName={gameInfo.teamName || ""} setChallengeSolved={setChallengeSolved} />
+                                            <></>
+                                            // FIXME 终端需要修复
+                                            // <GameTerminal challenge={curChallenge} gameid={id} pSize={resizeTrigger!} userName={gameInfo?.team_info?.team_name || ""} setChallengeSolved={setChallengeSolved} />
                                         ) : (<></>)}
                                     </div>
                                 </ResizableScrollablePanel>

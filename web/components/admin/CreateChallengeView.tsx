@@ -1,3 +1,5 @@
+"use client";
+
 import {
     Form,
     FormControl,
@@ -31,7 +33,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
 
-import { CalendarIcon, Cloud, FileCode, Github, PlusCircle, Save, ScanBarcode, TableProperties } from "lucide-react"
+import { CalendarIcon, CircleArrowLeft, Cloud, FileCode, Github, PlusCircle, Save, ScanBarcode, TableProperties } from "lucide-react"
 import { Textarea } from "../ui/textarea";
 
 import CodeEditor from '@uiw/react-textarea-code-editor';
@@ -40,6 +42,12 @@ import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageS
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MacScrollbar } from "mac-scrollbar";
+import { AdminChallengeConfig } from "@/utils/A1API";
+import { api, ErrorMessage } from "@/utils/ApiHelper";
+import dayjs from "dayjs";
+import { toast } from "sonner";
+import { AxiosError } from "axios";
+import { useRouter } from "next/navigation";
 
 interface ContainerFormProps {
     control: any;
@@ -341,21 +349,21 @@ function AttachmentForm({ control, index, form, removeAttachment }: AttachmentFo
     );
 }
 
-export function CreateChallengeView() {
+export function CreateChallengeView({ lng } : { lng: string }) {
 
     const categories: { [key: string]: any } = {
-        "misc": <Radar size={21} />,
-        "crypto": <MessageSquareLock size={21} />,
-        "pwn": <Bug size={21} />,
-        "web": <GlobeLock size={21} />,
-        "reverse": <Binary size={21} />,
-        "forensics": <FileSearch size={21} />,
-        "hardware": <HardDrive size={21} />,
-        "mobile": <Smartphone size={21} />,
-        "ppc": <SquareCode size={21} />,
-        "ai": <Bot size={21} />,
-        "pentent": <BadgeCent size={21} />,
-        "osint": <Github size={21} />
+        "MISC": <Radar size={21} />,
+        "CRYPTO": <MessageSquareLock size={21} />,
+        "PWN": <Bug size={21} />,
+        "WEB": <GlobeLock size={21} />,
+        "REVERSE": <Binary size={21} />,
+        "FORENSICS": <FileSearch size={21} />,
+        "HARDWARE": <HardDrive size={21} />,
+        "MOBILE": <Smartphone size={21} />,
+        "PPC": <SquareCode size={21} />,
+        "AI": <Bot size={21} />,
+        "PENTENT": <BadgeCent size={21} />,
+        "OSINT": <Github size={21} />
     };
 
     const formSchema = z.object({
@@ -405,6 +413,25 @@ export function CreateChallengeView() {
         )
     });
 
+    const env_to_string = (data: { name: string, value: string }[]) => {
+        let env = ""
+        data.forEach((item) => {
+            env += `${item.name}=${item.value},`
+        })
+        return env.substring(0, env.length - 1)
+    }
+
+    const string_to_env = (data: string): { name: string, value: string }[] => {
+        let env: { name: string, value: string }[] = []
+
+        data.split(",").forEach((item) => {
+            const [name, value] = item.split("=")
+            env.push({ name, value })
+        })
+        
+        return env
+    }
+
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -417,21 +444,7 @@ export function CreateChallengeView() {
                 judge_script: "",
                 flag_template: ""
             },
-            container_config: [
-                // 可以预置一个空容器作为示例
-                // {
-                //     name: "",
-                //     image: "",
-                //     command: null,
-                //     env: null,
-                //     expose_ports: [
-                //         {
-                //             name: "",
-                //             port: 0,
-                //         },
-                //     ],
-                // },
-            ],
+            container_config: [],
             attachments: []
         }
     })
@@ -457,25 +470,60 @@ export function CreateChallengeView() {
     const [showScript, setShowScript] = useState(false);
 
     function onSubmit(values: z.infer<typeof formSchema>) {
+
+        let data_time = dayjs().toISOString();
+        
         const finalData = {
             attachments: values.attachments,
             category: values.category.toUpperCase(),
-            challenge_id: 1,
-            container_config: values.container_config,
-            create_time: new Date().toISOString(),
+            challenge_id: 0,
+            container_config: values.container_config.map((c) => ({
+                command: c.command != "" ? c.command : null,
+                env: c.env != "" ? string_to_env(c.env || "") : [],
+                expose_ports: c.expose_ports,
+                image: c.image,
+                name: c.name    
+            })),
+            create_time: data_time,
             description: values.description,
             judge_config: values.judge_config,
             name: values.name,
-            type_: 0,
+            type_: 0
         };
-        console.log(finalData)
+
+        api.admin.createChallenge(finalData as AdminChallengeConfig).then((res) => {
+            toast.success("创建成功", { position: "top-center" })
+        }).catch((error: AxiosError) => {
+            if (error.response?.status) {
+                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
+                toast.error(errorMessage.message, { position: "top-center" })
+            } else {
+                toast.error("Unknow Error", { position: "top-center" })
+            }
+        })
     }
+
+    const router = useRouter()
+
+    useEffect(() => {
+        // form.reset(challenge_info as any);
+        // form.setValue("category", "MISC")
+    }, [])
 
     return (
         <div className="absolute w-screen h-screen bg-background items-center justify-center flex select-none overflow-x-hidden overflow-hidden">
             <Form {...form}>
                 <MacScrollbar className="h-full w-full flex flex-col items-center">
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20 pt-20 w-[80%]">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20 pt-20 w-[80%] flex flex-col">
+                        <div className="flex">
+                            <Button type="button" variant={"default"} onClick={() => {
+                                router.push(`/${lng}/admin/challenges`)
+                            }}>
+                                <CircleArrowLeft />
+                                Back to challenges
+                            </Button>
+                        </div>
+                        <span className="text-3xl font-bold">Create Challenge</span>
                         <span className="text-lg font-semibold">基本信息</span>
                         <div className="flex gap-10 items-center">
                             <div className="w-1/3">
@@ -600,7 +648,7 @@ export function CreateChallengeView() {
                                 </FormItem>
                             )}
                         />
-                        {showScript ? (
+                        { showScript ? (
                             <FormField
                                 control={form.control}
                                 name="judge_config.judge_script"
@@ -658,7 +706,7 @@ export function CreateChallengeView() {
                         )}
 
                         {/* 动态容器列表 */}
-                        <div className="mt-6">
+                        {/* <div className="mt-6">
                             <div className="flex items-center mb-4">
                                 <span className="text-lg font-semibold">容器列表</span>
                                 <div className="flex-1" />
@@ -726,12 +774,14 @@ export function CreateChallengeView() {
                             )) : (
                                 <span className="text-sm text-foreground/70">还没有附件哦</span>
                             )}
-                        </div>
+                        </div> */}
 
-                        <Button type="submit">
-                            <Save />
-                            提交
-                        </Button>
+                        <div className="flex">
+                            <Button type="submit">
+                                <Save />
+                                提交
+                            </Button>
+                        </div>
                     </form>
                 </MacScrollbar>
             </Form>

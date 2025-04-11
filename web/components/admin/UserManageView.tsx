@@ -12,7 +12,8 @@ import {
     getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table"
-import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react"
+
+import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, Pencil } from "lucide-react"
 
 import * as React from "react"
 
@@ -27,6 +28,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+
 import { Input } from "@/components/ui/input"
 import {
     Table,
@@ -36,6 +38,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
+
 import { api, Role, UserInfoModel } from "@/utils/GZApi";
 import { MacScrollbar } from "mac-scrollbar";
 import { Avatar } from "@radix-ui/react-avatar";
@@ -172,30 +175,37 @@ export function UserManageView() {
         },
         {
             id: "actions",
+            header: "Action",
             enableHiding: false,
             cell: ({ row }) => {
                 const payment = row.original
     
                 return (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <MoreHorizontal />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem
-                                onClick={() => navigator.clipboard.writeText(payment.id)}
-                            >
-                                Copy payment ID
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem>View customer</DropdownMenuItem>
-                            <DropdownMenuItem>View payment details</DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex gap-2">
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Edit</span>
+                            <Pencil />
+                        </Button>
+                        <DropdownMenu modal={false}>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Open menu</span>
+                                    <MoreHorizontal />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" >
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem
+                                    onClick={() => navigator.clipboard.writeText(payment.id)}
+                                >
+                                    Copy payment ID
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem>View customer</DropdownMenuItem>
+                                <DropdownMenuItem>View payment details</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 )
             },
         },
@@ -244,9 +254,9 @@ export function UserManageView() {
 
     return (
         <MacScrollbar className="overflow-hidden w-full">
-            <div className="w-full flex justify-center pb-10">
+            <div className="w-full flex justify-center pb-10 pt-4">
                 <div className="w-[80%]">
-                    <div className="flex items-center justify-end space-x-2 py-4 select-none">
+                    <div className="flex items-center justify-end space-x-2 select-none">
                         <div className="flex-1 text-sm text-muted-foreground flex items-center">
                             {table.getFilteredSelectedRowModel().rows.length} of{" "}
                             {table.getFilteredRowModel().rows.length} row(s) selected.
@@ -288,8 +298,8 @@ export function UserManageView() {
                                     Columns <ChevronDown />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                {table
+                            <DropdownMenuContent align="end" className="select-none">
+                                { table
                                     .getAllColumns()
                                     .filter((column) => column.getCanHide())
                                     .map((column) => {
@@ -305,7 +315,7 @@ export function UserManageView() {
                                                 {column.id}
                                             </DropdownMenuCheckboxItem>
                                         )
-                                    })}
+                                    }) }
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>

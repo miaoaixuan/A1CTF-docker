@@ -1,6 +1,6 @@
 import SafeComponent from "@/components/SafeComponent"
 import { AdminHeader } from "@/components/admin/AdminHeader";
-import { ChallengePage } from "@/components/admin/ChallengePage";
+import { EditChallengePage } from "@/components/admin/EditChallengePage";
 import { GameManagePage } from "@/components/admin/GameManagePage";
 
 export default async function Home ({ params }: { params: Promise<{ lng: string }>}) {
@@ -13,7 +13,7 @@ export default async function Home ({ params }: { params: Promise<{ lng: string 
                 <AdminHeader lng={lng} />
                 <main className="flex flex-1 overflow-hidden">
                     <div className="w-full">
-                        <GameManagePage />
+                        <GameManagePage lng={lng} />
                     </div>
                 </main>
             </SafeComponent>

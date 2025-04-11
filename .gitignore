@@ -3,3 +3,5 @@ watchexec.exe
 .env
 /data
 k8sconfig.yaml
+uploads
+benchmark

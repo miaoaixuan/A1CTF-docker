@@ -6,9 +6,13 @@ const withNextIntl = createNextIntlPlugin();
 const nextConfig = {
     async rewrites() {
         return [
+          // {
+          //   source: '/api/:path*',
+          //   destination: 'https://www.a1natas.com/api/:path*',
+          // },
           {
             source: '/api/:path*',
-            destination: 'https://www.a1natas.com/api/:path*',
+            destination: 'http://localhost:7777/api/:path*',
           },
           {
             source: '/hub/:path*',

@@ -1,14 +1,14 @@
 "use client";
 
-import { BasicGameInfoModel } from "@/utils/GZApi";
+import { GameSimpleInfo } from "@/utils/A1API";
 import React, { createContext, Dispatch, SetStateAction, useContext, useRef, useState } from "react";
 
 interface TransitionContextType {
     isChangingGame: boolean;
-    curSwitchingGame: BasicGameInfoModel;
+    curSwitchingGame: GameSimpleInfo;
     posterData: string;
     setIsChangingGame: Dispatch<SetStateAction<boolean>>;
-    setCurSwitchingGame: Dispatch<SetStateAction<BasicGameInfoModel>>;
+    setCurSwitchingGame: Dispatch<SetStateAction<GameSimpleInfo>>;
     setPosterData: Dispatch<SetStateAction<string>>;
 }
 
@@ -24,14 +24,14 @@ export const useGameSwitchContext = () => {
 
 export const GameSwitchProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [isChangingGame, setIsChangingGame] = useState(false);
-    const [curSwitchingGame, setCurSwitchingGame] = useState<BasicGameInfoModel>({
-        id: 0,
-        title: "error",
+    const [curSwitchingGame, setCurSwitchingGame] = useState<GameSimpleInfo>({
+        game_id: 0,
+        name: "error",
         summary: "none",
         poster: "#",
-        limit: 0,
-        start: 0,
-        end: 0
+        start_time: "none",
+        end_time: "none",
+        visible: false,
     })
 
     const [posterData, setPosterData] = useState("")

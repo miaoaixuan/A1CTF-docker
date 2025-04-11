@@ -12,7 +12,7 @@ export default async function Home ({ params }: { params: Promise<{ lng: string 
                 <AdminHeader lng={lng} />
                 <main className="flex flex-1 overflow-hidden">
                     <div className="w-full">
-                        <ChallengesManageView />
+                        <ChallengesManageView lng={lng} />
                     </div>
                 </main>
             </SafeComponent>

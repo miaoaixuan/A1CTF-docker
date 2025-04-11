@@ -1,17 +1,21 @@
 "use client";
 
-import { api, GameInfoModel } from "@/utils/GZApi";
 import dayjs from "dayjs";
 import { CirclePlus, Eye, EyeClosed, EyeOff, FilePenLine, Trash2 } from "lucide-react";
 import { MacScrollbar } from "mac-scrollbar";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
+import { GameSimpleInfo } from "@/utils/A1API";
+import { api } from "@/utils/ApiHelper";
+import { useRouter } from "next/navigation";
 
-export function GameManagePage() { 
+export function GameManagePage({ lng } : { lng: string }) { 
 
     const { theme } = useTheme()
-    const [ games, setGames ] = useState<GameInfoModel[]>([])
+    const [ games, setGames ] = useState<GameSimpleInfo[]>([])
+
+    const router = useRouter()
 
     const [ primaryColorMap, setPrimaryColorMap ] = useState<{ [key: number]: string }>({});
 
@@ -21,7 +25,7 @@ export function GameManagePage() {
     const [isLoaded, setIsLoaded] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
-        api.edit.editGetGames({ count: 16 }).then((res) => {
+        api.admin.listGames({ size: 16, offset: 0 }).then((res) => {
             setGames(res.data.data)
         })
 
@@ -66,7 +70,9 @@ export function GameManagePage() {
             <MacScrollbar className="w-full h-full p-5 lg:p-10 overflow-y-auto" skin={theme == "light" ? "light" : "dark"}>
                 <div className="flex items-center justify-between mb-6 select-none">
                     <span className="font-bold text-3xl">比赛列表</span>
-                    <Button>
+                    <Button onClick={() => {
+                        router.push(`/${lng}/admin/games/create`)
+                    }}>
                         <CirclePlus />
                         添加比赛
                     </Button>
@@ -78,7 +84,7 @@ export function GameManagePage() {
                                 { (visibleItems[index.toString()] || isLoaded[index.toString()]) && (
                                     <>
                                         <div className="absolute top-0 left-0 w-full h-full">
-                                            <img src={game.poster || "#"} className={`w-full h-full object-cover`} onLoad={(e) => {
+                                            <img src={game.poster || "/images/p2g7wm.jpg"} className={`w-full h-full object-cover`} onLoad={(e) => {
                                                 const FastAverageColor = require('fast-average-color').FastAverageColor;
                                                 const fac = new FastAverageColor();
                                                 const container = e.target as HTMLImageElement; 
@@ -105,7 +111,7 @@ export function GameManagePage() {
                                         >
                                             <div className="absolute w-full h-full backdrop-blur-md flex flex-col p-5 group-hover:backdrop-blur-[1px] transition-all duration-200 bg-background/15 group-hover:bg-background/5">
                                                 <div className="w-full flex">
-                                                    <span className="font-bold text-3xl px-2 pt-2 text-ellipsis overflow-hidden text-nowrap">{ game.title }</span>
+                                                    <span className="font-bold text-3xl px-2 pt-2 text-ellipsis overflow-hidden text-nowrap">{ game.name }</span>
                                                 </div>
                                                 <div className="w-full flex">
                                                     <span className="font-bold text-2xl px-2 pt-2 text-ellipsis overflow-hidden text-nowrap">{ game.summary || "Null" }</span>
@@ -113,18 +119,22 @@ export function GameManagePage() {
                                             </div>
                                             <div className="absolute bottom-5 left-5 flex flex-col">
                                                 <span className="text-lg font-bold">比赛时间</span>
-                                                <span className="text-lg font-bold mb-[-5px]">{ dayjs(game.start).format() }</span>
-                                                <span className="text-lg font-bold">{ dayjs(game.end).format() }</span>
+                                                <span className="text-lg font-bold mb-[-5px]">{ dayjs(game.start_time).format() }</span>
+                                                <span className="text-lg font-bold">{ dayjs(game.end_time).format() }</span>
                                             </div>
                                             <div className="absolute bottom-5 right-5 flex">
                                                 <div className="w-[60px] h-[60px] rounded-full hover:text-cyan-500 flex items-center justify-center transition-colors duration-300 [&_svg]:size-10">
-                                                    { game.hidden ? (
+                                                    { game.visible ? (
                                                         <Eye />
                                                     ) : (
                                                         <EyeClosed />
                                                     ) }
                                                 </div>
-                                                <div className="w-[60px] h-[60px] rounded-full hover:text-cyan-500 flex items-center justify-center transition-colors duration-300 [&_svg]:size-10">
+                                                <div className="w-[60px] h-[60px] rounded-full hover:text-cyan-500 flex items-center justify-center transition-colors duration-300 [&_svg]:size-10"
+                                                    onClick={() => {
+                                                        router.push(`/${lng}/admin/games/${game.game_id}`)
+                                                    }}
+                                                >
                                                     <FilePenLine />
                                                 </div>
                                                 <div className="w-[60px] h-[60px] rounded-full hover:text-red-500 flex items-center justify-center transition-colors duration-300 [&_svg]:size-10">
