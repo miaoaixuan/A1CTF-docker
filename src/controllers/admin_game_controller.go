@@ -353,6 +353,7 @@ func AdminAddGameChallenge(c *gin.Context) {
 		ChallengeID: challengeID,
 		TotalScore:  500,
 		CurScore:    500,
+		Difficulty:  5,
 		Enabled:     false,
 		Hints:       &models.Hints{},
 		JudgeConfig: challenge.JudgeConfig,

@@ -103,18 +103,8 @@ func AdminGetChallenge(c *gin.Context) {
 }
 
 func AdminCreateChallenge(c *gin.Context) {
-	challengeIDStr := c.Param("challenge_id")
-	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "Invalid challenge ID",
-		})
-		return
-	}
-
 	var payload models.Challenge
-	if err := c.ShouldBindJSON(&payload); err != nil || challengeID != *payload.ChallengeID {
+	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
 			"message": err.Error(),

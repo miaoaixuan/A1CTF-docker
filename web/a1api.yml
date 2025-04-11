@@ -3,7 +3,7 @@ info:
   title: A1CTF API
   version: '1.0'
 servers:
-  - url: http://localhost:8080/api
+  - url: http://localhost:7777/
 paths:
   /api/auth/login:
     post:
@@ -37,6 +37,38 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UserRegister'
+  /api/admin/challenge/create:
+    post:
+      tags: [admin]
+      operationId: createChallenge
+      summary: Create a new challenge
+      description: Create a new challenge with attachments, container configurations and judge configuration.
+      responses:
+        '200':
+          description: Challenge created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  challenge_id:
+                    type: integer
+                  create_at:
+                    type: string
+                    format: date-time
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminChallengeConfig'
   /api/admin/challenge/{challenge_id}:
     get:
       tags: [admin]
@@ -123,44 +155,6 @@ paths:
                     type: string
         '404':
           description: Challenge not found
-        '400':
-          description: Bad request
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorMessage'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AdminChallengeConfig'
-      parameters:
-        - name: challenge_id
-          in: path
-          required: true
-          description: The ID of the challenge to retrieve
-          schema:
-            type: integer
-    post:
-      tags: [admin]
-      operationId: createChallenge
-      summary: Create a new challenge
-      description: Create a new challenge with attachments, container configurations and judge configuration.
-      responses:
-        '200':
-          description: Challenge created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  challenge_id:
-                    type: integer
-                  create_at:
-                    type: string
-                    format: date-time
         '400':
           description: Bad request
         '500':
@@ -473,14 +467,14 @@ paths:
           description: The ID of the challenge to add
           schema:
             type: integer
-    delete:
-      tags: [admin]
-      operationId: deleteGameChallenge
-      summary: Delete a challenge from a game
-      description: Delete a challenge from a game
+  /api/game/list:
+    post:
+      tags: [user]
+      operationId: userListGames
+      summary: List games
       responses:
         '200':
-          description: Challenge delete successfully
+          description: game listed
           content:
             application/json:
               schema:
@@ -488,8 +482,13 @@ paths:
                 properties:
                   code:
                     type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GameSimpleInfo'
                 required:
                   - code
+                  - data
         '400':
           description: Bad request
         '500':
@@ -498,20 +497,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorMessage'
-      parameters:
-        - name: game_id
-          in: path
-          required: true
-          description: The ID of the game to add
-          schema:
-            type: integer
-        - name: challenge_id
-          in: path
-          required: true
-          description: The ID of the challenge to add
-          schema:
-            type: integer
-
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                size:
+                  type: integer
+                offset:
+                  type: integer
+              required:
+                - size
 components:
   schemas:
     UserLogin:

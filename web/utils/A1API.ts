@@ -237,7 +237,7 @@ export class HttpClient<SecurityDataType = unknown> {
   private format?: ResponseType;
 
   constructor({ securityWorker, secure, format, ...axiosConfig }: ApiConfig<SecurityDataType> = {}) {
-    this.instance = axios.create({ ...axiosConfig, baseURL: axiosConfig.baseURL || "http://localhost:8080/api" });
+    this.instance = axios.create({ ...axiosConfig, baseURL: axiosConfig.baseURL || "http://localhost:7777/" });
     this.secure = secure;
     this.format = format;
     this.securityWorker = securityWorker;
@@ -329,7 +329,7 @@ export class HttpClient<SecurityDataType = unknown> {
 /**
  * @title A1CTF API
  * @version 1.0
- * @baseUrl http://localhost:8080/api
+ * @baseUrl http://localhost:7777/
  */
 export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
   auth = {
@@ -646,6 +646,37 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       >({
         path: `/api/admin/game/${gameId}/challenge/${challengeId}`,
         method: "PUT",
+        format: "json",
+        ...params,
+      }),
+  };
+  user = {
+    /**
+     * No description
+     *
+     * @tags user
+     * @name UserListGames
+     * @summary List games
+     * @request POST:/api/game/list
+     */
+    userListGames: (
+      data: {
+        size: number;
+        offset?: number;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: GameSimpleInfo[];
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/game/list`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),
