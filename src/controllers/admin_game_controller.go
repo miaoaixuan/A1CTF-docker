@@ -184,6 +184,7 @@ func AdminGetGame(c *gin.Context) {
 			"category":       gc.Challenge.Category,
 			"judge_config":   judgeConfig,
 			"belong_stage":   gc.GameChallenge.BelongStage,
+			"visible":        gc.GameChallenge.Visible,
 		})
 	}
 
@@ -262,17 +263,13 @@ func AdminUpdateGame(c *gin.Context) {
 			TotalScore:  chal.TotalScore,
 			Hints:       chal.Hints,
 			JudgeConfig: chal.JudgeConfig,
+			Visible:     chal.Visible,
+			BelongStage: chal.BelongStage,
 		}
 
-		if err := dbtool.DB().Model(&models.GameChallenge{}).Where("challenge_id = ? AND game_id = ?", chal.ChallengeID, gameID).Updates(updateModel).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    500,
-				"message": "Failed to save challenge",
-			})
-			return
-		}
-
-		if err := dbtool.DB().Model(&models.GameChallenge{}).Where("challenge_id = ? AND game_id = ?", chal.ChallengeID, gameID).Updates(map[string]interface{}{"belong_stage": chal.BelongStage}).Error; err != nil {
+		if err := dbtool.DB().Model(&models.GameChallenge{}).
+			Select("total_score", "hints", "judge_config", "visible", "belong_stage").
+			Where("challenge_id = ? AND game_id = ?", chal.ChallengeID, gameID).Updates(updateModel).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":    500,
 				"message": "Failed to save challenge",
@@ -354,10 +351,10 @@ func AdminAddGameChallenge(c *gin.Context) {
 		TotalScore:  500,
 		CurScore:    500,
 		Difficulty:  5,
-		Enabled:     false,
 		Hints:       &models.Hints{},
 		JudgeConfig: challenge.JudgeConfig,
-		BelongStage: -1,
+		BelongStage: nil,
+		Visible:     false,
 	}
 
 	if err := dbtool.DB().Create(&gameChallenge).Error; err != nil {

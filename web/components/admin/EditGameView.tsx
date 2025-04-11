@@ -487,15 +487,19 @@ function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) {
                             <FormMessage className="text-[14px]" />
                         </div>
                         <Select onValueChange={(e) => {
-                            field.onChange(parseInt(e, 10))
-                        }} defaultValue={field.value.toString()}>
+                            if (e == "null") {
+                                field.onChange(null)
+                            } else {
+                                field.onChange(e)
+                            }
+                        }} defaultValue={field.value ? field.value.toString() : "null"}>
                             <FormControl>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="选择一个评测模式" />
+                                    <SelectValue placeholder="选择一个阶段" />
                                 </SelectTrigger>
                             </FormControl>
                             <SelectContent className="w-full flex">
-                                <SelectItem value="-1">
+                                <SelectItem value="null">
                                     <div className="w-full flex gap-2 items-center h-[25px]">
                                         <span className="text-[14px] font-bold">全局</span>
                                     </div>
@@ -505,18 +509,18 @@ function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) {
                                     name={`stages`}
                                     render={({ field }) => (
                                         <FormItem className="select-none">
-                                            { Object.keys(field.value).map((e: any, idx: number) => (
-                                                <SelectItem value={e} key={`${idx}`}>
+                                            { Object.values(field.value).map((e: any, idx: number) => (
+                                                <SelectItem value={e.stage_name} key={`${idx}`}>
                                                     <div className="w-full flex gap-2 items-center h-[25px]">
-                                                        <span className="text-[14px] font-bold">{ field.value[e].stage_name }</span>
+                                                        <span className="text-[14px] font-bold">{ e.stage_name }</span>
                                                         <div className="bg-foreground/[0.03] flex gap-2 items-center px-[9px] py-[5px] rounded-full">
                                                             <ClockArrowUp size={20} />
-                                                            <span className="text-sm">{ dayjs(field.value[e].start_time).format("YYYY-MM-DD HH:mm:ss")}</span>
+                                                            <span className="text-sm">{ dayjs(e.start_time).format("YYYY-MM-DD HH:mm:ss")}</span>
                                                         </div>
                                                         <span>-</span>
                                                         <div className="bg-foreground/[0.03] flex gap-2 items-center px-[9px] py-[5px] rounded-full">
                                                             <ClockArrowDown size={20} />
-                                                            <span className="text-sm">{ dayjs(field.value[e].end_time).format("YYYY-MM-DD HH:mm:ss")}</span>
+                                                            <span className="text-sm">{ dayjs(e.end_time).format("YYYY-MM-DD HH:mm:ss")}</span>
                                                         </div>
                                                     </div>
                                                 </SelectItem>
@@ -706,7 +710,26 @@ function GameChallengeForm({ control, index, form, removeGameChallenge, gameData
                     <span className="text-sm">solves</span>
                 </div>
                 <div className="flex-1" />
-                <div className="flex gap-1">
+                <div className="flex gap-1 items-center">
+                    <FormField
+                        control={control}
+                        name={`challenges.${index}.visible`}
+                        render={({ field }) => (
+                            <FormItem className="flex mr-2">
+                                {/* <div className="flex items-center w- h-[20px]">
+                                    <FormLabel>提示</FormLabel>
+                                    <div className="flex-1" />
+                                    <FormMessage className="text-[14px]" />
+                                </div> */}
+                                <FormControl>
+                                    <Switch 
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange} 
+                                    />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                    />
                     <Button variant={"ghost"} size={"icon"} type="button" onClick={() => onEditChallenge(index)}>
                         <Pencil />
                     </Button>
@@ -780,7 +803,8 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
                     create_time: z.date(),
                     visible: z.boolean()
                 })),
-                belong_stage: z.coerce.number({ message: "请选择一个有效的阶段" }),
+                visible: z.boolean(),
+                belong_stage: z.string().nullable(),
                 judge_config: z.object({
                     judge_type: z.enum(["DYNAMIC", "SCRIPT"], {
                         errorMap: () => ({ message: "需要选择一个有效的题目类别" })
@@ -847,6 +871,7 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
                     create_time: dayjs(hint.create_time).toDate(),
                     visible: hint.visible
                 })),
+                visible: challenge.visible || false,
                 belong_stage: challenge.belong_stage!,
                 judge_config: {
                     judge_type: challenge.judge_config?.judge_type,
@@ -964,8 +989,9 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
                                     total_score: challenge.total_score,
                                     cur_score: challenge.cur_score,
                                     solve_count: challenge.solve_count || 0,
-                                    belong_stage: -1,
+                                    belong_stage: null,
                                     hints: [],
+                                    visible: false,
                                     judge_config: {
                                         judge_type: challenge.judge_config?.judge_type || JudgeType.DYNAMIC,
                                         judge_script: challenge.judge_config?.judge_script || "",

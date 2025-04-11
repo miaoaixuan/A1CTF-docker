@@ -96,17 +96,37 @@ func (e *ChallengeCategory) Scan(value interface{}) error {
 	return json.Unmarshal(b, e)
 }
 
+type ChallengeContainerType string
+
+const (
+	DYNAMIC_CONTAINER ChallengeContainerType = "DYNAMIC_CONTAINER"
+	STATIC_CONTAINER  ChallengeContainerType = "STATIC_CONTAINER"
+	NO_CONTAINER      ChallengeContainerType = "NO_CONTAINER"
+)
+
+func (e ChallengeContainerType) Value() (driver.Value, error) {
+	return json.Marshal(e)
+}
+
+func (e *ChallengeContainerType) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+	return json.Unmarshal(b, e)
+}
+
 // Challenge mapped from table <challenges>
 type Challenge struct {
-	ChallengeID     *int64                `gorm:"column:challenge_id;primaryKey;autoIncrement:true" json:"challenge_id"`
-	Name            string                `gorm:"column:name;not null" json:"name"`
-	Description     string                `gorm:"column:description;not null" json:"description"`
-	Category        ChallengeCategory     `gorm:"column:category;not null" json:"category"`
-	Attachments     AttachmentConfigs     `gorm:"column:attachments;not null" json:"attachments"`
-	Type            int32                 `gorm:"column:type;not null" json:"type"`
-	ContainerConfig *k8stool.A1Containers `gorm:"column:container_config" json:"container_config"`
-	CreateTime      time.Time             `gorm:"column:create_time;not null" json:"create_time"`
-	JudgeConfig     *JudgeConfig          `gorm:"column:judge_config" json:"judge_config"`
+	ChallengeID     *int64                 `gorm:"column:challenge_id;primaryKey;autoIncrement:true" json:"challenge_id"`
+	Name            string                 `gorm:"column:name;not null" json:"name"`
+	Description     string                 `gorm:"column:description;not null" json:"description"`
+	Category        ChallengeCategory      `gorm:"column:category;not null" json:"category"`
+	Attachments     AttachmentConfigs      `gorm:"column:attachments;not null" json:"attachments"`
+	ContainerType   ChallengeContainerType `gorm:"column:container_type;not null" json:"container_type"`
+	ContainerConfig *k8stool.A1Containers  `gorm:"column:container_config" json:"container_config"`
+	CreateTime      time.Time              `gorm:"column:create_time;not null" json:"create_time"`
+	JudgeConfig     *JudgeConfig           `gorm:"column:judge_config" json:"judge_config"`
 }
 
 // TableName Challenge's table name

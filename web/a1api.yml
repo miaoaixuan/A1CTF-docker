@@ -468,7 +468,7 @@ paths:
           schema:
             type: integer
   /api/game/list:
-    post:
+    get:
       tags: [user]
       operationId: userListGames
       summary: List games
@@ -497,18 +497,203 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorMessage'
+  /api/game/{game_id}:
+    get:
+      tags: [user]
+      operationId: userGetGameInfoWithTeamInfo
+      summary: Get a game info with team info
+      description: Get a game info with team info
+      responses:
+        '200':
+          description: Game get successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: '#/components/schemas/UserFullGameInfo'
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to retrieve
+          schema:
+            type: integer
+  /api/game/{game_id}/challenges:
+    get:
+      tags: [user]
+      operationId: userGetGameChallenges
+      summary: Get game challenges
+      description: Get game challenges
+      responses:
+        '200':
+          description: Game challenges get successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserSimpleGameChallenge'
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to retrieve
+          schema:
+            type: integer
+  /api/game/{game_id}/challenge/{challenge_id}:
+    get:
+      tags: [user]
+      operationId: userGetGameChallenge
+      summary: Get a game challenge
+      description: Get a game challenge
+      responses:
+        '200':
+          description: Game challenge get successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: '#/components/schemas/UserDetailGameChallenge'
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to retrieve
+          schema:
+            type: integer
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge to retrieve
+          schema:
+            type: integer
+  /api/game/{game_id}/notices:
+    get:
+      tags: [user]
+      operationId: userGetGameNotices
+      summary: Get game notices
+      description: Get game notices
+      responses:
+        '200':
+          description: Game notices get successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GameNotice'
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to retrieve
+          schema:
+            type: integer
+  /api/game/{game_id}/createTeam:
+    post:
+      tags: [user]
+      operationId: userGameCreateTeam
+      summary: Create a team for a game
+      description: Create a team for a game
+      responses:
+        '200':
+          description: Game created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GameNotice'
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
       requestBody:
         content:
           application/json:
-            schema:
-              type: object
-              properties:
-                size:
-                  type: integer
-                offset:
-                  type: integer
-              required:
-                - size
+              schema:
+                $ref: '#/components/schemas/CreateGameTeamPayload'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to retrieve
+          schema:
+            type: integer
 components:
   schemas:
     UserLogin:
@@ -543,9 +728,15 @@ components:
     AttachmentType:
       type: string
       enum:
-        - STATICFILE
-        - DYNAMICFILE
-        - REMOTEFILE
+        - "STATICFILE"
+        - "DYNAMICFILE"
+        - "REMOTEFILE"
+      description: |
+        Type of the attachment:
+        - STATICFILE: Static file stored on server
+        - DYNAMICFILE: Dynamically generated file
+        - REMOTEFILE: File hosted on external server
+      example: "STATICFILE"
     Attachment:
       type: object
       properties:
@@ -753,9 +944,11 @@ components:
               - create_time
               - visible
         belong_stage:
-          type: integer
+          type: string
         solve_count:
           type: number
+        visible:
+          type: boolean
         category:
           $ref: '#/components/schemas/ChallengeCategory'
         judge_config:
@@ -887,3 +1080,262 @@ components:
         - challenge_id
         - score
         - solve_rank
+    UserSimpleGameChallenge:
+      type: object
+      properties:
+        challenge_id:
+          type: integer
+        challenge_name:
+          type: string
+        total_score:
+          type: number
+          format: double
+        cur_score:
+          type: number
+          format: double
+        belong_stage:
+          type: string
+        solve_count:
+          type: number
+        category:
+          $ref: '#/components/schemas/ChallengeCategory'
+      required:
+        - challenge_id
+        - challenge_name
+        - total_score
+        - cur_score
+    ChallengeContainerType:
+      type: string
+      enum:
+        - DYNAMIC_CONTAINER
+        - STATIC_CONTAINER
+        - NO_CONTAINER
+    UserAttachmentConfig:
+      type: object
+      properties:
+        attach_name:
+          type: string
+          description: The name of the attachment
+          example: "example.pdf"
+        attach_type:
+          $ref: '#/components/schemas/AttachmentType'
+        attach_url:
+          type: string
+          nullable: true
+          description: URL of the attachment (if applicable)
+          example: "https://example.com/files/example.pdf"
+          x-omitempty: true
+        attach_hash:
+          type: string
+          nullable: true
+          description: Hash of the attachment content
+          example: "a1b2c3d4e5f6"
+          x-omitempty: true
+        download_hash:
+          type: string
+          nullable: true
+          description: Unique hash for download authorization
+          example: "d4e5f6a1b2c3"
+          x-omitempty: true
+      required:
+        - attach_name
+        - attach_type
+    UserDetailGameChallenge:
+      type: object
+      properties:
+        challenge_id:
+          type: integer
+        challenge_name:
+          type: string
+        description:
+          type: string
+        total_score:
+          type: number
+          format: double
+        cur_score:
+          type: number
+          format: double
+        hints:
+          type: array
+          items:
+            type: object
+            properties:
+              content:
+                type: string
+              create_time:
+                type: string
+                format: date-time
+              visible:
+                type: boolean
+            required:
+              - content
+              - create_time
+              - visible
+        belong_stage:
+          type: string
+        solve_count:
+          type: number
+        category:
+          $ref: '#/components/schemas/ChallengeCategory'
+        container_type:
+          $ref: '#/components/schemas/ChallengeContainerType'
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserAttachmentConfig'
+      required:
+        - challenge_id
+        - challenge_name
+        - total_score
+        - cur_score
+    ParticipationStatus:
+      type: string
+      enum:
+        - UnRegistered
+        - Pending
+        - Approved
+        - Rejected
+        - Participated
+        - Banned
+    UserTeamInfo:
+      type: object
+      properties:
+        team_id:
+          type: integer
+          format: int64
+        game_id:
+          type: integer
+          format: int64
+        team_name:
+          type: string
+        team_avatar:
+          type: string
+          nullable: true
+        team_slogan:
+          type: string
+          nullable: true
+        team_description:
+          type: string
+          nullable: true
+        team_members:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+        team_score:
+          type: number
+          format: double
+        team_hash:
+          type: string
+        invite_code:
+          type: string
+          nullable: true
+        team_status:
+          $ref: '#/components/schemas/ParticipationStatus'
+      required:
+        - team_id
+        - game_id
+        - team_name
+        - team_score
+        - team_hash
+        - team_status
+    UserFullGameInfo:
+      type: object
+      properties:
+        game_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        summary:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        poster:
+          type: string
+          nullable: true
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        practice_mode:
+          type: boolean
+        team_number_limit:
+          type: integer
+        container_number_limit:
+          type: integer
+        require_wp:
+          type: boolean
+        wp_expire_time:
+          type: string
+          format: date-time
+        visible:
+          type: boolean
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameStage'
+        team_status:
+          $ref: '#/components/schemas/ParticipationStatus'
+        team_info:
+          $ref: '#/components/schemas/UserTeamInfo'
+      required:
+        - game_id
+        - name
+        - start_time
+        - end_time
+        - practice_mode
+        - team_number_limit
+        - container_number_limit
+        - require_wp
+        - wp_expire_time
+        - stages
+        - visible
+        - team_status
+    NoticeCategory:
+      type: string
+      enum:
+        - FirstBlood
+        - SecondBlood
+        - ThirdBlood
+        - NewChallenge
+        - NewHint
+        - NewAnnouncement
+    GameNotice:
+      type: object
+      properties:
+        notice_id:
+          type: integer
+          format: int64
+        notice_category:
+          $ref: '#/components/schemas/NoticeCategory'
+        data:
+          type: array
+          items:
+            type: string
+        create_time:
+          type: string
+          format: date-time
+      required:
+        - notice_id
+        - notice_category
+        - data
+        - create_time
+    CreateGameTeamPayload:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        Slogan:
+          type: string
+      required:
+        - name
+        - description
+        - slogan

@@ -25,6 +25,13 @@ export interface UserRegister {
   email: string;
 }
 
+/**
+ * Type of the attachment:
+ * - STATICFILE: Static file stored on server
+ * - DYNAMICFILE: Dynamically generated file
+ * - REMOTEFILE: File hosted on external server
+ * @example "STATICFILE"
+ */
 export enum AttachmentType {
   STATICFILE = "STATICFILE",
   DYNAMICFILE = "DYNAMICFILE",
@@ -34,6 +41,12 @@ export enum AttachmentType {
 export interface Attachment {
   attach_hash?: string | null;
   attach_name: string;
+  /**
+   * Type of the attachment:
+   * - STATICFILE: Static file stored on server
+   * - DYNAMICFILE: Dynamically generated file
+   * - REMOTEFILE: File hosted on external server
+   */
   attach_type: AttachmentType;
   attach_url: string;
   generate_script?: string | null;
@@ -134,8 +147,9 @@ export interface AdminDetailGameChallenge {
     create_time: string;
     visible: boolean;
   }[];
-  belong_stage?: number;
+  belong_stage?: string;
   solve_count?: number;
+  visible?: boolean;
   category?: ChallengeCategory;
   judge_config?: JudgeConfig;
 }
@@ -190,6 +204,148 @@ export interface SolveRecord {
   /** @format float */
   score: number;
   solve_rank: number;
+}
+
+export interface UserSimpleGameChallenge {
+  challenge_id: number;
+  challenge_name: string;
+  /** @format double */
+  total_score: number;
+  /** @format double */
+  cur_score: number;
+  belong_stage?: string;
+  solve_count?: number;
+  category?: ChallengeCategory;
+}
+
+export enum ChallengeContainerType {
+  DYNAMIC_CONTAINER = "DYNAMIC_CONTAINER",
+  STATIC_CONTAINER = "STATIC_CONTAINER",
+  NO_CONTAINER = "NO_CONTAINER",
+}
+
+export interface UserAttachmentConfig {
+  /**
+   * The name of the attachment
+   * @example "example.pdf"
+   */
+  attach_name: string;
+  /**
+   * Type of the attachment:
+   * - STATICFILE: Static file stored on server
+   * - DYNAMICFILE: Dynamically generated file
+   * - REMOTEFILE: File hosted on external server
+   */
+  attach_type: AttachmentType;
+  /**
+   * URL of the attachment (if applicable)
+   * @example "https://example.com/files/example.pdf"
+   */
+  attach_url?: string | null;
+  /**
+   * Hash of the attachment content
+   * @example "a1b2c3d4e5f6"
+   */
+  attach_hash?: string | null;
+  /**
+   * Unique hash for download authorization
+   * @example "d4e5f6a1b2c3"
+   */
+  download_hash?: string | null;
+}
+
+export interface UserDetailGameChallenge {
+  challenge_id: number;
+  challenge_name: string;
+  description?: string;
+  /** @format double */
+  total_score: number;
+  /** @format double */
+  cur_score: number;
+  hints?: {
+    content: string;
+    /** @format date-time */
+    create_time: string;
+    visible: boolean;
+  }[];
+  belong_stage?: string;
+  solve_count?: number;
+  category?: ChallengeCategory;
+  container_type?: ChallengeContainerType;
+  attachments?: UserAttachmentConfig[];
+}
+
+export enum ParticipationStatus {
+  UnRegistered = "UnRegistered",
+  Pending = "Pending",
+  Approved = "Approved",
+  Rejected = "Rejected",
+  Participated = "Participated",
+  Banned = "Banned",
+}
+
+export interface UserTeamInfo {
+  /** @format int64 */
+  team_id: number;
+  /** @format int64 */
+  game_id: number;
+  team_name: string;
+  team_avatar?: string | null;
+  team_slogan?: string | null;
+  team_description?: string | null;
+  team_members?: string[] | null;
+  /** @format double */
+  team_score: number;
+  team_hash: string;
+  invite_code?: string | null;
+  team_status: ParticipationStatus;
+}
+
+export interface UserFullGameInfo {
+  /** @format int64 */
+  game_id: number;
+  name: string;
+  summary?: string | null;
+  description?: string | null;
+  poster?: string | null;
+  /** @format date-time */
+  start_time: string;
+  /** @format date-time */
+  end_time: string;
+  practice_mode: boolean;
+  team_number_limit: number;
+  container_number_limit: number;
+  require_wp: boolean;
+  /** @format date-time */
+  wp_expire_time: string;
+  visible: boolean;
+  stages: GameStage[];
+  team_status: ParticipationStatus;
+  team_info?: UserTeamInfo;
+}
+
+export enum NoticeCategory {
+  FirstBlood = "FirstBlood",
+  SecondBlood = "SecondBlood",
+  ThirdBlood = "ThirdBlood",
+  NewChallenge = "NewChallenge",
+  NewHint = "NewHint",
+  NewAnnouncement = "NewAnnouncement",
+}
+
+export interface GameNotice {
+  /** @format int64 */
+  notice_id: number;
+  notice_category: NoticeCategory;
+  data: string[];
+  /** @format date-time */
+  create_time: string;
+}
+
+export interface CreateGameTeamPayload {
+  name: string;
+  description: string;
+  Slogan?: string;
 }
 
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse, HeadersDefaults, ResponseType } from "axios";
@@ -657,15 +813,9 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @tags user
      * @name UserListGames
      * @summary List games
-     * @request POST:/api/game/list
+     * @request GET:/api/game/list
      */
-    userListGames: (
-      data: {
-        size: number;
-        offset?: number;
-      },
-      params: RequestParams = {},
-    ) =>
+    userListGames: (params: RequestParams = {}) =>
       this.request<
         {
           code: number;
@@ -674,6 +824,116 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         void | ErrorMessage
       >({
         path: `/api/game/list`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get a game info with team info
+     *
+     * @tags user
+     * @name UserGetGameInfoWithTeamInfo
+     * @summary Get a game info with team info
+     * @request GET:/api/game/{game_id}
+     */
+    userGetGameInfoWithTeamInfo: (gameId: number, params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+          data: UserFullGameInfo;
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/game/${gameId}`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get game challenges
+     *
+     * @tags user
+     * @name UserGetGameChallenges
+     * @summary Get game challenges
+     * @request GET:/api/game/{game_id}/challenges
+     */
+    userGetGameChallenges: (gameId: number, params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+          data: UserSimpleGameChallenge[];
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/game/${gameId}/challenges`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get a game challenge
+     *
+     * @tags user
+     * @name UserGetGameChallenge
+     * @summary Get a game challenge
+     * @request GET:/api/game/{game_id}/challenge/{challenge_id}
+     */
+    userGetGameChallenge: (gameId: number, challengeId: number, params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+          data: UserDetailGameChallenge;
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/game/${gameId}/challenge/${challengeId}`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get game notices
+     *
+     * @tags user
+     * @name UserGetGameNotices
+     * @summary Get game notices
+     * @request GET:/api/game/{game_id}/notices
+     */
+    userGetGameNotices: (gameId: number, params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+          data: GameNotice[];
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/game/${gameId}/notices`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Create a team for a game
+     *
+     * @tags user
+     * @name UserGameCreateTeam
+     * @summary Create a team for a game
+     * @request POST:/api/game/{game_id}/createTeam
+     */
+    userGameCreateTeam: (gameId: number, data: CreateGameTeamPayload, params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+          data: GameNotice[];
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/game/${gameId}/createTeam`,
         method: "POST",
         body: data,
         type: ContentType.Json,

@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeCent, Binary, Bot, Bug, ChevronDown, ChevronUp, Chrome, CircleArrowLeft, Earth, FileSearch, Github, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
+import { BadgeCent, Binary, Bot, Bug, ChevronDown, ChevronUp, Chrome, CircleArrowLeft, Earth, FileSearch, Github, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode, Underline } from "lucide-react"
 
 import Image from "next/image";
 import {
@@ -17,7 +17,7 @@ import { Button } from "./ui/button"
 import { motion } from "framer-motion";
 
 import { ChallengeCard } from "./ChallengeCard";
-import { api, ChallengeInfo, ChallengeDetailModel, GameDetailModel, ErrorMessage, ParticipationStatus } from '@/utils/GZApi'
+// import { api, ChallengeInfo, ChallengeDetailModel, GameDetailModel, ErrorMessage, ParticipationStatus } from '@/utils/GZApi'
 
 import { AxiosError } from 'axios';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
@@ -29,19 +29,21 @@ import SafeComponent from "./SafeComponent";
 
 import { randomInt } from "mathjs";
 import { toast } from "sonner";
+import { ErrorMessage, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "@/utils/A1API";
+import { api } from "@/utils/ApiHelper";
 
-export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGameDetail, lng, gameStatus, setGameStatus, resizeTrigger, setPageSwitching, challenges, setChallenges, challengeSolvedList, setChallengeSolvedList } : { 
+export function CategorySidebar({ gameid, curChallenge, setCurChallenge, lng, gameStatus, setGameStatus, resizeTrigger, setPageSwitching, challenges, setChallenges, challengeSolvedList, setChallengeSolvedList } : { 
     gameid: string,
-    curChallenge: ChallengeDetailModel,
-    setCurChallenge: Dispatch<SetStateAction<ChallengeDetailModel>>,
-    setGameDetail: Dispatch<SetStateAction<GameDetailModel>>,
+    curChallenge: UserDetailGameChallenge | undefined,
+    setCurChallenge: Dispatch<SetStateAction<UserDetailGameChallenge | undefined>>,
+    // setGameDetail: Dispatch<SetStateAction<UserFullGameInfo>>,
     lng: string,
     gameStatus: string,
     setGameStatus: Dispatch<SetStateAction<string>>,
     resizeTrigger: Dispatch<SetStateAction<number>>,
     setPageSwitching: Dispatch<SetStateAction<boolean>>,
-    challenges: Record<string, ChallengeInfo[]>,
-    setChallenges: Dispatch<SetStateAction<Record<string, ChallengeInfo[]>>>,
+    challenges: Record<string, UserSimpleGameChallenge[]>,
+    setChallenges: Dispatch<SetStateAction<Record<string, UserSimpleGameChallenge[]>>>,
     challengeSolvedList: Record<string, boolean>,
     setChallengeSolvedList: Dispatch<SetStateAction<Record<string, boolean>>>
 }) {
@@ -52,11 +54,11 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGame
     const gameID = parseInt(gameid, 10)
 
     // 为了实时更新
-    const curChallengeRef = useRef<ChallengeDetailModel>({})
+    const curChallengeRef = useRef<UserDetailGameChallenge>()
 
     // 之前的题目列表
-    const prevChallenges = useRef<Record<string, ChallengeInfo[]>> ()
-    const prevGameDetail = useRef<GameDetailModel> ()
+    const prevChallenges = useRef<Record<string, UserSimpleGameChallenge[]>> ()
+    const prevGameDetail = useRef<UserFullGameInfo> ()
 
     // 懒加载, 当前题目卡片是否在视窗内
     const observerRef = useRef<IntersectionObserver | null>(null);
@@ -107,40 +109,54 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGame
     // 更新题目列表
     const updateChalenges = (first?: boolean) => {
 
-        api.game.gameChallengesWithTeamInfo(gameID).then((response) => {
+        api.user.userGetGameChallenges(gameID).then((res) => {
 
-            if (JSON.stringify(prevChallenges.current) == JSON.stringify(response.data.challenges)) return
-            prevChallenges.current = response.data.challenges
-            setChallenges(response.data.challenges || {})
+            const response = res.data
 
-            if (JSON.stringify(prevGameDetail.current) == JSON.stringify(response.data)) return
-            prevGameDetail.current = response.data
-            setGameDetail(response.data)
+            // 根据 Category 分组
+
+            const groupedChallenges: Record<string, UserSimpleGameChallenge[]> = {};
+            response.data.forEach((challenge: UserSimpleGameChallenge) => {
+                const category = challenge.category?.toLowerCase() || "misc";
+                if (!groupedChallenges[category]) {
+                    groupedChallenges[category] = [];
+                }
+                groupedChallenges[category].push(challenge);
+            });
+
+            if (JSON.stringify(prevChallenges.current) == JSON.stringify(groupedChallenges)) return
+            prevChallenges.current = groupedChallenges
+            setChallenges(groupedChallenges || {})
+
+            // if (JSON.stringify(prevGameDetail.current) == JSON.stringify(response.data)) return
+            // prevGameDetail.current = groupedChallenges
+            // setGameDetail(response.data)
 
             let stillExists = false
 
-            for (const key in response.data.challenges) {
-                if (response.data.challenges.hasOwnProperty(key)) {
-                    response.data.challenges[key].forEach(challenge => {
+            for (const key in groupedChallenges) {
+                if (groupedChallenges.hasOwnProperty(key)) {
+                    groupedChallenges[key].forEach(challenge => {
                         // console.log(challenge.title, curChallengeRef.current.title)
-                        if (challenge.title == curChallengeRef.current.title) {
+                        if (challenge.challenge_name == curChallengeRef.current?.challenge_name) {
                             stillExists = true
                         }
                     });
 
                     // 初始化一次先
-                    response.data.challenges[key].forEach(challenge => {
-                        setChallengeSolvedList((prev) => ({
-                            ...prev,
-                            [challenge.id || 0]: prevGameDetail.current?.rank?.solvedChallenges?.some(obj => obj.id == challenge.id) || false
-                        }))
-                    });
+                    // FIXME 题目是否已经被解决需要修复
+                    // groupedChallenges[key].forEach(challenge => {
+                    //     setChallengeSolvedList((prev) => ({
+                    //         ...prev,
+                    //         [challenge.challenge_id || 0]: prevGameDetail.current?.rank?.solvedChallenges?.some(obj => obj.id == challenge.id) || false
+                    //     }))
+                    // });
                 }
             }
 
             if (!stillExists) {
-                setCurChallenge({})
-                curChallengeRef.current = {}
+                setCurChallenge(undefined)
+                curChallengeRef.current = undefined
             }
 
             observerRef.current = new IntersectionObserver((entries) => {
@@ -179,17 +195,18 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGame
         }).catch((error: AxiosError) => {
             if (error.response?.status == 400) {
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                if (errorMessage.title == "您的参赛申请尚未通过或被禁赛") {
+                if (errorMessage.message == "您的参赛申请尚未通过或被禁赛") {
                     // 停止更新
                     clearInterval(updateChallengeInter)
 
-                    api.game.gameGame(gameID).then((res) => {
-                        if (res.data.status == ParticipationStatus.Suspended) {
-                            setGameStatus("banned")
-                        } else {
-                            toast.error("Unknow error!", { position: "top-center" })
-                        }
-                    })
+                    // FIXME 作弊判断需要修复
+                    // api.game.gameGame(gameID).then((res) => {
+                    //     if (res.data.status == ParticipationStatus.Banned) {
+                    //         setGameStatus("banned")
+                    //     } else {
+                    //         toast.error("Unknow error!", { position: "top-center" })
+                    //     }
+                    // })
                 }
             }
         })
@@ -211,28 +228,29 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGame
 
     useEffect(() => {
         // 更新题目的解决状态
-        for (const key in Object.keys(challenges)) {
-            if (challenges.hasOwnProperty(key)) {
-                challenges[key].forEach(challenge => {
-                    setChallengeSolvedList((prev) => ({
-                        ...prev,
-                        [challenge.id || 0]: prevGameDetail.current?.rank?.solvedChallenges?.some(obj => obj.id == challenge.id) || false
-                    }))
-                });
-            }
-        }
+        // FIXME 更新题目解决状态需要修复
+        // for (const key in Object.keys(challenges)) {
+        //     if (challenges.hasOwnProperty(key)) {
+        //         challenges[key].forEach(challenge => {
+        //             setChallengeSolvedList((prev) => ({
+        //                 ...prev,
+        //                 [challenge.id || 0]: prevGameDetail.current?.rank?.solvedChallenges?.some(obj => obj.id == challenge.id) || false
+        //             }))
+        //         });
+        //     }
+        // }
     }, [challenges])
 
     // 处理切换题目
     const handleChangeChallenge = (id: number) => {
         return (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
 
-            if (id == curChallenge.id) return
+            if (id == curChallenge?.challenge_id) return
 
-            api.game.gameGetChallenge(gameID, id).then((response) => {
+            api.user.userGetGameChallenge(gameID, id).then((response) => {
                 // console.log(response)
-                curChallengeRef.current = response.data
-                setCurChallenge(response.data || {})
+                curChallengeRef.current = response.data.data
+                setCurChallenge(response.data.data)
                 setPageSwitching(true)
             }).catch((error: AxiosError) => {})
         };
@@ -295,7 +313,7 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGame
                                             }}>
                                                 <div className="flex items-center justify-center gap-2 transition-colors duration-300"
                                                     style={{
-                                                        color: (!categoryFolded[category.toLowerCase()] || curChallenge.category?.toString() === category) ? colorMap[category.toLowerCase()] : ""
+                                                        color: (!categoryFolded[category.toLowerCase()] || curChallenge?.category?.toString() === category) ? colorMap[category.toLowerCase()] : ""
                                                     }}
                                                 >
                                                     { cateIcon[category.toLowerCase()] }
@@ -347,18 +365,18 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, setGame
                                                     {challengeList.map((challenge, index) => (
                                                         <div
                                                             key={index}
-                                                            ref={(el) => observeItem(el!, category, challenge.id?.toString() || "")}
+                                                            ref={(el) => observeItem(el!, category, challenge.challenge_id?.toString() || "")}
                                                         >
-                                                            { (visibleItems[category]?.[challenge.id || 0] && categoryPadding[category.toLowerCase()]) ? (
+                                                            { (visibleItems[category]?.[challenge?.challenge_id ?? 0] && categoryPadding[category.toLowerCase()]) ? (
                                                                 <ChallengeCard
                                                                     type={challenge.category?.toLocaleLowerCase() || "None"}
-                                                                    name={challenge.title || "None"}
-                                                                    solved={challenge.solved || 0}
-                                                                    score={challenge.score || 0}
+                                                                    name={challenge?.challenge_name ?? "None"}
+                                                                    solved={challenge?.solve_count ?? 0}
+                                                                    score={challenge?.cur_score ?? 0}
                                                                     rank={3}
-                                                                    choiced={curChallenge.id == challenge.id}
-                                                                    onClick={handleChangeChallenge(challenge.id || 0)}
-                                                                    status={challengeSolvedList[challenge.id || 0]}
+                                                                    choiced={curChallenge?.challenge_id == challenge.challenge_id}
+                                                                    onClick={handleChangeChallenge(challenge?.challenge_id ?? 0)}
+                                                                    status={challengeSolvedList[challenge?.challenge_id ?? 0]}
                                                                 />
                                                             ) : (
                                                                 <div className="h-[100px]"></div>

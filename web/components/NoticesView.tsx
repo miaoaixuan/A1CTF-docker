@@ -5,7 +5,7 @@ import { Dispatch, MutableRefObject, SetStateAction, useEffect, useRef, useState
 import { Button } from "./ui/button";
 import { CalendarClock, CircleX, X } from "lucide-react";
 import dayjs from "dayjs";
-import { GameNotice, NoticeType } from "@/utils/GZApi";
+import { GameNotice, NoticeCategory } from "@/utils/A1API";
 import { Mdx } from "./MdxCompoents";
 import { useTranslations } from "next-intl";
 
@@ -26,7 +26,7 @@ const calcTranslateY = (index: number) => {
     // 估计信息盒子的高度
     messages.forEach((ele, curIndex) => {
         // 先根据换行符拆开
-        const lines = ele.values[0].split("\n")
+        const lines = ele.data[0].split("\n")
 
         // 当前盒子的高度
         let curBoxHeight = 64
@@ -62,7 +62,7 @@ const shouldAnimated = (index: number) => {
     // 估计信息盒子的高度
     messages.forEach((ele, curIndex) => {
         // 先根据换行符拆开
-        const lines = ele.values[0].split("\n")
+        const lines = ele.data[0].split("\n")
 
         // 当前盒子的高度
         let curBoxHeight = 64
@@ -204,15 +204,15 @@ export function NoticesView({ opened, setOpened, notices }: { opened: boolean, s
     }, [durationTime])
 
     const getNoticeMessage = (notice: GameNotice) => {
-        switch (notice.type) {
-            case NoticeType.Normal:
-                return (<Mdx source={notice.values[0]}></Mdx>)
-            case NoticeType.FirstBlood:
-                return (<span>{`🥇 ${notice.values[0]} ${t("blood_message_p1")} ${notice.values[1]} ${t("blood1")}`}</span>)
-            case NoticeType.SecondBlood:
-                return (<span>{`🥈 ${notice.values[0]} 获得了 ${notice.values[1]} ${t("blood2")}`}</span>)
-            case NoticeType.ThirdBlood:
-                return (<span>{`🥉 ${notice.values[0]} 获得了 ${notice.values[1]} ${t("blood3")}`}</span>)
+        switch (notice.notice_category) {
+            case NoticeCategory.NewAnnouncement:
+                return (<Mdx source={notice.data[0]}></Mdx>)
+            case NoticeCategory.FirstBlood:
+                return (<span>{`🥇 ${notice.data[0]} ${t("blood_message_p1")} ${notice.data[1]} ${t("blood1")}`}</span>)
+            case NoticeCategory.SecondBlood:
+                return (<span>{`🥈 ${notice.data[0]} 获得了 ${notice.data[1]} ${t("blood2")}`}</span>)
+            case NoticeCategory.ThirdBlood:
+                return (<span>{`🥉 ${notice.data[0]} 获得了 ${notice.data[1]} ${t("blood3")}`}</span>)
         }
     }
 
@@ -292,7 +292,7 @@ export function NoticesView({ opened, setOpened, notices }: { opened: boolean, s
                                             <div className="w-full h-full flex flex-col p-4 gap-2">
                                                 <div className="flex w-full gap-2">
                                                     <CalendarClock />
-                                                    <span>{ dayjs(mes.time).format("YYYY-MM-DD HH:mm:ss") }</span>
+                                                    <span>{ dayjs(mes.create_time).format("YYYY-MM-DD HH:mm:ss") }</span>
                                                 </div>
                                                 <div className="flex flex-col break-words">
                                                     { getNoticeMessage(mes) }

@@ -35,13 +35,13 @@ type GameChallenge struct {
 	ChallengeID  int64        `gorm:"column:challenge_id;not null" json:"challenge_id"`
 	TotalScore   float64      `gorm:"column:total_score;not null" json:"total_score"`
 	CurScore     float64      `gorm:"column:cur_score;not null" json:"cur_score"`
-	Enabled      bool         `gorm:"column:enabled;not null" json:"enabled"`
 	SolveCount   int32        `gorm:"column:solve_count" json:"solve_count"`
 	MinimalScore float64      `gorm:"column:minimal_score" json:"minimal_score"`
 	Difficulty   float64      `gorm:"column:difficulty" json:"difficulty"`
 	Hints        *Hints       `gorm:"column:hints;default:{}" json:"hints"`
 	JudgeConfig  *JudgeConfig `gorm:"column:judge_config" json:"judge_config"`
-	BelongStage  int32        `gorm:"column:belong_stage" json:"belong_stage"`
+	BelongStage  *string      `gorm:"column:belong_stage" json:"belong_stage"`
+	Visible      bool         `gorm:"column:visible" json:"visible"`
 
 	// Challenge Challenge `gorm:"foreignKey:challenge_id;references:challenges.challenge_id"`
 }

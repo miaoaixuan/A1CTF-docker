@@ -50,6 +50,21 @@ func RandomStringLower(length int) string {
 	return string(result)
 }
 
+func RandomHash(length int) string {
+	const charset = "abcdef" +
+		"0123456789"
+
+	result := make([]byte, length)
+	for i := range result {
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+		if err != nil {
+			panic(err) // 在实际应用中应该处理这个错误
+		}
+		result[i] = charset[num.Int64()]
+	}
+	return string(result)
+}
+
 func GenerateSalt() string {
 	return RandomString(48)
 }
