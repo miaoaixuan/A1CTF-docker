@@ -1333,7 +1333,7 @@ components:
           type: string
         description:
           type: string
-        Slogan:
+        slogan:
           type: string
       required:
         - name

@@ -13,11 +13,12 @@ import (
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
 // 比赛状态检查中间件
-func GameStatusMiddleware(checkParticipate bool) gin.HandlerFunc {
+func GameStatusMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		gameIDStr := c.Param("game_id")
 		gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
@@ -80,24 +81,30 @@ func GameStatusMiddleware(checkParticipate bool) gin.HandlerFunc {
 
 		c.Set("user_id", user_id)
 
-		// 检查是否创建队伍
-		if checkParticipate {
-			// 查找队伍
-			var team models.Team
-			if err := dbtool.DB().Where("? = ANY(team_members)", user_id).First(&team).Error; err != nil {
-				c.JSON(http.StatusForbidden, gin.H{
-					"code":    403,
-					"message": "You must join a team in this game",
-				})
-				c.Abort()
-				return
-			} else {
-				c.Set("team", team)
-			}
-		}
-
 		// 将比赛信息存入上下文
 		c.Set("game", game)
+		c.Next()
+	}
+}
+
+func TeamStatusMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		claims := jwt.ExtractClaims(c)
+		user_id := claims["UserID"].(string)
+
+		c.Set("user_id", user_id)
+
+		var team models.Team
+		if err := dbtool.DB().Where("? = ANY(team_members)", user_id).First(&team).Error; err != nil {
+			c.JSON(http.StatusForbidden, gin.H{
+				"code":    403,
+				"message": "You must join a team in this game",
+			})
+			c.Abort()
+			return
+		}
+
+		c.Set("team", team)
 		c.Next()
 	}
 }
@@ -158,7 +165,7 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 		team_status = team.TeamStatus
 	}
 
-	team_status = models.ParticipateApproved
+	// team_status = models.ParticipateApproved
 
 	result := gin.H{
 		"game_id":                game.GameID,
@@ -375,8 +382,8 @@ func UserGetGameNotices(c *gin.Context) {
 
 type CreateTeamPayload struct {
 	Name        string `json:"name" binding:"required"`
-	Description string `json:"description" binding:"required"`
-	Slogan      string `json:"slogan" binding:"required"`
+	Description string `json:"description"`
+	Slogan      string `json:"slogan"`
 }
 
 func UserCreateGameTeam(c *gin.Context) {
@@ -393,21 +400,25 @@ func UserCreateGameTeam(c *gin.Context) {
 	}
 
 	inviteCode := fmt.Sprintf("%s-%s", payload.Name, uuid.New().String())
+	teamMembers := pq.StringArray{c.MustGet("user_id").(string)}
 
 	newTeam := models.Team{
+		TeamID:          0,
 		GameID:          game.GameID,
 		TeamName:        payload.Name,
 		TeamDescription: &payload.Description,
 		TeamAvatar:      nil,
 		TeamSlogan:      &payload.Slogan,
-		TeamMembers:     &[]string{c.MustGet("user_id").(string)},
+		TeamMembers:     teamMembers,
 		TeamScore:       0,
 		TeamHash:        general.RandomHash(16),
 		InviteCode:      &inviteCode,
 		TeamStatus:      models.ParticipatePending,
 	}
 
-	if err := dbtool.DB().Create(newTeam).Error; err != nil {
+	log.Printf("%+v", newTeam)
+
+	if err := dbtool.DB().Create(&newTeam).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    501,
 			"message": "System error",
@@ -419,4 +430,10 @@ func UserCreateGameTeam(c *gin.Context) {
 		"code": 200,
 		"data": newTeam,
 	})
+}
+
+func UserCreateGameContainer(c *gin.Context) {
+	// game := c.MustGet("game").(models.Game)
+	// team := c.MustGet("team").(models.Team)
+
 }

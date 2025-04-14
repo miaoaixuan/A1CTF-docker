@@ -4,12 +4,15 @@ import ReactMarkdown from 'react-markdown'
 
 import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'; // To handle line breaks
+import rehypeRaw from 'rehype-raw' // 新增：用于解析 HTML
 
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 import { Button } from "./ui/button";
 import { useTheme } from 'next-themes';
+
+import xss from 'xss';
 
 export function Mdx({ source }: { source: string }) {
 
@@ -23,19 +26,35 @@ export function Mdx({ source }: { source: string }) {
     return (
         <ReactMarkdown 
             remarkPlugins={[remarkGfm, remarkBreaks]}
+            rehypePlugins={[rehypeRaw]}
             components={{
                 code: ({ children = [], className, ...props }) => {
+                    // console.log(props)
                     const match = /language-(\w+)/.exec(className || '')
-                    return (<SyntaxHighlighter
-                            language={match?.[1]}
-                            showLineNumbers={true}
-                            style={ theme == "dark" ? (oneDark as any) : (oneLight as any) }
-                            PreTag='div'
-                            className='syntax-hight-wrapper transition-colors duration-300'
-                          >
-                            {children as string[]}
-                          </SyntaxHighlighter>)
+                    return match ? (<SyntaxHighlighter
+                        language={match?.[1]}
+                        showLineNumbers={true}
+                        style={ theme == "dark" ? (oneDark as any) : (oneLight as any) }
+                        PreTag='div'
+                        className='syntax-hight-wrapper transition-colors duration-300'
+                      >
+                        {children as string[]}
+                      </SyntaxHighlighter>) : (
+                        <code {...props} className={className}>
+                            {children}
+                        </code>
+                      )
                 },
+                blockquote: ({ node, ...props }) => (
+                    <blockquote className={`
+                        rounded-sm
+                        my-4 p-4 border-l-4 
+                        bg-gray-50 dark:bg-gray-800/50
+                        border-gray-300 dark:border-gray-600
+                        text-gray-700 dark:text-gray-300
+                        transition-colors duration-300
+                    `} {...props} />
+                ),
                 h1: ({ node, ...props }) => (
                     <h1 className="text-3xl font-bold mt-6 mb-4 transition-colors duration-300" {...props} />
                 ),
@@ -52,7 +71,10 @@ export function Mdx({ source }: { source: string }) {
                     <h5 className="text-base font-normal mt-3 mb-2 transition-colors duration-300" {...props} />
                 ),
                 p: ({ node, ...props }) => (
-                    <p className="text-base font-normal transition-colors duration-300" {...props} />
+                    <>
+                        <span className="text-base font-normal transition-colors duration-300" {...props} />
+                        <br/>
+                    </>
                 ),
                 a: ({ node, href, ...props }) => (
                     <a 

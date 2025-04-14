@@ -32,7 +32,7 @@ import { useEffect, useRef, useState } from "react";
 // import { api, ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeCategory, ChallengeInfo, ChallengeType, ErrorMessage, TeamInfoModel, ParticipationStatus, ContainerStatus, ContainerInfoModel } from '@/utils/GZApi'
 
 import { api } from "@/utils/ApiHelper"
-import { ErrorMessage, GameNotice, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "@/utils/A1API"
+import { AttachmentType, ErrorMessage, GameNotice, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "@/utils/A1API"
 
 import { Skeleton } from "./ui/skeleton";
 
@@ -41,7 +41,7 @@ import * as signalR from '@microsoft/signalr'
 import dayjs from "dayjs";
 import { LoadingPage } from "./LoadingPage";
 import { Button } from "./ui/button";
-import { AppWindow, Ban, CalendarClock, CircleCheckBig, ClockArrowUp, CloudDownload, Container, Copy, Files, Flag, FlaskConical, FoldHorizontal, Hourglass, Info, Link, LoaderCircle, LoaderPinwheel, PackageOpen, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal, X } from "lucide-react";
+import { AlarmClock, AppWindow, Ban, CalendarClock, CircleCheckBig, ClockArrowUp, CloudDownload, Container, Copy, Files, Flag, FlaskConical, FoldHorizontal, Hourglass, Info, Link, ListCheck, LoaderCircle, LoaderPinwheel, NotebookPen, PackageOpen, Pickaxe, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal, Users, X } from "lucide-react";
 import { AxiosError } from "axios";
 
 import Image from "next/image";
@@ -79,6 +79,8 @@ import { TransitionLink } from "./TransitionLink";
 import copy from "copy-to-clipboard";
 import { SolvedAnimation } from "./SolvedAnimation";
 import { useCookies } from "react-cookie";
+import { CreateTeamDialog } from "./dialogs/CreateTeamDialog";
+import { JoinTeamDialog } from "./dialogs/JoinTeamDialog";
 
 const GameTerminal = dynamic(
     () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
@@ -444,7 +446,8 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             // 未注册 先获取队伍信息
 
             // TODO 修改每场比赛创建一个队伍
-            
+            setTimeout(() => setLoadingVisibility(false), 200)
+
             // api.team.teamGetTeamsInfo().then((res) => {
             //     setAvailableTeams(res.data)
 
@@ -702,21 +705,6 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             <LoadingPage visible={loadingVisiblity} />
             <SolvedAnimation blood={blood} setBlood={setBlood} bloodMessage={bloodMessage} />
 
-            {(gameStatus == "pending" || gameStatus == "ended") && (
-                <div className="absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]">
-                    <div className="flex flex-col text-3xl items-center gap-4 select-none">
-                        <Info size={80} />
-                        {gameStatus == "ended" ? (<span>{t("game_ended")}</span>) : (<span>{t("game_pending")}</span>)}
-                        {gameStatus == "pending" && (<span>{t("game_start_countdown")} {beforeGameTime}</span>)}
-                        <div className="flex">
-                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                                <Button>{t("back_to_main")}</Button>
-                            </TransitionLink>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {gameStatus == "banned" && (
                 <motion.div
                     className={`absolute top-0 left-0 w-screen h-screen flex items-center justify-center z-[40]`}
@@ -726,7 +714,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                     }}
                     animate={{
                         backgroundColor: "rgb(239 68 68 / 0.9)",
-                        backdropFilter: "blur(12px)"
+                        backdropFilter: "blur(16px)"
                     }}
                     transition={{
                         duration: 0.5
@@ -749,84 +737,109 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                 </motion.div>
             )}
 
-            {gameStatus == "unRegistered" && preJoinDataPrepared && (
-                <div className="absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]">
-                    <div className="flex flex-col items-center gap-4 select-none">
-                        <Info size={80} />
-                        <span className="text-3xl">{t("not_participated")}</span>
-                        {
-                        // TODO 创建队伍 UI 重写
-                        /* {availableTeams.length ? (
-                            <>
-                                <div className="flex w-full mb-[-12px]">
-                                    <span>{t("team_name")}</span>
+            { ["pending", "ended", "unRegistered", "waitForProcess", "unLogin"].includes(gameStatus) && (
+                <div className="absolute top-0 left-0 w-screen h-screen backdrop-blur-xl z-40">
+                    <div className="flex w-full h-full relative">
+                        <div className="w-full h-full hidden md:block">
+                            <div className="w-full h-full flex flex-col overflow-hidden">
+                                <MacScrollbar className="h-full w-full"
+                                    skin={theme ==  "light" ? "light" : "dark"}
+                                    trackStyle={(horizontal) => ({ [horizontal ? "height" : "width"]: 0, borderWidth: 0})}
+                                >
+                                    <div className="pt-5 lg:pt-10">
+                                        <span className="text-2xl font-bold px-8 select-none mb-4 text-nowrap overflow-hidden text-ellipsis">✨ 比赛须知 - { gameInfo?.name }</span>
+                                        <div className="px-5 pb-5 lg:px-10 lg:pb-10 w-[60%]">
+                                            <Mdx source={gameInfo?.description ?? "没有比赛通知哦"} />
+                                        </div>
+                                    </div>
+                                </MacScrollbar>
+                            </div>
+                        </div>
+
+                        <div className="absolute left-[60%] w-[40%] h-full flex-1 md:flex-none pointer-events-none">
+                            {(gameStatus == "pending" || gameStatus == "ended") && (
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <div className="flex flex-col text-3xl items-center gap-4 select-none">
+                                        <AlarmClock size={80} className="mb-4" />
+                                        {gameStatus == "ended" ? (<span className="font-bold">{t("game_ended")}</span>) : (<span className="font-bold">{t("game_pending")}</span>)}
+                                        {gameStatus == "pending" && (<span className="text-2xl">{t("game_start_countdown")} {beforeGameTime}</span>)}
+                                        <div className="flex mt-2">
+                                            <TransitionLink className="transition-colors pointer-events-auto" href={`/${lng}/games`}>
+                                                <Button>{t("back_to_main")}</Button>
+                                            </TransitionLink>
+                                        </div>
+                                    </div>
                                 </div>
-                                <Select onValueChange={(val) => setCurChoosedTeam(parseInt(val, 10))}>
-                                    <SelectTrigger className="w-[280px] bg-background">
-                                        <SelectValue placeholder="Select a team" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            {availableTeams.map((e, index) => (
-                                                <SelectItem value={`${e.id}`} key={index}>{e.name}</SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
-                            </>
-                        ) : (
-                            <span>{t("no_available_team")}</span>
-                        )}
-                        <div className="flex gap-4">
-                            <Button onClick={submitTeam} disabled={availableTeams.length <= 0}>{t("sign_up")}</Button>
-                            <Button variant="outline"
-                                onClick={() => setScoreBoardVisible(true)}
-                            ><Presentation />{t("rank")}</Button>
-                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                                <Button variant="outline">{t("back_to_main")}</Button>
-                            </TransitionLink>
-                        </div> */}
-                    </div>
-                </div>
-            )}
+                            )}
 
-            {gameStatus == "waitForProcess" && (
-                <div
-                    className={`absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]`}
-                >
-                    <div className="flex flex-col items-center gap-4 select-none">
-                        <Info size={80} />
-                        <span className="text-3xl">{t("wait_for_process")}</span>
-                    </div>
-                </div>
-            )}
+                            {gameStatus == "unRegistered"  && (
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <div className="flex flex-col items-center gap-4 select-none">
+                                        <NotebookPen size={80} className="mb-4" />
+                                        <span className="text-2xl mb-2 font-bold">{t("not_participated")}</span>
+                                        <div className="flex gap-[15px] mt-4 pointer-events-auto">
+                                            <Button variant="outline"
+                                                onClick={() => setScoreBoardVisible(true)}
+                                            ><Presentation />{t("rank")}</Button>
+                                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                                                <Button variant="outline">{t("back_to_main")}</Button>
+                                            </TransitionLink>
+                                        </div>
+                                        <div className="flex gap-[15px] mt-[-5px] pointer-events-auto">
+                                            <CreateTeamDialog updateTeam={() => {}} gameID={gameID}>
+                                                <Button variant="default" type="button"><Pickaxe />创建队伍</Button>
+                                            </CreateTeamDialog>
+                                            <JoinTeamDialog updateTeam={() => {}}>
+                                                <Button variant="default" type="button"><Users />加入队伍</Button>
+                                            </JoinTeamDialog>
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
-            {gameStatus == "unLogin" && (
-                <div
-                    className={`absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]`}
-                >
-                    <div className="flex flex-col items-center gap-8 select-none">
-                        <Ban size={80} />
-                        <span className="text-3xl">{t("login_first")}</span>
-                        <div className="flex gap-6">
-                            <Button variant="outline"
-                                onClick={() => setScoreBoardVisible(true)}
-                            ><Presentation />{t("rank")}</Button>
-                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                                <Button variant="outline">{t("back_to_main")}</Button>
-                            </TransitionLink>
+                            {gameStatus == "waitForProcess" && (
+                                <div
+                                    className={`w-full h-full flex items-center justify-center`}
+                                >
+                                    <div className="flex flex-col items-center gap-4 select-none">
+                                        <ListCheck size={80} className="mb-4" />
+                                        <span className="text-2xl font-bold">{t("wait_for_process")}</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {gameStatus == "unLogin" && (
+                                <div
+                                    className={`w-full h-full flex items-center justify-center`}
+                                >
+                                    <div className="flex flex-col items-center gap-8 select-none">
+                                        <Ban size={80} className="mb-4" />
+                                        <span className="text-2xl font-bold mb-4">{t("login_first")}</span>
+                                        <div className="flex gap-6 pointer-events-auto">
+                                            <Button variant="outline"
+                                                onClick={() => setScoreBoardVisible(true)}
+                                            ><Presentation />{t("rank")}</Button>
+                                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                                                <Button variant="outline">{t("back_to_main")}</Button>
+                                            </TransitionLink>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
             )}
 
+            {/* New */}
             {gameStatus == "noSuchGame" && (
                 <div
-                    className={`absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]`}
+                    className={`absolute top-0 left-0 w-screen h-screen backdrop-blur-xl flex items-center justify-center z-[40]`}
                 >
                     <div className="flex flex-col items-center gap-4 select-none">
-                        <Info size={80} />
-                        <span className="text-3xl">{t("no_such_game")}</span>
+                        <Info size={80} className="mb-4"/>
+                        <span className="text-2xl mb-4">{t("no_such_game")}</span>
                         <TransitionLink className="transition-colors" href={`/${lng}/games`}>
                             <Button variant="outline">{t("back_to_main")}</Button>
                         </TransitionLink>
@@ -896,7 +909,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                         <DropdownMenuItem onClick={() => setNoticeOpened(true)} disabled={notices.length == 0}>
                                             <PackageOpen />
                                             <span>{t("open_notices")}</span>
-                                            {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{ notices.filter((e) => e.notice_category == NoticeCategory.NewAnnouncement).length }</Badge> : <></>}
+                                            {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{notices.filter((e) => e.notice_category == NoticeCategory.NewAnnouncement).length}</Badge> : <></>}
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => setScoreBoardVisible(true)}>
                                             <Presentation />
@@ -906,11 +919,11 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
 
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                            <Button variant="outline" className="select-none hidden lg:flex" onClick={() => setNoticeOpened(true)} disabled={ notices.length == 0 }>
+                            <Button variant="outline" className="select-none hidden lg:flex" onClick={() => setNoticeOpened(true)} disabled={notices.length == 0}>
                                 <div className="flex items-center gap-1">
                                     <PackageOpen />
                                     <span>{t("open_notices")}</span>
-                                    {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{ notices.filter((e) => e.notice_category == NoticeCategory.NewAnnouncement).length }</Badge> : <></>}
+                                    {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{notices.filter((e) => e.notice_category == NoticeCategory.NewAnnouncement).length}</Badge> : <></>}
                                 </div>
                             </Button>
                             <Button variant="outline" className="select-none hidden lg:flex" onClick={() => setScoreBoardVisible(true)}>
@@ -1105,39 +1118,42 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                 </div>
                                             </div>
                                         )} */}
-                                        {
-                                        // TODO 附件列表逻辑重写
-                                        /* {curChallenge.context?.url ? (
+
+                                        {curChallenge?.attachments?.length ? (
                                             <div className="w-full border-b-[1px] h-[50px] p-2 flex items-center gap-4 transition-[border-color] duration-300">
                                                 <div className="flex items-center gap-2 transition-colors duration-300">
                                                     <Files size={21} />
                                                     <span className="text-md">{t("attachments")}</span>
                                                 </div>
                                                 <div className="flex justify-end gap-4">
-                                                    <Button variant="ghost" onClick={() => handleDownload()} className="pl-4 pr-4 pt-0 pb-0 text-md [&_svg]:size-5 transition-all duration-300" disabled={downloadName != ""}>
-                                                        <div className="flex gap-[4px] items-center">
-                                                            {curChallenge.context.fileSize ? (
-                                                                // 有文件大小的是本地附件
-                                                                <>
-                                                                    <CloudDownload />
-                                                                    <span className=""> {getAttachmentName(curChallenge.context.url)} </span>
-                                                                </>
-                                                            ) : (
-                                                                // 远程附件
-                                                                <>
-                                                                    <Link />
-                                                                    <span className=""> {t("external_links")} </span>
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    </Button>
+                                                    {curChallenge.attachments.map((attach, i) => (
+                                                        <Button variant="ghost" key={i} onClick={() => handleDownload()} className="pl-4 pr-4 pt-0 pb-0 text-md [&_svg]:size-5 transition-all duration-300" disabled={downloadName != ""}>
+                                                            <div className="flex gap-[4px] items-center">
+                                                                {attach.attach_type == AttachmentType.STATICFILE ? (
+                                                                    // 有文件大小的是本地附件
+                                                                    <>
+                                                                        <CloudDownload />
+                                                                        <span className=""> {attach.attach_name} </span>
+                                                                    </>
+                                                                ) : (
+                                                                    // 远程附件
+                                                                    <>
+                                                                        <Link />
+                                                                        <span className=""> {t("external_links")} </span>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </Button>
+                                                    ))}
                                                 </div>
                                             </div>
                                         ) : (<></>)}
-                                        {curChallenge.challenge_name && (
+
+
+                                        {curChallenge?.challenge_name && (
                                             <div className="w-full p-8 flex-1">
-                                                {curChallenge.content ? (
-                                                    <Mdx source={curChallenge.content} />
+                                                {curChallenge.description ? (
+                                                    <Mdx source={curChallenge.description} />
                                                 ) : (
                                                     <div className="w-full h-full flex justify-center items-center select-none gap-4">
                                                         <Image
@@ -1152,7 +1168,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                 )}
 
                                             </div>
-                                        )} */}
+                                        )}
                                     </MacScrollbar>
                                 </SafeComponent>
                             </div>

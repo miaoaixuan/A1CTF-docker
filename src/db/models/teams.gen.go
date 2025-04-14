@@ -4,6 +4,8 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+
+	"github.com/lib/pq"
 )
 
 const TableNameTeam = "teams"
@@ -39,7 +41,7 @@ type Team struct {
 	TeamAvatar      *string             `gorm:"column:team_avatar" json:"team_avatar"`
 	TeamSlogan      *string             `gorm:"column:team_slogan" json:"team_slogan"`
 	TeamDescription *string             `gorm:"column:team_description" json:"team_description"`
-	TeamMembers     *[]string           `gorm:"column:team_members" json:"team_members"`
+	TeamMembers     pq.StringArray      `gorm:"column:team_members;type:text[]" json:"team_members"`
 	TeamScore       float64             `gorm:"column:team_score;not null" json:"team_score"`
 	TeamHash        string              `gorm:"column:team_hash;not null" json:"team_hash"`
 	InviteCode      *string             `gorm:"column:invite_code" json:"invite_code"`

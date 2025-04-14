@@ -345,7 +345,7 @@ export interface GameNotice {
 export interface CreateGameTeamPayload {
   name: string;
   description: string;
-  Slogan?: string;
+  slogan: string;
 }
 
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse, HeadersDefaults, ResponseType } from "axios";

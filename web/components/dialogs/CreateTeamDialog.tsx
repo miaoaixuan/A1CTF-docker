@@ -28,7 +28,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useEffect, useState } from "react";
 import { Textarea } from "../ui/textarea";
-import { api } from "@/utils/GZApi";
+import { api } from "@/utils/ApiHelper";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
 import { useTranslations } from "next-intl";
@@ -38,7 +38,7 @@ interface ErrorMessage {
     title: string;
 }
 
-export const CreateTeamDialog: React.FC<{ updateTeam: () => void, children: React.ReactNode }> = ({ updateTeam , children }) => {
+export const CreateTeamDialog: React.FC<{ updateTeam: () => void, gameID: number, children: React.ReactNode }> = ({ updateTeam, gameID , children }) => {
 
     const t = useTranslations("teams")
 
@@ -46,7 +46,8 @@ export const CreateTeamDialog: React.FC<{ updateTeam: () => void, children: Reac
         teamName: z.string().min(2, {
             message: t("form_team_name_error"),
         }),
-        slogan: z.string()
+        slogan: z.string(),
+        description: z.string().optional(),
     })
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -60,9 +61,10 @@ export const CreateTeamDialog: React.FC<{ updateTeam: () => void, children: Reac
     const [isOpen, setIsOpen] = useState(false)
 
     function onSubmit(values: z.infer<typeof formSchema>) {
-        api.team.teamCreateTeam({
+        api.user.userGameCreateTeam(gameID, {
             name: values.teamName,
-            bio: values.slogan
+            slogan: values.slogan,
+            description: values.description ?? ""
         }).then((res) => {
             toast.success(t("create_team_success"), { position: "top-center" })
             updateTeam()
@@ -120,6 +122,20 @@ export const CreateTeamDialog: React.FC<{ updateTeam: () => void, children: Reac
                                     <FormLabel>{ t("slogan") }</FormLabel>
                                     <FormControl>
                                         <Textarea placeholder="We can win!" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="description"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>队伍描述</FormLabel>
+                                    <FormControl>
+                                        <Textarea placeholder="It's a team" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

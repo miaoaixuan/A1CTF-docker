@@ -257,17 +257,17 @@ func main() {
 			userGameGroup.GET("/list", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.UserListGames)
 
 			// 中间件检查比赛状态
-			userGameGroup.GET("/:game_id", controllers.GameStatusMiddleware(false), controllers.UserGetGameDetailWithTeamInfo)
-			userGameGroup.GET("/:game_id/challenges", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false), controllers.UserGetGameChallenges)
+			userGameGroup.GET("/:game_id", controllers.GameStatusMiddleware(), controllers.UserGetGameDetailWithTeamInfo)
+			userGameGroup.GET("/:game_id/challenges", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(), controllers.UserGetGameChallenges)
 
 			// 查询比赛中的某道题
-			userGameGroup.GET("/:game_id/challenge/:challenge_id", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false), controllers.UserGetGameChallenge)
+			userGameGroup.GET("/:game_id/challenge/:challenge_id", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(), controllers.UserGetGameChallenge)
 
 			// 比赛通知接口
-			userGameGroup.GET("/:game_id/notices", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(true), controllers.UserGetGameNotices)
+			userGameGroup.GET("/:game_id/notices", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(), controllers.TeamStatusMiddleware(), controllers.UserGetGameNotices)
 
 			// 创建比赛队伍
-			userGameGroup.POST("/:game_id/createTeam", controllers.UserCreateGameTeam)
+			userGameGroup.POST("/:game_id/createTeam", controllers.GameStatusMiddleware(), controllers.UserCreateGameTeam)
 		}
 	}
 
