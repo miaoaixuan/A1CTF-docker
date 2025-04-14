@@ -298,30 +298,34 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             setGameInfo(res.data.data)
 
             // 第一步 检查是否报名
-            if (res.data.data.team_status == ParticipationStatus.UnRegistered) {
-                // 未报名
-                setGameStatus("unRegistered")
-            } else if (res.data.data.team_status == ParticipationStatus.Pending) {
-                // 审核中
-                setGameStatus("waitForProcess")
-            } else if (res.data.data.team_status == ParticipationStatus.Approved) {
-                if (dayjs() < dayjs(res.data.data.start_time)) {
-                    // 等待比赛开始
-                    setGameStatus("pending")
-                } else if (dayjs() < dayjs(res.data.data.end_time)) {
-                    // 比赛进行中
-                    setGameStatus("running")
-                } else if (dayjs() > dayjs(res.data.data.end_time)) {
-                    if (!res.data.data.practice_mode) {
-                        setGameStatus("ended")
-                    } else {
-                        // 练习模式
-                        setGameStatus("practiceMode")
+            if (dayjs() > dayjs(res.data.data.end_time) && !res.data.data.practice_mode) {
+                setGameStatus("ended")
+            } else {
+                if (res.data.data.team_status == ParticipationStatus.UnRegistered) {
+                    // 未报名
+                    setGameStatus("unRegistered")
+                } else if (res.data.data.team_status == ParticipationStatus.Pending) {
+                    // 审核中
+                    setGameStatus("waitForProcess")
+                } else if (res.data.data.team_status == ParticipationStatus.Approved) {
+                    if (dayjs() < dayjs(res.data.data.start_time)) {
+                        // 等待比赛开始
+                        setGameStatus("pending")
+                    } else if (dayjs() < dayjs(res.data.data.end_time)) {
+                        // 比赛进行中
+                        setGameStatus("running")
+                    } else if (dayjs() > dayjs(res.data.data.end_time)) {
+                        if (!res.data.data.practice_mode) {
+                            setGameStatus("ended")
+                        } else {
+                            // 练习模式
+                            setGameStatus("practiceMode")
+                        }
                     }
+                } else if (res.data.data.team_status == ParticipationStatus.Banned) {
+                    // 禁赛
+                    setGameStatus("banned")
                 }
-            } else if (res.data.data.team_status == ParticipationStatus.Banned) {
-                // 禁赛
-                setGameStatus("banned")
             }
         }).catch((error: AxiosError) => {
             if (error.response?.status) {
@@ -763,8 +767,11 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                         <AlarmClock size={80} className="mb-4" />
                                         {gameStatus == "ended" ? (<span className="font-bold">{t("game_ended")}</span>) : (<span className="font-bold">{t("game_pending")}</span>)}
                                         {gameStatus == "pending" && (<span className="text-2xl">{t("game_start_countdown")} {beforeGameTime}</span>)}
-                                        <div className="flex mt-2">
-                                            <TransitionLink className="transition-colors pointer-events-auto" href={`/${lng}/games`}>
+                                        <div className="flex mt-2 items-center gap-4 pointer-events-auto">
+                                            <Button variant="outline"
+                                                onClick={() => setScoreBoardVisible(true)}
+                                            ><Presentation />{t("rank")}</Button>
+                                            <TransitionLink className="transition-colors flex items-center" href={`/${lng}/games`}>
                                                 <Button>{t("back_to_main")}</Button>
                                             </TransitionLink>
                                         </div>

@@ -206,6 +206,17 @@ func main() {
 	// 关闭日志输出
 	// r := gin.New()
 
+	cacheByCookie := cache.WithCacheStrategyByRequest(func(c *gin.Context) (bool, cache.Strategy) {
+		cookie, err := c.Cookie("a1token")
+		if err != nil {
+			return false, cache.Strategy{}
+		} else {
+			return true, cache.Strategy{
+				CacheKey: cookie,
+			}
+		}
+	})
+
 	authMiddleware, err := jwt.New(initParams())
 	if err != nil {
 		log.Fatal("JWT Error:" + err.Error())
@@ -257,17 +268,21 @@ func main() {
 			userGameGroup.GET("/list", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.UserListGames)
 
 			// 中间件检查比赛状态
-			userGameGroup.GET("/:game_id", controllers.GameStatusMiddleware(), controllers.UserGetGameDetailWithTeamInfo)
-			userGameGroup.GET("/:game_id/challenges", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(), controllers.UserGetGameChallenges)
+			userGameGroup.GET("/:game_id", cache.Cache(
+				memoryStore,
+				1*time.Second,
+				cacheByCookie,
+			), controllers.GameStatusMiddleware(true), controllers.UserGetGameDetailWithTeamInfo)
+			userGameGroup.GET("/:game_id/challenges", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false), controllers.UserGetGameChallenges)
 
 			// 查询比赛中的某道题
-			userGameGroup.GET("/:game_id/challenge/:challenge_id", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(), controllers.UserGetGameChallenge)
+			userGameGroup.GET("/:game_id/challenge/:challenge_id", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenge)
 
 			// 比赛通知接口
-			userGameGroup.GET("/:game_id/notices", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(), controllers.TeamStatusMiddleware(), controllers.UserGetGameNotices)
+			userGameGroup.GET("/:game_id/notices", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false), controllers.TeamStatusMiddleware(), controllers.UserGetGameNotices)
 
 			// 创建比赛队伍
-			userGameGroup.POST("/:game_id/createTeam", controllers.GameStatusMiddleware(), controllers.UserCreateGameTeam)
+			userGameGroup.POST("/:game_id/createTeam", controllers.GameStatusMiddleware(false), controllers.UserCreateGameTeam)
 		}
 	}
 

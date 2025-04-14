@@ -18,7 +18,7 @@ import (
 )
 
 // 比赛状态检查中间件
-func GameStatusMiddleware() gin.HandlerFunc {
+func GameStatusMiddleware(visibleAfterEnded bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		gameIDStr := c.Param("game_id")
 		gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
@@ -67,7 +67,7 @@ func GameStatusMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		if game.EndTime.Before(now) && !game.PracticeMode {
+		if !visibleAfterEnded && game.EndTime.Before(now) && !game.PracticeMode {
 			c.JSON(http.StatusForbidden, gin.H{
 				"code":    403,
 				"message": "Game has ended",
@@ -270,6 +270,7 @@ type UserAttachmentConfig struct {
 
 func UserGetGameChallenge(c *gin.Context) {
 	game := c.MustGet("game").(models.Game)
+	team := c.MustGet("team").(models.Team)
 
 	challengeIDStr := c.Param("challenge_id")
 	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
@@ -322,8 +323,8 @@ func UserGetGameChallenge(c *gin.Context) {
 		})
 	}
 
+	// Hints 处理
 	visibleHints := make(models.Hints, 0, len(*gameChallenge.GameChallenge.Hints))
-
 	for _, hint := range *gameChallenge.GameChallenge.Hints {
 		if hint.Visible {
 			visibleHints = append(visibleHints, hint)
@@ -342,6 +343,43 @@ func UserGetGameChallenge(c *gin.Context) {
 		"category":       gameChallenge.Challenge.Category,
 		"attachments":    userAttachments,
 		"container_type": gameChallenge.Challenge.ContainerType,
+	}
+
+	// 存活靶机处理
+	var containers []models.Container
+	if err := dbtool.DB().Where("game_id = ? AND challenge_id = ? AND team_id = ? AND container_Status = ?", game.GameID, gameChallenge.Challenge.ChallengeID, team.TeamID, models.ContainerRunning).Find(&containers).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load containers",
+		})
+		return
+	}
+
+	if len(containers) > 1 {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load containers",
+		})
+		return
+	}
+
+	result["containers"] = make([]gin.H, 0, len(*gameChallenge.Challenge.ContainerConfig))
+	for _, container := range *gameChallenge.Challenge.ContainerConfig {
+		tempConfig := gin.H{
+			"container_name": container.Name,
+			"container_port": make(models.ExposePorts, 0),
+		}
+
+		if len(containers) == 1 {
+			for _, port := range containers[0].ExposePorts {
+				if port.Name == container.Name {
+					tempConfig["container_port"] = port.Ports
+					break
+				}
+			}
+		}
+
+		result["containers"] = append(result["containers"].([]gin.H), tempConfig)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
