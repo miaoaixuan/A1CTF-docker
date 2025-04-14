@@ -41,7 +41,7 @@ import * as signalR from '@microsoft/signalr'
 import dayjs from "dayjs";
 import { LoadingPage } from "./LoadingPage";
 import { Button } from "./ui/button";
-import { AlarmClock, AppWindow, Ban, CalendarClock, CircleCheckBig, ClockArrowUp, CloudDownload, Container, Copy, Files, Flag, FlaskConical, FoldHorizontal, Hourglass, Info, Link, ListCheck, LoaderCircle, LoaderPinwheel, NotebookPen, PackageOpen, Pickaxe, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal, Users, X } from "lucide-react";
+import { AlarmClock, AppWindow, Ban, CalendarClock, CircleCheckBig, CirclePower, ClockArrowUp, CloudDownload, Container, Copy, Files, Flag, FlaskConical, FoldHorizontal, Hourglass, Info, Link, ListCheck, LoaderCircle, LoaderPinwheel, NotebookPen, Package, PackageOpen, Paperclip, Pickaxe, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal, Users, X } from "lucide-react";
 import { AxiosError } from "axios";
 
 import Image from "next/image";
@@ -1018,146 +1018,108 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                             <div className="flex h-full">
                                 <SafeComponent>
                                     <MacScrollbar
-                                        className="pl-5 pr-5 lg:pl-20 lg:pr-20 pt-5 pb-5 w-full flex flex-col"
+                                        className="p-10 w-full flex flex-col"
                                         skin={theme === "dark" ? "dark" : "light"}
                                     >
-                                        {
-                                        // TODO 靶机状态重写
-                                        /* {curChallenge.challenge_name && (
-                                            <div className="w-full border-b-[1px] h-[50px] p-2 transition-[border-color] duration-300 flex items-center gap-1">
-                                                <div className="flex items-center gap-2 transition-colors duration-300 overflow-hidden">
-                                                    <Info size={21} className="flex-none" />
-                                                    <span className="text-lg overflow-hidden text-ellipsis text-nowrap">{curChallenge.challenge_name}</span>
-                                                </div>
-                                                <div className="flex-1" />
-                                                <div className="flex justify-end gap-4 transition-colors duration-300">
-                                                    {challengeSolvedList[curChallenge.challenge_id || 0] ? (
-                                                        <div className="flex items-center gap-2 text-purple-600">
-                                                            <ScanHeart className="flex-none" />
-                                                            <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current.score} pts</span>
+                                        {curChallenge?.challenge_name && (
+                                            <div className="flex flex-col gap-4 mb-4">
+                                                <div className="flex items-center gap-2 px-5 py-3 border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md">
+                                                    <Info />
+                                                    <span className="font-bold text-lg">题目信息 - { curChallenge.challenge_name }</span>
+                                                    <div className="flex-1"/>
+                                                    <div className="flex items-center gap-4">
+                                                        {challengeSolvedList[curChallenge.challenge_id || 0] ? (
+                                                            <div className="flex items-center gap-2 text-purple-600">
+                                                                <ScanHeart className="flex-none" />
+                                                                <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current?.cur_score ?? "?"} pts</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center gap-2 text-amber-600">
+                                                                <Flag className="flex-none" />
+                                                                <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current?.cur_score ?? "?"} pts</span>
+                                                            </div>
+                                                        )}
+                                                        <div className="flex items-center gap-2 text-green-600">
+                                                            <CircleCheckBig />
+                                                            <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current?.solve_count ?? "?"} solves</span>
                                                         </div>
-                                                    ) : (
-                                                        <div className="flex items-center gap-2 text-amber-600">
-                                                            <Flag className="flex-none" />
-                                                            <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current.score} pts</span>
-                                                        </div>
-                                                    )}
-                                                    <div className="flex items-center gap-2 text-green-600">
-                                                        <CircleCheckBig />
-                                                        <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current.solved} solves</span>
                                                     </div>
                                                 </div>
+                                                
+                                                { curChallenge?.description != "" ? (
+                                                    <div className="flex flex-col gap-0">
+                                                        <Mdx source={curChallenge.description ?? ""} />
+                                                    </div>
+                                                ) : (
+                                                    <span>题目简介为空哦</span>
+                                                ) }
                                             </div>
                                         )}
-                                        {(curChallenge.type == ChallengeType.DynamicContainer || curChallenge.type == ChallengeType.StaticContainer) && (
-                                            <div className="w-full border-b-[1px] h-[50px] p-2 transition-[border-color] duration-300 flex items-center">
-                                                <div className="flex items-center gap-2 transition-colors duration-300 select-none">
-                                                    <Target size={21} />
-                                                    <span className="text-md">{t("live_container")}</span>
-                                                </div>
-                                                <div className="flex-1" />
-                                                <div className="flex justify-end gap-4 h-full">
-                                                    {(containerInfo.status != ContainerStatus.Running && containerInfo.status != ContainerStatus.Destroyed) && (
-                                                        <Button variant="ghost" className="pl-4 pr-4 pt-0 pb-0 text-md text-green-600 font-bold [&_svg]:size-6 transition-colors duration-300 select-none" disabled={containerLaunching}
-                                                            onClick={() => { handleLaunchContainer() }}
-                                                        >
-                                                            {containerLaunching ? (
-                                                                <div className="flex gap-[8px]">
-                                                                    <LoaderCircle className="animate-spin" />
-                                                                    <span className="">{t("launching")}</span>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="flex gap-[6px]">
-                                                                    <Rocket />
-                                                                    <span className="">{t("launch")}</span>
-                                                                </div>
-                                                            )}
-                                                        </Button>
-                                                    )}
 
-                                                    {containerInfo.status == ContainerStatus.Running && (
-                                                        <>
-                                                            <div className="flex h-full gap-2">
-                                                                <div className="gap-2 h-full items-center pl-4 pr-4 border-[1px] rounded-2xl hidden xl:flex">
-                                                                    <Hourglass size={20} />
-                                                                    <span>{containerLeftTime}</span>
-                                                                </div>
-                                                                <div className="gap-2 h-full items-center pl-4 pr-4 border-[1px] rounded-2xl hidden xl:flex">
-                                                                    <Container size={22} />
-                                                                    <span>{containerInfo.entry}</span>
-                                                                </div>
-                                                                <DropdownMenu modal={false}>
-                                                                    <DropdownMenuTrigger asChild>
-                                                                        <Button variant="outline" size="icon" className="xl:hidden"><Container /></Button>
-                                                                    </DropdownMenuTrigger>
-                                                                    <DropdownMenuContent className="mt-2">
-                                                                        <div className="flex flex-col gap-2 p-2">
-                                                                            <div className="gap-2 items-center h-[33px] pl-4 pr-4 border-[1px] rounded-2xl flex xl:hidden">
-                                                                                <Hourglass size={20} />
-                                                                                <span>{containerLeftTime}</span>
-                                                                            </div>
-                                                                            <div className="gap-2 items-center h-[33px] pl-4 pr-4 border-[1px] rounded-2xl flex xl:hidden">
-                                                                                <Container size={22} />
-                                                                                <span>{containerInfo.entry}</span>
+                                        { curChallenge?.containers?.length && (
+                                            <div className="flex flex-col gap-4 mb-4">
+                                                <div className="flex items-center gap-2 px-5 py-3 border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md">
+                                                    <Package />
+                                                    <span className="font-bold text-lg">靶机列表</span>
+                                                </div>
+
+                                                <div className={`grid gap-4 mt-4 ${ curChallenge.containers.length >= 3 ? "grid-cols-[repeat(auto-fill,minmax(320px,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(320px,320px))]" }`}>
+                                                    { curChallenge.containers.map((container, i) => (
+                                                        <div className="stack" key={i}>
+                                                            <div className="card p-4 flex flex-col">
+                                                                <span className="font-bold text-xl">{ container.container_name }</span>
+                                                                { container.container_port?.length ? (
+                                                                    <></>
+                                                                ) : (
+                                                                    <>
+                                                                        <div className="flex-1" />
+                                                                        <div className="flex justify-end">
+                                                                            <div className="flex gap-2 items-center">
+                                                                                <Button className="w-[40px] h-[40px] rounded-2xl border-2 border-foreground bg-background hover:bg-foreground/50 [&_svg]:size-6">
+                                                                                    <CirclePower className="text-foreground"/>
+                                                                                </Button>
+                                                                                <span className="font-bold text-xl">Launch</span>
                                                                             </div>
                                                                         </div>
-                                                                    </DropdownMenuContent>
-                                                                </DropdownMenu>
-                                                                <div className="h-full flex items-center">
-                                                                    <Button variant={"outline"} size={"icon"} onClick={() => {
-                                                                        const status = copy(containerInfo.entry!)
-                                                                        if (status) {
-                                                                            toast.success(t("copied"), { position: "top-center" })
-                                                                        } else {
-                                                                            toast.success(t("fail_copy"), { position: "top-center" })
-                                                                        }
-                                                                    }}><Copy /></Button>
-                                                                </div>
-                                                                <div className="h-full flex items-center">
-                                                                    <Button variant={"outline"} size={"icon"} onClick={() => handleExtendContainer()} ><ClockArrowUp /></Button>
-                                                                </div>
-                                                                <div className="h-full flex items-center">
-                                                                    <Button variant={"destructive"} className="[&_svg]:size-5" onClick={() => handleDestoryContainer()} size={"icon"}><X /></Button>
-                                                                </div>
-                                                            </div>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )} */}
-
-                                        {curChallenge?.attachments?.length ? (
-                                            <div className="w-full border-b-[1px] h-[50px] p-2 flex items-center gap-4 transition-[border-color] duration-300">
-                                                <div className="flex items-center gap-2 transition-colors duration-300">
-                                                    <Files size={21} />
-                                                    <span className="text-md">{t("attachments")}</span>
-                                                </div>
-                                                <div className="flex justify-end gap-4">
-                                                    {curChallenge.attachments.map((attach, i) => (
-                                                        <Button variant="ghost" key={i} onClick={() => handleDownload()} className="pl-4 pr-4 pt-0 pb-0 text-md [&_svg]:size-5 transition-all duration-300" disabled={downloadName != ""}>
-                                                            <div className="flex gap-[4px] items-center">
-                                                                {attach.attach_type == AttachmentType.STATICFILE ? (
-                                                                    // 有文件大小的是本地附件
-                                                                    <>
-                                                                        <CloudDownload />
-                                                                        <span className=""> {attach.attach_name} </span>
                                                                     </>
-                                                                ) : (
-                                                                    // 远程附件
-                                                                    <>
-                                                                        <Link />
-                                                                        <span className=""> {t("external_links")} </span>
-                                                                    </>
-                                                                )}
+                                                                ) }
                                                             </div>
-                                                        </Button>
+                                                        </div>
                                                     ))}
                                                 </div>
+                                            </div>
+                                        ) }
+
+                                        { curChallenge?.attachments?.length ? (
+                                            <div className="flex flex-col gap-2 mb-4">
+                                                <div className="flex items-center gap-2 px-5 py-3 border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md">
+                                                    <Paperclip />
+                                                    <span className="font-bold text-lg">附件列表</span>
+                                                </div>
+                                                { curChallenge?.attachments?.map((attach, i) => (
+                                                    <Button variant="ghost" key={i} onClick={() => handleDownload()} className="pl-4 pr-4 pt-0 pb-0 text-md [&_svg]:size-5 transition-all duration-300" disabled={downloadName != ""}>
+                                                        <div className="flex gap-[4px] items-center">
+                                                            {attach.attach_type == AttachmentType.STATICFILE ? (
+                                                                // 有文件大小的是本地附件
+                                                                <>
+                                                                    <CloudDownload />
+                                                                    <span className=""> {attach.attach_name} </span>
+                                                                </>
+                                                            ) : (
+                                                                // 远程附件
+                                                                <>
+                                                                    <Link />
+                                                                    <span className=""> {t("external_links")} </span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </Button>
+                                                )) }
                                             </div>
                                         ) : (<></>)}
 
 
-                                        {curChallenge?.challenge_name && (
+                                        {/* {curChallenge?.challenge_name && (
                                             <div className="w-full p-8 flex-1">
                                                 {curChallenge.description ? (
                                                     <Mdx source={curChallenge.description} />
@@ -1175,12 +1137,12 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                 )}
 
                                             </div>
-                                        )}
+                                        )} */}
                                     </MacScrollbar>
                                 </SafeComponent>
                             </div>
                         </ResizableScrollablePanel>
-                        {curChallenge?.challenge_name ? (
+                        {/* {curChallenge?.challenge_name ? (
                             <>
                                 <ResizableHandle withHandle={true} className="transition-colors duration-300" />
                                 <ResizableScrollablePanel defaultSize={40} minSize={10}>
@@ -1193,7 +1155,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                     </div>
                                 </ResizableScrollablePanel>
                             </>
-                        ) : (<></>)}
+                        ) : (<></>)} */}
                     </ResizablePanelGroup>
                 </main>
             </SidebarProvider>

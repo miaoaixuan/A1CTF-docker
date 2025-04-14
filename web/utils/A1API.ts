@@ -10,19 +10,48 @@
  * ---------------------------------------------------------------
  */
 
-/** User login form */
-export interface UserLogin {
-  username: string;
-  password: string;
-  captcha?: string;
+export enum NoticeCategory {
+  FirstBlood = "FirstBlood",
+  SecondBlood = "SecondBlood",
+  ThirdBlood = "ThirdBlood",
+  NewChallenge = "NewChallenge",
+  NewHint = "NewHint",
+  NewAnnouncement = "NewAnnouncement",
 }
 
-/** User register form */
-export interface UserRegister {
-  username: string;
-  password: string;
-  captcha?: string;
-  email: string;
+export enum ParticipationStatus {
+  UnRegistered = "UnRegistered",
+  Pending = "Pending",
+  Approved = "Approved",
+  Rejected = "Rejected",
+  Participated = "Participated",
+  Banned = "Banned",
+}
+
+export enum ChallengeContainerType {
+  DYNAMIC_CONTAINER = "DYNAMIC_CONTAINER",
+  STATIC_CONTAINER = "STATIC_CONTAINER",
+  NO_CONTAINER = "NO_CONTAINER",
+}
+
+export enum ChallengeCategory {
+  MISC = "MISC",
+  CRYPTO = "CRYPTO",
+  PWN = "PWN",
+  WEB = "WEB",
+  REVERSE = "REVERSE",
+  FORENSICS = "FORENSICS",
+  HARDWARE = "HARDWARE",
+  MOBILE = "MOBILE",
+  PPC = "PPC",
+  AI = "AI",
+  PENTENT = "PENTENT",
+  OSINT = "OSINT",
+}
+
+export enum JudgeType {
+  DYNAMIC = "DYNAMIC",
+  SCRIPT = "SCRIPT",
 }
 
 /**
@@ -36,6 +65,21 @@ export enum AttachmentType {
   STATICFILE = "STATICFILE",
   DYNAMICFILE = "DYNAMICFILE",
   REMOTEFILE = "REMOTEFILE",
+}
+
+/** User login form */
+export interface UserLogin {
+  username: string;
+  password: string;
+  captcha?: string;
+}
+
+/** User register form */
+export interface UserRegister {
+  username: string;
+  password: string;
+  captcha?: string;
+  email: string;
 }
 
 export interface Attachment {
@@ -68,30 +112,10 @@ export interface Container {
   storage_limit?: number;
 }
 
-export enum JudgeType {
-  DYNAMIC = "DYNAMIC",
-  SCRIPT = "SCRIPT",
-}
-
 export interface JudgeConfig {
   flag_template: string;
   judge_script?: string | null;
   judge_type: JudgeType;
-}
-
-export enum ChallengeCategory {
-  MISC = "MISC",
-  CRYPTO = "CRYPTO",
-  PWN = "PWN",
-  WEB = "WEB",
-  REVERSE = "REVERSE",
-  FORENSICS = "FORENSICS",
-  HARDWARE = "HARDWARE",
-  MOBILE = "MOBILE",
-  PPC = "PPC",
-  AI = "AI",
-  PENTENT = "PENTENT",
-  OSINT = "OSINT",
 }
 
 export interface EnvironmentItem {
@@ -218,12 +242,6 @@ export interface UserSimpleGameChallenge {
   category?: ChallengeCategory;
 }
 
-export enum ChallengeContainerType {
-  DYNAMIC_CONTAINER = "DYNAMIC_CONTAINER",
-  STATIC_CONTAINER = "STATIC_CONTAINER",
-  NO_CONTAINER = "NO_CONTAINER",
-}
-
 export interface UserAttachmentConfig {
   /**
    * The name of the attachment
@@ -272,16 +290,8 @@ export interface UserDetailGameChallenge {
   solve_count?: number;
   category?: ChallengeCategory;
   container_type?: ChallengeContainerType;
+  containers?: ExposePortInfo[];
   attachments?: UserAttachmentConfig[];
-}
-
-export enum ParticipationStatus {
-  UnRegistered = "UnRegistered",
-  Pending = "Pending",
-  Approved = "Approved",
-  Rejected = "Rejected",
-  Participated = "Participated",
-  Banned = "Banned",
 }
 
 export interface UserTeamInfo {
@@ -324,15 +334,6 @@ export interface UserFullGameInfo {
   team_info?: UserTeamInfo;
 }
 
-export enum NoticeCategory {
-  FirstBlood = "FirstBlood",
-  SecondBlood = "SecondBlood",
-  ThirdBlood = "ThirdBlood",
-  NewChallenge = "NewChallenge",
-  NewHint = "NewHint",
-  NewAnnouncement = "NewAnnouncement",
-}
-
 export interface GameNotice {
   /** @format int64 */
   notice_id: number;
@@ -348,12 +349,28 @@ export interface CreateGameTeamPayload {
   slogan: string;
 }
 
-import type { AxiosInstance, AxiosRequestConfig, AxiosResponse, HeadersDefaults, ResponseType } from "axios";
+export interface ExposePortInfo {
+  container_name?: string;
+  container_port?: {
+    port_name: string;
+    port: number;
+    ip: string;
+  }[];
+}
+
+import type {
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosResponse,
+  HeadersDefaults,
+  ResponseType,
+} from "axios";
 import axios from "axios";
 
 export type QueryParamsType = Record<string | number, any>;
 
-export interface FullRequestParams extends Omit<AxiosRequestConfig, "data" | "params" | "url" | "responseType"> {
+export interface FullRequestParams
+  extends Omit<AxiosRequestConfig, "data" | "params" | "url" | "responseType"> {
   /** set parameter to `true` for call `securityWorker` for this request */
   secure?: boolean;
   /** request path */
@@ -368,9 +385,13 @@ export interface FullRequestParams extends Omit<AxiosRequestConfig, "data" | "pa
   body?: unknown;
 }
 
-export type RequestParams = Omit<FullRequestParams, "body" | "method" | "query" | "path">;
+export type RequestParams = Omit<
+  FullRequestParams,
+  "body" | "method" | "query" | "path"
+>;
 
-export interface ApiConfig<SecurityDataType = unknown> extends Omit<AxiosRequestConfig, "data" | "cancelToken"> {
+export interface ApiConfig<SecurityDataType = unknown>
+  extends Omit<AxiosRequestConfig, "data" | "cancelToken"> {
   securityWorker?: (
     securityData: SecurityDataType | null,
   ) => Promise<AxiosRequestConfig | void> | AxiosRequestConfig | void;
@@ -392,8 +413,16 @@ export class HttpClient<SecurityDataType = unknown> {
   private secure?: boolean;
   private format?: ResponseType;
 
-  constructor({ securityWorker, secure, format, ...axiosConfig }: ApiConfig<SecurityDataType> = {}) {
-    this.instance = axios.create({ ...axiosConfig, baseURL: axiosConfig.baseURL || "http://localhost:7777/" });
+  constructor({
+    securityWorker,
+    secure,
+    format,
+    ...axiosConfig
+  }: ApiConfig<SecurityDataType> = {}) {
+    this.instance = axios.create({
+      ...axiosConfig,
+      baseURL: axiosConfig.baseURL || "http://localhost:7777/",
+    });
     this.secure = secure;
     this.format = format;
     this.securityWorker = securityWorker;
@@ -403,7 +432,10 @@ export class HttpClient<SecurityDataType = unknown> {
     this.securityData = data;
   };
 
-  protected mergeRequestParams(params1: AxiosRequestConfig, params2?: AxiosRequestConfig): AxiosRequestConfig {
+  protected mergeRequestParams(
+    params1: AxiosRequestConfig,
+    params2?: AxiosRequestConfig,
+  ): AxiosRequestConfig {
     const method = params1.method || (params2 && params2.method);
 
     return {
@@ -411,7 +443,11 @@ export class HttpClient<SecurityDataType = unknown> {
       ...params1,
       ...(params2 || {}),
       headers: {
-        ...((method && this.instance.defaults.headers[method.toLowerCase() as keyof HeadersDefaults]) || {}),
+        ...((method &&
+          this.instance.defaults.headers[
+            method.toLowerCase() as keyof HeadersDefaults
+          ]) ||
+          {}),
         ...(params1.headers || {}),
         ...((params2 && params2.headers) || {}),
       },
@@ -432,11 +468,15 @@ export class HttpClient<SecurityDataType = unknown> {
     }
     return Object.keys(input || {}).reduce((formData, key) => {
       const property = input[key];
-      const propertyContent: any[] = property instanceof Array ? property : [property];
+      const propertyContent: any[] =
+        property instanceof Array ? property : [property];
 
       for (const formItem of propertyContent) {
         const isFileType = formItem instanceof Blob || formItem instanceof File;
-        formData.append(key, isFileType ? formItem : this.stringifyFormItem(formItem));
+        formData.append(
+          key,
+          isFileType ? formItem : this.stringifyFormItem(formItem),
+        );
       }
 
       return formData;
@@ -460,11 +500,21 @@ export class HttpClient<SecurityDataType = unknown> {
     const requestParams = this.mergeRequestParams(params, secureParams);
     const responseFormat = format || this.format || undefined;
 
-    if (type === ContentType.FormData && body && body !== null && typeof body === "object") {
+    if (
+      type === ContentType.FormData &&
+      body &&
+      body !== null &&
+      typeof body === "object"
+    ) {
       body = this.createFormData(body as Record<string, unknown>);
     }
 
-    if (type === ContentType.Text && body && body !== null && typeof body !== "string") {
+    if (
+      type === ContentType.Text &&
+      body &&
+      body !== null &&
+      typeof body !== "string"
+    ) {
       body = JSON.stringify(body);
     }
 
@@ -487,7 +537,9 @@ export class HttpClient<SecurityDataType = unknown> {
  * @version 1.0
  * @baseUrl http://localhost:7777/
  */
-export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
+export class Api<
+  SecurityDataType extends unknown,
+> extends HttpClient<SecurityDataType> {
   auth = {
     /**
      * No description
@@ -601,7 +653,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @summary Update a exist challenge
      * @request PUT:/api/admin/challenge/{challenge_id}
      */
-    updateChallenge: (challengeId: number, data: AdminChallengeConfig, params: RequestParams = {}) =>
+    updateChallenge: (
+      challengeId: number,
+      data: AdminChallengeConfig,
+      params: RequestParams = {},
+    ) =>
       this.request<
         {
           code?: number;
@@ -768,7 +824,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @summary Update a game
      * @request PUT:/api/admin/game/{game_id}
      */
-    updateGame: (gameId: number, data: AdminFullGameInfo, params: RequestParams = {}) =>
+    updateGame: (
+      gameId: number,
+      data: AdminFullGameInfo,
+      params: RequestParams = {},
+    ) =>
       this.request<
         {
           code: number;
@@ -792,7 +852,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @summary Add a challenge to a game
      * @request PUT:/api/admin/game/{game_id}/challenge/{challenge_id}
      */
-    addGameChallenge: (gameId: number, challengeId: number, params: RequestParams = {}) =>
+    addGameChallenge: (
+      gameId: number,
+      challengeId: number,
+      params: RequestParams = {},
+    ) =>
       this.request<
         {
           code: number;
@@ -881,7 +945,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @summary Get a game challenge
      * @request GET:/api/game/{game_id}/challenge/{challenge_id}
      */
-    userGetGameChallenge: (gameId: number, challengeId: number, params: RequestParams = {}) =>
+    userGetGameChallenge: (
+      gameId: number,
+      challengeId: number,
+      params: RequestParams = {},
+    ) =>
       this.request<
         {
           code: number;
@@ -925,7 +993,11 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @summary Create a team for a game
      * @request POST:/api/game/{game_id}/createTeam
      */
-    userGameCreateTeam: (gameId: number, data: CreateGameTeamPayload, params: RequestParams = {}) =>
+    userGameCreateTeam: (
+      gameId: number,
+      data: CreateGameTeamPayload,
+      params: RequestParams = {},
+    ) =>
       this.request<
         {
           code: number;

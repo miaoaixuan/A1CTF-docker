@@ -1179,6 +1179,10 @@ components:
           $ref: '#/components/schemas/ChallengeCategory'
         container_type:
           $ref: '#/components/schemas/ChallengeContainerType'
+        containers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExposePortInfo'
         attachments:
           type: array
           items:
@@ -1339,3 +1343,26 @@ components:
         - name
         - description
         - slogan
+    ExposePortInfo:
+      type: object
+      properties:
+        container_name:
+          type: string
+        container_port:
+          type: array
+          items:
+            type: object
+            properties:
+              port_name:
+                type: string
+              port:
+                type: integer
+              ip:
+                type: string
+            required:
+              - port_name
+              - port
+              - ip
+      required:
+        - name
+        - ports
