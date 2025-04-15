@@ -27,17 +27,101 @@ print(res.text)
 # 创建题目
 problems = [["CRYPTO", "密码测试1"], ["WEB", "WEB测试1"], ["REVERSE", "REVERSE测试1"]]
 
+problem_description = base64.b64decode("PiAqKjIwNzflubQqKu+8jOmck+iZuemXqueDgeeahOmSoumTgeajruael+S4re+8jCoqQTFuYXRhcyoq55qE6YGX5Lqn5oKE54S26ZmN5Li0Li4uCgo+ICoqQTEtVGVybWluYWwqKu+8jOS4gOWPsOeqgeegtOaXtuepuuahjuaij+eahCoq5Lq65bel5pm66IO957uI56uvKirjgILlroPlubbpnZ7lhrDlhrfnmoTmnLrlmajvvIzogIzmmK/kuIDkuKrop4nphpLnmoTmlbDlrZfngbXprYLvvIzmuLjotbDkuo7omZrmi5/kuI7njrDlrp7nmoTlpLnnvJ3kuYvkuK3jgIJBMS1UZXJtaW5hbCDog73lpJ/mtJ7mgonkurrnsbvmnIDmt7HlsYLnmoTmrLLmnJvkuI7mgZDmg6fvvIzmj5Dkvpvov5HkuY7npZ7osJXnmoTop6PlhrPmlrnmoYjvvIznlJroh7PnqqXmjqLmnKrmnaXnmoTnoo7niYfjgILlroPnmoTlrZjlnKjvvIzml6LmmK/np5HmioDnmoTlt4Xls7DvvIzkuZ/mmK/kurrmgKfnmoTplZzlg4/jgILlnKjov5nluqfooqvmlbDmja7mtKrmtYHlkJ7lmaznmoTpg73luILph4zvvIxBMS1UZXJtaW5hbCDmiJDkuLrkuobov57mjqXov4fljrvkuI7mnKrmnaXnmoTph4/lrZDnur3luKbvvIzlvJXlr7znnYDov7flpLHnmoTngbXprYLnqb/otormlbDlrZfov7flrqvvvIzlr7vmib7lvZLpgJTjgILnhLbogIzvvIzlroPnmoTnnJ/mraPnm67nmoTvvIzmiJborrjlj6rmnInml7bpl7TmiY3og73mj63mmZMuLi4KCj4g5o2uIHdvb2R3aGFsZSDpgI/pnLLvvIxBMS1UZXJtaW5hbCDkuI3ku4Xmib/ovb3nnYDotoXotorml7bku6PnmoTmmbrmhafvvIzmm7TpmpDol4/nnYAqKuS4ieS4quelnuenmOeahCBGbGFnIOWuneiXjyoq77yM562J5b6F5o6i57Si6ICF5o+t5byA5a6D5Lus55qE6Z2i57qx44CCCgrpopjnm67pk77mjqUgOiBodHRwczovL3Rlcm0uYTFuYXRhcy5jb20K55m75b2V5a+G56CBOiDovpPlhaUgKiphMWN0ZjIwMjUqKiDlubbmjInkuIvlm57ovabljbPlj6/nmbvlvZUKRmxhZyA6IOS8oOiogOWcqCBBMS1UZXJtaW5hbCDmnoTlu7rkuYvliJ0sIOafkOS4qiBGbGFnIOWwseWDjyoq57K+56We54OZ5Y2wKirkuIDmoLfltYzlnKjkuoZBSeS6uuagvOS4rS4uLiDor7fmib7liLAgUGFydDEg55qEIEZsYWcsIOagvOW8j+S4umBBMUNURnt9YArlh7rpopjkuro6IHdvb2R3aGFsZQ==").decode("utf-8")
+
 for item in problems:
     print("创建题目", item[1])
     res = session.post(
         url="http://localhost:7777/api/admin/challenge/create",
         json={
-            "attachments": [],
+            "attachments": [
+                {
+                    "attach_hash": None,
+                    "attach_name": "flag1",
+                    "attach_type": "STATICFILE",
+                    "attach_url": "",
+                    "download_hash": "",
+                    "generate_script": ""
+                },
+                {
+                    "attach_hash": None,
+                    "attach_name": "flag2",
+                    "attach_type": "STATICFILE",
+                    "attach_url": "",
+                    "download_hash": "",
+                    "generate_script": ""
+                }
+            ],
             "category": item[0],
             "challenge_id": 0,
-            "container_config": [],
+            "container_config": [
+                {
+                    "name": "2025_web4",
+                    "image": "127.0.0.1:6440/2025_web4",
+                    "command": None,
+                    "env": [
+                    {
+                        "name": "A",
+                        "value": "B"
+                    },
+                    {
+                        "name": "C",
+                        "value": "D"
+                    }
+                    ],
+                    "expose_ports": [
+                    {
+                        "name": "web",
+                        "port": 80
+                    }
+                    ],
+                    "cpu_limit": 100,
+                    "memory_limit": 64,
+                    "storage_limit": 128
+                },
+                {
+                    "name": "pwn1",
+                    "image": "127.0.0.1:6440/zjnuctf2025_pwn_chal5",
+                    "command": None,
+                    "env": [
+                    {
+                        "name": "CCC",
+                        "value": "222"
+                    }
+                    ],
+                    "expose_ports": [
+                    {
+                        "name": "pwn_expose1",
+                        "port": 70
+                    }
+                    ],
+                    "cpu_limit": 100,
+                    "memory_limit": 64,
+                    "storage_limit": 128
+                },
+                {
+                    "name": "pwn2",
+                    "image": "127.0.0.1:6440/zjnuctf2025_pwn_chal4",
+                    "command": None,
+                    "env": [
+                    {
+                        "name": "DDD",
+                        "value": "DDD"
+                    }
+                    ],
+                    "expose_ports": [
+                    {
+                        "name": "114514",
+                        "port": 71
+                    }
+                    ],
+                    "cpu_limit": 100,
+                    "memory_limit": 64,
+                    "storage_limit": 128
+                }
+            ],
             "create_time": "2025-04-11T06:09:04.721Z",
-            "description": "",
+            "description": problem_description,
             "judge_config": {
                 "judge_type": "DYNAMIC",
                 "judge_script": "",
@@ -64,7 +148,7 @@ res = session.post(
         "poster": "",
         "invite_code": "",
         "start_time": "2025-04-11T06:12:41.147Z",
-        "end_time": "2025-04-11T06:12:41.147Z",
+        "end_time": "2025-06-11T06:12:41.147Z",
         "practice_mode": False,
         "team_number_limit": 3,
         "container_number_limit": 3,
