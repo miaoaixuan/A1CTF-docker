@@ -88,7 +88,7 @@ CREATE TABLE "teams" (
     "team_score" double precision DEFAULT 0 NOT NULL,
     "team_hash" text unique NOT NULL,
     "invite_code" text,
-    "team_status" text NOT NULL,
+    "team_status" jsonb NOT NULL,
     PRIMARY KEY (team_id)
 );
 

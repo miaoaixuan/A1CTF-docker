@@ -10,9 +10,9 @@ import (
 const TableNameContainer = "containers"
 
 type ExposePort struct {
-	Name string `json:"name"`
-	Port int32  `json:"port"`
-	IP   string `json:"ip"`
+	PortName string `json:"port_name"`
+	Port     int32  `json:"port"`
+	IP       string `json:"ip"`
 }
 
 type ExposePorts []ExposePort

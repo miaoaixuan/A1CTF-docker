@@ -32,16 +32,15 @@ import { useEffect, useRef, useState } from "react";
 // import { api, ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeCategory, ChallengeInfo, ChallengeType, ErrorMessage, TeamInfoModel, ParticipationStatus, ContainerStatus, ContainerInfoModel } from '@/utils/GZApi'
 
 import { api } from "@/utils/ApiHelper"
-import { ErrorMessage, GameNotice, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "@/utils/A1API"
+import { AttachmentType, ErrorMessage, GameNotice, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "@/utils/A1API"
 
-import { Skeleton } from "./ui/skeleton";
 
 import * as signalR from '@microsoft/signalr'
 
 import dayjs from "dayjs";
 import { LoadingPage } from "./LoadingPage";
 import { Button } from "./ui/button";
-import { AppWindow, Ban, CalendarClock, CircleCheckBig, ClockArrowUp, CloudDownload, Container, Copy, Files, Flag, FlaskConical, FoldHorizontal, Hourglass, Info, Link, LoaderCircle, LoaderPinwheel, PackageOpen, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal, X } from "lucide-react";
+import { AlarmClock, AppWindow, Ban, CalendarClock, CircleCheckBig, CirclePower, CircleX, ClockArrowUp, CloudDownload, Container, Copy, Files, Flag, FlaskConical, FoldHorizontal, Hourglass, Info, Link, ListCheck, LoaderCircle, LoaderPinwheel, NotebookPen, Package, PackageOpen, Paperclip, Pickaxe, PowerOff, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal, Users, X } from "lucide-react";
 import { AxiosError } from "axios";
 
 import Image from "next/image";
@@ -79,6 +78,10 @@ import { TransitionLink } from "./TransitionLink";
 import copy from "copy-to-clipboard";
 import { SolvedAnimation } from "./SolvedAnimation";
 import { useCookies } from "react-cookie";
+import { CreateTeamDialog } from "./dialogs/CreateTeamDialog";
+import { JoinTeamDialog } from "./dialogs/JoinTeamDialog";
+import TimerDisplay from "./modules/TimerDisplay";
+import ChallengesViewHeader from "./modules/ChallengesViewHeader";
 
 const GameTerminal = dynamic(
     () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
@@ -141,10 +144,6 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     // 头像 URL
     const [avatarURL, setAvatarURL] = useState("#")
 
-    // 剩余时间 & 剩余时间百分比
-    const [remainTime, setRemainTime] = useState("")
-    const [remainTimePercent, setRemainTimePercent] = useState(100)
-
     // 用户名
     const [userName, setUserName] = useState("")
 
@@ -201,6 +200,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     const [containerLaunching, setContainerLaunching] = useState(false)
     // FIXME ContainerInfoModel
     // const [containerInfo, setContainerInfo] = useState<ContainerInfoModel>({})
+    const [containerRunningTrigger, setContainerRunningTrigger] = useState(false);
     const [containerLeftTime, setContainerLeftTime] = useState("")
 
     const [blood, setBlood] = useState("")
@@ -235,19 +235,9 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     }
 
     useEffect(() => {
-
-        // TODO 初始化阶段的靶机存活判断重写
-        // if (curChallenge.context?.closeTime) {
-        //     setContainerInfo({
-        //         entry: curChallenge.context.instanceEntry || "",
-        //         status: ContainerStatus.Running,
-        //         expectStopAt: curChallenge.context?.closeTime
-        //     })
-        //     setContainerLaunching(true)
-        // } else {
-        //     setContainerLaunching(false)
-        //     setContainerInfo({})
-        // }
+        if (curChallenge?.containers?.length) {
+            setContainerRunningTrigger(true)
+        }
 
         // 切换题目重置折叠状态
         if (JSON.stringify(curChallenge) == JSON.stringify(prevChallenge.current)) return
@@ -271,23 +261,26 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
         }
     }, [curChallenge]);
 
-    // TODO 靶机生存时间判断重写
-    // useEffect(() => {
-    //     if (dayjs(containerInfo.expectStopAt) > dayjs()) {
-    //         setContainerLeftTime(formatDuration(dayjs(containerInfo.expectStopAt).diff(dayjs()) / 1000))
-    //         const leftTimeInter = setInterval(() => {
-    //             if (dayjs(containerInfo.expectStopAt) > dayjs()) {
-    //                 setContainerLeftTime(formatDuration(dayjs(containerInfo.expectStopAt).diff(dayjs()) / 1000))
-    //             } else {
-    //                 setContainerInfo({})
-    //             }
-    //         }, 500)
+    let containerCountDownInter: NodeJS.Timeout | null = null;
 
-    //         return () => clearInterval(leftTimeInter)
-    //     } else if (dayjs(containerInfo.expectStopAt) < dayjs()) {
-    //         setContainerInfo({})
+    // useEffect(() => {
+    //     if (containerRunningTrigger == true) {
+    //         if (containerCountDownInter != null) {
+    //             clearInterval(containerCountDownInter);
+    //         }
+
+    //         containerCountDownInter = setInterval(() => {
+    //             if (curChallenge?.containers?.length) {
+    //                 const leftTime = Math.floor(dayjs(curChallenge?.containers[0].close_time).diff(dayjs()) / 1000)
+    //                 setContainerLeftTime(formatDuration(leftTime))
+    //             }
+    //         }, 1000)
+    //     } else {
+    //         if (containerCountDownInter != null) {
+    //             clearInterval(containerCountDownInter);
+    //         }
     //     }
-    // }, [containerInfo])
+    // }, [containerRunningTrigger])
 
     useEffect(() => {
 
@@ -296,30 +289,34 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             setGameInfo(res.data.data)
 
             // 第一步 检查是否报名
-            if (res.data.data.team_status == ParticipationStatus.UnRegistered) {
-                // 未报名
-                setGameStatus("unRegistered")
-            } else if (res.data.data.team_status == ParticipationStatus.Pending) {
-                // 审核中
-                setGameStatus("waitForProcess")
-            } else if (res.data.data.team_status == ParticipationStatus.Approved) {
-                if (dayjs() < dayjs(res.data.data.start_time)) {
-                    // 等待比赛开始
-                    setGameStatus("pending")
-                } else if (dayjs() < dayjs(res.data.data.end_time)) {
-                    // 比赛进行中
-                    setGameStatus("running")
-                } else if (dayjs() > dayjs(res.data.data.end_time)) {
-                    if (!res.data.data.practice_mode) {
-                        setGameStatus("ended")
-                    } else {
-                        // 练习模式
-                        setGameStatus("practiceMode")
+            if (dayjs() > dayjs(res.data.data.end_time) && !res.data.data.practice_mode) {
+                setGameStatus("ended")
+            } else {
+                if (res.data.data.team_status == ParticipationStatus.UnRegistered) {
+                    // 未报名
+                    setGameStatus("unRegistered")
+                } else if (res.data.data.team_status == ParticipationStatus.Pending) {
+                    // 审核中
+                    setGameStatus("waitForProcess")
+                } else if (res.data.data.team_status == ParticipationStatus.Approved) {
+                    if (dayjs() < dayjs(res.data.data.start_time)) {
+                        // 等待比赛开始
+                        setGameStatus("pending")
+                    } else if (dayjs() < dayjs(res.data.data.end_time)) {
+                        // 比赛进行中
+                        setGameStatus("running")
+                    } else if (dayjs() > dayjs(res.data.data.end_time)) {
+                        if (!res.data.data.practice_mode) {
+                            setGameStatus("ended")
+                        } else {
+                            // 练习模式
+                            setGameStatus("practiceMode")
+                        }
                     }
+                } else if (res.data.data.team_status == ParticipationStatus.Banned) {
+                    // 禁赛
+                    setGameStatus("banned")
                 }
-            } else if (res.data.data.team_status == ParticipationStatus.Banned) {
-                // 禁赛
-                setGameStatus("banned")
             }
         }).catch((error: AxiosError) => {
             if (error.response?.status) {
@@ -337,22 +334,6 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
         console.log("GameStatus", gameStatus)
         // 根据比赛状态处理事件
         if (gameStatus == "running" || gameStatus == "practiceMode") {
-
-            const totalTime = Math.floor(dayjs(gameInfo?.end_time).diff(dayjs(gameInfo?.start_time)) / 1000)
-            let timeIter: NodeJS.Timeout;
-
-            // 比赛时间倒计时
-            if (gameStatus != "practiceMode") {
-                timeIter = setInterval(() => {
-                    const curLeft = Math.floor(dayjs(gameInfo?.end_time).diff(dayjs()) / 1000)
-
-                    setRemainTime(formatDuration(curLeft))
-                    setRemainTimePercent(Math.floor((curLeft / totalTime) * 100))
-                }, 500)
-            } else {
-                setRemainTime(t("practice_time"))
-                setRemainTimePercent(0)
-            }
 
             setTimeout(() => setLoadingVisibility(false), 200)
 
@@ -436,15 +417,14 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                         console.error(err)
                     })
                 }
-
-                if (timeIter) clearInterval(timeIter)
             }
 
         } else if (gameStatus == "unRegistered") {
             // 未注册 先获取队伍信息
 
             // TODO 修改每场比赛创建一个队伍
-            
+            setTimeout(() => setLoadingVisibility(false), 200)
+
             // api.team.teamGetTeamsInfo().then((res) => {
             //     setAvailableTeams(res.data)
 
@@ -702,21 +682,6 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             <LoadingPage visible={loadingVisiblity} />
             <SolvedAnimation blood={blood} setBlood={setBlood} bloodMessage={bloodMessage} />
 
-            {(gameStatus == "pending" || gameStatus == "ended") && (
-                <div className="absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]">
-                    <div className="flex flex-col text-3xl items-center gap-4 select-none">
-                        <Info size={80} />
-                        {gameStatus == "ended" ? (<span>{t("game_ended")}</span>) : (<span>{t("game_pending")}</span>)}
-                        {gameStatus == "pending" && (<span>{t("game_start_countdown")} {beforeGameTime}</span>)}
-                        <div className="flex">
-                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                                <Button>{t("back_to_main")}</Button>
-                            </TransitionLink>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {gameStatus == "banned" && (
                 <motion.div
                     className={`absolute top-0 left-0 w-screen h-screen flex items-center justify-center z-[40]`}
@@ -726,7 +691,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                     }}
                     animate={{
                         backgroundColor: "rgb(239 68 68 / 0.9)",
-                        backdropFilter: "blur(12px)"
+                        backdropFilter: "blur(16px)"
                     }}
                     transition={{
                         duration: 0.5
@@ -749,84 +714,112 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                 </motion.div>
             )}
 
-            {gameStatus == "unRegistered" && preJoinDataPrepared && (
-                <div className="absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]">
-                    <div className="flex flex-col items-center gap-4 select-none">
-                        <Info size={80} />
-                        <span className="text-3xl">{t("not_participated")}</span>
-                        {
-                        // TODO 创建队伍 UI 重写
-                        /* {availableTeams.length ? (
-                            <>
-                                <div className="flex w-full mb-[-12px]">
-                                    <span>{t("team_name")}</span>
+            { ["pending", "ended", "unRegistered", "waitForProcess", "unLogin"].includes(gameStatus) && (
+                <div className="absolute top-0 left-0 w-screen h-screen backdrop-blur-xl z-40">
+                    <div className="flex w-full h-full relative">
+                        <div className="w-full h-full hidden md:block">
+                            <div className="w-full h-full flex flex-col overflow-hidden">
+                                <MacScrollbar className="h-full w-full"
+                                    skin={theme ==  "light" ? "light" : "dark"}
+                                    trackStyle={(horizontal) => ({ [horizontal ? "height" : "width"]: 0, borderWidth: 0})}
+                                >
+                                    <div className="pt-5 lg:pt-10">
+                                        <span className="text-2xl font-bold px-8 select-none mb-4 text-nowrap overflow-hidden text-ellipsis">✨ 比赛须知 - { gameInfo?.name }</span>
+                                        <div className="px-5 pb-5 lg:px-10 lg:pb-10 w-[60%]">
+                                            <Mdx source={gameInfo?.description ?? "没有比赛通知哦"} />
+                                        </div>
+                                    </div>
+                                </MacScrollbar>
+                            </div>
+                        </div>
+
+                        <div className="absolute left-[60%] w-[40%] h-full flex-1 md:flex-none pointer-events-none">
+                            {(gameStatus == "pending" || gameStatus == "ended") && (
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <div className="flex flex-col text-3xl items-center gap-4 select-none">
+                                        <AlarmClock size={80} className="mb-4" />
+                                        {gameStatus == "ended" ? (<span className="font-bold">{t("game_ended")}</span>) : (<span className="font-bold">{t("game_pending")}</span>)}
+                                        {gameStatus == "pending" && (<span className="text-2xl">{t("game_start_countdown")} {beforeGameTime}</span>)}
+                                        <div className="flex mt-2 items-center gap-4 pointer-events-auto">
+                                            <Button variant="outline"
+                                                onClick={() => setScoreBoardVisible(true)}
+                                            ><Presentation />{t("rank")}</Button>
+                                            <TransitionLink className="transition-colors flex items-center" href={`/${lng}/games`}>
+                                                <Button>{t("back_to_main")}</Button>
+                                            </TransitionLink>
+                                        </div>
+                                    </div>
                                 </div>
-                                <Select onValueChange={(val) => setCurChoosedTeam(parseInt(val, 10))}>
-                                    <SelectTrigger className="w-[280px] bg-background">
-                                        <SelectValue placeholder="Select a team" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            {availableTeams.map((e, index) => (
-                                                <SelectItem value={`${e.id}`} key={index}>{e.name}</SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
-                            </>
-                        ) : (
-                            <span>{t("no_available_team")}</span>
-                        )}
-                        <div className="flex gap-4">
-                            <Button onClick={submitTeam} disabled={availableTeams.length <= 0}>{t("sign_up")}</Button>
-                            <Button variant="outline"
-                                onClick={() => setScoreBoardVisible(true)}
-                            ><Presentation />{t("rank")}</Button>
-                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                                <Button variant="outline">{t("back_to_main")}</Button>
-                            </TransitionLink>
-                        </div> */}
-                    </div>
-                </div>
-            )}
+                            )}
 
-            {gameStatus == "waitForProcess" && (
-                <div
-                    className={`absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]`}
-                >
-                    <div className="flex flex-col items-center gap-4 select-none">
-                        <Info size={80} />
-                        <span className="text-3xl">{t("wait_for_process")}</span>
-                    </div>
-                </div>
-            )}
+                            {gameStatus == "unRegistered"  && (
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <div className="flex flex-col items-center gap-4 select-none">
+                                        <NotebookPen size={80} className="mb-4" />
+                                        <span className="text-2xl mb-2 font-bold">{t("not_participated")}</span>
+                                        <div className="flex gap-[15px] mt-4 pointer-events-auto">
+                                            <Button variant="outline"
+                                                onClick={() => setScoreBoardVisible(true)}
+                                            ><Presentation />{t("rank")}</Button>
+                                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                                                <Button variant="outline">{t("back_to_main")}</Button>
+                                            </TransitionLink>
+                                        </div>
+                                        <div className="flex gap-[15px] mt-[-5px] pointer-events-auto">
+                                            <CreateTeamDialog updateTeam={() => {}} gameID={gameID}>
+                                                <Button variant="default" type="button"><Pickaxe />创建队伍</Button>
+                                            </CreateTeamDialog>
+                                            <JoinTeamDialog updateTeam={() => {}}>
+                                                <Button variant="default" type="button"><Users />加入队伍</Button>
+                                            </JoinTeamDialog>
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
-            {gameStatus == "unLogin" && (
-                <div
-                    className={`absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]`}
-                >
-                    <div className="flex flex-col items-center gap-8 select-none">
-                        <Ban size={80} />
-                        <span className="text-3xl">{t("login_first")}</span>
-                        <div className="flex gap-6">
-                            <Button variant="outline"
-                                onClick={() => setScoreBoardVisible(true)}
-                            ><Presentation />{t("rank")}</Button>
-                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                                <Button variant="outline">{t("back_to_main")}</Button>
-                            </TransitionLink>
+                            {gameStatus == "waitForProcess" && (
+                                <div
+                                    className={`w-full h-full flex items-center justify-center`}
+                                >
+                                    <div className="flex flex-col items-center gap-4 select-none">
+                                        <ListCheck size={80} className="mb-4" />
+                                        <span className="text-2xl font-bold">{t("wait_for_process")}</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {gameStatus == "unLogin" && (
+                                <div
+                                    className={`w-full h-full flex items-center justify-center`}
+                                >
+                                    <div className="flex flex-col items-center gap-8 select-none">
+                                        <Ban size={80} className="mb-4" />
+                                        <span className="text-2xl font-bold mb-4">{t("login_first")}</span>
+                                        <div className="flex gap-6 pointer-events-auto">
+                                            <Button variant="outline"
+                                                onClick={() => setScoreBoardVisible(true)}
+                                            ><Presentation />{t("rank")}</Button>
+                                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                                                <Button variant="outline">{t("back_to_main")}</Button>
+                                            </TransitionLink>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
             )}
 
+            {/* New */}
             {gameStatus == "noSuchGame" && (
                 <div
-                    className={`absolute top-0 left-0 w-screen h-screen backdrop-blur-md flex items-center justify-center z-[40]`}
+                    className={`absolute top-0 left-0 w-screen h-screen backdrop-blur-xl flex items-center justify-center z-[40]`}
                 >
                     <div className="flex flex-col items-center gap-4 select-none">
-                        <Info size={80} />
-                        <span className="text-3xl">{t("no_such_game")}</span>
+                        <Info size={80} className="mb-4"/>
+                        <span className="text-2xl mb-4">{t("no_such_game")}</span>
                         <TransitionLink className="transition-colors" href={`/${lng}/games`}>
                             <Button variant="outline">{t("back_to_main")}</Button>
                         </TransitionLink>
@@ -860,83 +853,13 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                     />
                 </div>
                 <main className="flex flex-col top-0 left-0 h-screen w-screen overflow-hidden backdrop-blur-sm relative">
-                    <div className="h-[70px] flex items-center pl-4 pr-4 z-20 w-full bg-transparent border-b-[1px] transition-[border-color] duration-300">
-                        <div className="flex items-center min-w-0 h-[32px]">
-                            <SidebarTrigger className="transition-colors duration-300" />
-                            {/* <span className="font-bold ml-3">{ challenge.category } - { challenge.title }</span> */}
-                            <span className="font-bold ml-1 text-ellipsis overflow-hidden text-nowrap transition-colors duration-300">{gameInfo?.name}</span>
-                        </div>
-                        <div className="flex-1" />
-                        <div id="rightArea" className="justify-end flex h-ful gap-[6px] lg:gap-[10px] items-center pointer-events-auto">
-                            <div className="bg-background rounded-2xl">
-                                <div className="bg-black bg-opacity-10 pl-4 pr-4 pt-1 pb-1 rounded-2xl overflow-hidden select-none dark:bg-[#2A2A2A] hidden lg:flex relative transition-colors duration-300">
-                                    <div className="absolute top-0 left-0 bg-black dark:bg-white transition-colors duration-300"
-                                        style={{ width: `${remainTimePercent}%`, height: '100%' }}
-                                    />
-                                    <span className="text-white mix-blend-difference z-20 transition-all duration-500">{remainTime}</span>
-                                </div>
-                            </div>
-                            <DropdownMenu modal={false}>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="lg:hidden" size="icon">
-                                        <AppWindow />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="mr-4 mt-2">
-                                    <div className="w-full h-full flex flex-col gap-1">
-                                        <DropdownMenuItem>
-                                            <div className="bg-black bg-opacity-10 pl-4 pr-4 pt-1 pb-1 rounded-2xl overflow-hidden select-none dark:bg-[#2A2A2A] relative">
-                                                <div
-                                                    className="absolute top-0 left-0 bg-black dark:bg-white"
-                                                    style={{ width: `${remainTimePercent}%`, height: '100%' }}
-                                                />
-                                                <span className="text-white mix-blend-difference z-20">{remainTime}</span>
-                                            </div>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setNoticeOpened(true)} disabled={notices.length == 0}>
-                                            <PackageOpen />
-                                            <span>{t("open_notices")}</span>
-                                            {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{ notices.filter((e) => e.notice_category == NoticeCategory.NewAnnouncement).length }</Badge> : <></>}
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setScoreBoardVisible(true)}>
-                                            <Presentation />
-                                            <span>{t("rank")}</span>
-                                        </DropdownMenuItem>
-                                    </div>
-
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            <Button variant="outline" className="select-none hidden lg:flex" onClick={() => setNoticeOpened(true)} disabled={ notices.length == 0 }>
-                                <div className="flex items-center gap-1">
-                                    <PackageOpen />
-                                    <span>{t("open_notices")}</span>
-                                    {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{ notices.filter((e) => e.notice_category == NoticeCategory.NewAnnouncement).length }</Badge> : <></>}
-                                </div>
-                            </Button>
-                            <Button variant="outline" className="select-none hidden lg:flex" onClick={() => setScoreBoardVisible(true)}>
-                                <div className="flex items-center gap-1">
-                                    <Presentation />
-                                    <span>{t("rank")}</span>
-                                </div>
-                            </Button>
-                            {/* <Button size="icon" variant="outline" onClick={testFunction}><FlaskConical /></Button> */}
-                            <ToggleTheme lng={lng} />
-                            <Avatar className="select-none">
-                                {curProfile.avatar ? (
-                                    <>
-                                        <AvatarImage src={curProfile.avatar || "#"} alt="@shadcn"
-                                            className={`rounded-2xl`}
-                                        />
-                                        <AvatarFallback><Skeleton className="h-full w-full rounded-full" /></AvatarFallback>
-                                    </>
-                                ) : (
-                                    <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
-                                        <span className='text-background text-md'> {curProfile.userName?.substring(0, 2)} </span>
-                                    </div>
-                                )}
-                            </Avatar>
-                        </div>
-                    </div>
+                    <ChallengesViewHeader 
+                        gameStatus={gameStatus} gameInfo={gameInfo}
+                        setNoticeOpened={setNoticeOpened} setScoreBoardVisible={setScoreBoardVisible} 
+                        notices={notices}
+                        lng={lng}
+                        curProfile={curProfile}
+                    />
                     <ResizablePanelGroup direction="vertical" className="relative">
                         <AnimatePresence>
                             {pageSwitch ? (
@@ -957,9 +880,17 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                             setResizeTrigger(size)
                         }}>
                             {!curChallenge ? (
-                                <div className="absolute top-0 left-0 w-full h-full flex p-7 flex-col">
+                                <div className="absolute top-0 left-0 w-full h-full flex flex-col">
                                     {gameInfo?.description ? (
-                                        <Mdx source={gameInfo.description || ""}></Mdx>
+                                        <MacScrollbar
+                                            className="w-full flex flex-col"
+                                            skin={theme === "dark" ? "dark" : "light"}
+                                        >
+                                            <div className="p-10">
+                                                <Mdx source={gameInfo.description || ""}></Mdx>
+                                            </div>
+                                        </MacScrollbar>
+                                        
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center select-none">
                                             <span className="font-bold text-lg">{t("choose_something")}</span>
@@ -998,129 +929,133 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                             <div className="flex h-full">
                                 <SafeComponent>
                                     <MacScrollbar
-                                        className="pl-5 pr-5 lg:pl-20 lg:pr-20 pt-5 pb-5 w-full flex flex-col"
+                                        className="p-10 w-full flex flex-col"
                                         skin={theme === "dark" ? "dark" : "light"}
                                     >
-                                        {
-                                        // TODO 靶机状态重写
-                                        /* {curChallenge.challenge_name && (
-                                            <div className="w-full border-b-[1px] h-[50px] p-2 transition-[border-color] duration-300 flex items-center gap-1">
-                                                <div className="flex items-center gap-2 transition-colors duration-300 overflow-hidden">
-                                                    <Info size={21} className="flex-none" />
-                                                    <span className="text-lg overflow-hidden text-ellipsis text-nowrap">{curChallenge.challenge_name}</span>
-                                                </div>
-                                                <div className="flex-1" />
-                                                <div className="flex justify-end gap-4 transition-colors duration-300">
-                                                    {challengeSolvedList[curChallenge.challenge_id || 0] ? (
-                                                        <div className="flex items-center gap-2 text-purple-600">
-                                                            <ScanHeart className="flex-none" />
-                                                            <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current.score} pts</span>
+                                        {curChallenge?.challenge_name && (
+                                            <div className="flex flex-col gap-4 mb-4">
+                                                <div className="flex items-center gap-2 px-5 py-3 border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md">
+                                                    <Info />
+                                                    <span className="font-bold text-lg">题目信息 - { curChallenge.challenge_name }</span>
+                                                    <div className="flex-1"/>
+                                                    <div className="flex items-center gap-4">
+                                                        {challengeSolvedList[curChallenge.challenge_id || 0] ? (
+                                                            <div className="flex items-center gap-2 text-purple-600">
+                                                                <ScanHeart className="flex-none" />
+                                                                <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current?.cur_score ?? "?"} pts</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center gap-2 text-amber-600">
+                                                                <Flag className="flex-none" />
+                                                                <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current?.cur_score ?? "?"} pts</span>
+                                                            </div>
+                                                        )}
+                                                        <div className="flex items-center gap-2 text-green-600">
+                                                            <CircleCheckBig />
+                                                            <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current?.solve_count ?? "?"} solves</span>
                                                         </div>
-                                                    ) : (
-                                                        <div className="flex items-center gap-2 text-amber-600">
-                                                            <Flag className="flex-none" />
-                                                            <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current.score} pts</span>
-                                                        </div>
-                                                    )}
-                                                    <div className="flex items-center gap-2 text-green-600">
-                                                        <CircleCheckBig />
-                                                        <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current.solved} solves</span>
                                                     </div>
                                                 </div>
+                                                
+                                                { curChallenge?.description != "" ? (
+                                                    <div className="flex flex-col gap-0">
+                                                        <Mdx source={curChallenge.description ?? ""} />
+                                                    </div>
+                                                ) : (
+                                                    <span>题目简介为空哦</span>
+                                                ) }
                                             </div>
                                         )}
-                                        {(curChallenge.type == ChallengeType.DynamicContainer || curChallenge.type == ChallengeType.StaticContainer) && (
-                                            <div className="w-full border-b-[1px] h-[50px] p-2 transition-[border-color] duration-300 flex items-center">
-                                                <div className="flex items-center gap-2 transition-colors duration-300 select-none">
-                                                    <Target size={21} />
-                                                    <span className="text-md">{t("live_container")}</span>
-                                                </div>
-                                                <div className="flex-1" />
-                                                <div className="flex justify-end gap-4 h-full">
-                                                    {(containerInfo.status != ContainerStatus.Running && containerInfo.status != ContainerStatus.Destroyed) && (
-                                                        <Button variant="ghost" className="pl-4 pr-4 pt-0 pb-0 text-md text-green-600 font-bold [&_svg]:size-6 transition-colors duration-300 select-none" disabled={containerLaunching}
-                                                            onClick={() => { handleLaunchContainer() }}
-                                                        >
-                                                            {containerLaunching ? (
-                                                                <div className="flex gap-[8px]">
-                                                                    <LoaderCircle className="animate-spin" />
-                                                                    <span className="">{t("launching")}</span>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="flex gap-[6px]">
-                                                                    <Rocket />
-                                                                    <span className="">{t("launch")}</span>
-                                                                </div>
-                                                            )}
-                                                        </Button>
-                                                    )}
 
-                                                    {containerInfo.status == ContainerStatus.Running && (
-                                                        <>
-                                                            <div className="flex h-full gap-2">
-                                                                <div className="gap-2 h-full items-center pl-4 pr-4 border-[1px] rounded-2xl hidden xl:flex">
-                                                                    <Hourglass size={20} />
-                                                                    <span>{containerLeftTime}</span>
-                                                                </div>
-                                                                <div className="gap-2 h-full items-center pl-4 pr-4 border-[1px] rounded-2xl hidden xl:flex">
-                                                                    <Container size={22} />
-                                                                    <span>{containerInfo.entry}</span>
-                                                                </div>
-                                                                <DropdownMenu modal={false}>
-                                                                    <DropdownMenuTrigger asChild>
-                                                                        <Button variant="outline" size="icon" className="xl:hidden"><Container /></Button>
-                                                                    </DropdownMenuTrigger>
-                                                                    <DropdownMenuContent className="mt-2">
-                                                                        <div className="flex flex-col gap-2 p-2">
-                                                                            <div className="gap-2 items-center h-[33px] pl-4 pr-4 border-[1px] rounded-2xl flex xl:hidden">
-                                                                                <Hourglass size={20} />
-                                                                                <span>{containerLeftTime}</span>
+                                        { curChallenge?.containers?.length && (
+                                            <div className="flex flex-col gap-4 mb-8">
+                                                <div className="flex items-center gap-2 px-5 py-[9px] border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md select-none">
+                                                    <Package />
+                                                    <span className="font-bold text-lg">靶机列表</span>
+                                                    <div className="flex-1" />
+                                                    { curChallenge.containers.length == 0 ? (
+                                                        <div className="flex gap-2 items-center">
+                                                            <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-foreground bg-background hover:bg-foreground/20 [&_svg]:size-[24px]">
+                                                                <CirclePower className="text-foreground"/>
+                                                                <span className="font-bold text-[1.125em] text-foreground">Launch</span>
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex gap-2 items-center">
+                                                            <div className="h-[34px] rounded-[10px] border-2 border-green-500 px-2 text-green-500 items-center flex justify-center gap-2">
+                                                                <AlarmClock />
+                                                                <TimerDisplay target_time={curChallenge.containers[0].close_time ?? dayjs()} className="font-bold text-md" />
+                                                            </div>
+                                                            <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-blue-400 text-blue-400 bg-background dark:hover:bg-blue-200/20 hover:bg-blue-200/60 [&_svg]:size-[24px]">
+                                                                <ClockArrowUp/>
+                                                                <span className="font-bold text-[1.125em]">延长靶机</span>
+                                                            </Button>
+                                                            <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-red-400 text-red-400 bg-background dark:hover:bg-red-200/20 hover:bg-red-200/60 [&_svg]:size-[24px]">
+                                                                <CircleX/>
+                                                                <span className="font-bold text-[1.125em]">Close</span>
+                                                            </Button>
+                                                        </div>
+                                                    ) }
+                                                </div>
+
+                                                <div className={`grid gap-4 mt-4 dark:opacity-90 ${ curChallenge.containers.length >= 3 ? "grid-cols-[repeat(auto-fill,minmax(320px,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(320px,320px))]" }`}>
+                                                    { curChallenge.containers.map((container, i) => (
+                                                        <div className="stack" key={i}>
+                                                            <div className="card p-4 flex flex-col select-none">
+                                                                <span className="font-bold text-xl mb-2">{ container.container_name }</span>
+                                                                { container.container_ports?.length ? (
+                                                                    <div className="flex flex-col gap-2">
+                                                                        { container.container_ports.map((port, j) => (
+                                                                            <div key={j} className="flex flex-col gap-2">
+                                                                                <span className="text-sm mb-[-5px] font-bold">{ port.port_name }:</span>
+                                                                                <div className="flex">
+                                                                                    <div className="border-2 border-foreground px-2 rounded-md flex items-center justify-center hover:bg-foreground/30 transition-colors duration-300"
+                                                                                        onClick={() => {
+                                                                                            const status = copy(`${port.ip}:${port.port}`)
+                                                                                            if (status) {
+                                                                                                toast.success(t("copied"), { position: "top-center" })
+                                                                                            } else {
+                                                                                                toast.success(t("fail_copy"), { position: "top-center" })
+                                                                                            }
+                                                                                        }}
+                                                                                    >
+                                                                                        <span className="font-bold text-sm">{ port.ip }:{ port.port }</span>
+                                                                                    </div>
+                                                                                </div>
                                                                             </div>
-                                                                            <div className="gap-2 items-center h-[33px] pl-4 pr-4 border-[1px] rounded-2xl flex xl:hidden">
-                                                                                <Container size={22} />
-                                                                                <span>{containerInfo.entry}</span>
+                                                                        )) }
+                                                                    </div>
+                                                                ) : (
+                                                                    <>
+                                                                        <div className="flex-1" />
+                                                                        <div className="flex justify-end">
+                                                                            <div className="flex gap-2 items-center">
+                                                                                <span className="font-bold text-xl">还没有启动哦</span>
                                                                             </div>
                                                                         </div>
-                                                                    </DropdownMenuContent>
-                                                                </DropdownMenu>
-                                                                <div className="h-full flex items-center">
-                                                                    <Button variant={"outline"} size={"icon"} onClick={() => {
-                                                                        const status = copy(containerInfo.entry!)
-                                                                        if (status) {
-                                                                            toast.success(t("copied"), { position: "top-center" })
-                                                                        } else {
-                                                                            toast.success(t("fail_copy"), { position: "top-center" })
-                                                                        }
-                                                                    }}><Copy /></Button>
-                                                                </div>
-                                                                <div className="h-full flex items-center">
-                                                                    <Button variant={"outline"} size={"icon"} onClick={() => handleExtendContainer()} ><ClockArrowUp /></Button>
-                                                                </div>
-                                                                <div className="h-full flex items-center">
-                                                                    <Button variant={"destructive"} className="[&_svg]:size-5" onClick={() => handleDestoryContainer()} size={"icon"}><X /></Button>
-                                                                </div>
+                                                                    </>
+                                                                ) }
                                                             </div>
-                                                        </>
-                                                    )}
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
-                                        )} */}
-                                        {
-                                        // TODO 附件列表逻辑重写
-                                        /* {curChallenge.context?.url ? (
-                                            <div className="w-full border-b-[1px] h-[50px] p-2 flex items-center gap-4 transition-[border-color] duration-300">
-                                                <div className="flex items-center gap-2 transition-colors duration-300">
-                                                    <Files size={21} />
-                                                    <span className="text-md">{t("attachments")}</span>
+                                        ) }
+
+                                        { curChallenge?.attachments?.length ? (
+                                            <div className="flex flex-col gap-2 mb-4">
+                                                <div className="flex items-center gap-2 px-5 py-3 border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md">
+                                                    <Paperclip />
+                                                    <span className="font-bold text-lg">附件列表</span>
                                                 </div>
-                                                <div className="flex justify-end gap-4">
-                                                    <Button variant="ghost" onClick={() => handleDownload()} className="pl-4 pr-4 pt-0 pb-0 text-md [&_svg]:size-5 transition-all duration-300" disabled={downloadName != ""}>
+                                                { curChallenge?.attachments?.map((attach, i) => (
+                                                    <Button variant="ghost" key={i} onClick={() => handleDownload()} className="pl-4 pr-4 pt-0 pb-0 text-md [&_svg]:size-5 transition-all duration-300" disabled={downloadName != ""}>
                                                         <div className="flex gap-[4px] items-center">
-                                                            {curChallenge.context.fileSize ? (
+                                                            {attach.attach_type == AttachmentType.STATICFILE ? (
                                                                 // 有文件大小的是本地附件
                                                                 <>
                                                                     <CloudDownload />
-                                                                    <span className=""> {getAttachmentName(curChallenge.context.url)} </span>
+                                                                    <span className=""> {attach.attach_name} </span>
                                                                 </>
                                                             ) : (
                                                                 // 远程附件
@@ -1131,33 +1066,14 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                             )}
                                                         </div>
                                                     </Button>
-                                                </div>
+                                                )) }
                                             </div>
                                         ) : (<></>)}
-                                        {curChallenge.challenge_name && (
-                                            <div className="w-full p-8 flex-1">
-                                                {curChallenge.content ? (
-                                                    <Mdx source={curChallenge.content} />
-                                                ) : (
-                                                    <div className="w-full h-full flex justify-center items-center select-none gap-4">
-                                                        <Image
-                                                            src="/images/peter.png"
-                                                            alt="Peter"
-                                                            width={200}
-                                                            height={40}
-                                                            priority
-                                                        />
-                                                        <span className="text-3xl font-bold">{t("oops_empty")}</span>
-                                                    </div>
-                                                )}
-
-                                            </div>
-                                        )} */}
                                     </MacScrollbar>
                                 </SafeComponent>
                             </div>
                         </ResizableScrollablePanel>
-                        {curChallenge?.challenge_name ? (
+                        {/* {curChallenge?.challenge_name ? (
                             <>
                                 <ResizableHandle withHandle={true} className="transition-colors duration-300" />
                                 <ResizableScrollablePanel defaultSize={40} minSize={10}>
@@ -1170,7 +1086,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                     </div>
                                 </ResizableScrollablePanel>
                             </>
-                        ) : (<></>)}
+                        ) : (<></>)} */}
                     </ResizablePanelGroup>
                 </main>
             </SidebarProvider>
