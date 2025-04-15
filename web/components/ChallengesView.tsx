@@ -34,14 +34,13 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "@/utils/ApiHelper"
 import { AttachmentType, ErrorMessage, GameNotice, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "@/utils/A1API"
 
-import { Skeleton } from "./ui/skeleton";
 
 import * as signalR from '@microsoft/signalr'
 
 import dayjs from "dayjs";
 import { LoadingPage } from "./LoadingPage";
 import { Button } from "./ui/button";
-import { AlarmClock, AppWindow, Ban, CalendarClock, CircleCheckBig, CirclePower, ClockArrowUp, CloudDownload, Container, Copy, Files, Flag, FlaskConical, FoldHorizontal, Hourglass, Info, Link, ListCheck, LoaderCircle, LoaderPinwheel, NotebookPen, Package, PackageOpen, Paperclip, Pickaxe, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal, Users, X } from "lucide-react";
+import { AlarmClock, AppWindow, Ban, CalendarClock, CircleCheckBig, CirclePower, CircleX, ClockArrowUp, CloudDownload, Container, Copy, Files, Flag, FlaskConical, FoldHorizontal, Hourglass, Info, Link, ListCheck, LoaderCircle, LoaderPinwheel, NotebookPen, Package, PackageOpen, Paperclip, Pickaxe, PowerOff, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal, Users, X } from "lucide-react";
 import { AxiosError } from "axios";
 
 import Image from "next/image";
@@ -81,6 +80,8 @@ import { SolvedAnimation } from "./SolvedAnimation";
 import { useCookies } from "react-cookie";
 import { CreateTeamDialog } from "./dialogs/CreateTeamDialog";
 import { JoinTeamDialog } from "./dialogs/JoinTeamDialog";
+import TimerDisplay from "./modules/TimerDisplay";
+import ChallengesViewHeader from "./modules/ChallengesViewHeader";
 
 const GameTerminal = dynamic(
     () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
@@ -143,10 +144,6 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     // 头像 URL
     const [avatarURL, setAvatarURL] = useState("#")
 
-    // 剩余时间 & 剩余时间百分比
-    const [remainTime, setRemainTime] = useState("")
-    const [remainTimePercent, setRemainTimePercent] = useState(100)
-
     // 用户名
     const [userName, setUserName] = useState("")
 
@@ -203,6 +200,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     const [containerLaunching, setContainerLaunching] = useState(false)
     // FIXME ContainerInfoModel
     // const [containerInfo, setContainerInfo] = useState<ContainerInfoModel>({})
+    const [containerRunningTrigger, setContainerRunningTrigger] = useState(false);
     const [containerLeftTime, setContainerLeftTime] = useState("")
 
     const [blood, setBlood] = useState("")
@@ -237,19 +235,9 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     }
 
     useEffect(() => {
-
-        // TODO 初始化阶段的靶机存活判断重写
-        // if (curChallenge.context?.closeTime) {
-        //     setContainerInfo({
-        //         entry: curChallenge.context.instanceEntry || "",
-        //         status: ContainerStatus.Running,
-        //         expectStopAt: curChallenge.context?.closeTime
-        //     })
-        //     setContainerLaunching(true)
-        // } else {
-        //     setContainerLaunching(false)
-        //     setContainerInfo({})
-        // }
+        if (curChallenge?.containers?.length) {
+            setContainerRunningTrigger(true)
+        }
 
         // 切换题目重置折叠状态
         if (JSON.stringify(curChallenge) == JSON.stringify(prevChallenge.current)) return
@@ -273,23 +261,26 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
         }
     }, [curChallenge]);
 
-    // TODO 靶机生存时间判断重写
-    // useEffect(() => {
-    //     if (dayjs(containerInfo.expectStopAt) > dayjs()) {
-    //         setContainerLeftTime(formatDuration(dayjs(containerInfo.expectStopAt).diff(dayjs()) / 1000))
-    //         const leftTimeInter = setInterval(() => {
-    //             if (dayjs(containerInfo.expectStopAt) > dayjs()) {
-    //                 setContainerLeftTime(formatDuration(dayjs(containerInfo.expectStopAt).diff(dayjs()) / 1000))
-    //             } else {
-    //                 setContainerInfo({})
-    //             }
-    //         }, 500)
+    let containerCountDownInter: NodeJS.Timeout | null = null;
 
-    //         return () => clearInterval(leftTimeInter)
-    //     } else if (dayjs(containerInfo.expectStopAt) < dayjs()) {
-    //         setContainerInfo({})
+    // useEffect(() => {
+    //     if (containerRunningTrigger == true) {
+    //         if (containerCountDownInter != null) {
+    //             clearInterval(containerCountDownInter);
+    //         }
+
+    //         containerCountDownInter = setInterval(() => {
+    //             if (curChallenge?.containers?.length) {
+    //                 const leftTime = Math.floor(dayjs(curChallenge?.containers[0].close_time).diff(dayjs()) / 1000)
+    //                 setContainerLeftTime(formatDuration(leftTime))
+    //             }
+    //         }, 1000)
+    //     } else {
+    //         if (containerCountDownInter != null) {
+    //             clearInterval(containerCountDownInter);
+    //         }
     //     }
-    // }, [containerInfo])
+    // }, [containerRunningTrigger])
 
     useEffect(() => {
 
@@ -343,22 +334,6 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
         console.log("GameStatus", gameStatus)
         // 根据比赛状态处理事件
         if (gameStatus == "running" || gameStatus == "practiceMode") {
-
-            const totalTime = Math.floor(dayjs(gameInfo?.end_time).diff(dayjs(gameInfo?.start_time)) / 1000)
-            let timeIter: NodeJS.Timeout;
-
-            // 比赛时间倒计时
-            if (gameStatus != "practiceMode") {
-                timeIter = setInterval(() => {
-                    const curLeft = Math.floor(dayjs(gameInfo?.end_time).diff(dayjs()) / 1000)
-
-                    setRemainTime(formatDuration(curLeft))
-                    setRemainTimePercent(Math.floor((curLeft / totalTime) * 100))
-                }, 500)
-            } else {
-                setRemainTime(t("practice_time"))
-                setRemainTimePercent(0)
-            }
 
             setTimeout(() => setLoadingVisibility(false), 200)
 
@@ -442,8 +417,6 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                         console.error(err)
                     })
                 }
-
-                if (timeIter) clearInterval(timeIter)
             }
 
         } else if (gameStatus == "unRegistered") {
@@ -880,83 +853,13 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                     />
                 </div>
                 <main className="flex flex-col top-0 left-0 h-screen w-screen overflow-hidden backdrop-blur-sm relative">
-                    <div className="h-[70px] flex items-center pl-4 pr-4 z-20 w-full bg-transparent border-b-[1px] transition-[border-color] duration-300">
-                        <div className="flex items-center min-w-0 h-[32px]">
-                            <SidebarTrigger className="transition-colors duration-300" />
-                            {/* <span className="font-bold ml-3">{ challenge.category } - { challenge.title }</span> */}
-                            <span className="font-bold ml-1 text-ellipsis overflow-hidden text-nowrap transition-colors duration-300">{gameInfo?.name}</span>
-                        </div>
-                        <div className="flex-1" />
-                        <div id="rightArea" className="justify-end flex h-ful gap-[6px] lg:gap-[10px] items-center pointer-events-auto">
-                            <div className="bg-background rounded-2xl">
-                                <div className="bg-black bg-opacity-10 pl-4 pr-4 pt-1 pb-1 rounded-2xl overflow-hidden select-none dark:bg-[#2A2A2A] hidden lg:flex relative transition-colors duration-300">
-                                    <div className="absolute top-0 left-0 bg-black dark:bg-white transition-colors duration-300"
-                                        style={{ width: `${remainTimePercent}%`, height: '100%' }}
-                                    />
-                                    <span className="text-white mix-blend-difference z-20 transition-all duration-500">{remainTime}</span>
-                                </div>
-                            </div>
-                            <DropdownMenu modal={false}>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="lg:hidden" size="icon">
-                                        <AppWindow />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="mr-4 mt-2">
-                                    <div className="w-full h-full flex flex-col gap-1">
-                                        <DropdownMenuItem>
-                                            <div className="bg-black bg-opacity-10 pl-4 pr-4 pt-1 pb-1 rounded-2xl overflow-hidden select-none dark:bg-[#2A2A2A] relative">
-                                                <div
-                                                    className="absolute top-0 left-0 bg-black dark:bg-white"
-                                                    style={{ width: `${remainTimePercent}%`, height: '100%' }}
-                                                />
-                                                <span className="text-white mix-blend-difference z-20">{remainTime}</span>
-                                            </div>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setNoticeOpened(true)} disabled={notices.length == 0}>
-                                            <PackageOpen />
-                                            <span>{t("open_notices")}</span>
-                                            {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{notices.filter((e) => e.notice_category == NoticeCategory.NewAnnouncement).length}</Badge> : <></>}
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setScoreBoardVisible(true)}>
-                                            <Presentation />
-                                            <span>{t("rank")}</span>
-                                        </DropdownMenuItem>
-                                    </div>
-
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            <Button variant="outline" className="select-none hidden lg:flex" onClick={() => setNoticeOpened(true)} disabled={notices.length == 0}>
-                                <div className="flex items-center gap-1">
-                                    <PackageOpen />
-                                    <span>{t("open_notices")}</span>
-                                    {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{notices.filter((e) => e.notice_category == NoticeCategory.NewAnnouncement).length}</Badge> : <></>}
-                                </div>
-                            </Button>
-                            <Button variant="outline" className="select-none hidden lg:flex" onClick={() => setScoreBoardVisible(true)}>
-                                <div className="flex items-center gap-1">
-                                    <Presentation />
-                                    <span>{t("rank")}</span>
-                                </div>
-                            </Button>
-                            {/* <Button size="icon" variant="outline" onClick={testFunction}><FlaskConical /></Button> */}
-                            <ToggleTheme lng={lng} />
-                            <Avatar className="select-none">
-                                {curProfile.avatar ? (
-                                    <>
-                                        <AvatarImage src={curProfile.avatar || "#"} alt="@shadcn"
-                                            className={`rounded-2xl`}
-                                        />
-                                        <AvatarFallback><Skeleton className="h-full w-full rounded-full" /></AvatarFallback>
-                                    </>
-                                ) : (
-                                    <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
-                                        <span className='text-background text-md'> {curProfile.userName?.substring(0, 2)} </span>
-                                    </div>
-                                )}
-                            </Avatar>
-                        </div>
-                    </div>
+                    <ChallengesViewHeader 
+                        gameStatus={gameStatus} gameInfo={gameInfo}
+                        setNoticeOpened={setNoticeOpened} setScoreBoardVisible={setScoreBoardVisible} 
+                        notices={notices}
+                        lng={lng}
+                        curProfile={curProfile}
+                    />
                     <ResizablePanelGroup direction="vertical" className="relative">
                         <AnimatePresence>
                             {pageSwitch ? (
@@ -977,9 +880,17 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                             setResizeTrigger(size)
                         }}>
                             {!curChallenge ? (
-                                <div className="absolute top-0 left-0 w-full h-full flex p-7 flex-col">
+                                <div className="absolute top-0 left-0 w-full h-full flex flex-col">
                                     {gameInfo?.description ? (
-                                        <Mdx source={gameInfo.description || ""}></Mdx>
+                                        <MacScrollbar
+                                            className="w-full flex flex-col"
+                                            skin={theme === "dark" ? "dark" : "light"}
+                                        >
+                                            <div className="p-10">
+                                                <Mdx source={gameInfo.description || ""}></Mdx>
+                                            </div>
+                                        </MacScrollbar>
+                                        
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center select-none">
                                             <span className="font-bold text-lg">{t("choose_something")}</span>
@@ -1057,28 +968,69 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                         )}
 
                                         { curChallenge?.containers?.length && (
-                                            <div className="flex flex-col gap-4 mb-4">
-                                                <div className="flex items-center gap-2 px-5 py-3 border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md">
+                                            <div className="flex flex-col gap-4 mb-8">
+                                                <div className="flex items-center gap-2 px-5 py-[9px] border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md select-none">
                                                     <Package />
                                                     <span className="font-bold text-lg">靶机列表</span>
+                                                    <div className="flex-1" />
+                                                    { curChallenge.containers.length == 0 ? (
+                                                        <div className="flex gap-2 items-center">
+                                                            <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-foreground bg-background hover:bg-foreground/20 [&_svg]:size-[24px]">
+                                                                <CirclePower className="text-foreground"/>
+                                                                <span className="font-bold text-[1.125em] text-foreground">Launch</span>
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex gap-2 items-center">
+                                                            <div className="h-[34px] rounded-[10px] border-2 border-green-500 px-2 text-green-500 items-center flex justify-center gap-2">
+                                                                <AlarmClock />
+                                                                <TimerDisplay target_time={curChallenge.containers[0].close_time ?? dayjs()} className="font-bold text-md" />
+                                                            </div>
+                                                            <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-blue-400 text-blue-400 bg-background dark:hover:bg-blue-200/20 hover:bg-blue-200/60 [&_svg]:size-[24px]">
+                                                                <ClockArrowUp/>
+                                                                <span className="font-bold text-[1.125em]">延长靶机</span>
+                                                            </Button>
+                                                            <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-red-400 text-red-400 bg-background dark:hover:bg-red-200/20 hover:bg-red-200/60 [&_svg]:size-[24px]">
+                                                                <CircleX/>
+                                                                <span className="font-bold text-[1.125em]">Close</span>
+                                                            </Button>
+                                                        </div>
+                                                    ) }
                                                 </div>
 
-                                                <div className={`grid gap-4 mt-4 ${ curChallenge.containers.length >= 3 ? "grid-cols-[repeat(auto-fill,minmax(320px,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(320px,320px))]" }`}>
+                                                <div className={`grid gap-4 mt-4 dark:opacity-90 ${ curChallenge.containers.length >= 3 ? "grid-cols-[repeat(auto-fill,minmax(320px,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(320px,320px))]" }`}>
                                                     { curChallenge.containers.map((container, i) => (
                                                         <div className="stack" key={i}>
-                                                            <div className="card p-4 flex flex-col">
-                                                                <span className="font-bold text-xl">{ container.container_name }</span>
-                                                                { container.container_port?.length ? (
-                                                                    <></>
+                                                            <div className="card p-4 flex flex-col select-none">
+                                                                <span className="font-bold text-xl mb-2">{ container.container_name }</span>
+                                                                { container.container_ports?.length ? (
+                                                                    <div className="flex flex-col gap-2">
+                                                                        { container.container_ports.map((port, j) => (
+                                                                            <div key={j} className="flex flex-col gap-2">
+                                                                                <span className="text-sm mb-[-5px] font-bold">{ port.port_name }:</span>
+                                                                                <div className="flex">
+                                                                                    <div className="border-2 border-foreground px-2 rounded-md flex items-center justify-center hover:bg-foreground/30 transition-colors duration-300"
+                                                                                        onClick={() => {
+                                                                                            const status = copy(`${port.ip}:${port.port}`)
+                                                                                            if (status) {
+                                                                                                toast.success(t("copied"), { position: "top-center" })
+                                                                                            } else {
+                                                                                                toast.success(t("fail_copy"), { position: "top-center" })
+                                                                                            }
+                                                                                        }}
+                                                                                    >
+                                                                                        <span className="font-bold text-sm">{ port.ip }:{ port.port }</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        )) }
+                                                                    </div>
                                                                 ) : (
                                                                     <>
                                                                         <div className="flex-1" />
                                                                         <div className="flex justify-end">
                                                                             <div className="flex gap-2 items-center">
-                                                                                <Button className="w-[40px] h-[40px] rounded-2xl border-2 border-foreground bg-background hover:bg-foreground/50 [&_svg]:size-6">
-                                                                                    <CirclePower className="text-foreground"/>
-                                                                                </Button>
-                                                                                <span className="font-bold text-xl">Launch</span>
+                                                                                <span className="font-bold text-xl">还没有启动哦</span>
                                                                             </div>
                                                                         </div>
                                                                     </>
@@ -1117,27 +1069,6 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                 )) }
                                             </div>
                                         ) : (<></>)}
-
-
-                                        {/* {curChallenge?.challenge_name && (
-                                            <div className="w-full p-8 flex-1">
-                                                {curChallenge.description ? (
-                                                    <Mdx source={curChallenge.description} />
-                                                ) : (
-                                                    <div className="w-full h-full flex justify-center items-center select-none gap-4">
-                                                        <Image
-                                                            src="/images/peter.png"
-                                                            alt="Peter"
-                                                            width={200}
-                                                            height={40}
-                                                            priority
-                                                        />
-                                                        <span className="text-3xl font-bold">{t("oops_empty")}</span>
-                                                    </div>
-                                                )}
-
-                                            </div>
-                                        )} */}
                                     </MacScrollbar>
                                 </SafeComponent>
                             </div>

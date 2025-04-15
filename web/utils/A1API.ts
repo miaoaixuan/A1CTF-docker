@@ -350,8 +350,10 @@ export interface CreateGameTeamPayload {
 }
 
 export interface ExposePortInfo {
-  container_name?: string;
-  container_port?: {
+  container_name: string;
+  /** @format date-time */
+  close_time?: string;
+  container_ports: {
     port_name: string;
     port: number;
     ip: string;

@@ -366,18 +366,31 @@ func UserGetGameChallenge(c *gin.Context) {
 	result["containers"] = make([]gin.H, 0, len(*gameChallenge.Challenge.ContainerConfig))
 	for _, container := range *gameChallenge.Challenge.ContainerConfig {
 		tempConfig := gin.H{
-			"container_name": container.Name,
-			"container_port": make(models.ExposePorts, 0),
+			"container_name":  container.Name,
+			"container_ports": make(models.ExposePorts, 0),
+			"close_time":      time.Now().Add(1 * time.Hour),
 		}
 
-		if len(containers) == 1 {
-			for _, port := range containers[0].ExposePorts {
-				if port.Name == container.Name {
-					tempConfig["container_port"] = port.Ports
-					break
-				}
-			}
+		// if len(containers) == 1 {
+		// 	for _, port := range containers[0].ExposePorts {
+		// 		if port.Name == container.Name {
+		// 			tempConfig["container_port"] = port.Ports
+		// 			break
+		// 		}
+		// 	}
+		// }
+
+		var tempPorts models.ExposePorts = make(models.ExposePorts, 0)
+
+		for _, port := range container.ExposePorts {
+			tempPorts = append(tempPorts, models.ExposePort{
+				PortName: port.Name,
+				Port:     port.Port,
+				IP:       "node1.ctf.a1natas.com",
+			})
 		}
+
+		tempConfig["container_ports"] = tempPorts
 
 		result["containers"] = append(result["containers"].([]gin.H), tempConfig)
 	}
