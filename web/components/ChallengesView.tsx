@@ -40,7 +40,7 @@ import * as signalR from '@microsoft/signalr'
 import dayjs from "dayjs";
 import { LoadingPage } from "./LoadingPage";
 import { Button } from "./ui/button";
-import { AlarmClock, AppWindow, Ban, CalendarClock, CircleCheckBig, CirclePower, CircleX, ClockArrowUp, CloudDownload, Container, Copy, Files, Flag, FlaskConical, FoldHorizontal, Hourglass, Info, Link, ListCheck, LoaderCircle, LoaderPinwheel, NotebookPen, Package, PackageOpen, Paperclip, Pickaxe, PowerOff, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal, Users, X } from "lucide-react";
+import { AlarmClock, AppWindow, Ban, CalendarClock, CircleCheckBig, CirclePower, CircleX, ClockArrowUp, CloudDownload, Container, Copy, Files, Flag, FlaskConical, FoldHorizontal, Hourglass, Info, Link, ListCheck, Loader2, LoaderCircle, LoaderPinwheel, NotebookPen, Package, PackageOpen, Paperclip, Pickaxe, PowerOff, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal, Users, X } from "lucide-react";
 import { AxiosError } from "axios";
 
 import Image from "next/image";
@@ -638,11 +638,13 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     }
 
     const handleLaunchContainer = () => {
-        setContainerLaunching(true)
+        // setContainerLaunching(true)
 
-        const updateContainerInter = setInterval(() => {
-            updateContainer(updateContainerInter)
-        }, 2000)
+        api.user.userCreateContainerForAChallenge(gameID, curChallenge?.challenge_id ?? 0)
+
+        // const updateContainerInter = setInterval(() => {
+        //     updateContainer(updateContainerInter)
+        // }, 2000)
     }
 
     const handleExtendContainer = () => {
@@ -973,11 +975,23 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                     <Package />
                                                     <span className="font-bold text-lg">靶机列表</span>
                                                     <div className="flex-1" />
-                                                    { curChallenge.containers.length == 0 ? (
+                                                    { curChallenge.containers[0]?.close_time == undefined ? (
                                                         <div className="flex gap-2 items-center">
-                                                            <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-foreground bg-background hover:bg-foreground/20 [&_svg]:size-[24px]">
-                                                                <CirclePower className="text-foreground"/>
-                                                                <span className="font-bold text-[1.125em] text-foreground">Launch</span>
+                                                            <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-foreground bg-background hover:bg-foreground/20 [&_svg]:size-[24px] text-foreground"
+                                                                onClick={handleLaunchContainer}
+                                                                disabled={containerLaunching}
+                                                            >
+                                                                { containerLaunching ? (
+                                                                    <>
+                                                                        <Loader2 className="animate-spin" />
+                                                                        <span className="font-bold text-[1.125em]">Launching</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <CirclePower />
+                                                                        <span className="font-bold text-[1.125em]">Launch</span>
+                                                                    </>
+                                                                ) }
                                                             </Button>
                                                         </div>
                                                     ) : (
