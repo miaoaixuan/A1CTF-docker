@@ -1014,5 +1014,24 @@ export class Api<
         format: "json",
         ...params,
       }),
+
+    /**
+     * @description Create a container for a challenge
+     *
+     * @tags user
+     * @name UserCreateContainerForAChallenge
+     * @summary Create a container for a challenge
+     * @request POST:/api/game/{game_id}/container/{challenge_id}
+     */
+    userCreateContainerForAChallenge: (
+      gameId: number,
+      challengeId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, void | ErrorMessage>({
+        path: `/api/game/${gameId}/container/${challengeId}`,
+        method: "POST",
+        ...params,
+      }),
   };
 }

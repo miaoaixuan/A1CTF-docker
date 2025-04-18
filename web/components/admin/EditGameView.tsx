@@ -1398,7 +1398,7 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
                                         <FormMessage className="text-[14px]" />
                                     </div>
                                     <FormControl>
-                                        <Textarea {...field} />
+                                        <Textarea {...field} className="h-[100px]" />
                                     </FormControl>
                                     <FormDescription>
                                         比赛简介
@@ -1417,10 +1417,10 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
                                         <FormMessage className="text-[14px]" />
                                     </div>
                                     <FormControl>
-                                        <Textarea {...field} />
+                                        <Textarea {...field} className="h-[300px]" />
                                     </FormControl>
                                     <FormDescription>
-                                        比赛详细信息
+                                        比赛详细信息 (支持Markdown)
                                     </FormDescription>
                                 </FormItem>
                             )}

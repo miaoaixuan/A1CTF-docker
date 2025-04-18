@@ -694,6 +694,36 @@ paths:
           description: The ID of the game to retrieve
           schema:
             type: integer
+  /api/game/{game_id}/container/{challenge_id}:
+    post:
+      tags: [user]
+      operationId: UserCreateContainerForAChallenge
+      summary: Create a container for a challenge
+      description: Create a container for a challenge
+      responses:
+        '200':
+          description: Container created
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to retrieve
+          schema:
+            type: integer
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge to retrieve
+          schema:
+            type: integer
 components:
   schemas:
     UserLogin:

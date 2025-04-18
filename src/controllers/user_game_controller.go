@@ -347,7 +347,7 @@ func UserGetGameChallenge(c *gin.Context) {
 
 	// 存活靶机处理
 	var containers []models.Container
-	if err := dbtool.DB().Where("game_id = ? AND challenge_id = ? AND team_id = ? AND container_Status = ?", game.GameID, gameChallenge.Challenge.ChallengeID, team.TeamID, models.ContainerRunning).Find(&containers).Error; err != nil {
+	if err := dbtool.DB().Where("game_id = ? AND challenge_id = ? AND team_id = ? AND container_status = ?", game.GameID, gameChallenge.Challenge.ChallengeID, team.TeamID, models.ContainerRunning).Find(&containers).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"message": "Failed to load containers",
@@ -368,29 +368,31 @@ func UserGetGameChallenge(c *gin.Context) {
 		tempConfig := gin.H{
 			"container_name":  container.Name,
 			"container_ports": make(models.ExposePorts, 0),
-			"close_time":      time.Now().Add(1 * time.Hour),
+			"close_time":      nil,
 		}
 
-		// if len(containers) == 1 {
-		// 	for _, port := range containers[0].ExposePorts {
-		// 		if port.Name == container.Name {
-		// 			tempConfig["container_port"] = port.Ports
-		// 			break
-		// 		}
-		// 	}
+		if len(containers) == 1 {
+			for _, container_expose := range containers[0].ContainerExposeInfos {
+				if container_expose.ContainerName == container.Name {
+					tempConfig["container_ports"] = container_expose.ExposePorts
+					break
+				}
+			}
+
+			tempConfig["close_time"] = containers[0].ExpireTime
+		}
+
+		// var tempPorts models.ExposePorts = make(models.ExposePorts, 0)
+
+		// for _, port := range container.ExposePorts {
+		// 	tempPorts = append(tempPorts, models.ExposePort{
+		// 		PortName: port.Name,
+		// 		Port:     port.Port,
+		// 		IP:       "node1.ctf.a1natas.com",
+		// 	})
 		// }
 
-		var tempPorts models.ExposePorts = make(models.ExposePorts, 0)
-
-		for _, port := range container.ExposePorts {
-			tempPorts = append(tempPorts, models.ExposePort{
-				PortName: port.Name,
-				Port:     port.Port,
-				IP:       "node1.ctf.a1natas.com",
-			})
-		}
-
-		tempConfig["container_ports"] = tempPorts
+		// tempConfig["container_ports"] = tempPorts
 
 		result["containers"] = append(result["containers"].([]gin.H), tempConfig)
 	}
@@ -467,8 +469,6 @@ func UserCreateGameTeam(c *gin.Context) {
 		TeamStatus:      models.ParticipatePending,
 	}
 
-	log.Printf("%+v", newTeam)
-
 	if err := dbtool.DB().Create(&newTeam).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    501,
@@ -484,7 +484,105 @@ func UserCreateGameTeam(c *gin.Context) {
 }
 
 func UserCreateGameContainer(c *gin.Context) {
-	// game := c.MustGet("game").(models.Game)
-	// team := c.MustGet("team").(models.Team)
+	game := c.MustGet("game").(models.Game)
+	team := c.MustGet("team").(models.Team)
 
+	challengeIDStr := c.Param("challenge_id")
+	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid challenge ID",
+		})
+		c.Abort()
+		return
+	}
+
+	var gameChallenges []struct {
+		models.GameChallenge
+		models.Challenge
+	}
+
+	if err := dbtool.DB().Table("game_challenges").
+		Joins("LEFT JOIN challenges ON game_challenges.challenge_id = challenges.challenge_id").
+		Where("game_id = ? and game_challenges.challenge_id = ?", game.GameID, challengeID).
+		Scan(&gameChallenges).Error; err != nil {
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load game challenges",
+		})
+		return
+	}
+
+	if len(gameChallenges) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":    404,
+			"message": "Challenge not found",
+		})
+		return
+	}
+
+	gameChallenge := gameChallenges[0]
+
+	var containers []models.Container
+	if err := dbtool.DB().Where("game_id = ? AND team_id = ?", game.GameID, team.TeamID).Find(&containers).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load containers",
+		})
+		return
+	}
+
+	for _, container := range containers {
+		log.Printf("container: %+v\n", container)
+		if container.ChallengeID == *gameChallenge.Challenge.ChallengeID {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    401,
+				"message": "You have created a container for this challenge",
+			})
+			return
+		}
+	}
+
+	if len(containers) > int(game.ContainerNumberLimit) {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    401,
+			"message": "You have created too many containers",
+		})
+		return
+	}
+
+	log.Printf("%+v\n", gameChallenge.Challenge.ContainerConfig)
+
+	// 加入数据库
+	newContainer := models.Container{
+		ContainerID:          uuid.NewString(),
+		GameID:               game.GameID,
+		TeamID:               team.TeamID,
+		ChallengeID:          *gameChallenge.Challenge.ChallengeID,
+		InGameID:             gameChallenge.GameChallenge.IngameID,
+		StartTime:            time.Now(),
+		ExpireTime:           time.Now().Add(time.Duration(2) * time.Hour),
+		ContainerExposeInfos: make(models.ContainerExposeInfos, 0),
+		ContainerStatus:      models.ContainerQueueing,
+		FlagContent:          "flag{test_flag}",
+		ContainerConfig:      *gameChallenge.Challenge.ContainerConfig,
+		ChallengeName:        gameChallenge.Challenge.Name,
+		TeamHash:             team.TeamHash,
+	}
+
+	if err := dbtool.DB().Create(&newContainer).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    501,
+			"message": "System error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "OK",
+	})
+	return
 }

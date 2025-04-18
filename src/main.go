@@ -119,6 +119,7 @@ var PermissionMap = map[string]PermissionSetting{
 	"\\/api\\/game\\/[\\d]+\\/challenge\\/[\\d]+$":         {RequestMethod: []string{"GET"}, Permissions: []string{}},
 	"\\/api\\/game\\/[\\d]+\\/notices":                     {RequestMethod: []string{"GET"}, Permissions: []string{}},
 	"\\/api\\/game\\/[\\d]+\\/createTeam":                  {RequestMethod: []string{"POST"}, Permissions: []string{}},
+	"\\/api\\/game\\/[\\d]+\\/container\\/[\\d]+$":         {RequestMethod: []string{"POST"}, Permissions: []string{}},
 }
 
 // Helper function to check if a slice contains a value
@@ -189,6 +190,15 @@ func StartLoopEvent() {
 		),
 		gocron.NewTask(
 			jobs.UpdateActivateGames,
+		),
+	)
+
+	s.NewJob(
+		gocron.DurationJob(
+			2*time.Second,
+		),
+		gocron.NewTask(
+			jobs.ContainerOperationsJob,
 		),
 	)
 
@@ -283,6 +293,9 @@ func main() {
 
 			// 创建比赛队伍
 			userGameGroup.POST("/:game_id/createTeam", controllers.GameStatusMiddleware(false), controllers.UserCreateGameTeam)
+
+			// 创建题目容器
+			userGameGroup.POST("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false), controllers.TeamStatusMiddleware(), controllers.UserCreateGameContainer)
 		}
 	}
 

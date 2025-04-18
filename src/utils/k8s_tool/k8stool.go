@@ -54,6 +54,7 @@ func (e *A1Containers) Scan(value interface{}) error {
 type PodInfo struct {
 	Name       string
 	TeamHash   string
+	Labels     map[string]string
 	Containers []A1Container
 }
 
@@ -132,10 +133,22 @@ func CreatePod(podInfo *PodInfo) error {
 		}
 
 		// 限制资源
-		container.Resources.Limits = corev1.ResourceList{
-			corev1.ResourceCPU:     *resource.NewMilliQuantity(c.CPULimit, resource.DecimalSI),
-			corev1.ResourceMemory:  *resource.NewQuantity(c.MemoryLimit*1024*1024, resource.BinarySI),
-			corev1.ResourceStorage: *resource.NewQuantity(c.StorageLimit*1024*1024, resource.BinarySI),
+		limits := corev1.ResourceList{
+			corev1.ResourceCPU:              *resource.NewMilliQuantity(c.CPULimit, resource.DecimalSI),         // 100m = 0.1 CPU
+			corev1.ResourceMemory:           *resource.NewQuantity(c.MemoryLimit*1024*1024, resource.BinarySI),  // 64Mi
+			corev1.ResourceEphemeralStorage: *resource.NewQuantity(c.StorageLimit*1024*1024, resource.BinarySI), // 128Mi
+		}
+
+		// 设置资源请求（通常与限制相同）
+		// requests := corev1.ResourceList{
+		// 	corev1.ResourceCPU:              *resource.NewMilliQuantity(c.CPULimit, resource.DecimalSI),
+		// 	corev1.ResourceMemory:           *resource.NewQuantity(c.MemoryLimit*1024*1024, resource.BinarySI),
+		// 	corev1.ResourceEphemeralStorage: *resource.NewQuantity(c.StorageLimit*1024*1024, resource.BinarySI),
+		// }
+
+		container.Resources = corev1.ResourceRequirements{
+			Limits: limits,
+			// Requests: requests,
 		}
 
 		containers = append(containers, container)
@@ -144,10 +157,8 @@ func CreatePod(podInfo *PodInfo) error {
 	podName := fmt.Sprintf("%s-%s", podInfo.Name, podInfo.TeamHash)
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: podName,
-			Labels: map[string]string{
-				"app": podName,
-			},
+			Name:   podName,
+			Labels: podInfo.Labels,
 		},
 		Spec: corev1.PodSpec{
 			Containers: containers,
@@ -163,11 +174,11 @@ func CreatePod(podInfo *PodInfo) error {
 
 	// 构造 Service 的端口配置
 	var servicePorts []corev1.ServicePort
-	for _, c := range podInfo.Containers {
+	for c_index, c := range podInfo.Containers {
 		if len(c.ExposePorts) > 0 {
 			for _, port := range c.ExposePorts {
 				servicePort := corev1.ServicePort{
-					Name:       port.Name, // 可根据需要自定义 ServicePort 名称
+					Name:       fmt.Sprintf("%d-%s", c_index, port.Name), // 可根据需要自定义 ServicePort 名称
 					Port:       port.Port,
 					TargetPort: intstr.FromInt(int(port.Port)),
 				}
@@ -181,11 +192,9 @@ func CreatePod(podInfo *PodInfo) error {
 			Name: podName,
 		},
 		Spec: corev1.ServiceSpec{
-			Type: corev1.ServiceTypeNodePort,
-			Selector: map[string]string{
-				"app": podName,
-			},
-			Ports: servicePorts,
+			Type:     corev1.ServiceTypeNodePort,
+			Selector: podInfo.Labels,
+			Ports:    servicePorts,
 		},
 	}
 
@@ -193,15 +202,23 @@ func CreatePod(podInfo *PodInfo) error {
 	if err != nil {
 		return fmt.Errorf("error creating service: %v", err)
 	}
-	fmt.Println("Service created")
 
 	return nil
 }
 
-func GetPodPorts(podInfo *PodInfo) error {
+type PodPort struct {
+	Name     string `json:"name"`
+	Port     int32  `json:"port"`
+	NodePort int32  `json:"node_port"`
+	NodeName string `json:"node_name"`
+}
+
+type PodPorts []PodPort
+
+func GetPodPorts(podInfo *PodInfo) (*PodPorts, error) {
 	clientset, err := GetClient()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	namespace := "a1ctf-challenges"
 	podName := fmt.Sprintf("%s-%s", podInfo.Name, podInfo.TeamHash)
@@ -209,22 +226,30 @@ func GetPodPorts(podInfo *PodInfo) error {
 	// 获取 Pod，检查其所在的 Node
 	pod, err := clientset.CoreV1().Pods(namespace).Get(context.Background(), podName, metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("error getting pod: %v", err)
+		return nil, fmt.Errorf("error getting pod: %v", err)
 	}
 	if pod.Spec.NodeName == "" {
-		return fmt.Errorf("pod %s not scheduled on a node yet", podName)
+		return nil, fmt.Errorf("pod %s not scheduled on a node yet", podName)
 	}
 	nodeName := pod.Spec.NodeName
 
 	// 获取对应 Service 信息
 	service, err := clientset.CoreV1().Services(namespace).Get(context.Background(), podName, metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("error getting service: %v", err)
+		return nil, fmt.Errorf("error getting service: %v", err)
 	}
+
+	result := make(PodPorts, 0)
 	for _, port := range service.Spec.Ports {
 		fmt.Printf("Service port: %s: %d -> %s:%d\n", service.Name, port.Port, nodeName, port.NodePort)
+		result = append(result, PodPort{
+			Name:     port.Name,
+			Port:     port.Port,
+			NodePort: port.NodePort,
+			NodeName: nodeName,
+		})
 	}
-	return nil
+	return &result, nil
 }
 
 func DeletePod(podInfo *PodInfo) error {
@@ -314,7 +339,7 @@ func TestCreate() {
 	time.Sleep(10 * time.Second)
 
 	// 查询 Service 的端口映射信息
-	if err := GetPodPorts(podInfo); err != nil {
+	if _, err := GetPodPorts(podInfo); err != nil {
 		log.Fatalf("getPodPorts error: %v", err)
 	}
 
