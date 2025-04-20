@@ -10,6 +10,26 @@
  * ---------------------------------------------------------------
  */
 
+/**
+ * Possible statuses of a container:
+ * - `ContainerStopped`: The container is stopped.
+ * - `ContainerRunning`: The container is running.
+ * - `ContainerStarting`: The container is starting.
+ * - `ContainerError`: The container encountered an error.
+ * - `ContainerStopping`: The container is stopping.
+ * - `ContainerQueueing`: The container is in a queue.
+ * - `NoContainer`: No container exists.
+ */
+export enum ContainerStatus {
+  ContainerStopped = "ContainerStopped",
+  ContainerRunning = "ContainerRunning",
+  ContainerStarting = "ContainerStarting",
+  ContainerError = "ContainerError",
+  ContainerStopping = "ContainerStopping",
+  ContainerQueueing = "ContainerQueueing",
+  NoContainer = "NoContainer",
+}
+
 export enum NoticeCategory {
   FirstBlood = "FirstBlood",
   SecondBlood = "SecondBlood",
@@ -290,6 +310,17 @@ export interface UserDetailGameChallenge {
   solve_count?: number;
   category?: ChallengeCategory;
   container_type?: ChallengeContainerType;
+  /**
+   * Possible statuses of a container:
+   * - `ContainerStopped`: The container is stopped.
+   * - `ContainerRunning`: The container is running.
+   * - `ContainerStarting`: The container is starting.
+   * - `ContainerError`: The container encountered an error.
+   * - `ContainerStopping`: The container is stopping.
+   * - `ContainerQueueing`: The container is in a queue.
+   * - `NoContainer`: No container exists.
+   */
+  container_status?: ContainerStatus;
   containers?: ExposePortInfo[];
   attachments?: UserAttachmentConfig[];
 }
@@ -1031,6 +1062,83 @@ export class Api<
       this.request<void, void | ErrorMessage>({
         path: `/api/game/${gameId}/container/${challengeId}`,
         method: "POST",
+        ...params,
+      }),
+
+    /**
+     * @description Delete a container for a challenge
+     *
+     * @tags user
+     * @name UserDeleteContainerForAChallenge
+     * @summary Delete a container for a challenge
+     * @request DELETE:/api/game/{game_id}/container/{challenge_id}
+     */
+    userDeleteContainerForAChallenge: (
+      gameId: number,
+      challengeId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, void | ErrorMessage>({
+        path: `/api/game/${gameId}/container/${challengeId}`,
+        method: "DELETE",
+        ...params,
+      }),
+
+    /**
+     * @description Extend a container's life for a challenge
+     *
+     * @tags user
+     * @name UserExtendContainerLifeForAChallenge
+     * @summary Extend a container's life for a challenge
+     * @request PATCH:/api/game/{game_id}/container/{challenge_id}
+     */
+    userExtendContainerLifeForAChallenge: (
+      gameId: number,
+      challengeId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, void | ErrorMessage>({
+        path: `/api/game/${gameId}/container/${challengeId}`,
+        method: "PATCH",
+        ...params,
+      }),
+
+    /**
+     * @description Get container info for a challenge
+     *
+     * @tags user
+     * @name UserGetContainerInfoForAChallenge
+     * @summary Get container info for a challenge
+     * @request GET:/api/game/{game_id}/container/{challenge_id}
+     */
+    userGetContainerInfoForAChallenge: (
+      gameId: number,
+      challengeId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: {
+            /**
+             * Possible statuses of a container:
+             * - `ContainerStopped`: The container is stopped.
+             * - `ContainerRunning`: The container is running.
+             * - `ContainerStarting`: The container is starting.
+             * - `ContainerError`: The container encountered an error.
+             * - `ContainerStopping`: The container is stopping.
+             * - `ContainerQueueing`: The container is in a queue.
+             * - `NoContainer`: No container exists.
+             */
+            container_status: ContainerStatus;
+            containers: ExposePortInfo[];
+          };
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/game/${gameId}/container/${challengeId}`,
+        method: "GET",
+        format: "json",
         ...params,
       }),
   };

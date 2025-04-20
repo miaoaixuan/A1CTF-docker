@@ -32,7 +32,7 @@ import { useEffect, useRef, useState } from "react";
 // import { api, ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeCategory, ChallengeInfo, ChallengeType, ErrorMessage, TeamInfoModel, ParticipationStatus, ContainerStatus, ContainerInfoModel } from '@/utils/GZApi'
 
 import { api } from "@/utils/ApiHelper"
-import { AttachmentType, ErrorMessage, GameNotice, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "@/utils/A1API"
+import { AttachmentType, ContainerStatus, ErrorMessage, ExposePortInfo, GameNotice, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "@/utils/A1API"
 
 
 import * as signalR from '@microsoft/signalr'
@@ -199,8 +199,9 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
 
     const [containerLaunching, setContainerLaunching] = useState(false)
     // FIXME ContainerInfoModel
-    // const [containerInfo, setContainerInfo] = useState<ContainerInfoModel>({})
+    const [containerInfo, setContainerInfo] = useState<ExposePortInfo[]>([])
     const [containerRunningTrigger, setContainerRunningTrigger] = useState(false);
+    const [refreshContainerTrigger, setRefreshContainerTrigger] = useState(false);
     const [containerLeftTime, setContainerLeftTime] = useState("")
 
     const [blood, setBlood] = useState("")
@@ -235,8 +236,47 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     }
 
     useEffect(() => {
-        if (curChallenge?.containers?.length) {
+        if (refreshContainerTrigger == true) {
+            const inter = setInterval(() => {
+                api.user.userGetContainerInfoForAChallenge(gameID, curChallenge?.challenge_id ?? 0).then((res) => {
+                    if (res.data.data.container_status == ContainerStatus.ContainerRunning) {
+                        setContainerInfo(res.data.data.containers)
+                        setContainerLaunching(false)
+                        setContainerRunningTrigger(true)
+    
+                        toast.success(t("container_start_success"), { position: "top-center" })
+    
+                        clearInterval(inter)
+                        setRefreshContainerTrigger(false)
+                    } else if (res.data.data.container_status != ContainerStatus.ContainerQueueing) {
+                        setContainerLaunching(false)
+                        setContainerRunningTrigger(false)
+
+                        clearInterval(inter)
+
+                        setRefreshContainerTrigger(false)
+                    }
+                })
+            }, randomInt(3000, 5000))
+
+            return () => {
+                clearInterval(inter)
+            }
+        }
+    }, [refreshContainerTrigger])
+
+    useEffect(() => {
+        console.log(curChallenge)
+
+        setContainerInfo(curChallenge?.containers ?? [])
+        
+        if (curChallenge?.container_status == ContainerStatus.ContainerRunning) {
             setContainerRunningTrigger(true)
+        } else if (curChallenge?.container_status == ContainerStatus.ContainerQueueing) { 
+            setContainerLaunching(true)
+            setRefreshContainerTrigger(true)
+        } else {
+            setContainerRunningTrigger(false)
         }
 
         // 切换题目重置折叠状态
@@ -638,44 +678,36 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     }
 
     const handleLaunchContainer = () => {
-        // setContainerLaunching(true)
+        setContainerLaunching(true)
 
-        api.user.userCreateContainerForAChallenge(gameID, curChallenge?.challenge_id ?? 0)
-
-        // const updateContainerInter = setInterval(() => {
-        //     updateContainer(updateContainerInter)
-        // }, 2000)
+        api.user.userCreateContainerForAChallenge(gameID, curChallenge?.challenge_id ?? 0).then((res) => {
+            // 开始刷新靶机状态
+            setRefreshContainerTrigger(true)
+            // const leftTime = Math.floor(dayjs(res.data.close_time).diff(dayjs()) / 1000)
+            // setContainerLeftTime(formatDuration(leftTime))
+        })
     }
 
     const handleExtendContainer = () => {
         // TODO 延长靶机逻辑重写
-        // api.game.gameExtendContainerLifetime(gameID, curChallenge.challenge_id!).then((res) => {
-        //     setContainerInfo(res.data)
-        //     toast.success(t("container_extend_success"), { position: "top-center" })
-        // }).catch((error: AxiosError) => {
-        //     if (error.response?.status) {
-        //         const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-        //         toast.error(errorMessage.title, { position: "top-center" })
-        //     } else {
-        //         toast.error(t("unknow_error"), { position: "top-center" })
-        //     }
-        // })
+
+        api.user.userExtendContainerLifeForAChallenge(gameID, curChallenge?.challenge_id ?? 0)
     }
 
     const handleDestoryContainer = () => {
-        // TOOD 销毁靶机逻辑重写
-        // api.game.gameDeleteContainer(gameID, curChallenge.challenge_id!).then((res) => {
-        //     toast.success(t("container_destory_success"), { position: "top-center" })
-        //     setContainerInfo({})
-        //     setContainerLaunching(false)
-        // }).catch((error: AxiosError) => {
-        //     if (error.response?.status) {
-        //         const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-        //         toast.error(errorMessage.title, { position: "top-center" })
-        //     } else {
-        //         toast.error(t("unknow_error"), { position: "top-center" })
-        //     }
-        // })
+        // TODO 销毁靶机逻辑重写
+
+        api.user.userDeleteContainerForAChallenge(gameID, curChallenge?.challenge_id ?? 0).then((res) => {
+            setContainerRunningTrigger(false)
+
+            const newContainers = containerInfo
+
+            for (let i = 0; i < newContainers.length; i++) {
+                newContainers[i].container_ports = []
+            }
+
+            setContainerInfo(newContainers)
+        })
     }
 
     return (
@@ -975,7 +1007,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                     <Package />
                                                     <span className="font-bold text-lg">靶机列表</span>
                                                     <div className="flex-1" />
-                                                    { curChallenge.containers[0]?.close_time == undefined ? (
+                                                    { !containerRunningTrigger ? (
                                                         <div className="flex gap-2 items-center">
                                                             <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-foreground bg-background hover:bg-foreground/20 [&_svg]:size-[24px] text-foreground"
                                                                 onClick={handleLaunchContainer}
@@ -998,22 +1030,26 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                         <div className="flex gap-2 items-center">
                                                             <div className="h-[34px] rounded-[10px] border-2 border-green-500 px-2 text-green-500 items-center flex justify-center gap-2">
                                                                 <AlarmClock />
-                                                                <TimerDisplay target_time={curChallenge.containers[0].close_time ?? dayjs()} className="font-bold text-md" />
+                                                                <TimerDisplay target_time={containerInfo[0].close_time ?? dayjs()} className="font-bold text-md" />
                                                             </div>
-                                                            <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-blue-400 text-blue-400 bg-background dark:hover:bg-blue-200/20 hover:bg-blue-200/60 [&_svg]:size-[24px]">
+                                                            <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-blue-400 text-blue-400 bg-background dark:hover:bg-blue-200/20 hover:bg-blue-200/60 [&_svg]:size-[24px]"
+                                                                onClick={handleExtendContainer}
+                                                            >
                                                                 <ClockArrowUp/>
                                                                 <span className="font-bold text-[1.125em]">延长靶机</span>
                                                             </Button>
-                                                            <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-red-400 text-red-400 bg-background dark:hover:bg-red-200/20 hover:bg-red-200/60 [&_svg]:size-[24px]">
+                                                            <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-red-400 text-red-400 bg-background dark:hover:bg-red-200/20 hover:bg-red-200/60 [&_svg]:size-[24px]"
+                                                                onClick={handleDestoryContainer}
+                                                            >
                                                                 <CircleX/>
-                                                                <span className="font-bold text-[1.125em]">Close</span>
+                                                                <span className="font-bold text-[1.125em]">销毁</span>
                                                             </Button>
                                                         </div>
                                                     ) }
                                                 </div>
 
-                                                <div className={`grid gap-4 mt-4 dark:opacity-90 ${ curChallenge.containers.length >= 3 ? "grid-cols-[repeat(auto-fill,minmax(320px,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(320px,320px))]" }`}>
-                                                    { curChallenge.containers.map((container, i) => (
+                                                <div className={`grid gap-4 mt-4 dark:opacity-90 ${ containerInfo.length >= 3 ? "grid-cols-[repeat(auto-fill,minmax(320px,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(320px,320px))]" }`}>
+                                                    { containerInfo.map((container, i) => (
                                                         <div className="stack" key={i}>
                                                             <div className="card p-4 flex flex-col select-none">
                                                                 <span className="font-bold text-xl mb-2">{ container.container_name }</span>

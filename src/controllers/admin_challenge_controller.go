@@ -112,7 +112,7 @@ func AdminCreateChallenge(c *gin.Context) {
 		return
 	}
 
-	payload.CreateTime = time.Now()
+	payload.CreateTime = time.Now().UTC()
 
 	payload.ChallengeID = nil
 

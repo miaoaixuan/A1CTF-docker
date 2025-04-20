@@ -119,7 +119,7 @@ var PermissionMap = map[string]PermissionSetting{
 	"\\/api\\/game\\/[\\d]+\\/challenge\\/[\\d]+$":         {RequestMethod: []string{"GET"}, Permissions: []string{}},
 	"\\/api\\/game\\/[\\d]+\\/notices":                     {RequestMethod: []string{"GET"}, Permissions: []string{}},
 	"\\/api\\/game\\/[\\d]+\\/createTeam":                  {RequestMethod: []string{"POST"}, Permissions: []string{}},
-	"\\/api\\/game\\/[\\d]+\\/container\\/[\\d]+$":         {RequestMethod: []string{"POST"}, Permissions: []string{}},
+	"\\/api\\/game\\/[\\d]+\\/container\\/[\\d]+$":         {RequestMethod: []string{"POST", "DELETE", "PATCH", "GET"}, Permissions: []string{}},
 }
 
 // Helper function to check if a slice contains a value
@@ -237,6 +237,8 @@ func main() {
 		public.POST("/auth/login", authMiddleware.LoginHandler)
 		public.POST("/auth/register", controllers.Register)
 
+		public.GET("/game/list", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.UserListGames)
+
 		fileGroup := public.Group("/file")
 		{
 			fileGroup.GET("/download/:file_id", controllers.DownloadFile)
@@ -275,8 +277,6 @@ func main() {
 		// 用户相关接口
 		userGameGroup := auth.Group("/game")
 		{
-			userGameGroup.GET("/list", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.UserListGames)
-
 			// 中间件检查比赛状态
 			userGameGroup.GET("/:game_id", cache.Cache(
 				memoryStore,
@@ -296,6 +296,9 @@ func main() {
 
 			// 创建题目容器
 			userGameGroup.POST("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false), controllers.TeamStatusMiddleware(), controllers.UserCreateGameContainer)
+			userGameGroup.DELETE("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false), controllers.TeamStatusMiddleware(), controllers.UserCloseGameContainer)
+			userGameGroup.PATCH("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false), controllers.TeamStatusMiddleware(), controllers.UserExtendGameContainer)
+			userGameGroup.GET("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallengeContainerInfo)
 		}
 	}
 

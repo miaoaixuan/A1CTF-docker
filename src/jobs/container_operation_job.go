@@ -94,10 +94,45 @@ func processStartingContainer() {
 			}
 		}
 
-		task.ContainerStatus = models.ContainerRunning
 		if err := dbtool.DB().Model(&task).Updates(map[string]interface{}{
-			"container_status": task.ContainerStatus,
+			"container_status": models.ContainerRunning,
 			"expose_ports":     task.ContainerExposeInfos,
+		}).Error; err != nil {
+			log.Fatalf("Failed to update container status: %v\n", err)
+		}
+	}
+}
+
+func processStoppingContainer() {
+	var containers []models.Container
+	if err := dbtool.DB().Where("container_status = ?", models.ContainerStopping).Find(&containers).Error; err != nil {
+		log.Fatalf("Failed to find queued containers: %v\n", err)
+	}
+
+	if len(containers) == 0 {
+		return
+	}
+
+	task := containers[0]
+
+	podInfo := k8stool.PodInfo{
+		Name:       fmt.Sprintf("cl-%d", task.InGameID),
+		TeamHash:   task.TeamHash,
+		Containers: task.ContainerConfig,
+		Labels: map[string]string{
+			"team_hash": task.TeamHash,
+			"ingame_id": fmt.Sprintf("%d", task.InGameID),
+		},
+	}
+
+	err := k8stool.DeletePod(&podInfo)
+	if err != nil {
+		log.Fatalf("DeletePod %+v error: %v", task, err)
+	} else {
+		log.Printf("DeletePod success")
+
+		if err := dbtool.DB().Model(&task).Updates(map[string]interface{}{
+			"container_status": models.ContainerStopped,
 		}).Error; err != nil {
 			log.Fatalf("Failed to update container status: %v\n", err)
 		}
@@ -107,4 +142,5 @@ func processStartingContainer() {
 func ContainerOperationsJob() {
 	processQueuedContainer()
 	processStartingContainer()
+	processStoppingContainer()
 }

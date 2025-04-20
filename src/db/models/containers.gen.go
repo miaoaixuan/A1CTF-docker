@@ -58,6 +58,7 @@ const (
 	ContainerError    ContainerStatus = "ContainerError"
 	ContainerStopping ContainerStatus = "ContainerStopping"
 	ContainerQueueing ContainerStatus = "ContainerQueueing"
+	NoContainer       ContainerStatus = "NoContainer"
 )
 
 func (e ContainerStatus) Value() (driver.Value, error) {

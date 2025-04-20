@@ -697,12 +697,122 @@ paths:
   /api/game/{game_id}/container/{challenge_id}:
     post:
       tags: [user]
-      operationId: UserCreateContainerForAChallenge
+      operationId: userCreateContainerForAChallenge
       summary: Create a container for a challenge
       description: Create a container for a challenge
       responses:
         '200':
           description: Container created
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to retrieve
+          schema:
+            type: integer
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge to retrieve
+          schema:
+            type: integer
+    delete:
+      tags: [user]
+      operationId: userDeleteContainerForAChallenge
+      summary: Delete a container for a challenge
+      description: Delete a container for a challenge
+      responses:
+        '200':
+          description: Container deleted
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to retrieve
+          schema:
+            type: integer
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge to retrieve
+          schema:
+            type: integer
+    patch:
+      tags: [user]
+      operationId: userExtendContainerLifeForAChallenge
+      summary: Extend a container's life for a challenge
+      description: Extend a container's life for a challenge
+      responses:
+        '200':
+          description: Container life extended
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to retrieve
+          schema:
+            type: integer
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge to retrieve
+          schema:
+            type: integer
+    get:
+      tags: [user]
+      operationId: userGetContainerInfoForAChallenge
+      summary: Get container info for a challenge
+      description: Get container info for a challenge
+      responses:
+        '200':
+          description: Container info geted
+          content:
+            application/json:
+              schema:
+                type:
+                  object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      container_status:
+                        $ref: '#/components/schemas/ContainerStatus'
+                      containers:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ExposePortInfo'
+                    required:
+                      - container_status
+                      - containers
+                required:
+                  - code
+                  - data
         '400':
           description: Bad request
         '500':
@@ -1209,6 +1319,8 @@ components:
           $ref: '#/components/schemas/ChallengeCategory'
         container_type:
           $ref: '#/components/schemas/ChallengeContainerType'
+        container_status:
+          $ref: '#/components/schemas/ContainerStatus'
         containers:
           type: array
           items:
@@ -1373,6 +1485,25 @@ components:
         - name
         - description
         - slogan
+    ContainerStatus:
+      type: string
+      enum:
+        - ContainerStopped
+        - ContainerRunning
+        - ContainerStarting
+        - ContainerError
+        - ContainerStopping
+        - ContainerQueueing
+        - NoContainer
+      description: |
+        Possible statuses of a container:
+        - `ContainerStopped`: The container is stopped.
+        - `ContainerRunning`: The container is running.
+        - `ContainerStarting`: The container is starting.
+        - `ContainerError`: The container encountered an error.
+        - `ContainerStopping`: The container is stopping.
+        - `ContainerQueueing`: The container is in a queue.
+        - `NoContainer`: No container exists.
     ExposePortInfo:
       type: object
       properties:

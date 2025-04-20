@@ -57,7 +57,7 @@ func GameStatusMiddleware(visibleAfterEnded bool) gin.HandlerFunc {
 			return
 		}
 
-		now := time.Now()
+		now := time.Now().UTC()
 		if game.StartTime.After(now) {
 			c.JSON(http.StatusForbidden, gin.H{
 				"code":    403,
@@ -224,7 +224,7 @@ func UserGetGameChallenges(c *gin.Context) {
 
 	if gameStages != nil {
 		for _, stage := range *gameStages {
-			if stage.StartTime.Before(time.Now()) && stage.EndTime.After(time.Now()) {
+			if stage.StartTime.Before(time.Now().UTC()) && stage.EndTime.After(time.Now().UTC()) {
 				curStage = stage.StageName
 				break
 			}
@@ -332,22 +332,23 @@ func UserGetGameChallenge(c *gin.Context) {
 	}
 
 	result := gin.H{
-		"challenge_id":   gameChallenge.Challenge.ChallengeID,
-		"challenge_name": gameChallenge.Challenge.Name,
-		"description":    gameChallenge.Challenge.Description,
-		"total_score":    gameChallenge.GameChallenge.TotalScore,
-		"cur_score":      gameChallenge.GameChallenge.CurScore,
-		"hints":          visibleHints,
-		"belong_stage":   gameChallenge.GameChallenge.BelongStage,
-		"solve_count":    gameChallenge.SolveCount,
-		"category":       gameChallenge.Challenge.Category,
-		"attachments":    userAttachments,
-		"container_type": gameChallenge.Challenge.ContainerType,
+		"challenge_id":     gameChallenge.Challenge.ChallengeID,
+		"challenge_name":   gameChallenge.Challenge.Name,
+		"description":      gameChallenge.Challenge.Description,
+		"total_score":      gameChallenge.GameChallenge.TotalScore,
+		"cur_score":        gameChallenge.GameChallenge.CurScore,
+		"hints":            visibleHints,
+		"belong_stage":     gameChallenge.GameChallenge.BelongStage,
+		"solve_count":      gameChallenge.SolveCount,
+		"category":         gameChallenge.Challenge.Category,
+		"attachments":      userAttachments,
+		"container_type":   gameChallenge.Challenge.ContainerType,
+		"container_status": models.NoContainer,
 	}
 
 	// 存活靶机处理
 	var containers []models.Container
-	if err := dbtool.DB().Where("game_id = ? AND challenge_id = ? AND team_id = ? AND container_status = ?", game.GameID, gameChallenge.Challenge.ChallengeID, team.TeamID, models.ContainerRunning).Find(&containers).Error; err != nil {
+	if err := dbtool.DB().Where("game_id = ? AND challenge_id = ? AND team_id = ? AND (container_status = ? OR container_status = ?)", game.GameID, gameChallenge.Challenge.ChallengeID, team.TeamID, models.ContainerRunning, models.ContainerQueueing).Find(&containers).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"message": "Failed to load containers",
@@ -379,6 +380,8 @@ func UserGetGameChallenge(c *gin.Context) {
 				}
 			}
 
+			// log.Printf("container: %+v\n", containers[0])
+
 			tempConfig["close_time"] = containers[0].ExpireTime
 		}
 
@@ -395,6 +398,12 @@ func UserGetGameChallenge(c *gin.Context) {
 		// tempConfig["container_ports"] = tempPorts
 
 		result["containers"] = append(result["containers"].([]gin.H), tempConfig)
+	}
+
+	if len(containers) > 0 {
+		result["container_status"] = containers[0].ContainerStatus
+	} else {
+		result["container_status"] = models.NoContainer
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -526,7 +535,7 @@ func UserCreateGameContainer(c *gin.Context) {
 	gameChallenge := gameChallenges[0]
 
 	var containers []models.Container
-	if err := dbtool.DB().Where("game_id = ? AND team_id = ?", game.GameID, team.TeamID).Find(&containers).Error; err != nil {
+	if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND (container_status = ? or container_status = ?)", game.GameID, team.TeamID, models.ContainerRunning, models.ContainerQueueing).Find(&containers).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"message": "Failed to load containers",
@@ -536,24 +545,30 @@ func UserCreateGameContainer(c *gin.Context) {
 
 	for _, container := range containers {
 		log.Printf("container: %+v\n", container)
-		if container.ChallengeID == *gameChallenge.Challenge.ChallengeID {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    401,
+		if container.ChallengeID == *gameChallenge.Challenge.ChallengeID && container.ContainerStatus == models.ContainerRunning {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    400,
 				"message": "You have created a container for this challenge",
+			})
+			return
+		}
+
+		if container.ChallengeID == *gameChallenge.Challenge.ChallengeID && container.ContainerStatus == models.ContainerQueueing {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    400,
+				"message": "Your container is queueing",
 			})
 			return
 		}
 	}
 
 	if len(containers) > int(game.ContainerNumberLimit) {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    401,
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
 			"message": "You have created too many containers",
 		})
 		return
 	}
-
-	log.Printf("%+v\n", gameChallenge.Challenge.ContainerConfig)
 
 	// 加入数据库
 	newContainer := models.Container{
@@ -562,8 +577,8 @@ func UserCreateGameContainer(c *gin.Context) {
 		TeamID:               team.TeamID,
 		ChallengeID:          *gameChallenge.Challenge.ChallengeID,
 		InGameID:             gameChallenge.GameChallenge.IngameID,
-		StartTime:            time.Now(),
-		ExpireTime:           time.Now().Add(time.Duration(2) * time.Hour),
+		StartTime:            time.Now().UTC(),
+		ExpireTime:           time.Now().Add(time.Duration(2) * time.Hour).UTC(),
 		ContainerExposeInfos: make(models.ContainerExposeInfos, 0),
 		ContainerStatus:      models.ContainerQueueing,
 		FlagContent:          "flag{test_flag}",
@@ -583,6 +598,235 @@ func UserCreateGameContainer(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
 		"message": "OK",
+	})
+	return
+}
+
+func UserCloseGameContainer(c *gin.Context) {
+	_ = c.MustGet("game").(models.Game)
+	team := c.MustGet("team").(models.Team)
+
+	challengeIDStr := c.Param("challenge_id")
+	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid challenge ID",
+		})
+		c.Abort()
+		return
+	}
+
+	var containers []models.Container
+	if err := dbtool.DB().Where("challenge_id = ? AND team_id = ? AND container_status = ?", challengeID, team.TeamID, models.ContainerRunning).Find(&containers).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load containers",
+		})
+		return
+	}
+
+	if len(containers) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Launch a container first.",
+		})
+		return
+	}
+
+	if len(containers) != 1 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "System error.",
+		})
+		return
+	}
+
+	curContainer := containers[0]
+
+	if err := dbtool.DB().Model(&curContainer).Updates(map[string]interface{}{
+		"container_status": models.ContainerStopping,
+	}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    501,
+			"message": "System error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "OK",
+	})
+	return
+}
+
+func UserExtendGameContainer(c *gin.Context) {
+	_ = c.MustGet("game").(models.Game)
+	team := c.MustGet("team").(models.Team)
+
+	challengeIDStr := c.Param("challenge_id")
+	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid challenge ID",
+		})
+		c.Abort()
+		return
+	}
+
+	var containers []models.Container
+	if err := dbtool.DB().Where("challenge_id = ? AND team_id = ? AND container_status = ?", challengeID, team.TeamID, models.ContainerRunning).Find(&containers).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load containers",
+		})
+		return
+	}
+
+	if len(containers) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Launch a container first.",
+		})
+		return
+	}
+
+	if len(containers) != 1 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "System error.",
+		})
+		return
+	}
+
+	curContainer := containers[0]
+
+	if curContainer.ExpireTime.Sub(time.Now().UTC()).Minutes() > 30 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "You cannot extend the container now.",
+		})
+		return
+	}
+
+	if err := dbtool.DB().Model(&curContainer).Updates(map[string]interface{}{
+		"expire_time": curContainer.ExpireTime.Add(time.Duration(2) * time.Hour),
+	}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    501,
+			"message": "System error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "OK",
+	})
+	return
+}
+
+func UserGetGameChallengeContainerInfo(c *gin.Context) {
+	game := c.MustGet("game").(models.Game)
+	team := c.MustGet("team").(models.Team)
+
+	challengeIDStr := c.Param("challenge_id")
+	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid challenge ID",
+		})
+		c.Abort()
+		return
+	}
+
+	var containers []models.Container
+	if err := dbtool.DB().Where("challenge_id = ? AND team_id = ? AND (container_status = ? OR container_status = ?)", challengeID, team.TeamID, models.ContainerRunning, models.ContainerQueueing).Find(&containers).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load containers",
+		})
+		return
+	}
+
+	if len(containers) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Launch a container first.",
+		})
+		return
+	}
+
+	if len(containers) != 1 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "System error.",
+		})
+		return
+	}
+
+	var gameChallenges []struct {
+		models.GameChallenge
+		models.Challenge
+	}
+
+	// 使用 Preload 进行关联查询
+	if err := dbtool.DB().Table("game_challenges").
+		Joins("LEFT JOIN challenges ON game_challenges.challenge_id = challenges.challenge_id").
+		Where("game_id = ? and game_challenges.challenge_id = ?", game.GameID, challengeID).
+		Scan(&gameChallenges).Error; err != nil {
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load game challenges",
+		})
+		return
+	}
+
+	if len(gameChallenges) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":    404,
+			"message": "Challenge not found",
+		})
+		return
+	}
+
+	gameChallenge := gameChallenges[0]
+
+	result := gin.H{
+		"container_status": containers[0].ContainerStatus,
+		"containers":       make([]gin.H, 0, len(*gameChallenge.Challenge.ContainerConfig)),
+	}
+
+	for _, container := range *gameChallenge.Challenge.ContainerConfig {
+		tempConfig := gin.H{
+			"container_name":  container.Name,
+			"container_ports": make(models.ExposePorts, 0),
+			"close_time":      nil,
+		}
+
+		if len(containers) == 1 {
+			for _, container_expose := range containers[0].ContainerExposeInfos {
+				if container_expose.ContainerName == container.Name {
+					tempConfig["container_ports"] = container_expose.ExposePorts
+					break
+				}
+			}
+
+			// log.Printf("container: %+v\n", containers[0])
+
+			tempConfig["close_time"] = containers[0].ExpireTime
+		}
+
+		result["containers"] = append(result["containers"].([]gin.H), tempConfig)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": result,
 	})
 	return
 }

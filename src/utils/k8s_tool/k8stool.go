@@ -265,14 +265,12 @@ func DeletePod(podInfo *PodInfo) error {
 	if err != nil {
 		return fmt.Errorf("error deleting pod: %v", err)
 	}
-	fmt.Println("Pod deleted")
 
 	// 删除 Service
 	err = clientset.CoreV1().Services(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("error deleting service: %v", err)
 	}
-	fmt.Println("Service deleted")
 
 	return nil
 }
