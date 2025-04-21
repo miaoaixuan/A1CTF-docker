@@ -321,6 +321,8 @@ export interface UserDetailGameChallenge {
    * - `NoContainer`: No container exists.
    */
   container_status?: ContainerStatus;
+  /** @format date-time */
+  container_expiretime?: string;
   containers?: ExposePortInfo[];
   attachments?: UserAttachmentConfig[];
 }
@@ -382,8 +384,6 @@ export interface CreateGameTeamPayload {
 
 export interface ExposePortInfo {
   container_name: string;
-  /** @format date-time */
-  close_time?: string;
   container_ports: {
     port_name: string;
     port: number;
@@ -1131,6 +1131,8 @@ export class Api<
              * - `NoContainer`: No container exists.
              */
             container_status: ContainerStatus;
+            /** @format date-time */
+            container_expiretime?: string;
             containers: ExposePortInfo[];
           };
         },

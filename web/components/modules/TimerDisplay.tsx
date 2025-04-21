@@ -3,7 +3,7 @@
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 
-const TimerDisplay = ({ target_time, className } : { target_time: dayjs.Dayjs | number | string, className: string }) => {
+const TimerDisplay = ({ target_time, className } : { target_time: dayjs.Dayjs | number | string | null, className: string }) => {
     const [timeLeft, setTimeLeft] = useState("0s");
 
     const formatDuration = (duration: number) => {
@@ -35,7 +35,7 @@ const TimerDisplay = ({ target_time, className } : { target_time: dayjs.Dayjs | 
         updateFunction()
 
         return () => clearInterval(interval);
-    }, [])
+    }, [target_time])
 
     return (
         <span className={className}>{timeLeft}</span>

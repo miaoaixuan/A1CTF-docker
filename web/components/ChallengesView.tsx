@@ -40,7 +40,7 @@ import * as signalR from '@microsoft/signalr'
 import dayjs from "dayjs";
 import { LoadingPage } from "./LoadingPage";
 import { Button } from "./ui/button";
-import { AlarmClock, AppWindow, Ban, CalendarClock, CircleCheckBig, CirclePower, CircleX, ClockArrowUp, CloudDownload, Container, Copy, Files, Flag, FlaskConical, FoldHorizontal, Hourglass, Info, Link, ListCheck, Loader2, LoaderCircle, LoaderPinwheel, NotebookPen, Package, PackageOpen, Paperclip, Pickaxe, PowerOff, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal, Users, X } from "lucide-react";
+import { AlarmClock, AppWindow, Ban, CalendarClock, CircleCheckBig, CirclePower, CircleX, ClockArrowUp, CloudDownload, Container, Copy, EthernetPort, Files, Flag, FlaskConical, FoldHorizontal, Hourglass, Info, Link, ListCheck, Loader2, LoaderCircle, LoaderPinwheel, Network, NotebookPen, Package, PackageOpen, Paperclip, Pickaxe, PowerOff, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal, Users, X } from "lucide-react";
 import { AxiosError } from "axios";
 
 import Image from "next/image";
@@ -82,6 +82,7 @@ import { CreateTeamDialog } from "./dialogs/CreateTeamDialog";
 import { JoinTeamDialog } from "./dialogs/JoinTeamDialog";
 import TimerDisplay from "./modules/TimerDisplay";
 import ChallengesViewHeader from "./modules/ChallengesViewHeader";
+import SubmitFlagView from "./modules/SubmitFlagView";
 
 const GameTerminal = dynamic(
     () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
@@ -199,10 +200,11 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
 
     const [containerLaunching, setContainerLaunching] = useState(false)
     // FIXME ContainerInfoModel
+
     const [containerInfo, setContainerInfo] = useState<ExposePortInfo[]>([])
     const [containerRunningTrigger, setContainerRunningTrigger] = useState(false);
     const [refreshContainerTrigger, setRefreshContainerTrigger] = useState(false);
-    const [containerLeftTime, setContainerLeftTime] = useState("")
+    const [containerExpireTime, setContainerExpireTime] = useState<dayjs.Dayjs | null>(dayjs())
 
     const [blood, setBlood] = useState("")
     const [bloodMessage, setBloodMessage] = useState("")
@@ -243,9 +245,13 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                         setContainerInfo(res.data.data.containers)
                         setContainerLaunching(false)
                         setContainerRunningTrigger(true)
-    
+
+                        setContainerExpireTime(res.data.data.container_expiretime
+                            ? dayjs(res.data.data.container_expiretime)
+                            : null)
+
                         toast.success(t("container_start_success"), { position: "top-center" })
-    
+
                         clearInterval(inter)
                         setRefreshContainerTrigger(false)
                     } else if (res.data.data.container_status != ContainerStatus.ContainerQueueing) {
@@ -269,10 +275,13 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
         console.log(curChallenge)
 
         setContainerInfo(curChallenge?.containers ?? [])
-        
+        setContainerExpireTime(curChallenge?.container_expiretime
+            ? dayjs(curChallenge.container_expiretime)
+            : null)
+
         if (curChallenge?.container_status == ContainerStatus.ContainerRunning) {
             setContainerRunningTrigger(true)
-        } else if (curChallenge?.container_status == ContainerStatus.ContainerQueueing) { 
+        } else if (curChallenge?.container_status == ContainerStatus.ContainerQueueing) {
             setContainerLaunching(true)
             setRefreshContainerTrigger(true)
         } else {
@@ -461,23 +470,6 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
 
         } else if (gameStatus == "unRegistered") {
             // 未注册 先获取队伍信息
-
-            // TODO 修改每场比赛创建一个队伍
-            setTimeout(() => setLoadingVisibility(false), 200)
-
-            // api.team.teamGetTeamsInfo().then((res) => {
-            //     setAvailableTeams(res.data)
-
-            //     // 设置加载遮罩状态
-            //     setPreJoinDataPrepared(true)
-            //     setTimeout(() => setLoadingVisibility(false), 200)
-            // }).catch((error: AxiosError) => {
-            //     if (error.response?.status) {
-            //         if (error.response.status == 401) {
-            //             setGameStatus("unLogin")
-            //         }
-            //     }
-            // })
             setTimeout(() => setLoadingVisibility(false), 200)
         } else if (gameStatus == "waitForProcess") {
             // 启动一个监听进程
@@ -707,6 +699,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             }
 
             setContainerInfo(newContainers)
+            setContainerExpireTime(null)
         })
     }
 
@@ -714,152 +707,159 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
         <>
             <GameSwitchHover animation={false} />
             <LoadingPage visible={loadingVisiblity} />
+            {/* 抢血动画 */}
             <SolvedAnimation blood={blood} setBlood={setBlood} bloodMessage={bloodMessage} />
+            {/* 提交 Flag 组件 */}
+            <SubmitFlagView lng={lng} />
 
-            {gameStatus == "banned" && (
-                <motion.div
-                    className={`absolute top-0 left-0 w-screen h-screen flex items-center justify-center z-[40]`}
-                    initial={{
-                        backgroundColor: "rgb(239 68 68 / 0)",
-                        backdropFilter: "blur(0px)"
-                    }}
-                    animate={{
-                        backgroundColor: "rgb(239 68 68 / 0.9)",
-                        backdropFilter: "blur(16px)"
-                    }}
-                    transition={{
-                        duration: 0.5
-                    }}
-                >
-                    <div className="flex flex-col items-center gap-4 select-none">
-                        <div className="flex flex-col items-center gap-6 text-white">
-                            <TriangleAlert size={120} />
-                            <span className="text-3xl">{t("you_have_be_banned")}</span>
+            {/* 比赛各种状态页 */}
+            <>
+                {gameStatus == "banned" && (
+                    <motion.div
+                        className={`absolute top-0 left-0 w-screen h-screen flex items-center justify-center z-[40]`}
+                        initial={{
+                            backgroundColor: "rgb(239 68 68 / 0)",
+                            backdropFilter: "blur(0px)"
+                        }}
+                        animate={{
+                            backgroundColor: "rgb(239 68 68 / 0.9)",
+                            backdropFilter: "blur(16px)"
+                        }}
+                        transition={{
+                            duration: 0.5
+                        }}
+                    >
+                        <div className="flex flex-col items-center gap-4 select-none">
+                            <div className="flex flex-col items-center gap-6 text-white">
+                                <TriangleAlert size={120} />
+                                <span className="text-3xl">{t("you_have_be_banned")}</span>
+                            </div>
+                            <div className="flex gap-4 mt-6">
+                                <Button variant="secondary"
+                                    onClick={() => setScoreBoardVisible(true)}
+                                ><Presentation />{t("rank")}</Button>
+                                <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                                    <Button variant="secondary">{t("back_to_main")}</Button>
+                                </TransitionLink>
+                            </div>
                         </div>
-                        <div className="flex gap-4 mt-6">
-                            <Button variant="secondary"
-                                onClick={() => setScoreBoardVisible(true)}
-                            ><Presentation />{t("rank")}</Button>
+                    </motion.div>
+                )}
+
+                {["pending", "ended", "unRegistered", "waitForProcess", "unLogin"].includes(gameStatus) && (
+                    <div className="absolute top-0 left-0 w-screen h-screen backdrop-blur-xl z-40">
+                        <div className="flex w-full h-full relative">
+                            <div className="w-full h-full hidden md:block">
+                                <div className="w-full h-full flex flex-col overflow-hidden">
+                                    <MacScrollbar className="h-full w-full"
+                                        skin={theme == "light" ? "light" : "dark"}
+                                        trackStyle={(horizontal) => ({ [horizontal ? "height" : "width"]: 0, borderWidth: 0 })}
+                                    >
+                                        <div className="pt-5 lg:pt-10">
+                                            <span className="text-2xl font-bold px-8 select-none mb-4 text-nowrap overflow-hidden text-ellipsis">✨ 比赛须知 - {gameInfo?.name}</span>
+                                            <div className="px-5 pb-5 lg:px-10 lg:pb-10 w-[60%]">
+                                                <Mdx source={gameInfo?.description ?? "没有比赛通知哦"} />
+                                            </div>
+                                        </div>
+                                    </MacScrollbar>
+                                </div>
+                            </div>
+
+                            <div className="absolute left-[60%] w-[40%] h-full flex-1 md:flex-none pointer-events-none">
+                                {(gameStatus == "pending" || gameStatus == "ended") && (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <div className="flex flex-col text-3xl items-center gap-4 select-none">
+                                            <AlarmClock size={80} className="mb-4" />
+                                            {gameStatus == "ended" ? (<span className="font-bold">{t("game_ended")}</span>) : (<span className="font-bold">{t("game_pending")}</span>)}
+                                            {gameStatus == "pending" && (<span className="text-2xl">{t("game_start_countdown")} {beforeGameTime}</span>)}
+                                            <div className="flex mt-2 items-center gap-4 pointer-events-auto">
+                                                <Button variant="outline"
+                                                    onClick={() => setScoreBoardVisible(true)}
+                                                ><Presentation />{t("rank")}</Button>
+                                                <TransitionLink className="transition-colors flex items-center" href={`/${lng}/games`}>
+                                                    <Button>{t("back_to_main")}</Button>
+                                                </TransitionLink>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {gameStatus == "unRegistered" && (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <div className="flex flex-col items-center gap-4 select-none">
+                                            <NotebookPen size={80} className="mb-4" />
+                                            <span className="text-2xl mb-2 font-bold">{t("not_participated")}</span>
+                                            <div className="flex gap-[15px] mt-4 pointer-events-auto">
+                                                <Button variant="outline"
+                                                    onClick={() => setScoreBoardVisible(true)}
+                                                ><Presentation />{t("rank")}</Button>
+                                                <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                                                    <Button variant="outline">{t("back_to_main")}</Button>
+                                                </TransitionLink>
+                                            </div>
+                                            <div className="flex gap-[15px] mt-[-5px] pointer-events-auto">
+                                                <CreateTeamDialog updateTeam={() => { }} gameID={gameID}>
+                                                    <Button variant="default" type="button"><Pickaxe />创建队伍</Button>
+                                                </CreateTeamDialog>
+                                                <JoinTeamDialog updateTeam={() => { }}>
+                                                    <Button variant="default" type="button"><Users />加入队伍</Button>
+                                                </JoinTeamDialog>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {gameStatus == "waitForProcess" && (
+                                    <div
+                                        className={`w-full h-full flex items-center justify-center`}
+                                    >
+                                        <div className="flex flex-col items-center gap-4 select-none">
+                                            <ListCheck size={80} className="mb-4" />
+                                            <span className="text-2xl font-bold">{t("wait_for_process")}</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {gameStatus == "unLogin" && (
+                                    <div
+                                        className={`w-full h-full flex items-center justify-center`}
+                                    >
+                                        <div className="flex flex-col items-center gap-8 select-none">
+                                            <Ban size={80} className="mb-4" />
+                                            <span className="text-2xl font-bold mb-4">{t("login_first")}</span>
+                                            <div className="flex gap-6 pointer-events-auto">
+                                                <Button variant="outline"
+                                                    onClick={() => setScoreBoardVisible(true)}
+                                                ><Presentation />{t("rank")}</Button>
+                                                <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                                                    <Button variant="outline">{t("back_to_main")}</Button>
+                                                </TransitionLink>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* New */}
+                {gameStatus == "noSuchGame" && (
+                    <div
+                        className={`absolute top-0 left-0 w-screen h-screen backdrop-blur-xl flex items-center justify-center z-[40]`}
+                    >
+                        <div className="flex flex-col items-center gap-4 select-none">
+                            <Info size={80} className="mb-4" />
+                            <span className="text-2xl mb-4">{t("no_such_game")}</span>
                             <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                                <Button variant="secondary">{t("back_to_main")}</Button>
+                                <Button variant="outline">{t("back_to_main")}</Button>
                             </TransitionLink>
                         </div>
                     </div>
-                </motion.div>
-            )}
+                )}
 
-            { ["pending", "ended", "unRegistered", "waitForProcess", "unLogin"].includes(gameStatus) && (
-                <div className="absolute top-0 left-0 w-screen h-screen backdrop-blur-xl z-40">
-                    <div className="flex w-full h-full relative">
-                        <div className="w-full h-full hidden md:block">
-                            <div className="w-full h-full flex flex-col overflow-hidden">
-                                <MacScrollbar className="h-full w-full"
-                                    skin={theme ==  "light" ? "light" : "dark"}
-                                    trackStyle={(horizontal) => ({ [horizontal ? "height" : "width"]: 0, borderWidth: 0})}
-                                >
-                                    <div className="pt-5 lg:pt-10">
-                                        <span className="text-2xl font-bold px-8 select-none mb-4 text-nowrap overflow-hidden text-ellipsis">✨ 比赛须知 - { gameInfo?.name }</span>
-                                        <div className="px-5 pb-5 lg:px-10 lg:pb-10 w-[60%]">
-                                            <Mdx source={gameInfo?.description ?? "没有比赛通知哦"} />
-                                        </div>
-                                    </div>
-                                </MacScrollbar>
-                            </div>
-                        </div>
-
-                        <div className="absolute left-[60%] w-[40%] h-full flex-1 md:flex-none pointer-events-none">
-                            {(gameStatus == "pending" || gameStatus == "ended") && (
-                                <div className="w-full h-full flex items-center justify-center">
-                                    <div className="flex flex-col text-3xl items-center gap-4 select-none">
-                                        <AlarmClock size={80} className="mb-4" />
-                                        {gameStatus == "ended" ? (<span className="font-bold">{t("game_ended")}</span>) : (<span className="font-bold">{t("game_pending")}</span>)}
-                                        {gameStatus == "pending" && (<span className="text-2xl">{t("game_start_countdown")} {beforeGameTime}</span>)}
-                                        <div className="flex mt-2 items-center gap-4 pointer-events-auto">
-                                            <Button variant="outline"
-                                                onClick={() => setScoreBoardVisible(true)}
-                                            ><Presentation />{t("rank")}</Button>
-                                            <TransitionLink className="transition-colors flex items-center" href={`/${lng}/games`}>
-                                                <Button>{t("back_to_main")}</Button>
-                                            </TransitionLink>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {gameStatus == "unRegistered"  && (
-                                <div className="w-full h-full flex items-center justify-center">
-                                    <div className="flex flex-col items-center gap-4 select-none">
-                                        <NotebookPen size={80} className="mb-4" />
-                                        <span className="text-2xl mb-2 font-bold">{t("not_participated")}</span>
-                                        <div className="flex gap-[15px] mt-4 pointer-events-auto">
-                                            <Button variant="outline"
-                                                onClick={() => setScoreBoardVisible(true)}
-                                            ><Presentation />{t("rank")}</Button>
-                                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                                                <Button variant="outline">{t("back_to_main")}</Button>
-                                            </TransitionLink>
-                                        </div>
-                                        <div className="flex gap-[15px] mt-[-5px] pointer-events-auto">
-                                            <CreateTeamDialog updateTeam={() => {}} gameID={gameID}>
-                                                <Button variant="default" type="button"><Pickaxe />创建队伍</Button>
-                                            </CreateTeamDialog>
-                                            <JoinTeamDialog updateTeam={() => {}}>
-                                                <Button variant="default" type="button"><Users />加入队伍</Button>
-                                            </JoinTeamDialog>
-                                            
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {gameStatus == "waitForProcess" && (
-                                <div
-                                    className={`w-full h-full flex items-center justify-center`}
-                                >
-                                    <div className="flex flex-col items-center gap-4 select-none">
-                                        <ListCheck size={80} className="mb-4" />
-                                        <span className="text-2xl font-bold">{t("wait_for_process")}</span>
-                                    </div>
-                                </div>
-                            )}
-
-                            {gameStatus == "unLogin" && (
-                                <div
-                                    className={`w-full h-full flex items-center justify-center`}
-                                >
-                                    <div className="flex flex-col items-center gap-8 select-none">
-                                        <Ban size={80} className="mb-4" />
-                                        <span className="text-2xl font-bold mb-4">{t("login_first")}</span>
-                                        <div className="flex gap-6 pointer-events-auto">
-                                            <Button variant="outline"
-                                                onClick={() => setScoreBoardVisible(true)}
-                                            ><Presentation />{t("rank")}</Button>
-                                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                                                <Button variant="outline">{t("back_to_main")}</Button>
-                                            </TransitionLink>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* New */}
-            {gameStatus == "noSuchGame" && (
-                <div
-                    className={`absolute top-0 left-0 w-screen h-screen backdrop-blur-xl flex items-center justify-center z-[40]`}
-                >
-                    <div className="flex flex-col items-center gap-4 select-none">
-                        <Info size={80} className="mb-4"/>
-                        <span className="text-2xl mb-4">{t("no_such_game")}</span>
-                        <TransitionLink className="transition-colors" href={`/${lng}/games`}>
-                            <Button variant="outline">{t("back_to_main")}</Button>
-                        </TransitionLink>
-                    </div>
-                </div>
-            )}
+            </>
 
             {/* 下载动画 */}
             <DownloadBar key={"download-panel"} progress={attachDownloadProgress} downloadName={downloadName}></DownloadBar>
@@ -868,6 +868,8 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             <RedirectNotice redirectURL={redirectURL} setRedirectURL={setRedirectURL} />
             {/* 公告页 */}
             <NoticesView opened={noticesOpened} setOpened={setNoticeOpened} notices={notices} />
+
+            {/* 题目侧栏和题目信息 */}
             <SidebarProvider>
                 <div className="z-20">
                     <CategorySidebar
@@ -886,259 +888,243 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                         setGameStatus={setGameStatus}
                     />
                 </div>
-                <main className="flex flex-col top-0 left-0 h-screen w-screen overflow-hidden backdrop-blur-sm relative">
-                    <ChallengesViewHeader 
-                        gameStatus={gameStatus} gameInfo={gameInfo}
-                        setNoticeOpened={setNoticeOpened} setScoreBoardVisible={setScoreBoardVisible} 
-                        notices={notices}
-                        lng={lng}
-                        curProfile={curProfile}
-                    />
-                    <ResizablePanelGroup direction="vertical" className="relative">
-                        <AnimatePresence>
-                            {pageSwitch ? (
-                                <motion.div className="absolute top-0 left-0 w-full h-full bg-background z-20 flex justify-center items-center"
-                                    exit={{
-                                        opacity: 0
-                                    }}
-                                >
-                                    {/* <SkeletonCard /> */}
-                                    <div className="flex">
-                                        <LoaderPinwheel className="animate-spin" />
-                                        <span className="font-bold ml-3">Loading...</span>
-                                    </div>
-                                </motion.div>
-                            ) : (null)}
-                        </AnimatePresence>
-                        <ResizableScrollablePanel defaultSize={60} minSize={20} className="relative" onResize={(size, prevSize) => {
-                            setResizeTrigger(size)
-                        }}>
-                            {!curChallenge ? (
-                                <div className="absolute top-0 left-0 w-full h-full flex flex-col">
-                                    {gameInfo?.description ? (
-                                        <MacScrollbar
-                                            className="w-full flex flex-col"
-                                            skin={theme === "dark" ? "dark" : "light"}
+                <div className="w-full h-screen relative">
+                    {/* Suck Chrome's backdrop blur */}
+                    <div className="absoulte h-full w-full top-0 left-0 backdrop-blur-sm" />
+                    <div className="absolute h-full w-full top-0 left-0">
+                        <div className="flex flex-col h-full w-full overflow-hidden relative">
+                            <ChallengesViewHeader
+                                gameStatus={gameStatus} gameInfo={gameInfo}
+                                setNoticeOpened={setNoticeOpened} setScoreBoardVisible={setScoreBoardVisible}
+                                notices={notices}
+                                lng={lng}
+                                curProfile={curProfile}
+                            />
+                            <ResizablePanelGroup direction="vertical" className="relative">
+                                <AnimatePresence>
+                                    {pageSwitch ? (
+                                        <motion.div className="absolute top-0 left-0 w-full h-full bg-background z-20 flex justify-center items-center"
+                                            exit={{
+                                                opacity: 0
+                                            }}
                                         >
-                                            <div className="p-10">
-                                                <Mdx source={gameInfo.description || ""}></Mdx>
+                                            {/* <SkeletonCard /> */}
+                                            <div className="flex">
+                                                <LoaderPinwheel className="animate-spin" />
+                                                <span className="font-bold ml-3">Loading...</span>
                                             </div>
-                                        </MacScrollbar>
-                                        
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center select-none">
-                                            <span className="font-bold text-lg">{t("choose_something")}</span>
+                                        </motion.div>
+                                    ) : (null)}
+                                </AnimatePresence>
+                                <ResizableScrollablePanel defaultSize={60} minSize={20} className="relative" onResize={(size, prevSize) => {
+                                    setResizeTrigger(size)
+                                }}>
+                                    {!curChallenge ? (
+                                        <div className="absolute top-0 left-0 w-full h-full flex flex-col">
+                                            {gameInfo?.description ? (
+                                                <MacScrollbar
+                                                    className="w-full flex flex-col"
+                                                    skin={theme === "dark" ? "dark" : "light"}
+                                                >
+                                                    <div className="p-10">
+                                                        <Mdx source={gameInfo.description || ""}></Mdx>
+                                                    </div>
+                                                </MacScrollbar>
+
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center select-none">
+                                                    <span className="font-bold text-lg">{t("choose_something")}</span>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-                            ) : <></>}
-                            <div className="absolute bottom-2 right-2 flex flex-col gap-2 p-2 opacity-100 ease-in-out">
-                                {
-                                    curChallenge && curChallenge.hints?.map((value, index) => {
-                                        return (
-                                            <div className="flex" key={index}>
-                                                <div className="flex-1" />
-                                                <div className={`inline-flex bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 pt-2 pb-2 pl-3 pr-[25px] rounded-xl shadow-lg shadow-yellow-500/30 min-w-0 transition-transform duration-300 ease-in-out text-black text-md gap-2 ${!foldedItems[index] ? "translate-x-[calc(30px)]" : "translate-x-[calc(100%-80px)]"}`}>
-                                                    {
-                                                        !foldedItems[index] ? (
-                                                            <FoldHorizontal className="hover:text-white flex-shrink-0 transition-colors duration-200 ease-in-out" onClick={() => {
-                                                                toggleFolded(index)
-                                                            }} />
-                                                        ) : (
-                                                            <UnfoldHorizontal className="hover:text-white flex-shrink-0 transition-colors duration-200 ease-in-out" onClick={() => {
-                                                                toggleFolded(index)
-                                                            }} />
-                                                        )
-                                                    }
-                                                    <div className="inline-flex gap-1">
-                                                        <span className="font-bold w-[50px] flex-shrink-0 overflow-hidden font-mono select-none">Hint{index + 1}</span>
-                                                        <span className="font-bold">{value.content}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )
-                                    })
-                                }
-                            </div>
-                            <div className="flex h-full">
-                                <SafeComponent>
-                                    <MacScrollbar
-                                        className="p-10 w-full flex flex-col"
-                                        skin={theme === "dark" ? "dark" : "light"}
-                                    >
-                                        {curChallenge?.challenge_name && (
-                                            <div className="flex flex-col gap-4 mb-4">
-                                                <div className="flex items-center gap-2 px-5 py-3 border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md">
-                                                    <Info />
-                                                    <span className="font-bold text-lg">题目信息 - { curChallenge.challenge_name }</span>
-                                                    <div className="flex-1"/>
-                                                    <div className="flex items-center gap-4">
-                                                        {challengeSolvedList[curChallenge.challenge_id || 0] ? (
-                                                            <div className="flex items-center gap-2 text-purple-600">
-                                                                <ScanHeart className="flex-none" />
-                                                                <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current?.cur_score ?? "?"} pts</span>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="flex items-center gap-2 text-amber-600">
-                                                                <Flag className="flex-none" />
-                                                                <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current?.cur_score ?? "?"} pts</span>
-                                                            </div>
-                                                        )}
-                                                        <div className="flex items-center gap-2 text-green-600">
-                                                            <CircleCheckBig />
-                                                            <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current?.solve_count ?? "?"} solves</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                
-                                                { curChallenge?.description != "" ? (
-                                                    <div className="flex flex-col gap-0">
-                                                        <Mdx source={curChallenge.description ?? ""} />
-                                                    </div>
-                                                ) : (
-                                                    <span>题目简介为空哦</span>
-                                                ) }
-                                            </div>
-                                        )}
-
-                                        { curChallenge?.containers?.length && (
-                                            <div className="flex flex-col gap-4 mb-8">
-                                                <div className="flex items-center gap-2 px-5 py-[9px] border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md select-none">
-                                                    <Package />
-                                                    <span className="font-bold text-lg">靶机列表</span>
-                                                    <div className="flex-1" />
-                                                    { !containerRunningTrigger ? (
-                                                        <div className="flex gap-2 items-center">
-                                                            <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-foreground bg-background hover:bg-foreground/20 [&_svg]:size-[24px] text-foreground"
-                                                                onClick={handleLaunchContainer}
-                                                                disabled={containerLaunching}
-                                                            >
-                                                                { containerLaunching ? (
-                                                                    <>
-                                                                        <Loader2 className="animate-spin" />
-                                                                        <span className="font-bold text-[1.125em]">Launching</span>
-                                                                    </>
+                                    ) : <></>}
+                                    <div className="absolute bottom-2 right-2 flex flex-col gap-2 p-2 opacity-100 ease-in-out">
+                                        {
+                                            curChallenge && curChallenge.hints?.map((value, index) => {
+                                                return (
+                                                    <div className="flex" key={index}>
+                                                        <div className="flex-1" />
+                                                        <div className={`inline-flex bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 pt-2 pb-2 pl-3 pr-[25px] rounded-xl shadow-lg shadow-yellow-500/30 min-w-0 transition-transform duration-300 ease-in-out text-black text-md gap-2 ${!foldedItems[index] ? "translate-x-[calc(30px)]" : "translate-x-[calc(100%-80px)]"}`}>
+                                                            {
+                                                                !foldedItems[index] ? (
+                                                                    <FoldHorizontal className="hover:text-white flex-shrink-0 transition-colors duration-200 ease-in-out" onClick={() => {
+                                                                        toggleFolded(index)
+                                                                    }} />
                                                                 ) : (
-                                                                    <>
-                                                                        <CirclePower />
-                                                                        <span className="font-bold text-[1.125em]">Launch</span>
-                                                                    </>
-                                                                ) }
-                                                            </Button>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex gap-2 items-center">
-                                                            <div className="h-[34px] rounded-[10px] border-2 border-green-500 px-2 text-green-500 items-center flex justify-center gap-2">
-                                                                <AlarmClock />
-                                                                <TimerDisplay target_time={containerInfo[0].close_time ?? dayjs()} className="font-bold text-md" />
+                                                                    <UnfoldHorizontal className="hover:text-white flex-shrink-0 transition-colors duration-200 ease-in-out" onClick={() => {
+                                                                        toggleFolded(index)
+                                                                    }} />
+                                                                )
+                                                            }
+                                                            <div className="inline-flex gap-1">
+                                                                <span className="font-bold w-[50px] flex-shrink-0 overflow-hidden font-mono select-none">Hint{index + 1}</span>
+                                                                <span className="font-bold">{value.content}</span>
                                                             </div>
-                                                            <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-blue-400 text-blue-400 bg-background dark:hover:bg-blue-200/20 hover:bg-blue-200/60 [&_svg]:size-[24px]"
-                                                                onClick={handleExtendContainer}
-                                                            >
-                                                                <ClockArrowUp/>
-                                                                <span className="font-bold text-[1.125em]">延长靶机</span>
-                                                            </Button>
-                                                            <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-red-400 text-red-400 bg-background dark:hover:bg-red-200/20 hover:bg-red-200/60 [&_svg]:size-[24px]"
-                                                                onClick={handleDestoryContainer}
-                                                            >
-                                                                <CircleX/>
-                                                                <span className="font-bold text-[1.125em]">销毁</span>
-                                                            </Button>
                                                         </div>
-                                                    ) }
-                                                </div>
-
-                                                <div className={`grid gap-4 mt-4 dark:opacity-90 ${ containerInfo.length >= 3 ? "grid-cols-[repeat(auto-fill,minmax(320px,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(320px,320px))]" }`}>
-                                                    { containerInfo.map((container, i) => (
-                                                        <div className="stack" key={i}>
-                                                            <div className="card p-4 flex flex-col select-none">
-                                                                <span className="font-bold text-xl mb-2">{ container.container_name }</span>
-                                                                { container.container_ports?.length ? (
-                                                                    <div className="flex flex-col gap-2">
-                                                                        { container.container_ports.map((port, j) => (
-                                                                            <div key={j} className="flex flex-col gap-2">
-                                                                                <span className="text-sm mb-[-5px] font-bold">{ port.port_name }:</span>
-                                                                                <div className="flex">
-                                                                                    <div className="border-2 border-foreground px-2 rounded-md flex items-center justify-center hover:bg-foreground/30 transition-colors duration-300"
-                                                                                        onClick={() => {
-                                                                                            const status = copy(`${port.ip}:${port.port}`)
-                                                                                            if (status) {
-                                                                                                toast.success(t("copied"), { position: "top-center" })
-                                                                                            } else {
-                                                                                                toast.success(t("fail_copy"), { position: "top-center" })
-                                                                                            }
-                                                                                        }}
-                                                                                    >
-                                                                                        <span className="font-bold text-sm">{ port.ip }:{ port.port }</span>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        )) }
+                                                    </div>
+                                                )
+                                            })
+                                        }
+                                    </div>
+                                    <div className="flex h-full">
+                                        <SafeComponent>
+                                            <MacScrollbar
+                                                className="p-10 w-full flex flex-col"
+                                                skin={theme === "dark" ? "dark" : "light"}
+                                            >
+                                                {curChallenge?.challenge_name && (
+                                                    <div className="flex flex-col gap-4 mb-4">
+                                                        <div className="flex items-center gap-2 px-5 py-3 border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md">
+                                                            <Info />
+                                                            <span className="font-bold text-lg">题目信息 - {curChallenge.challenge_name}</span>
+                                                            <div className="flex-1" />
+                                                            <div className="flex items-center gap-4">
+                                                                {challengeSolvedList[curChallenge.challenge_id || 0] ? (
+                                                                    <div className="flex items-center gap-2 text-purple-600">
+                                                                        <ScanHeart className="flex-none" />
+                                                                        <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current?.cur_score ?? "?"} pts</span>
                                                                     </div>
                                                                 ) : (
-                                                                    <>
-                                                                        <div className="flex-1" />
-                                                                        <div className="flex justify-end">
-                                                                            <div className="flex gap-2 items-center">
-                                                                                <span className="font-bold text-xl">还没有启动哦</span>
-                                                                            </div>
-                                                                        </div>
-                                                                    </>
-                                                                ) }
+                                                                    <div className="flex items-center gap-2 text-amber-600">
+                                                                        <Flag className="flex-none" />
+                                                                        <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current?.cur_score ?? "?"} pts</span>
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex items-center gap-2 text-green-600">
+                                                                    <CircleCheckBig />
+                                                                    <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current?.solve_count ?? "?"} solves</span>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ) }
 
-                                        { curChallenge?.attachments?.length ? (
-                                            <div className="flex flex-col gap-2 mb-4">
-                                                <div className="flex items-center gap-2 px-5 py-3 border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md">
-                                                    <Paperclip />
-                                                    <span className="font-bold text-lg">附件列表</span>
-                                                </div>
-                                                { curChallenge?.attachments?.map((attach, i) => (
-                                                    <Button variant="ghost" key={i} onClick={() => handleDownload()} className="pl-4 pr-4 pt-0 pb-0 text-md [&_svg]:size-5 transition-all duration-300" disabled={downloadName != ""}>
-                                                        <div className="flex gap-[4px] items-center">
-                                                            {attach.attach_type == AttachmentType.STATICFILE ? (
-                                                                // 有文件大小的是本地附件
-                                                                <>
-                                                                    <CloudDownload />
-                                                                    <span className=""> {attach.attach_name} </span>
-                                                                </>
+                                                        {curChallenge?.description != "" ? (
+                                                            <div className="flex flex-col gap-0">
+                                                                <Mdx source={curChallenge.description ?? ""} />
+                                                            </div>
+                                                        ) : (
+                                                            <span>题目简介为空哦</span>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {curChallenge?.containers?.length && (
+                                                    <div className="flex flex-col gap-4 mb-8">
+                                                        <div className="flex items-center gap-2 px-5 py-[9px] border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md select-none">
+                                                            <Package />
+                                                            <span className="font-bold text-lg">靶机列表</span>
+                                                            <div className="flex-1" />
+                                                            {!containerRunningTrigger ? (
+                                                                <div className="flex gap-2 items-center">
+                                                                    <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-foreground bg-background hover:bg-foreground/20 [&_svg]:size-[24px] text-foreground"
+                                                                        onClick={handleLaunchContainer}
+                                                                        disabled={containerLaunching}
+                                                                    >
+                                                                        {containerLaunching ? (
+                                                                            <>
+                                                                                <Loader2 className="animate-spin" />
+                                                                                <span className="font-bold text-[1.125em]">Launching</span>
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <CirclePower />
+                                                                                <span className="font-bold text-[1.125em]">Launch</span>
+                                                                            </>
+                                                                        )}
+                                                                    </Button>
+                                                                </div>
                                                             ) : (
-                                                                // 远程附件
-                                                                <>
-                                                                    <Link />
-                                                                    <span className=""> {t("external_links")} </span>
-                                                                </>
+                                                                <div className="flex gap-2 items-center">
+                                                                    <div className="h-[34px] rounded-[10px] border-2 border-green-500 px-2 text-green-500 items-center flex justify-center gap-2">
+                                                                        <AlarmClock />
+                                                                        <TimerDisplay target_time={containerExpireTime} className="font-bold text-md" />
+                                                                    </div>
+                                                                    <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-blue-400 text-blue-400 bg-background dark:hover:bg-blue-200/20 hover:bg-blue-200/60 [&_svg]:size-[24px]"
+                                                                        onClick={handleExtendContainer}
+                                                                    >
+                                                                        <ClockArrowUp />
+                                                                        <span className="font-bold text-[1.125em]">延长靶机</span>
+                                                                    </Button>
+                                                                    <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-red-400 text-red-400 bg-background dark:hover:bg-red-200/20 hover:bg-red-200/60 [&_svg]:size-[24px]"
+                                                                        onClick={handleDestoryContainer}
+                                                                    >
+                                                                        <CircleX />
+                                                                        <span className="font-bold text-[1.125em]">销毁</span>
+                                                                    </Button>
+                                                                </div>
                                                             )}
                                                         </div>
-                                                    </Button>
-                                                )) }
-                                            </div>
-                                        ) : (<></>)}
-                                    </MacScrollbar>
-                                </SafeComponent>
-                            </div>
-                        </ResizableScrollablePanel>
-                        {/* {curChallenge?.challenge_name ? (
-                            <>
-                                <ResizableHandle withHandle={true} className="transition-colors duration-300" />
-                                <ResizableScrollablePanel defaultSize={40} minSize={10}>
-                                    <div className="flex flex-col p-0 h-full resize-y">
-                                        {userName ? (
-                                            <></>
-                                            // FIXME 终端需要修复
-                                            // <GameTerminal challenge={curChallenge} gameid={id} pSize={resizeTrigger!} userName={gameInfo?.team_info?.team_name || ""} setChallengeSolved={setChallengeSolved} />
-                                        ) : (<></>)}
+
+                                                        <div className={`flex flex-col gap-4 mt-4 select-none`}>
+                                                            {containerInfo.map((container, i) => (
+                                                                <div key={i} className="flex flex-col gap-[2px]">
+                                                                    <span className="font-bold text-xl mb-2">{container.container_name}</span>
+                                                                    <div className="flex gap-2 items-center">
+                                                                        <Network />
+                                                                        {container.container_ports?.length ? (
+                                                                            <div className="flex gap-2">
+                                                                                {container.container_ports.map((port, j) => (
+                                                                                    <div key={j} className="flex gap-2 items-center">
+                                                                                        <span className="text-sm font-bold">{port.port_name}:</span>
+                                                                                        <div className="border-2 border-foreground px-2 rounded-md flex items-center justify-center hover:bg-foreground/30 transition-colors duration-300"
+                                                                                            onClick={() => {
+                                                                                                const status = copy(`${port.ip}:${port.port}`)
+                                                                                                if (status) {
+                                                                                                    toast.success(t("copied"), { position: "top-center" })
+                                                                                                } else {
+                                                                                                    toast.success(t("fail_copy"), { position: "top-center" })
+                                                                                                }
+                                                                                            }}
+                                                                                        >
+                                                                                            <span className="font-bold text-sm">{port.ip}:{port.port}</span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        ) : (
+                                                                            <span className="font-bold">等待启动</span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {curChallenge?.attachments?.length ? (
+                                                    <div className="flex flex-col gap-2 mb-4">
+                                                        <div className="flex items-center gap-2 px-5 py-3 border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md">
+                                                            <Paperclip />
+                                                            <span className="font-bold text-lg">附件列表</span>
+                                                        </div>
+                                                        {curChallenge?.attachments?.map((attach, i) => (
+                                                            <Button variant="ghost" key={i} onClick={() => handleDownload()} className="pl-4 pr-4 pt-0 pb-0 text-md [&_svg]:size-5 transition-all duration-300" disabled={downloadName != ""}>
+                                                                <div className="flex gap-[4px] items-center">
+                                                                    {attach.attach_type == AttachmentType.STATICFILE ? (
+                                                                        // 有文件大小的是本地附件
+                                                                        <>
+                                                                            <CloudDownload />
+                                                                            <span className=""> {attach.attach_name} </span>
+                                                                        </>
+                                                                    ) : (
+                                                                        // 远程附件
+                                                                        <>
+                                                                            <Link />
+                                                                            <span className=""> {t("external_links")} </span>
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                            </Button>
+                                                        ))}
+                                                    </div>
+                                                ) : (<></>)}
+                                            </MacScrollbar>
+                                        </SafeComponent>
                                     </div>
                                 </ResizableScrollablePanel>
-                            </>
-                        ) : (<></>)} */}
-                    </ResizablePanelGroup>
-                </main>
+                            </ResizablePanelGroup>
+                        </div>
+                    </div>
+                </div>
             </SidebarProvider>
         </>
     )

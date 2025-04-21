@@ -155,8 +155,6 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 
 	team_status := models.ParticipateUnRegistered
 
-	log.Printf("UserGetGameDetailWithTeamInfo user_id: %s", user_id)
-
 	// 查找队伍
 	var team models.Team
 	if err := dbtool.DB().Where("? = ANY(team_members)", user_id).First(&team).Error; err != nil {
@@ -332,18 +330,19 @@ func UserGetGameChallenge(c *gin.Context) {
 	}
 
 	result := gin.H{
-		"challenge_id":     gameChallenge.Challenge.ChallengeID,
-		"challenge_name":   gameChallenge.Challenge.Name,
-		"description":      gameChallenge.Challenge.Description,
-		"total_score":      gameChallenge.GameChallenge.TotalScore,
-		"cur_score":        gameChallenge.GameChallenge.CurScore,
-		"hints":            visibleHints,
-		"belong_stage":     gameChallenge.GameChallenge.BelongStage,
-		"solve_count":      gameChallenge.SolveCount,
-		"category":         gameChallenge.Challenge.Category,
-		"attachments":      userAttachments,
-		"container_type":   gameChallenge.Challenge.ContainerType,
-		"container_status": models.NoContainer,
+		"challenge_id":         gameChallenge.Challenge.ChallengeID,
+		"challenge_name":       gameChallenge.Challenge.Name,
+		"description":          gameChallenge.Challenge.Description,
+		"total_score":          gameChallenge.GameChallenge.TotalScore,
+		"cur_score":            gameChallenge.GameChallenge.CurScore,
+		"hints":                visibleHints,
+		"belong_stage":         gameChallenge.GameChallenge.BelongStage,
+		"solve_count":          gameChallenge.SolveCount,
+		"category":             gameChallenge.Challenge.Category,
+		"attachments":          userAttachments,
+		"container_type":       gameChallenge.Challenge.ContainerType,
+		"container_status":     models.NoContainer,
+		"container_expiretime": nil,
 	}
 
 	// 存活靶机处理
@@ -369,7 +368,6 @@ func UserGetGameChallenge(c *gin.Context) {
 		tempConfig := gin.H{
 			"container_name":  container.Name,
 			"container_ports": make(models.ExposePorts, 0),
-			"close_time":      nil,
 		}
 
 		if len(containers) == 1 {
@@ -379,10 +377,6 @@ func UserGetGameChallenge(c *gin.Context) {
 					break
 				}
 			}
-
-			// log.Printf("container: %+v\n", containers[0])
-
-			tempConfig["close_time"] = containers[0].ExpireTime
 		}
 
 		// var tempPorts models.ExposePorts = make(models.ExposePorts, 0)
@@ -402,8 +396,10 @@ func UserGetGameChallenge(c *gin.Context) {
 
 	if len(containers) > 0 {
 		result["container_status"] = containers[0].ContainerStatus
+		result["container_expiretime"] = containers[0].ExpireTime
 	} else {
 		result["container_status"] = models.NoContainer
+		result["container_expiretime"] = nil
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -599,7 +595,6 @@ func UserCreateGameContainer(c *gin.Context) {
 		"code":    200,
 		"message": "OK",
 	})
-	return
 }
 
 func UserCloseGameContainer(c *gin.Context) {
@@ -658,7 +653,6 @@ func UserCloseGameContainer(c *gin.Context) {
 		"code":    200,
 		"message": "OK",
 	})
-	return
 }
 
 func UserExtendGameContainer(c *gin.Context) {
@@ -725,7 +719,6 @@ func UserExtendGameContainer(c *gin.Context) {
 		"code":    200,
 		"message": "OK",
 	})
-	return
 }
 
 func UserGetGameChallengeContainerInfo(c *gin.Context) {
@@ -797,15 +790,15 @@ func UserGetGameChallengeContainerInfo(c *gin.Context) {
 	gameChallenge := gameChallenges[0]
 
 	result := gin.H{
-		"container_status": containers[0].ContainerStatus,
-		"containers":       make([]gin.H, 0, len(*gameChallenge.Challenge.ContainerConfig)),
+		"container_status":     containers[0].ContainerStatus,
+		"containers":           make([]gin.H, 0, len(*gameChallenge.Challenge.ContainerConfig)),
+		"container_expiretime": containers[0].ExpireTime,
 	}
 
 	for _, container := range *gameChallenge.Challenge.ContainerConfig {
 		tempConfig := gin.H{
 			"container_name":  container.Name,
 			"container_ports": make(models.ExposePorts, 0),
-			"close_time":      nil,
 		}
 
 		if len(containers) == 1 {
@@ -815,10 +808,6 @@ func UserGetGameChallengeContainerInfo(c *gin.Context) {
 					break
 				}
 			}
-
-			// log.Printf("container: %+v\n", containers[0])
-
-			tempConfig["close_time"] = containers[0].ExpireTime
 		}
 
 		result["containers"] = append(result["containers"].([]gin.H), tempConfig)
@@ -828,5 +817,4 @@ func UserGetGameChallengeContainerInfo(c *gin.Context) {
 		"code": 200,
 		"data": result,
 	})
-	return
 }

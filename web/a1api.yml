@@ -803,6 +803,9 @@ paths:
                     properties:
                       container_status:
                         $ref: '#/components/schemas/ContainerStatus'
+                      container_expiretime:
+                        type: string
+                        format: date-time
                       containers:
                         type: array
                         items:
@@ -1321,6 +1324,9 @@ components:
           $ref: '#/components/schemas/ChallengeContainerType'
         container_status:
           $ref: '#/components/schemas/ContainerStatus'
+        container_expiretime:
+          type: string
+          format: date-time
         containers:
           type: array
           items:
@@ -1509,9 +1515,6 @@ components:
       properties:
         container_name:
           type: string
-        close_time:
-          type: string
-          format: date-time
         container_ports:
           type: array
           items:

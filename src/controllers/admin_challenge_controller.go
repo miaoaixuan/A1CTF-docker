@@ -11,6 +11,7 @@ import (
 
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
+	k8stool "a1ctf/src/utils/k8s_tool"
 )
 
 type ListChallengePayload struct {
@@ -112,8 +113,15 @@ func AdminCreateChallenge(c *gin.Context) {
 		return
 	}
 
-	payload.CreateTime = time.Now().UTC()
+	if err := k8stool.ValidContainerConfig(*payload.ContainerConfig); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": err.Error(),
+		})
+		return
+	}
 
+	payload.CreateTime = time.Now().UTC()
 	payload.ChallengeID = nil
 
 	if err := dbtool.DB().Create(&payload).Error; err != nil {
@@ -191,6 +199,14 @@ func AdminUpdateChallenge(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
 			"message": "Invalid request payload",
+		})
+		return
+	}
+
+	if err := k8stool.ValidContainerConfig(*payload.ContainerConfig); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": err.Error(),
 		})
 		return
 	}

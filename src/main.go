@@ -191,6 +191,7 @@ func StartLoopEvent() {
 		gocron.NewTask(
 			jobs.UpdateActivateGames,
 		),
+		gocron.WithSingletonMode(gocron.LimitModeWait),
 	)
 
 	s.NewJob(
@@ -200,6 +201,7 @@ func StartLoopEvent() {
 		gocron.NewTask(
 			jobs.ContainerOperationsJob,
 		),
+		gocron.WithSingletonMode(gocron.LimitModeWait),
 	)
 
 	s.Start()
