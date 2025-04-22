@@ -166,7 +166,7 @@ func ContainerOperationsJob() {
 		}
 
 		if err != nil {
-			log.Printf("Failed to stop container: %v\n", err)
+			log.Printf("Failed to do container operation: %v\n", err)
 			if err := dbtool.DB().Model(&container).Updates(map[string]interface{}{
 				"container_status": models.ContainerError,
 			}).Error; err != nil {

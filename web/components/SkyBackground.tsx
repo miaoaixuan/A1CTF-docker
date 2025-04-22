@@ -18,17 +18,17 @@ const SkyBackground: React.FC<SkyBackgroundProps> = ({ theme }) => {
             // animate={{ opacity: 1, scale: 1 }} // 动画目标状态
             // exit={{ opacity: 0, scale: 1.05 }} // 退出状态
             // transition={{ duration: 0.4, ease: "easeInOut" }} // 动画持续时间和缓动函数
-            className="absolute inset-0 overflow-hidden"
-            animate={{
-                background: theme === "dark"
-                    ? "linear-gradient(to bottom, #1E3A8A, #0D1231)" // 深色模式背景渐变
-                    : "linear-gradient(to bottom, #BFDBFE, #93C5FD)", // 浅色模式背景渐变
-            }}
-            initial={false} // 直接从当前状态开始
-            transition={{
-                duration: 0.8, // 渐变动画持续时间
-                ease: "easeInOut", // 使用平滑缓动
-            }}
+                className="absolute inset-0 overflow-hidden"
+                animate={{
+                    background: theme === "dark"
+                        ? "linear-gradient(to bottom, #1E3A8A, #0D1231)" // 深色模式背景渐变
+                        : "linear-gradient(to bottom, #BFDBFE, #93C5FD)", // 浅色模式背景渐变
+                }}
+                initial={false} // 直接从当前状态开始
+                transition={{
+                    duration: 0.8, // 渐变动画持续时间
+                    ease: "easeInOut", // 使用平滑缓动
+                }}
             >
             {theme === 'dark' ? (
                 // 星空背景
@@ -57,16 +57,16 @@ const SkyBackground: React.FC<SkyBackgroundProps> = ({ theme }) => {
                 ))
             ) : (
                 // 云朵背景
-                Array.from({ length: 4 }).map((_, i) => (
+                Array.from({ length: 3 + Math.random() * 4 }).map((_, i) => (
                     <motion.div
                         key={i}
                         className="absolute opacity-80"
-                        initial={{ x: Math.random() * 50 + 10 }}
+                        initial={{ x: Math.random() * 10 + Math.random() * 20 + Math.random() * 20 + 10 }}
                         animate={{ x: 120 }}
                         transition={{
                             duration: Math.random() * 1 + 16, // 每个云朵的动画时间随机
                             repeat: Infinity,
-                            repeatType: 'loop',
+                            repeatType: 'reverse',
                             ease: 'linear',
                         }}
                         style={{
@@ -110,4 +110,3 @@ const SkyBackground: React.FC<SkyBackgroundProps> = ({ theme }) => {
 }
 
 export default SkyBackground
-

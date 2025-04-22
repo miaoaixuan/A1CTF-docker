@@ -262,6 +262,14 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
 
                         setRefreshContainerTrigger(false)
                     }
+                }).catch(() => {
+                    toast.error("靶机开启失败", { position: "top-center" })
+                    setContainerLaunching(false)
+                    setContainerRunningTrigger(false)
+
+                    clearInterval(inter)
+
+                    setRefreshContainerTrigger(false)
                 })
             }, randomInt(3000, 5000))
 
@@ -710,7 +718,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             {/* 抢血动画 */}
             <SolvedAnimation blood={blood} setBlood={setBlood} bloodMessage={bloodMessage} />
             {/* 提交 Flag 组件 */}
-            <SubmitFlagView lng={lng} />
+            <SubmitFlagView lng={lng} curChallenge={curChallenge} />
 
             {/* 比赛各种状态页 */}
             <>
