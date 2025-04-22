@@ -175,7 +175,18 @@ CREATE TABLE "notices" (
     PRIMARY KEY (notice_id)
 );
 
-
 CREATE INDEX idx_notices_game ON notices(game_id);
 CREATE INDEX idx_notices_time ON notices(create_time);
 CREATE INDEX idx_notices_category ON notices USING GIN(notice_category);
+
+CREATE TABLE "team_flags" (
+    "flag_id" BIGSERIAL NOT NULL,
+    "flag_content" text NOT NULL,
+    "team_id" BIGSERIAL NOT NULL REFERENCES teams(team_id),
+    "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
+    "challenge_id" BIGSERIAL NOT NULL REFERENCES challenges(challenge_id),
+    PRIMARY KEY (flag_id)
+);
+
+CREATE INDEX idx_team_flags_content ON team_flags(flag_content);
+CREATE INDEX idx_team_flags_content ON team_flags(flag_content);

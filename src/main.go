@@ -285,6 +285,7 @@ func main() {
 				1*time.Second,
 				cacheByCookie,
 			), controllers.GameStatusMiddleware(true), controllers.UserGetGameDetailWithTeamInfo)
+
 			userGameGroup.GET("/:game_id/challenges", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false), controllers.UserGetGameChallenges)
 
 			// 查询比赛中的某道题

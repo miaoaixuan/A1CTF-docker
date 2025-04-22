@@ -818,3 +818,101 @@ func UserGetGameChallengeContainerInfo(c *gin.Context) {
 		"data": result,
 	})
 }
+
+func UserGameChallengeSubmitFlag(c *gin.Context) {
+	game := c.MustGet("game").(models.Game)
+	team := c.MustGet("team").(models.Team)
+
+	challengeIDStr := c.Param("challenge_id")
+	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid challenge ID",
+		})
+		c.Abort()
+		return
+	}
+
+	var containers []models.Container
+	if err := dbtool.DB().Where("challenge_id = ? AND team_id = ? AND (container_status = ? OR container_status = ? OR container_status = ?)", challengeID, team.TeamID, models.ContainerRunning, models.ContainerQueueing, models.ContainerStarting).Find(&containers).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load containers",
+		})
+		return
+	}
+
+	if len(containers) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Launch a container first.",
+		})
+		return
+	}
+
+	if len(containers) != 1 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "System error.",
+		})
+		return
+	}
+
+	var gameChallenges []struct {
+		models.GameChallenge
+		models.Challenge
+	}
+
+	// 使用 Preload 进行关联查询
+	if err := dbtool.DB().Table("game_challenges").
+		Joins("LEFT JOIN challenges ON game_challenges.challenge_id = challenges.challenge_id").
+		Where("game_id = ? and game_challenges.challenge_id = ?", game.GameID, challengeID).
+		Scan(&gameChallenges).Error; err != nil {
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load game challenges",
+		})
+		return
+	}
+
+	if len(gameChallenges) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":    404,
+			"message": "Challenge not found",
+		})
+		return
+	}
+
+	gameChallenge := gameChallenges[0]
+
+	result := gin.H{
+		"container_status":     containers[0].ContainerStatus,
+		"containers":           make([]gin.H, 0, len(*gameChallenge.Challenge.ContainerConfig)),
+		"container_expiretime": containers[0].ExpireTime,
+	}
+
+	for _, container := range *gameChallenge.Challenge.ContainerConfig {
+		tempConfig := gin.H{
+			"container_name":  container.Name,
+			"container_ports": make(models.ExposePorts, 0),
+		}
+
+		if len(containers) == 1 {
+			for _, container_expose := range containers[0].ContainerExposeInfos {
+				if container_expose.ContainerName == container.Name {
+					tempConfig["container_ports"] = container_expose.ExposePorts
+					break
+				}
+			}
+		}
+
+		result["containers"] = append(result["containers"].([]gin.H), tempConfig)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": result,
+	})
+}
