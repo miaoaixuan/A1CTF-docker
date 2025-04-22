@@ -640,7 +640,7 @@ export function CreateChallengeView({ lng } : { lng: string }) {
                                         <FormMessage className="text-[14px]" />
                                     </div>
                                     <FormControl>
-                                        <Textarea {...field} />
+                                        <Textarea {...field} className="h-[300px]" />
                                     </FormControl>
                                     <FormDescription>
                                         题目简介

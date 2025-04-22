@@ -84,6 +84,7 @@ import TimerDisplay from "./modules/TimerDisplay";
 import ChallengesViewHeader from "./modules/ChallengesViewHeader";
 import SubmitFlagView from "./modules/SubmitFlagView";
 import { Progress } from "./ui/progress";
+import FileDownloader from "./modules/FileDownloader";
 
 const GameTerminal = dynamic(
     () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
@@ -545,119 +546,6 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
         }
     }, [loadingVisiblity])
 
-    const getAttachmentName = (url: string) => {
-        const parts = url.split("/")
-        return parts[parts.length - 1]
-    }
-
-    const formatFileSize = (bytes: number): string => {
-        if (bytes === 0) return '0 Bytes';
-        
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    };
-    
-    const formatDownloadSpeed = (bytesPerSecond: number): string => {
-        if (bytesPerSecond === 0) return '0 B/s';
-        
-        const k = 1024;
-        const sizes = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
-        const i = Math.floor(Math.log(bytesPerSecond) / Math.log(k));
-        
-        return parseFloat((bytesPerSecond / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    };
-    
-    const handleDownload = (attach: UserAttachmentConfig) => {
-        const url: string = attach.attach_url ?? "";
-    
-        if (attach.attach_type == AttachmentType.STATICFILE || attach.attach_type == AttachmentType.REMOTEFILE) {
-            const fileName = attach.attach_name
-            setDownloadName(fileName);
-    
-            const fetchFile = async () => {
-                try {
-                    const response = await fetch(url);
-                    const contentLength = response.headers.get("Content-Length") || "0";
-                    if (!response.ok) {
-                        throw new Error("Network response was not ok");
-                    }
-    
-                    const reader = response.body!.getReader();
-                    const totalBytes = parseInt(contentLength, 10);
-                    let receivedBytes = 0;
-                    let startTime = Date.now();
-                    let lastUpdateTime = startTime;
-                    let lastReceivedBytes = 0;
-    
-                    const chunks: Uint8Array[] = [];
-                    const pump = async () => {
-                        const { done, value } = await reader.read();
-                        if (done) {
-                            const blob = new Blob(chunks);
-                            const downloadUrl = URL.createObjectURL(blob);
-    
-                            setTimeout(() => {
-                                setDownloadName("");
-                                setAttachDownloadProgress(0);
-    
-                                setTimeout(() => {
-                                    const a = document.createElement("a");
-                                    a.href = downloadUrl;
-                                    a.download = dayjs().format("HHmmss") + "_" + fileName;
-                                    a.click();
-                                    URL.revokeObjectURL(downloadUrl);
-                                }, 300);
-                            }, 1500);
-    
-                            return;
-                        }
-    
-                        chunks.push(value);
-                        receivedBytes += value.length;
-                        
-                        const now = Date.now();
-                        const timeElapsed = (now - lastUpdateTime) / 1000; // 转换为秒
-                        
-                        // 每0.5秒更新一次速度显示，避免闪烁
-                        if (timeElapsed > 0.2) {
-                            const bytesSinceLastUpdate = receivedBytes - lastReceivedBytes;
-                            const currentSpeed = bytesSinceLastUpdate / timeElapsed;
-                            
-                            setDownloadSpeed((prev) => ({
-                                ...prev,
-                                [attach.attach_hash ?? ""]: {
-                                    size: formatFileSize(totalBytes),
-                                    progress: Math.min(100, (receivedBytes / totalBytes) * 100),
-                                    speed: formatDownloadSpeed(currentSpeed),
-                                }
-                            }));
-                            
-                            lastUpdateTime = now;
-                            lastReceivedBytes = receivedBytes;
-                        }
-    
-                        pump();
-                    };
-    
-                    pump();
-                } catch (error) {
-                    console.error("Download failed:", error);
-                    setDownloadName("");
-                    setAttachDownloadProgress(0);
-                }
-            };
-    
-            setTimeout(() => {
-                fetchFile();
-            }, 500);
-        } else {
-            setRedirectURL(url);
-        }
-    };
-
     const submitTeam = () => {
         // TODO 创建比赛队伍逻辑重写
         // if (curChoosedTeam != -1) {
@@ -738,6 +626,19 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             setContainerInfo(newContainers)
             setContainerExpireTime(null)
         })
+    }
+
+    const handleCountdownFinish = () => {
+        setContainerRunningTrigger(false)
+
+        const newContainers = containerInfo
+
+        for (let i = 0; i < newContainers.length; i++) {
+            newContainers[i].container_ports = []
+        }
+
+        setContainerInfo(newContainers)
+        setContainerExpireTime(null)
     }
 
     return (
@@ -1006,7 +907,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                     <div className="flex h-full">
                                         <SafeComponent>
                                             <MacScrollbar
-                                                className="p-10 w-full flex flex-col"
+                                                className="p-5 lg:p-10 w-full flex flex-col"
                                                 skin={theme === "dark" ? "dark" : "light"}
                                             >
                                                 {curChallenge?.challenge_name && (
@@ -1015,10 +916,10 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                             <Info />
                                                             <span className="font-bold text-lg">题目信息 - {curChallenge.challenge_name}</span>
                                                             <div className="flex-1" />
-                                                            <div className="flex items-center gap-4">
+                                                            <div className="items-center gap-4 hidden lg:flex">
                                                                 {challengeSolvedList[curChallenge.challenge_id || 0] ? (
                                                                     <div className="flex items-center gap-2 text-purple-600">
-                                                                        <ScanHeart className="flex-none" />
+                                                                        <ScanHeart className="flex-none " />
                                                                         <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current?.cur_score ?? "?"} pts</span>
                                                                     </div>
                                                                 ) : (
@@ -1044,7 +945,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                     </div>
                                                 )}
 
-                                                {curChallenge?.containers?.length && (
+                                                { curChallenge?.containers?.length ? (
                                                     <div className="flex flex-col gap-4 mb-8">
                                                         <div className="flex items-center gap-2 px-5 py-[9px] border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md select-none">
                                                             <Package />
@@ -1073,7 +974,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                                 <div className="flex gap-2 items-center">
                                                                     <div className="h-[34px] rounded-[10px] border-2 border-green-500 px-2 text-green-500 items-center flex justify-center gap-2">
                                                                         <AlarmClock />
-                                                                        <TimerDisplay target_time={containerExpireTime} className="font-bold text-md" />
+                                                                        <TimerDisplay target_time={containerExpireTime} onFinishCallback={handleCountdownFinish} className="font-bold text-md" />
                                                                     </div>
                                                                     <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-blue-400 text-blue-400 bg-background dark:hover:bg-blue-200/20 hover:bg-blue-200/60 [&_svg]:size-[24px]"
                                                                         onClick={handleExtendContainer}
@@ -1125,7 +1026,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                             ))}
                                                         </div>
                                                     </div>
-                                                )}
+                                                ) : <></>}
 
                                                 {curChallenge?.attachments?.length ? (
                                                     <div className="flex flex-col gap-2 mb-4">
@@ -1133,39 +1034,9 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                             <Paperclip />
                                                             <span className="font-bold text-lg">附件列表</span>
                                                         </div>
-                                                        <div className="flex gap-6 mt-4">
-                                                            {curChallenge?.attachments?.map((attach, i) => (
-                                                                <Button variant="secondary" key={i} onClick={() => handleDownload(attach)} 
-                                                                    className="p-0 w-[240px] h-[100px] text-md [&_svg]:size-5 transition-all duration-300 hover:bg-foreground/20"
-                                                                    disabled={Object.keys(downloadSpeed).includes(attach.download_hash ?? "")}
-                                                                >
-                                                                    <div className={`flex flex-col p-4 w-full h-full ${!Object.keys(downloadSpeed).includes(attach.download_hash ?? "") ? "justify-center gap-2" : "justify-between" }`}>
-                                                                        <div className="flex items-center gap-2">
-                                                                            <File />
-                                                                            <span className="font-bold">{attach.attach_name}</span>
-                                                                        </div>
-                                                                        { Object.keys(downloadSpeed).includes(attach.download_hash ?? "") ? (
-                                                                            <>
-                                                                                <div className="flex gap-2">
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <Pickaxe />
-                                                                                        <span className="font-bold">15%</span>
-                                                                                    </div>
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <ArrowDownUp />
-                                                                                        <span className="font-bold">12MB/s</span>
-                                                                                    </div>
-                                                                                </div>
-                                                                                <Progress value={10} className="w-full" />
-                                                                            </>
-                                                                        ) : (
-                                                                            <div className="flex gap-2 items-center">
-                                                                                <FileDown />
-                                                                                <span>点击下载</span>
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                </Button>
+                                                        <div className="flex gap-6 mt-4 flex-col lg:flex-row">
+                                                            {curChallenge?.attachments?.map((attach, attach_index) => (
+                                                                <FileDownloader key={attach_index} attach={attach} setRedirectURL={setRedirectURL} />
                                                             ))}
                                                         </div>
                                                     </div>

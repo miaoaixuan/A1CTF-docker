@@ -983,7 +983,7 @@ export function CreateGameView({ lng }: { lng: string }) {
                                         <FormMessage className="text-[14px]" />
                                     </div>
                                     <FormControl>
-                                        <Textarea {...field} />
+                                        <Textarea {...field} className="h-[100px]" />
                                     </FormControl>
                                     <FormDescription>
                                         比赛简介
@@ -1002,7 +1002,7 @@ export function CreateGameView({ lng }: { lng: string }) {
                                         <FormMessage className="text-[14px]" />
                                     </div>
                                     <FormControl>
-                                        <Textarea {...field} />
+                                        <Textarea {...field} className="h-[300px]" />
                                     </FormControl>
                                     <FormDescription>
                                         比赛详细信息
@@ -1062,7 +1062,7 @@ export function CreateGameView({ lng }: { lng: string }) {
                                     render={({ field }) => (
                                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                                             <div className="space-y-0.5">
-                                                <FormLabel>是否隐藏</FormLabel>
+                                                <FormLabel>是否可见</FormLabel>
                                                 <FormDescription>
                                                     比赛是否可见
                                                 </FormDescription>

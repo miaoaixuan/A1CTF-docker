@@ -260,7 +260,7 @@ func AdminSearchChallenges(c *gin.Context) {
 		return
 	}
 
-	var data []gin.H
+	var data []gin.H = make([]gin.H, 0)
 	for _, challenge := range challenges {
 		data = append(data, gin.H{
 			"challenge_id": challenge.ChallengeID,

@@ -56,7 +56,7 @@ for item in problems:
             "challenge_id": 0,
             "container_config": [
                 {
-                    "name": "2025_web4",
+                    "name": "2025-web4",
                     "image": "127.0.0.1:6440/2025_web4",
                     "command": None,
                     "env": [
@@ -91,7 +91,7 @@ for item in problems:
                     ],
                     "expose_ports": [
                     {
-                        "name": "pwn_expose1",
+                        "name": "pwn-expose1",
                         "port": 70
                     }
                     ],
@@ -111,7 +111,7 @@ for item in problems:
                     ],
                     "expose_ports": [
                     {
-                        "name": "114514",
+                        "name": "port1",
                         "port": 71
                     }
                     ],
