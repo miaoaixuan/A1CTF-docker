@@ -40,7 +40,7 @@ const SubmitFlagView = ({ lng, curChallenge }: { lng: string, curChallenge: User
             { curChallenge && (
                 <div className="absolute bottom-5 right-5 z-10">
                     <Button
-                        className="w-[70px] h-[70px] rounded-[18px] backdrop-blur-sm bg-red-600/70 hover:bg-red-800/70 [&_svg]:size-9 flex p-0 items-center justify-center text-white"
+                        className="w-[67px] h-[67px] rounded-3xl backdrop-blur-sm bg-red-600/70 hover:bg-red-800/70 [&_svg]:size-9 flex p-0 items-center justify-center text-white"
                         onClick={() => setVisible(true)}
                     >
                         <Flag className="rotate-12" />

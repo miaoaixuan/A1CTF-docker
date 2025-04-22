@@ -32,7 +32,7 @@ import { useEffect, useRef, useState } from "react";
 // import { api, ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeCategory, ChallengeInfo, ChallengeType, ErrorMessage, TeamInfoModel, ParticipationStatus, ContainerStatus, ContainerInfoModel } from '@/utils/GZApi'
 
 import { api } from "@/utils/ApiHelper"
-import { AttachmentType, ContainerStatus, ErrorMessage, ExposePortInfo, GameNotice, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "@/utils/A1API"
+import { AttachmentType, ContainerStatus, ErrorMessage, ExposePortInfo, GameNotice, NoticeCategory, ParticipationStatus, UserAttachmentConfig, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "@/utils/A1API"
 
 
 import * as signalR from '@microsoft/signalr'
@@ -40,7 +40,7 @@ import * as signalR from '@microsoft/signalr'
 import dayjs from "dayjs";
 import { LoadingPage } from "./LoadingPage";
 import { Button } from "./ui/button";
-import { AlarmClock, AppWindow, Ban, CalendarClock, CircleCheckBig, CirclePower, CircleX, ClockArrowUp, CloudDownload, Container, Copy, EthernetPort, Files, Flag, FlaskConical, FoldHorizontal, Hourglass, Info, Link, ListCheck, Loader2, LoaderCircle, LoaderPinwheel, Network, NotebookPen, Package, PackageOpen, Paperclip, Pickaxe, PowerOff, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal, Users, X } from "lucide-react";
+import { AlarmClock, AppWindow, ArrowDownUp, Ban, CalendarClock, CircleCheckBig, CirclePower, CircleX, ClockArrowUp, CloudDownload, Container, Copy, EthernetPort, File, FileDown, Files, Flag, FlaskConical, FoldHorizontal, Hourglass, Info, Link, ListCheck, Loader2, LoaderCircle, LoaderPinwheel, Network, NotebookPen, Package, PackageOpen, Paperclip, Pickaxe, PowerOff, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal, Users, X } from "lucide-react";
 import { AxiosError } from "axios";
 
 import Image from "next/image";
@@ -83,6 +83,7 @@ import { JoinTeamDialog } from "./dialogs/JoinTeamDialog";
 import TimerDisplay from "./modules/TimerDisplay";
 import ChallengesViewHeader from "./modules/ChallengesViewHeader";
 import SubmitFlagView from "./modules/SubmitFlagView";
+import { Progress } from "./ui/progress";
 
 const GameTerminal = dynamic(
     () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
@@ -129,15 +130,14 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     const [curChallenge, setCurChallenge] = useState<UserDetailGameChallenge>()
     const curChallengeDetail = useRef<UserDetailGameChallenge>()
 
-    // 比赛信息
-    // const [gameDetail, setGameDeatail] = useState<GameDetailModel>({
-    //     teamToken: "",
-    //     writeupRequired: false,
-    //     writeupDeadline: 0,
-    //     challenges: undefined,
-    //     challengeCount: undefined,
-    //     rank: null,
-    // })
+    // 附件下载信息
+    interface DownloadInfo {
+        size: string;
+        progress: number;
+        speed: string;
+    };
+
+    const [downloadSpeed, setDownloadSpeed] = useState<Record<string, DownloadInfo>>({})
 
     // 前一个题目
     const prevChallenge = useRef<UserDetailGameChallenge>();
@@ -254,7 +254,9 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
 
                         clearInterval(inter)
                         setRefreshContainerTrigger(false)
-                    } else if (res.data.data.container_status != ContainerStatus.ContainerQueueing) {
+                    } else if (res.data.data.container_status != ContainerStatus.ContainerQueueing && 
+                        res.data.data.container_status != ContainerStatus.ContainerStarting
+                    ) {
                         setContainerLaunching(false)
                         setContainerRunningTrigger(false)
 
@@ -548,85 +550,112 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
         return parts[parts.length - 1]
     }
 
-    const handleDownload = () => {
-        // TODO 下载文件逻辑重写
-        // if (curChallenge.context?.url) {
-        //     const url = curChallenge.context?.url;
-
-        //     // 判断是否是本地附件
-        //     if (curChallenge.context.fileSize) {
-        //         const fileName = getAttachmentName(url);
-        //         setDownloadName(fileName);
-
-        //         // 开始下载
-        //         const fetchFile = async () => {
-        //             try {
-        //                 const response = await fetch(url);
-        //                 const contentLength = response.headers.get("Content-Length") || "";
-        //                 if (!response.ok) {
-        //                     throw new Error("Network response was not ok");
-        //                 }
-
-        //                 const reader = response.body!.getReader();
-        //                 const totalBytes = parseInt(contentLength, 10);
-        //                 let receivedBytes = 0;
-
-        //                 // 创建一个新的 Blob 来保存文件内容
-        //                 const chunks: Uint8Array[] = [];
-        //                 const pump = async () => {
-        //                     const { done, value } = await reader.read();
-        //                     if (done) {
-        //                         const blob = new Blob(chunks);
-        //                         const downloadUrl = URL.createObjectURL(blob);
-
-        //                         setTimeout(() => {
-        //                             setDownloadName("");  // 清除文件名
-        //                             setAttachDownloadProgress(0); // 重置进度条
-
-        //                             setTimeout(() => {
-        //                                 const a = document.createElement("a");
-        //                                 a.href = downloadUrl;
-        //                                 a.download = dayjs().format("HHmmss") + "_" + fileName;
-        //                                 a.click();
-        //                                 URL.revokeObjectURL(downloadUrl);
-        //                             }, 300)
-        //                         }, 1500)
-
-        //                         return;
-        //                     }
-
-        //                     // 保存当前的下载进度
-        //                     chunks.push(value);
-        //                     receivedBytes += value.length;
-        //                     const progress = Math.min(100, (receivedBytes / totalBytes) * 100);
-        //                     if (progress < 100) {
-        //                         setAttachDownloadProgress(progress);
-        //                     } else {
-        //                         setAttachDownloadProgress(100);
-        //                         setTimeout(() => {
-        //                             setAttachDownloadProgress(101);
-        //                         }, 500)
-        //                     }
-
-        //                     pump();  // 继续读取数据
-        //                 };
-
-        //                 pump();
-        //             } catch (error) {
-        //                 console.error("Download failed:", error);
-        //                 setDownloadName("");  // 清除文件名
-        //                 setAttachDownloadProgress(0); // 重置进度条
-        //             }
-        //         };
-
-        //         setTimeout(() => {
-        //             fetchFile();
-        //         }, 500)
-        //     } else {
-        //         // 如果是直接通过 URL 打开文件
-        //         setRedirectURL(url)
-        //     }
-        // }
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return '0 Bytes';
+        
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+    
+    const formatDownloadSpeed = (bytesPerSecond: number): string => {
+        if (bytesPerSecond === 0) return '0 B/s';
+        
+        const k = 1024;
+        const sizes = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
+        const i = Math.floor(Math.log(bytesPerSecond) / Math.log(k));
+        
+        return parseFloat((bytesPerSecond / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+    
+    const handleDownload = (attach: UserAttachmentConfig) => {
+        const url: string = attach.attach_url ?? "";
+    
+        if (attach.attach_type == AttachmentType.STATICFILE || attach.attach_type == AttachmentType.REMOTEFILE) {
+            const fileName = attach.attach_name
+            setDownloadName(fileName);
+    
+            const fetchFile = async () => {
+                try {
+                    const response = await fetch(url);
+                    const contentLength = response.headers.get("Content-Length") || "0";
+                    if (!response.ok) {
+                        throw new Error("Network response was not ok");
+                    }
+    
+                    const reader = response.body!.getReader();
+                    const totalBytes = parseInt(contentLength, 10);
+                    let receivedBytes = 0;
+                    let startTime = Date.now();
+                    let lastUpdateTime = startTime;
+                    let lastReceivedBytes = 0;
+    
+                    const chunks: Uint8Array[] = [];
+                    const pump = async () => {
+                        const { done, value } = await reader.read();
+                        if (done) {
+                            const blob = new Blob(chunks);
+                            const downloadUrl = URL.createObjectURL(blob);
+    
+                            setTimeout(() => {
+                                setDownloadName("");
+                                setAttachDownloadProgress(0);
+    
+                                setTimeout(() => {
+                                    const a = document.createElement("a");
+                                    a.href = downloadUrl;
+                                    a.download = dayjs().format("HHmmss") + "_" + fileName;
+                                    a.click();
+                                    URL.revokeObjectURL(downloadUrl);
+                                }, 300);
+                            }, 1500);
+    
+                            return;
+                        }
+    
+                        chunks.push(value);
+                        receivedBytes += value.length;
+                        
+                        const now = Date.now();
+                        const timeElapsed = (now - lastUpdateTime) / 1000; // 转换为秒
+                        
+                        // 每0.5秒更新一次速度显示，避免闪烁
+                        if (timeElapsed > 0.2) {
+                            const bytesSinceLastUpdate = receivedBytes - lastReceivedBytes;
+                            const currentSpeed = bytesSinceLastUpdate / timeElapsed;
+                            
+                            setDownloadSpeed((prev) => ({
+                                ...prev,
+                                [attach.attach_hash ?? ""]: {
+                                    size: formatFileSize(totalBytes),
+                                    progress: Math.min(100, (receivedBytes / totalBytes) * 100),
+                                    speed: formatDownloadSpeed(currentSpeed),
+                                }
+                            }));
+                            
+                            lastUpdateTime = now;
+                            lastReceivedBytes = receivedBytes;
+                        }
+    
+                        pump();
+                    };
+    
+                    pump();
+                } catch (error) {
+                    console.error("Download failed:", error);
+                    setDownloadName("");
+                    setAttachDownloadProgress(0);
+                }
+            };
+    
+            setTimeout(() => {
+                fetchFile();
+            }, 500);
+        } else {
+            setRedirectURL(url);
+        }
     };
 
     const submitTeam = () => {
@@ -1104,25 +1133,41 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                             <Paperclip />
                                                             <span className="font-bold text-lg">附件列表</span>
                                                         </div>
-                                                        {curChallenge?.attachments?.map((attach, i) => (
-                                                            <Button variant="ghost" key={i} onClick={() => handleDownload()} className="pl-4 pr-4 pt-0 pb-0 text-md [&_svg]:size-5 transition-all duration-300" disabled={downloadName != ""}>
-                                                                <div className="flex gap-[4px] items-center">
-                                                                    {attach.attach_type == AttachmentType.STATICFILE ? (
-                                                                        // 有文件大小的是本地附件
-                                                                        <>
-                                                                            <CloudDownload />
-                                                                            <span className=""> {attach.attach_name} </span>
-                                                                        </>
-                                                                    ) : (
-                                                                        // 远程附件
-                                                                        <>
-                                                                            <Link />
-                                                                            <span className=""> {t("external_links")} </span>
-                                                                        </>
-                                                                    )}
-                                                                </div>
-                                                            </Button>
-                                                        ))}
+                                                        <div className="flex gap-6 mt-4">
+                                                            {curChallenge?.attachments?.map((attach, i) => (
+                                                                <Button variant="secondary" key={i} onClick={() => handleDownload(attach)} 
+                                                                    className="p-0 w-[240px] h-[100px] text-md [&_svg]:size-5 transition-all duration-300 hover:bg-foreground/20"
+                                                                    disabled={Object.keys(downloadSpeed).includes(attach.download_hash ?? "")}
+                                                                >
+                                                                    <div className={`flex flex-col p-4 w-full h-full ${!Object.keys(downloadSpeed).includes(attach.download_hash ?? "") ? "justify-center gap-2" : "justify-between" }`}>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <File />
+                                                                            <span className="font-bold">{attach.attach_name}</span>
+                                                                        </div>
+                                                                        { Object.keys(downloadSpeed).includes(attach.download_hash ?? "") ? (
+                                                                            <>
+                                                                                <div className="flex gap-2">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <Pickaxe />
+                                                                                        <span className="font-bold">15%</span>
+                                                                                    </div>
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <ArrowDownUp />
+                                                                                        <span className="font-bold">12MB/s</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <Progress value={10} className="w-full" />
+                                                                            </>
+                                                                        ) : (
+                                                                            <div className="flex gap-2 items-center">
+                                                                                <FileDown />
+                                                                                <span>点击下载</span>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </Button>
+                                                            ))}
+                                                        </div>
                                                     </div>
                                                 ) : (<></>)}
                                             </MacScrollbar>
