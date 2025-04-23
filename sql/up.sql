@@ -99,6 +99,7 @@ CREATE TABLE "containers" (
     "container_id" uuid NOT NULL,
     "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
     "team_id" BIGSERIAL NOT NULL REFERENCES teams(team_id),
+    "flag_id" BIGSERIAL NOT NULL REFERENCES team_flags(flag_id),
     "challenge_id" BIGSERIAL NOT NULL REFERENCES challenges(challenge_id),
     "ingame_id" BIGSERIAL NOT NULL REFERENCES game_challenges(ingame_id),
     "start_time" timestamp NOT NULL,
@@ -108,7 +109,6 @@ CREATE TABLE "containers" (
     "team_hash" text NOT NULL,
     "expose_ports" jsonb NOT NULL,
     "container_status" jsonb NOT NULL,
-    "flag_content" text NOT NULL,
     PRIMARY KEY (container_id)
 );
 
@@ -189,4 +189,6 @@ CREATE TABLE "team_flags" (
 );
 
 CREATE INDEX idx_team_flags_content ON team_flags(flag_content);
-CREATE INDEX idx_team_flags_content ON team_flags(flag_content);
+CREATE INDEX idx_team_flags_team ON team_flags(team_id);
+CREATE INDEX idx_team_flags_game ON team_flags(game_id);
+CREATE INDEX idx_team_flags_challenge ON team_flags(challenge_id);

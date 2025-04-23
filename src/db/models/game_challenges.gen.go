@@ -32,7 +32,9 @@ func (e *Hints) Scan(value interface{}) error {
 type GameChallenge struct {
 	IngameID     int64        `gorm:"column:ingame_id;primaryKey;autoIncrement:true" json:"ingame_id"`
 	GameID       int64        `gorm:"column:game_id;not null" json:"game_id"`
+	Game         Game         `gorm:"foreignKey:GameID;references:game_id" json:"-"`
 	ChallengeID  int64        `gorm:"column:challenge_id;not null" json:"challenge_id"`
+	Challenge    Challenge    `gorm:"foreignKey:ChallengeID;references:challenge_id" json:"-"`
 	TotalScore   float64      `gorm:"column:total_score;not null" json:"total_score"`
 	CurScore     float64      `gorm:"column:cur_score;not null" json:"cur_score"`
 	SolveCount   int32        `gorm:"column:solve_count" json:"solve_count"`

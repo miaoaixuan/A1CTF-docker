@@ -198,16 +198,10 @@ func UserGetGameChallenges(c *gin.Context) {
 	game := c.MustGet("game").(models.Game)
 
 	// 查找队伍
-	var gameChallenges []struct {
-		models.GameChallenge
-		models.Challenge
-	}
+	var gameChallenges []models.GameChallenge
 
 	// 使用 Preload 进行关联查询
-	if err := dbtool.DB().Table("game_challenges").
-		Joins("LEFT JOIN challenges ON game_challenges.challenge_id = challenges.challenge_id").
-		Where("game_id = ?", game.GameID).
-		Scan(&gameChallenges).Error; err != nil {
+	if err := dbtool.DB().Preload("Challenge").Find(&gameChallenges).Error; err != nil {
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -233,20 +227,20 @@ func UserGetGameChallenges(c *gin.Context) {
 
 	for _, gc := range gameChallenges {
 
-		if gc.GameChallenge.BelongStage != nil && *gc.GameChallenge.BelongStage != curStage {
+		if gc.BelongStage != nil && *gc.BelongStage != curStage {
 			continue
 		}
 
-		if !gc.GameChallenge.Visible {
+		if !gc.Visible {
 			continue
 		}
 
 		result = append(result, gin.H{
 			"challenge_id":   gc.Challenge.ChallengeID,
 			"challenge_name": gc.Challenge.Name,
-			"total_score":    gc.GameChallenge.TotalScore,
-			"cur_score":      gc.GameChallenge.CurScore,
-			"belong_stage":   gc.GameChallenge.BelongStage,
+			"total_score":    gc.TotalScore,
+			"cur_score":      gc.CurScore,
+			"belong_stage":   gc.BelongStage,
 			"solve_count":    gc.SolveCount,
 			"category":       gc.Challenge.Category,
 		})
@@ -280,17 +274,12 @@ func UserGetGameChallenge(c *gin.Context) {
 		c.Abort()
 		return
 	}
-
-	var gameChallenges []struct {
-		models.GameChallenge
-		models.Challenge
-	}
+	var gameChallenges []models.GameChallenge
 
 	// 使用 Preload 进行关联查询
-	if err := dbtool.DB().Table("game_challenges").
-		Joins("LEFT JOIN challenges ON game_challenges.challenge_id = challenges.challenge_id").
+	if err := dbtool.DB().Preload("Challenge").
 		Where("game_id = ? and game_challenges.challenge_id = ?", game.GameID, challengeID).
-		Scan(&gameChallenges).Error; err != nil {
+		Find(&gameChallenges).Error; err != nil {
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -309,6 +298,35 @@ func UserGetGameChallenge(c *gin.Context) {
 
 	gameChallenge := gameChallenges[0]
 
+	// 检查是否存在 Flag 如果不存在就按照 flag 模板生成一份
+	var flag models.TeamFlag
+	if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND challenge_id = ?", game.GameID, team.TeamID, gameChallenge.Challenge.ChallengeID).First(&flag).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			// 生成 Flag
+			flag = models.TeamFlag{
+				FlagID:      0,
+				FlagContent: *gameChallenge.JudgeConfig.FlagTemplate,
+				TeamID:      team.TeamID,
+				GameID:      game.GameID,
+				ChallengeID: *gameChallenge.Challenge.ChallengeID,
+			}
+
+			if err := dbtool.DB().Create(&flag).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"code":    500,
+					"message": "System error",
+				})
+				return
+			}
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "System error.",
+			})
+			return
+		}
+	}
+
 	userAttachments := make([]UserAttachmentConfig, 0, len(gameChallenge.Challenge.Attachments))
 
 	for _, attachment := range gameChallenge.Challenge.Attachments {
@@ -322,8 +340,8 @@ func UserGetGameChallenge(c *gin.Context) {
 	}
 
 	// Hints 处理
-	visibleHints := make(models.Hints, 0, len(*gameChallenge.GameChallenge.Hints))
-	for _, hint := range *gameChallenge.GameChallenge.Hints {
+	visibleHints := make(models.Hints, 0, len(*gameChallenge.Hints))
+	for _, hint := range *gameChallenge.Hints {
 		if hint.Visible {
 			visibleHints = append(visibleHints, hint)
 		}
@@ -333,10 +351,10 @@ func UserGetGameChallenge(c *gin.Context) {
 		"challenge_id":         gameChallenge.Challenge.ChallengeID,
 		"challenge_name":       gameChallenge.Challenge.Name,
 		"description":          gameChallenge.Challenge.Description,
-		"total_score":          gameChallenge.GameChallenge.TotalScore,
-		"cur_score":            gameChallenge.GameChallenge.CurScore,
+		"total_score":          gameChallenge.TotalScore,
+		"cur_score":            gameChallenge.CurScore,
 		"hints":                visibleHints,
-		"belong_stage":         gameChallenge.GameChallenge.BelongStage,
+		"belong_stage":         gameChallenge.BelongStage,
 		"solve_count":          gameChallenge.SolveCount,
 		"category":             gameChallenge.Challenge.Category,
 		"attachments":          userAttachments,
@@ -503,15 +521,11 @@ func UserCreateGameContainer(c *gin.Context) {
 		return
 	}
 
-	var gameChallenges []struct {
-		models.GameChallenge
-		models.Challenge
-	}
+	var gameChallenges []models.GameChallenge
 
-	if err := dbtool.DB().Table("game_challenges").
-		Joins("LEFT JOIN challenges ON game_challenges.challenge_id = challenges.challenge_id").
+	if err := dbtool.DB().Preload("Challenge").
 		Where("game_id = ? and game_challenges.challenge_id = ?", game.GameID, challengeID).
-		Scan(&gameChallenges).Error; err != nil {
+		Find(&gameChallenges).Error; err != nil {
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -566,18 +580,46 @@ func UserCreateGameContainer(c *gin.Context) {
 		return
 	}
 
+	var flag models.TeamFlag
+	if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND challenge_id = ?", game.GameID, team.TeamID, gameChallenge.Challenge.ChallengeID).First(&flag).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			// 生成 Flag
+			flag = models.TeamFlag{
+				FlagID:      0,
+				FlagContent: *gameChallenge.JudgeConfig.FlagTemplate,
+				TeamID:      team.TeamID,
+				GameID:      game.GameID,
+				ChallengeID: *gameChallenge.Challenge.ChallengeID,
+			}
+
+			if err := dbtool.DB().Create(&flag).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"code":    500,
+					"message": "System error",
+				})
+				return
+			}
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "System error.",
+			})
+			return
+		}
+	}
+
 	// 加入数据库
 	newContainer := models.Container{
 		ContainerID:          uuid.NewString(),
 		GameID:               game.GameID,
+		FlagID:               flag.FlagID,
 		TeamID:               team.TeamID,
 		ChallengeID:          *gameChallenge.Challenge.ChallengeID,
-		InGameID:             gameChallenge.GameChallenge.IngameID,
+		InGameID:             gameChallenge.IngameID,
 		StartTime:            time.Now().UTC(),
 		ExpireTime:           time.Now().Add(time.Duration(2) * time.Hour).UTC(),
 		ContainerExposeInfos: make(models.ContainerExposeInfos, 0),
 		ContainerStatus:      models.ContainerQueueing,
-		FlagContent:          "flag{test_flag}",
 		ContainerConfig:      *gameChallenge.Challenge.ContainerConfig,
 		ChallengeName:        gameChallenge.Challenge.Name,
 		TeamHash:             team.TeamHash,
@@ -761,16 +803,12 @@ func UserGetGameChallengeContainerInfo(c *gin.Context) {
 		return
 	}
 
-	var gameChallenges []struct {
-		models.GameChallenge
-		models.Challenge
-	}
+	var gameChallenges []models.GameChallenge
 
 	// 使用 Preload 进行关联查询
-	if err := dbtool.DB().Table("game_challenges").
-		Joins("LEFT JOIN challenges ON game_challenges.challenge_id = challenges.challenge_id").
+	if err := dbtool.DB().Preload("Challenge").
 		Where("game_id = ? and game_challenges.challenge_id = ?", game.GameID, challengeID).
-		Scan(&gameChallenges).Error; err != nil {
+		Find(&gameChallenges).Error; err != nil {
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -819,9 +857,22 @@ func UserGetGameChallengeContainerInfo(c *gin.Context) {
 	})
 }
 
+type SubmitFlagPayload struct {
+	FlagContent string `json:"flag" binding:"required"`
+}
+
 func UserGameChallengeSubmitFlag(c *gin.Context) {
 	game := c.MustGet("game").(models.Game)
 	team := c.MustGet("team").(models.Team)
+
+	var payload SubmitFlagPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid request payload",
+		})
+		return
+	}
 
 	challengeIDStr := c.Param("challenge_id")
 	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
@@ -834,85 +885,63 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 		return
 	}
 
-	var containers []models.Container
-	if err := dbtool.DB().Where("challenge_id = ? AND team_id = ? AND (container_status = ? OR container_status = ? OR container_status = ?)", challengeID, team.TeamID, models.ContainerRunning, models.ContainerQueueing, models.ContainerStarting).Find(&containers).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "Failed to load containers",
-		})
-		return
-	}
-
-	if len(containers) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "Launch a container first.",
-		})
-		return
-	}
-
-	if len(containers) != 1 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "System error.",
-		})
-		return
-	}
-
-	var gameChallenges []struct {
-		models.GameChallenge
-		models.Challenge
-	}
-
-	// 使用 Preload 进行关联查询
-	if err := dbtool.DB().Table("game_challenges").
-		Joins("LEFT JOIN challenges ON game_challenges.challenge_id = challenges.challenge_id").
-		Where("game_id = ? and game_challenges.challenge_id = ?", game.GameID, challengeID).
-		Scan(&gameChallenges).Error; err != nil {
-
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "Failed to load game challenges",
-		})
-		return
-	}
-
-	if len(gameChallenges) == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"code":    404,
-			"message": "Challenge not found",
-		})
-		return
-	}
-
-	gameChallenge := gameChallenges[0]
-
-	result := gin.H{
-		"container_status":     containers[0].ContainerStatus,
-		"containers":           make([]gin.H, 0, len(*gameChallenge.Challenge.ContainerConfig)),
-		"container_expiretime": containers[0].ExpireTime,
-	}
-
-	for _, container := range *gameChallenge.Challenge.ContainerConfig {
-		tempConfig := gin.H{
-			"container_name":  container.Name,
-			"container_ports": make(models.ExposePorts, 0),
+	var gameChallenge models.GameChallenge
+	if err := dbtool.DB().Preload("Challenge").Where("game_id = ? AND game_challenges.challenge_id = ?", game.GameID, challengeID).First(&gameChallenge).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"code":    404,
+				"message": "Challenge not found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to load game challenges",
+			})
 		}
+		return
+	}
 
-		if len(containers) == 1 {
-			for _, container_expose := range containers[0].ContainerExposeInfos {
-				if container_expose.ContainerName == container.Name {
-					tempConfig["container_ports"] = container_expose.ExposePorts
-					break
-				}
-			}
+	var teamFlag models.TeamFlag
+	if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND challenge_id = ?", game.GameID, team.TeamID, challengeID).First(&teamFlag).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"code":    404,
+				"message": "Please click the challenge first.",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "System error",
+			})
 		}
+		return
+	}
 
-		result["containers"] = append(result["containers"].([]gin.H), tempConfig)
+	switch gameChallenge.JudgeConfig.JudgeType {
+	case models.JudgeTypeDynamic:
+		if payload.FlagContent == teamFlag.FlagContent {
+			c.JSON(http.StatusOK, gin.H{
+				"code": 200,
+				"data": "Correct",
+			})
+			return
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": 400,
+				"data": "Wrong",
+			})
+			return
+		}
+	case models.JudgeTypeScript:
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"data": "Not implemented now",
+		})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
-		"data": result,
+		"data": "Valid",
 	})
 }
