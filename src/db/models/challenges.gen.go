@@ -48,6 +48,18 @@ const (
 	JudgeTypeScript  JudgeType = "SCRIPT"
 )
 
+func (e JudgeType) Value() (driver.Value, error) {
+	return json.Marshal(e)
+}
+
+func (e *JudgeType) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+	return json.Unmarshal(b, e)
+}
+
 type JudgeConfig struct {
 	JudgeType    JudgeType `json:"judge_type"`
 	JudgeScript  *string   `json:"judge_script,omitempty"`

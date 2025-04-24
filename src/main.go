@@ -103,23 +103,25 @@ type PermissionSetting struct {
 }
 
 var PermissionMap = map[string]PermissionSetting{
-	"\\/api\\/Login":                                       {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/file\\/upload":                               {RequestMethod: []string{"POST"}, Permissions: []string{}},
-	"\\/api\\/admin\\/challenge\\/list":                    {RequestMethod: []string{"GET", "POST"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/admin\\/challenge\\/create":                  {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/admin\\/challenge\\/[\\d]+$":                 {RequestMethod: []string{"GET", "PUT", "DELETE"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/admin\\/challenge\\/search":                  {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/admin\\/game\\/list":                         {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/admin\\/game\\/create":                       {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/admin\\/game\\/[\\d]+$":                      {RequestMethod: []string{"GET", "POST", "PUT"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/admin\\/game\\/[\\d]+\\/challenge\\/[\\d]+$": {RequestMethod: []string{"PUT"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/game\\/list":                                 {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	"\\/api\\/game\\/[\\d]+$":                              {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	"\\/api\\/game\\/[\\d]+\\/challenges":                  {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	"\\/api\\/game\\/[\\d]+\\/challenge\\/[\\d]+$":         {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	"\\/api\\/game\\/[\\d]+\\/notices":                     {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	"\\/api\\/game\\/[\\d]+\\/createTeam":                  {RequestMethod: []string{"POST"}, Permissions: []string{}},
-	"\\/api\\/game\\/[\\d]+\\/container\\/[\\d]+$":         {RequestMethod: []string{"POST", "DELETE", "PATCH", "GET"}, Permissions: []string{}},
+	`^/api/Login$`:                        {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	`^/api/file/upload$`:                  {RequestMethod: []string{"POST"}, Permissions: []string{}},
+	`^/api/admin/challenge/list$`:         {RequestMethod: []string{"GET", "POST"}, Permissions: []string{"ADMIN"}},
+	`^/api/admin/challenge/create$`:       {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	`^/api/admin/challenge/\d+$`:          {RequestMethod: []string{"GET", "PUT", "DELETE"}, Permissions: []string{"ADMIN"}},
+	`^/api/admin/challenge/search$`:       {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	`^/api/admin/game/list$`:              {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	`^/api/admin/game/create$`:            {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	`^/api/admin/game/\d+$`:               {RequestMethod: []string{"GET", "POST", "PUT"}, Permissions: []string{"ADMIN"}},
+	`^/api/admin/game/\d+/challenge/\d+$`: {RequestMethod: []string{"PUT"}, Permissions: []string{"ADMIN"}},
+	`^/api/game/list$`:                    {RequestMethod: []string{"GET"}, Permissions: []string{}},
+	`^/api/game/\d+$`:                     {RequestMethod: []string{"GET"}, Permissions: []string{}},
+	`^/api/game/\d+/challenges$`:          {RequestMethod: []string{"GET"}, Permissions: []string{}},
+	`^/api/game/\d+/challenge/\d+$`:       {RequestMethod: []string{"GET"}, Permissions: []string{}},
+	`^/api/game/\d+/notices$`:             {RequestMethod: []string{"GET"}, Permissions: []string{}},
+	`^/api/game/\d+/createTeam$`:          {RequestMethod: []string{"POST"}, Permissions: []string{}},
+	`^/api/game/\d+/container/\d+$`:       {RequestMethod: []string{"POST", "DELETE", "PATCH", "GET"}, Permissions: []string{}},
+	`^/api/game/\d+/flag/\d+$`:            {RequestMethod: []string{"POST"}, Permissions: []string{}},
+	`^/api/game/\d+/flag/[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$`: {RequestMethod: []string{"GET"}, Permissions: []string{}},
 }
 
 // Helper function to check if a slice contains a value
@@ -200,6 +202,16 @@ func StartLoopEvent() {
 		),
 		gocron.NewTask(
 			jobs.ContainerOperationsJob,
+		),
+		gocron.WithSingletonMode(gocron.LimitModeWait),
+	)
+
+	s.NewJob(
+		gocron.DurationJob(
+			1*time.Second,
+		),
+		gocron.NewTask(
+			jobs.FlagJudgeJob,
 		),
 		gocron.WithSingletonMode(gocron.LimitModeWait),
 	)
@@ -297,11 +309,15 @@ func main() {
 			// 创建比赛队伍
 			userGameGroup.POST("/:game_id/createTeam", controllers.GameStatusMiddleware(false), controllers.UserCreateGameTeam)
 
-			// 创建题目容器
+			// 题目容器
 			userGameGroup.POST("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false), controllers.TeamStatusMiddleware(), controllers.UserCreateGameContainer)
 			userGameGroup.DELETE("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false), controllers.TeamStatusMiddleware(), controllers.UserCloseGameContainer)
 			userGameGroup.PATCH("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false), controllers.TeamStatusMiddleware(), controllers.UserExtendGameContainer)
 			userGameGroup.GET("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallengeContainerInfo)
+
+			// 提交 Flag
+			userGameGroup.POST("/:game_id/flag/:challenge_id", controllers.GameStatusMiddleware(false), controllers.TeamStatusMiddleware(), controllers.UserGameChallengeSubmitFlag)
+			userGameGroup.GET("/:game_id/flag/:judge_id", controllers.GameStatusMiddleware(false), controllers.TeamStatusMiddleware(), controllers.UserGameGetJudgeResult)
 		}
 	}
 

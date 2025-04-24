@@ -95,6 +95,20 @@ CREATE TABLE "teams" (
 CREATE INDEX idx_teams_invite_code ON teams(invite_code);
 CREATE INDEX idx_teams_members ON teams USING GIN(team_members);
 
+CREATE TABLE "team_flags" (
+    "flag_id" BIGSERIAL NOT NULL,
+    "flag_content" text NOT NULL,
+    "team_id" BIGSERIAL NOT NULL REFERENCES teams(team_id),
+    "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
+    "challenge_id" BIGSERIAL NOT NULL REFERENCES challenges(challenge_id),
+    PRIMARY KEY (flag_id)
+);
+
+CREATE INDEX idx_team_flags_content ON team_flags(flag_content);
+CREATE INDEX idx_team_flags_team ON team_flags(team_id);
+CREATE INDEX idx_team_flags_game ON team_flags(game_id);
+CREATE INDEX idx_team_flags_challenge ON team_flags(challenge_id);
+
 CREATE TABLE "containers" (
     "container_id" uuid NOT NULL,
     "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
@@ -117,11 +131,14 @@ CREATE INDEX idx_containers_challenge ON containers(challenge_id);
 CREATE INDEX idx_containers_time_range ON containers(start_time, expire_time);
 
 CREATE TABLE "judges" (
+    "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
     "challenge_id" BIGSERIAL NOT NULL REFERENCES challenges(challenge_id),
     "team_id" BIGSERIAL NOT NULL REFERENCES teams(team_id),
-    "judge_type" int4 NOT NULL,
-    "judge_status" int4 NOT NULL,
-    "judge_result" int4 NOT NULL,
+    "flag_id" BIGSERIAL NOT NULL REFERENCES team_flags(flag_id),
+    "judge_type" jsonb NOT NULL,
+    "judge_status" jsonb NOT NULL,
+    "judge_result" text,
+    "submiter_id" uuid NOT NULL REFERENCES users(user_id),
     "judge_id" uuid NOT NULL,
     "judge_time" timestamp NOT NULL,
     "judge_content" text NOT NULL,
@@ -129,7 +146,7 @@ CREATE TABLE "judges" (
 );
 
 CREATE INDEX idx_judges_challenge_team ON judges(challenge_id, team_id);
-CREATE INDEX idx_judges_status_result ON judges(judge_status, judge_result);
+CREATE INDEX idx_judges_status_result ON judges USING GIN(judge_status);
 CREATE INDEX idx_judges_time ON judges(judge_time);
 
 CREATE TABLE "uploads" (
@@ -154,8 +171,9 @@ CREATE TABLE "solves" (
     "challenge_id" BIGSERIAL NOT NULL REFERENCES challenges(challenge_id),
     "team_id" BIGSERIAL NOT NULL REFERENCES teams(team_id),
     "container_id" uuid REFERENCES containers(container_id),
-    "solve_status" int4 NOT NULL,
+    "solve_status" jsonb NOT NULL,
     "solve_time" timestamp NOT NULL,
+    "solver_id" uuid NOT NULL NOT NULL REFERENCES users(user_id),
     "rank" int4 NOT NULL,
     PRIMARY KEY (solve_id)
 );
@@ -163,8 +181,9 @@ CREATE TABLE "solves" (
 CREATE INDEX idx_solves_game_team ON solves(game_id, team_id);
 CREATE INDEX idx_solves_challenge ON solves(challenge_id);
 CREATE INDEX idx_solves_container ON solves(container_id);
-CREATE INDEX idx_solves_status ON solves(solve_status);
+CREATE INDEX idx_solves_status ON solves USING GIN(solve_status);
 CREATE INDEX idx_solves_time_rank ON solves(solve_time, rank);
+CREATE INDEX idx_solves_time_solver ON solves(solve_time, solver_id);
 
 CREATE TABLE "notices" (
     "notice_id" BIGSERIAL NOT NULL,
@@ -178,17 +197,3 @@ CREATE TABLE "notices" (
 CREATE INDEX idx_notices_game ON notices(game_id);
 CREATE INDEX idx_notices_time ON notices(create_time);
 CREATE INDEX idx_notices_category ON notices USING GIN(notice_category);
-
-CREATE TABLE "team_flags" (
-    "flag_id" BIGSERIAL NOT NULL,
-    "flag_content" text NOT NULL,
-    "team_id" BIGSERIAL NOT NULL REFERENCES teams(team_id),
-    "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
-    "challenge_id" BIGSERIAL NOT NULL REFERENCES challenges(challenge_id),
-    PRIMARY KEY (flag_id)
-);
-
-CREATE INDEX idx_team_flags_content ON team_flags(flag_content);
-CREATE INDEX idx_team_flags_team ON team_flags(team_id);
-CREATE INDEX idx_team_flags_game ON team_flags(game_id);
-CREATE INDEX idx_team_flags_challenge ON team_flags(challenge_id);

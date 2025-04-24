@@ -648,7 +648,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             {/* 抢血动画 */}
             <SolvedAnimation blood={blood} setBlood={setBlood} bloodMessage={bloodMessage} />
             {/* 提交 Flag 组件 */}
-            <SubmitFlagView lng={lng} curChallenge={curChallenge} />
+            <SubmitFlagView lng={lng} curChallenge={curChallenge} gameID={gameID} setChallengeSolved={setChallengeSolved} />
 
             {/* 比赛各种状态页 */}
             <>

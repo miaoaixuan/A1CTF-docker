@@ -917,31 +917,72 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 		return
 	}
 
-	switch gameChallenge.JudgeConfig.JudgeType {
-	case models.JudgeTypeDynamic:
-		if payload.FlagContent == teamFlag.FlagContent {
-			c.JSON(http.StatusOK, gin.H{
-				"code": 200,
-				"data": "Correct",
-			})
-			return
-		} else {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"code": 400,
-				"data": "Wrong",
-			})
-			return
-		}
-	case models.JudgeTypeScript:
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code": 400,
-			"data": "Not implemented now",
+	// 插入 Judge 队列
+	newJudge := models.Judge{
+		GameID:       game.GameID,
+		ChallengeID:  *gameChallenge.Challenge.ChallengeID,
+		TeamID:       team.TeamID,
+		FlagID:       teamFlag.FlagID,
+		JudgeType:    gameChallenge.JudgeConfig.JudgeType,
+		JudgeStatus:  models.JudgeQueueing,
+		SubmiterID:   c.MustGet("user_id").(string),
+		JudgeID:      uuid.NewString(),
+		JudgeTime:    time.Now().UTC(),
+		JudgeContent: payload.FlagContent,
+	}
+
+	if err := dbtool.DB().Create(&newJudge).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "System error",
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
-		"data": "Valid",
+		"data": gin.H{
+			"judge_id": newJudge.JudgeID,
+		},
+	})
+}
+
+func UserGameGetJudgeResult(c *gin.Context) {
+	_ = c.MustGet("game").(models.Game)
+	_ = c.MustGet("team").(models.Team)
+
+	judgeIDStr := c.Param("judge_id")
+
+	if _, err := uuid.Parse(judgeIDStr); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid judge ID",
+		})
+		c.Abort()
+		return
+	}
+
+	var judge models.Judge
+	if err := dbtool.DB().Where("judge_id = ?", judgeIDStr).First(&judge).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"code":    404,
+				"message": "Judge not found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to load judge",
+			})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": gin.H{
+			"judge_id":     judge.JudgeID,
+			"judge_status": judge.JudgeStatus,
+		},
 	})
 }

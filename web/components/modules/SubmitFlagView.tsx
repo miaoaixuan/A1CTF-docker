@@ -1,19 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
-import { Flag, Mail, Send, SendHorizonal, X } from "lucide-react";
+import { Flag, Loader2, Mail, Send, SendHorizonal, X } from "lucide-react";
 import { Input } from "../ui/input";
 
 import {
     animated,
     useTransition,
 } from '@react-spring/web'
-import { UserDetailGameChallenge } from "@/utils/A1API";
+import { JudgeType, UserDetailGameChallenge } from "@/utils/A1API";
+import { api } from "@/utils/ApiHelper";
+import { toast } from "sonner";
 
-const SubmitFlagView = ({ lng, curChallenge }: { lng: string, curChallenge: UserDetailGameChallenge | undefined }) => {
+const SubmitFlagView = ({ lng, curChallenge, gameID, setChallengeSolved } : { lng: string, curChallenge: UserDetailGameChallenge | undefined, gameID: number, setChallengeSolved: (id: number) => void }) => {
 
     const [visible, setVisible] = useState(false);
+    const [flag, setFlag] = useState<string>("");
+    const [judgeing, setJudgeing] = useState(false);
+    const [borderRed, setBorderRed] = useState(false);
 
     const transitions = useTransition(visible, {
         from: {
@@ -33,6 +38,52 @@ const SubmitFlagView = ({ lng, curChallenge }: { lng: string, curChallenge: User
         },
         config: { tension: 220, friction: 20 }
     });
+
+    useEffect(() => {
+        setFlag("")
+    }, [visible])
+
+    const handleSubmitFlag = () => {
+        setJudgeing(true)
+        api.user.userGameSubmitFlag(gameID, curChallenge?.challenge_id ?? 0, { flag: flag })
+            .then((res) => {
+                if (res.status == 200) {
+                    const judgeingInter = setInterval(() => {
+                        api.user.userGameJudgeResult(gameID, res.data.data.judge_id)
+                            .then((res2) => {
+                                if (res2.status == 200) {
+                                    if (res2.data.data.judge_status == "JudgeAC") {
+                                        setVisible(false)
+                                        setJudgeing(false)
+                                        clearInterval(judgeingInter)
+
+                                        setTimeout(() => {
+                                            setChallengeSolved(curChallenge?.challenge_id || 0)
+                                        }, 200)
+                                    } else if (res2.data.data.judge_status == "JudgeWA") {
+                                        toast.error("错误", { position: "top-center" });
+                                        setBorderRed(true)
+                                        setJudgeing(false)
+                                        clearInterval(judgeingInter)
+                                    } else if (res2.data.data.judge_status == "JudgeError" || res2.data.data.judge_status == "JudgeTimeout") {
+                                        toast.error("Error", { position: "top-center" });
+                                        setJudgeing(false)
+                                        clearInterval(judgeingInter)
+                                    }
+                                } else {
+                                    toast.error("Error", { position: "top-center" });
+                                    setJudgeing(false)
+                                    clearInterval(judgeingInter)
+                                }
+                            })
+                    }, 1000)
+                }
+            }
+        ).catch((err) => {  
+            toast.error("提交 Flag 失败: " + err.message, { position: "top-center" });
+            setJudgeing(false)
+        });
+    }
 
     return (
         <>
@@ -77,25 +128,39 @@ const SubmitFlagView = ({ lng, curChallenge }: { lng: string, curChallenge: User
                                 </div>
 
                                 <input
-                                    className="flex w-full bg-transparent px-3 shadow-sm transition-colors duration-300 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 h-[50px] border-foreground rounded-lg border-4 text-xl font-bold py-0 focus-visible:border-blue-400 focus-visible:text-blue-400"
+                                    className={`${ borderRed ? "border-red-600 text-red-600" : "" } flex w-full bg-transparent px-3 shadow-sm transition-colors duration-300 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 h-[50px] border-foreground rounded-lg border-4 text-xl font-bold py-0 focus-visible:border-blue-400 focus-visible:text-blue-400`}
                                     placeholder="Enter your flag here"
+                                    value={flag}
+                                    onFocus={() => setBorderRed(false)}
+                                    onChange={(e) => setFlag(e.target.value)}
                                 />
 
                                 <div className="flex gap-6">
                                     <Button
-                                        className="h-[50px] rounded-lg p-0 border-4 px-4 py-4 border-red-400 text-red-400 bg-background hover:border-red-600 hover:text-red-600 hover:bg-red-400/10 [&_svg]:size-[32px]"
+                                        className="h-[50px] rounded-lg transition-all duration-300 p-0 border-4 px-4 py-4 border-red-400 text-red-400 bg-background hover:border-red-600 hover:text-red-600 hover:bg-red-400/10 [&_svg]:size-[32px]"
                                         onClick={() => setVisible(false)}
+                                        disabled={judgeing}
                                     >
                                         <div className="flex gap-4 items-center">
                                             <X />
                                             <span className="font-bold text-xl">Close</span>
                                         </div>
                                     </Button>
-                                    <Button className="h-[50px] rounded-lg p-0 border-4 px-4 py-4 border-foreground bg-background hover:border-blue-400 hover:text-blue-400 hover:bg-blue-400/10 [&_svg]:size-[32px] text-foreground">
-                                        <div className="flex gap-4 items-center">
-                                            <SendHorizonal />
-                                            <span className="font-bold text-xl">Submit</span>
-                                        </div>
+                                    <Button className="h-[50px] rounded-lg transition-all duration-300 p-0 border-4 px-4 py-4 border-blue-400 text-blue-400 bg-background hover:border-blue-400 hover:text-blue-400 hover:bg-blue-400/10 [&_svg]:size-[32px]"
+                                        onClick={handleSubmitFlag}
+                                        disabled={judgeing}
+                                    >
+                                        { judgeing ? (
+                                            <div className="flex gap-4 items-center">
+                                                <Loader2 className="animate-spin" />
+                                                <span className="font-bold text-xl">Judgeing</span>
+                                            </div>
+                                        ) : (
+                                            <div className="flex gap-4 items-center">
+                                                <SendHorizonal />
+                                                <span className="font-bold text-xl">Submit</span>
+                                            </div>
+                                        ) }
                                     </Button>
                                 </div>
                             </div>

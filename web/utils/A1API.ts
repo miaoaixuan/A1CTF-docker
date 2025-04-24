@@ -1047,6 +1047,74 @@ export class Api<
       }),
 
     /**
+     * @description Submit a flag
+     *
+     * @tags user
+     * @name UserGameSubmitFlag
+     * @summary Submit a flag
+     * @request POST:/api/game/{game_id}/flag/{challenge_id}
+     */
+    userGameSubmitFlag: (
+      gameId: number,
+      challengeId: number,
+      data: {
+        flag: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: {
+            judge_id: string;
+          };
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/game/${gameId}/flag/${challengeId}`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get a judge result
+     *
+     * @tags user
+     * @name UserGameJudgeResult
+     * @summary Get a judge result
+     * @request GET:/api/game/{game_id}/flag/{judge_id}
+     */
+    userGameJudgeResult: (
+      gameId: number,
+      judgeId: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: {
+            judge_id: string;
+            judge_status:
+              | "JudgeQueueing"
+              | "JudgeRunning"
+              | "JudgeError"
+              | "JudgeWA"
+              | "JudgeAC"
+              | "JudgeTimeout";
+          };
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/game/${gameId}/flag/${judgeId}`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * @description Create a container for a challenge
      *
      * @tags user

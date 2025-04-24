@@ -694,6 +694,120 @@ paths:
           description: The ID of the game to retrieve
           schema:
             type: integer
+  /api/game/{game_id}/flag/{challenge_id}:
+    post:
+      tags: [user]
+      operationId: userGameSubmitFlag
+      summary: Submit a flag
+      description: Submit a flag
+      responses:
+        '200':
+          description: flag submited
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      judge_id:
+                        type: string
+                    required:
+                      - judge_id
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+              schema:
+                type: object
+                properties:
+                  flag:
+                    type: string
+                required:
+                  - flag
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to submit
+          schema:
+            type: integer
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge to submit
+          schema:
+            type: integer
+  /api/game/{game_id}/flag/{judge_id}:
+    get:
+      tags: [user]
+      operationId: userGameJudgeResult
+      summary: Get a judge result
+      description: Get a judge result
+      responses:
+        '200':
+          description: judge result get
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      judge_id:
+                        type: string
+                      judge_status:
+                        type: string
+                        enum:
+                          - JudgeQueueing
+                          - JudgeRunning
+                          - JudgeError
+                          - JudgeWA
+                          - JudgeAC
+                          - JudgeTimeout
+                    required:
+                      - judge_id
+                      - judge_status
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to submit
+          schema:
+            type: integer
+        - name: judge_id
+          in: path
+          required: true
+          description: The Flag ID
+          schema:
+            type: string
   /api/game/{game_id}/container/{challenge_id}:
     post:
       tags: [user]
