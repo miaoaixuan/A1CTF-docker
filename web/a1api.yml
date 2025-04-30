@@ -550,9 +550,19 @@ paths:
                   code:
                     type: integer
                   data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/UserSimpleGameChallenge'
+                    type: object
+                    properties:
+                      challenges:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserSimpleGameChallenge'
+                      solved_challenges:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserSimpleGameSolvedChallenge'
+                    required:
+                      - challenges
+                      - solved_challenges
                 required:
                   - code
                   - data
@@ -1350,8 +1360,6 @@ components:
         cur_score:
           type: number
           format: double
-        belong_stage:
-          type: string
         solve_count:
           type: number
         category:
@@ -1367,6 +1375,23 @@ components:
         - DYNAMIC_CONTAINER
         - STATIC_CONTAINER
         - NO_CONTAINER
+    UserSimpleGameSolvedChallenge:
+      type: object
+      properties:
+        challenge_id:
+          type: integer
+        challenge_name:
+          type: string
+        solve_time:
+          type: string
+          format: date-time
+        rank:
+          type: number
+      required:
+        - challenge_id
+        - challenge_name
+        - solve_time
+        - rank
     UserAttachmentConfig:
       type: object
       properties:

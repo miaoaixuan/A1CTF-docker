@@ -188,7 +188,7 @@ func StartLoopEvent() {
 	s, _ := gocron.NewScheduler()
 	s.NewJob(
 		gocron.DurationJob(
-			5*time.Second,
+			2*time.Second,
 		),
 		gocron.NewTask(
 			jobs.UpdateActivateGames,
@@ -298,7 +298,7 @@ func main() {
 				cacheByCookie,
 			), controllers.GameStatusMiddleware(true), controllers.UserGetGameDetailWithTeamInfo)
 
-			userGameGroup.GET("/:game_id/challenges", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false), controllers.UserGetGameChallenges)
+			userGameGroup.GET("/:game_id/challenges", controllers.GameStatusMiddleware(false), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenges)
 
 			// 查询比赛中的某道题
 			userGameGroup.GET("/:game_id/challenge/:challenge_id", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenge)

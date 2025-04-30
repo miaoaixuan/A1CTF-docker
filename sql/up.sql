@@ -132,6 +132,7 @@ CREATE INDEX idx_containers_time_range ON containers(start_time, expire_time);
 
 CREATE TABLE "judges" (
     "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
+    "ingame_id" BIGSERIAL NOT NULL REFERENCES game_challenges(ingame_id),
     "challenge_id" BIGSERIAL NOT NULL REFERENCES challenges(challenge_id),
     "team_id" BIGSERIAL NOT NULL REFERENCES teams(team_id),
     "flag_id" BIGSERIAL NOT NULL REFERENCES team_flags(flag_id),
@@ -147,6 +148,7 @@ CREATE TABLE "judges" (
 
 CREATE INDEX idx_judges_challenge_team ON judges(challenge_id, team_id);
 CREATE INDEX idx_judges_status_result ON judges USING GIN(judge_status);
+CREATE INDEX idx_judges_ingame_id ON judges(ingame_id);
 CREATE INDEX idx_judges_time ON judges(judge_time);
 
 CREATE TABLE "uploads" (
@@ -166,7 +168,9 @@ CREATE INDEX idx_uploads_file_hash ON uploads(file_hash);
 CREATE INDEX idx_uploads_time ON uploads(upload_time);
 
 CREATE TABLE "solves" (
+    "judge_id" uuid NOT NULL REFERENCES judges(judge_id),
     "solve_id" uuid NOT NULL,
+    "ingame_id" BIGSERIAL NOT NULL REFERENCES game_challenges(ingame_id),
     "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
     "challenge_id" BIGSERIAL NOT NULL REFERENCES challenges(challenge_id),
     "team_id" BIGSERIAL NOT NULL REFERENCES teams(team_id),
@@ -184,6 +188,8 @@ CREATE INDEX idx_solves_container ON solves(container_id);
 CREATE INDEX idx_solves_status ON solves USING GIN(solve_status);
 CREATE INDEX idx_solves_time_rank ON solves(solve_time, rank);
 CREATE INDEX idx_solves_time_solver ON solves(solve_time, solver_id);
+CREATE INDEX idx_solve_ingame_id ON solves(ingame_id);
+CREATE INDEX idx_solve_judge_id ON solves(judge_id);
 
 CREATE TABLE "notices" (
     "notice_id" BIGSERIAL NOT NULL,
@@ -197,3 +203,14 @@ CREATE TABLE "notices" (
 CREATE INDEX idx_notices_game ON notices(game_id);
 CREATE INDEX idx_notices_time ON notices(create_time);
 CREATE INDEX idx_notices_category ON notices USING GIN(notice_category);
+
+CREATE TABLE "scoreboard" (
+    "score_id" BIGSERIAL NOT NULL,
+    "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
+    "data" jsonb NOT NULL,
+    "generate_time" timestamp NOT NULL,
+    PRIMARY KEY (score_id)
+);
+
+CREATE INDEX idx_scoreboard_game ON scoreboard(game_id);
+CREATE INDEX idx_scoreboard_time ON scoreboard(generate_time);

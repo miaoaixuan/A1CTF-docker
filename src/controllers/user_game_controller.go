@@ -223,7 +223,29 @@ func UserGetGameChallenges(c *gin.Context) {
 		}
 	}
 
-	result := make([]gin.H, 0, len(gameChallenges))
+	var solves []models.Solve
+	if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND solve_status = ?", game.GameID, c.MustGet("team").(models.Team).TeamID, models.SolveCorrect).Preload("Challenge").Find(&solves).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "System error",
+		})
+		return
+	}
+
+	var solved_challenges []gin.H = make([]gin.H, 0, len(solves))
+
+	for _, solve := range solves {
+		solved_challenges = append(solved_challenges, gin.H{
+			"challenge_id":   solve.ChallengeID,
+			"challenge_name": solve.Challenge.Name,
+			"solve_time":     solve.SolveTime,
+			"rank":           solve.Rank,
+		})
+	}
+
+	var result = gin.H{}
+
+	result["challenges"] = make([]gin.H, 0, len(gameChallenges))
 
 	for _, gc := range gameChallenges {
 
@@ -235,16 +257,17 @@ func UserGetGameChallenges(c *gin.Context) {
 			continue
 		}
 
-		result = append(result, gin.H{
+		result["challenges"] = append(result["challenges"].([]gin.H), gin.H{
 			"challenge_id":   gc.Challenge.ChallengeID,
 			"challenge_name": gc.Challenge.Name,
 			"total_score":    gc.TotalScore,
 			"cur_score":      gc.CurScore,
-			"belong_stage":   gc.BelongStage,
 			"solve_count":    gc.SolveCount,
 			"category":       gc.Challenge.Category,
 		})
 	}
+
+	result["solved_challenges"] = solved_challenges
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
@@ -917,8 +940,18 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 		return
 	}
 
+	var solve models.Solve
+	if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND challenge_id = ?", game.GameID, team.TeamID, challengeID).First(&solve).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "You have already solved this challenge",
+		})
+		return
+	}
+
 	// 插入 Judge 队列
 	newJudge := models.Judge{
+		IngameID:     gameChallenge.IngameID,
 		GameID:       game.GameID,
 		ChallengeID:  *gameChallenge.Challenge.ChallengeID,
 		TeamID:       team.TeamID,
@@ -985,4 +1018,9 @@ func UserGameGetJudgeResult(c *gin.Context) {
 			"judge_status": judge.JudgeStatus,
 		},
 	})
+}
+
+func UserGameGetScoreBoard(c *gin.Context) {
+	_ = c.MustGet("game").(models.Game)
+
 }

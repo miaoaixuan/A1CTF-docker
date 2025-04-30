@@ -257,9 +257,16 @@ export interface UserSimpleGameChallenge {
   total_score: number;
   /** @format double */
   cur_score: number;
-  belong_stage?: string;
   solve_count?: number;
   category?: ChallengeCategory;
+}
+
+export interface UserSimpleGameSolvedChallenge {
+  challenge_id: number;
+  challenge_name: string;
+  /** @format date-time */
+  solve_time: string;
+  rank: number;
 }
 
 export interface UserAttachmentConfig {
@@ -960,7 +967,10 @@ export class Api<
       this.request<
         {
           code: number;
-          data: UserSimpleGameChallenge[];
+          data: {
+            challenges: UserSimpleGameChallenge[];
+            solved_challenges: UserSimpleGameSolvedChallenge[];
+          };
         },
         void | ErrorMessage
       >({

@@ -21,6 +21,8 @@ func processQueueingJudge(judge *models.Judge) error {
 			}
 
 			newSolve := models.Solve{
+				IngameID:    judge.IngameID,
+				JudgeID:     judge.JudgeID,
 				SolveID:     uuid.NewString(),
 				GameID:      judge.GameID,
 				ChallengeID: judge.ChallengeID,

@@ -83,7 +83,7 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
     }, [status])
 
     return (
-        <div className={`w-full h-[100px] rounded-xl relative hover:scale-[1.04] pl-4 pt-4 pr-4 pb-3 select-none overflow-hidden transition-transform_bordercolor duration-300 will-change-transform border-[2px] bg-background`}
+        <div className={`w-full h-[100px] rounded-xl relative hover:scale-[1.04] pl-4 pt-4 pr-4 pb-3 select-none overflow-hidden transition-transform_bordercolor duration-300 will-change-transform border-[2px] bg-background ${ solveStatus ? "bg-green-200/[0.3] border-green-300/40" : "" }`}
             // style={{
             //     backgroundColor: choiced ? colorClass : "transparent"
             // }}
@@ -169,7 +169,7 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
                 ) }
             </AnimatePresence>
             <div className={`flex flex-col h-full w-full`}>
-                <div className="flex items-center gap-1">
+                <div className={`flex items-center gap-1`}>
                     <div id="card-title" className="flex justify-start items-center gap-2 min-w-0 h-[32px]" >
                         <Dices size={23} className="flex-none transition-colors duration-300" style={{ color: !choiced ? "" : colorClass }}/>
                         <span className={`font-bold text-ellipsis whitespace-nowrap overflow-hidden transition-colors duration-300`} style={{ color: !choiced ? "" : colorClass }}>{ name }</span>

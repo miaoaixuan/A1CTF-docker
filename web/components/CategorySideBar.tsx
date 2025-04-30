@@ -31,8 +31,9 @@ import { randomInt } from "mathjs";
 import { toast } from "sonner";
 import { ErrorMessage, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "@/utils/A1API";
 import { api } from "@/utils/ApiHelper";
+import { ChallengeSolveStatus } from "./ChallengesView";
 
-export function CategorySidebar({ gameid, curChallenge, setCurChallenge, lng, gameStatus, setGameStatus, resizeTrigger, setPageSwitching, challenges, setChallenges, challengeSolvedList, setChallengeSolvedList } : { 
+export function CategorySidebar({ gameid, curChallenge, setCurChallenge, lng, gameStatus, setGameStatus, resizeTrigger, setPageSwitching, challenges, setChallenges, challengeSolveStatusList, setChallengeSolveStatusList } : { 
     gameid: string,
     curChallenge: UserDetailGameChallenge | undefined,
     setCurChallenge: Dispatch<SetStateAction<UserDetailGameChallenge | undefined>>,
@@ -44,8 +45,8 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, lng, ga
     setPageSwitching: Dispatch<SetStateAction<boolean>>,
     challenges: Record<string, UserSimpleGameChallenge[]>,
     setChallenges: Dispatch<SetStateAction<Record<string, UserSimpleGameChallenge[]>>>,
-    challengeSolvedList: Record<string, boolean>,
-    setChallengeSolvedList: Dispatch<SetStateAction<Record<string, boolean>>>
+    challengeSolveStatusList: Record<string, ChallengeSolveStatus>,
+    setChallengeSolveStatusList: Dispatch<SetStateAction<Record<string, ChallengeSolveStatus>>>,
 }) {
 
     const { theme } = useTheme()
@@ -116,7 +117,7 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, lng, ga
             // 根据 Category 分组
 
             const groupedChallenges: Record<string, UserSimpleGameChallenge[]> = {};
-            response.data.forEach((challenge: UserSimpleGameChallenge) => {
+            response.data.challenges.forEach((challenge: UserSimpleGameChallenge) => {
                 const category = challenge.category?.toLowerCase() || "misc";
                 if (!groupedChallenges[category]) {
                     groupedChallenges[category] = [];
@@ -144,13 +145,16 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, lng, ga
                     });
 
                     // 初始化一次先
-                    // FIXME 题目是否已经被解决需要修复
-                    // groupedChallenges[key].forEach(challenge => {
-                    //     setChallengeSolvedList((prev) => ({
-                    //         ...prev,
-                    //         [challenge.challenge_id || 0]: prevGameDetail.current?.rank?.solvedChallenges?.some(obj => obj.id == challenge.id) || false
-                    //     }))
-                    // });
+                    groupedChallenges[key].forEach(challenge => {
+                        setChallengeSolveStatusList((prev) => ({
+                            ...prev,
+                            [challenge.challenge_id || 0]: {
+                                solved: response.data.solved_challenges?.some(obj => obj.challenge_id == challenge.challenge_id) ?? false,
+                                solve_count: challenge.solve_count ?? 0,
+                                cur_score: challenge.cur_score ?? 0,
+                            }
+                        }))
+                    });
                 }
             }
 
@@ -242,7 +246,7 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, lng, ga
     }, [challenges])
 
     // 处理切换题目
-    const handleChangeChallenge = (id: number) => {
+    const handleChangeChallenge: (id: number) => React.MouseEventHandler<HTMLDivElement> = (id: number) => {
         return (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
 
             if (id == curChallenge?.challenge_id) return
@@ -376,7 +380,7 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, lng, ga
                                                                     rank={3}
                                                                     choiced={curChallenge?.challenge_id == challenge.challenge_id}
                                                                     onClick={handleChangeChallenge(challenge?.challenge_id ?? 0)}
-                                                                    status={challengeSolvedList[challenge?.challenge_id ?? 0]}
+                                                                    status={challengeSolveStatusList[challenge?.challenge_id ?? 0].solved}
                                                                 />
                                                             ) : (
                                                                 <div className="h-[100px]"></div>

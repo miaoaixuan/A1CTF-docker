@@ -27,7 +27,7 @@ import {
 import { ResizableScrollablePanel } from "@/components/ResizableScrollablePanel"
 
 import { Mdx } from "./MdxCompoents";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 // import { api, ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeCategory, ChallengeInfo, ChallengeType, ErrorMessage, TeamInfoModel, ParticipationStatus, ContainerStatus, ContainerInfoModel } from '@/utils/GZApi'
 
@@ -81,10 +81,11 @@ import { useCookies } from "react-cookie";
 import { CreateTeamDialog } from "./dialogs/CreateTeamDialog";
 import { JoinTeamDialog } from "./dialogs/JoinTeamDialog";
 import TimerDisplay from "./modules/TimerDisplay";
-import ChallengesViewHeader from "./modules/ChallengesViewHeader";
+import ChallengesViewHeader from "./modules/ChallengeViewHeader";
 import SubmitFlagView from "./modules/SubmitFlagView";
 import { Progress } from "./ui/progress";
 import FileDownloader from "./modules/FileDownloader";
+import ChallengeNameTitle from "./modules/ChallengeNameTitle";
 
 const GameTerminal = dynamic(
     () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
@@ -117,6 +118,12 @@ const formatDuration = (duration: number) => {
     } else {
         return `${String(seconds).padStart(2, '0')}s`;
     }
+}
+
+export interface ChallengeSolveStatus {
+    solved: boolean;
+    solve_count: number;
+    cur_score: number;
 }
 
 export function ChallengesView({ id, lng }: { id: string, lng: string }) {
@@ -165,7 +172,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     const [pageSwitch, setPageSwitch] = useState(false)
 
     // 题目是否解决
-    const [challengeSolvedList, setChallengeSolvedList] = useState<Record<number, boolean>>({});
+    const [challengeSolveStatusList, setChallengeSolveStatusList] = useState<Record<number, ChallengeSolveStatus>>({});
 
     // 附件下载进度
     const [attachDownloadProgress, setAttachDownloadProgress] = useState<number>(0)
@@ -224,10 +231,18 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     }
 
     const setChallengeSolved = (id: number) => {
-        setChallengeSolvedList((prev) => ({
+        setChallengeSolveStatusList((prev) => ({
             ...prev,
-            [id]: true
+            [id]: {
+                solved: true,
+                solve_count: (prev[id]?.solve_count ?? 0) + 1,
+                cur_score: prev[id]?.cur_score ?? 0,
+            },
         }))
+
+        if (curChallengeDetail.current?.challenge_id == id) {
+            curChallengeDetail.current.solve_count = (curChallengeDetail.current.solve_count ?? 0) + 1
+        }
     }
 
     // 开关某一 Hint 项的折叠状态
@@ -641,6 +656,16 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
         setContainerExpireTime(null)
     }
 
+    const memoizedDescription = useMemo(() => {
+        return curChallenge?.description ? (
+          <div className="flex flex-col gap-0">
+            <Mdx source={curChallenge.description} />
+          </div>
+        ) : (
+          <span>题目简介为空哦</span>
+        );
+    }, [curChallenge?.description]); // 只依赖description
+
     return (
         <>
             <GameSwitchHover animation={false} />
@@ -648,7 +673,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             {/* 抢血动画 */}
             <SolvedAnimation blood={blood} setBlood={setBlood} bloodMessage={bloodMessage} />
             {/* 提交 Flag 组件 */}
-            <SubmitFlagView lng={lng} curChallenge={curChallenge} gameID={gameID} setChallengeSolved={setChallengeSolved} />
+            <SubmitFlagView lng={lng} curChallenge={curChallenge} gameID={gameID} setChallengeSolved={setChallengeSolved} challengeSolveStatusList={challengeSolveStatusList} />
 
             {/* 比赛各种状态页 */}
             <>
@@ -820,8 +845,8 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                         lng={lng}
                         challenges={challenges || {}}
                         setChallenges={setChallenges}
-                        challengeSolvedList={challengeSolvedList}
-                        setChallengeSolvedList={setChallengeSolvedList}
+                        challengeSolveStatusList={challengeSolveStatusList}
+                        setChallengeSolveStatusList={setChallengeSolveStatusList}
                         gameStatus={gameStatus}
                         setGameStatus={setGameStatus}
                     />
@@ -912,42 +937,14 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                             >
                                                 {curChallenge?.challenge_name && (
                                                     <div className="flex flex-col gap-4 mb-4">
-                                                        <div className="flex items-center gap-2 px-5 py-3 border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md">
-                                                            <Info />
-                                                            <span className="font-bold text-lg">题目信息 - {curChallenge.challenge_name}</span>
-                                                            <div className="flex-1" />
-                                                            <div className="items-center gap-4 hidden lg:flex">
-                                                                {challengeSolvedList[curChallenge.challenge_id || 0] ? (
-                                                                    <div className="flex items-center gap-2 text-purple-600">
-                                                                        <ScanHeart className="flex-none " />
-                                                                        <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current?.cur_score ?? "?"} pts</span>
-                                                                    </div>
-                                                                ) : (
-                                                                    <div className="flex items-center gap-2 text-amber-600">
-                                                                        <Flag className="flex-none" />
-                                                                        <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current?.cur_score ?? "?"} pts</span>
-                                                                    </div>
-                                                                )}
-                                                                <div className="flex items-center gap-2 text-green-600">
-                                                                    <CircleCheckBig />
-                                                                    <span className="text-sm lg:text-md font-bold">{curChallengeDetail.current?.solve_count ?? "?"} solves</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        {curChallenge?.description != "" ? (
-                                                            <div className="flex flex-col gap-0">
-                                                                <Mdx source={curChallenge.description ?? ""} />
-                                                            </div>
-                                                        ) : (
-                                                            <span>题目简介为空哦</span>
-                                                        )}
+                                                        <ChallengeNameTitle challengeSolveStatusList={challengeSolveStatusList} curChallenge={curChallenge} />
+                                                        { memoizedDescription }
                                                     </div>
                                                 )}
 
                                                 { curChallenge?.containers?.length ? (
                                                     <div className="flex flex-col gap-4 mb-8">
-                                                        <div className="flex items-center gap-2 px-5 py-[9px] border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md select-none">
+                                                        <div className={`flex items-center gap-2 px-5 py-[9px] border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md select-none`}>
                                                             <Package />
                                                             <span className="font-bold text-lg">靶机列表</span>
                                                             <div className="flex-1" />
@@ -1030,7 +1027,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
 
                                                 {curChallenge?.attachments?.length ? (
                                                     <div className="flex flex-col gap-2 mb-4">
-                                                        <div className="flex items-center gap-2 px-5 py-3 border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md">
+                                                        <div className={`flex items-center gap-2 px-5 py-3 border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md `}>
                                                             <Paperclip />
                                                             <span className="font-bold text-lg">附件列表</span>
                                                         </div>

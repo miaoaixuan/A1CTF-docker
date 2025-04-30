@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
-import { Flag, Loader2, Mail, Send, SendHorizonal, X } from "lucide-react";
+import { CheckCheck, Flag, Loader2, Mail, Send, SendHorizonal, X } from "lucide-react";
 import { Input } from "../ui/input";
 
 import {
@@ -12,8 +12,9 @@ import {
 import { JudgeType, UserDetailGameChallenge } from "@/utils/A1API";
 import { api } from "@/utils/ApiHelper";
 import { toast } from "sonner";
+import { ChallengeSolveStatus } from "../ChallengesView";
 
-const SubmitFlagView = ({ lng, curChallenge, gameID, setChallengeSolved } : { lng: string, curChallenge: UserDetailGameChallenge | undefined, gameID: number, setChallengeSolved: (id: number) => void }) => {
+const SubmitFlagView = ({ lng, curChallenge, gameID, setChallengeSolved, challengeSolveStatusList } : { lng: string, curChallenge: UserDetailGameChallenge | undefined, gameID: number, setChallengeSolved: (id: number) => void, challengeSolveStatusList: Record<number, ChallengeSolveStatus> }) => {
 
     const [visible, setVisible] = useState(false);
     const [flag, setFlag] = useState<string>("");
@@ -88,14 +89,25 @@ const SubmitFlagView = ({ lng, curChallenge, gameID, setChallengeSolved } : { ln
     return (
         <>
             {/* 触发按钮 */}
-            { curChallenge && (
-                <div className="absolute bottom-5 right-5 z-10">
-                    <Button
-                        className="w-[67px] h-[67px] rounded-3xl backdrop-blur-sm bg-red-600/70 hover:bg-red-800/70 [&_svg]:size-9 flex p-0 items-center justify-center text-white"
-                        onClick={() => setVisible(true)}
-                    >
-                        <Flag className="rotate-12" />
-                    </Button>
+            { curChallenge && challengeSolveStatusList && (
+                <div className="absolute bottom-5 right-7 z-10">
+                    { challengeSolveStatusList[curChallenge?.challenge_id ?? 0].solved ? (
+                        <Button
+                            className="h-[57px] px-5 rounded-3xl backdrop-blur-sm bg-green-600/70 hover:bg-green-800/70 [&_svg]:size-9 gap-2 flex items-center justify-center text-white disabled:opacity-100"
+                            onClick={() => {}}
+                        >
+                            <CheckCheck />
+                            <span className="font-bold text-xl">Solved!</span>
+                        </Button>
+                    ) : (
+                        <Button
+                            className="h-[57px] px-6 rounded-3xl backdrop-blur-sm bg-red-600/70 hover:bg-red-800/70 [&_svg]:size-8 gap-2 flex items-center justify-center text-white"
+                            onClick={() => setVisible(true)}
+                        >
+                            <Flag className="rotate-12" />
+                            <span className="font-bold text-xl">Submit!</span>
+                        </Button>
+                    ) }
                 </div>
             ) }
 
