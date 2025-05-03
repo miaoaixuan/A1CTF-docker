@@ -143,7 +143,7 @@ export default function GameSwitchHover({ animation } : { animation: boolean }) 
                                         ease: "easeInOut"
                                     }}
                                 >
-                                    <span className="text-3xl font-bold">{ curSwitchingGame.title }</span>
+                                    <span className="text-3xl font-bold">{ curSwitchingGame.name }</span>
                                     <p className="mt-2">{ curSwitchingGame.summary }</p>
                                     <div className='flex mt-4'>
                                         <LoaderPinwheel className="animate-spin" />

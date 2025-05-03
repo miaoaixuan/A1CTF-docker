@@ -11,18 +11,8 @@ import (
 	dbtool "a1ctf/src/utils/db_tool"
 )
 
-type ListGamePayload struct {
-	Size   int `json:"size" binding:"min=0"`
-	Offset int `json:"offset"`
-}
-
-type AddGameChallengePayload struct {
-	GameID      int64 `json:"game_id" binding:"min=0"`
-	ChallengeID int64 `json:"challenge_id" binding:"min=0"`
-}
-
 func AdminListGames(c *gin.Context) {
-	var payload ListGamePayload
+	var payload AdminListGamePayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -190,11 +180,6 @@ func AdminGetGame(c *gin.Context) {
 	})
 }
 
-type UpdateGamePayload struct {
-	models.Game
-	Challenges []models.GameChallenge `json:"challenges"`
-}
-
 func AdminUpdateGame(c *gin.Context) {
 	gameIDStr := c.Param("game_id")
 	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
@@ -206,7 +191,7 @@ func AdminUpdateGame(c *gin.Context) {
 		return
 	}
 
-	var payload UpdateGamePayload
+	var payload AdminUpdateGamePayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,

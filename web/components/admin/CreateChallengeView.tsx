@@ -422,7 +422,7 @@ export function CreateChallengeView({ lng } : { lng: string }) {
     }
 
     const string_to_env = (data: string): { name: string, value: string }[] => {
-        let env: { name: string, value: string }[] = []
+        const env: { name: string, value: string }[] = []
 
         data.split(",").forEach((item) => {
             const [name, value] = item.split("=")
@@ -471,7 +471,7 @@ export function CreateChallengeView({ lng } : { lng: string }) {
 
     function onSubmit(values: z.infer<typeof formSchema>) {
 
-        let data_time = dayjs().toISOString();
+        const data_time = dayjs().toISOString();
         
         const finalData = {
             attachments: values.attachments,

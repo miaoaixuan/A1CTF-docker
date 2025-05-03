@@ -486,7 +486,7 @@ export function EditChallengeView({ challenge_info, lng } : { challenge_info: Ad
     }
 
     const string_to_env = (data: string): { name: string, value: string }[] => {
-        let env: { name: string, value: string }[] = []
+        const env: { name: string, value: string }[] = []
 
         data.split(",").forEach((item) => {
             const [name, value] = item.split("=")

@@ -111,7 +111,7 @@ function GameStageForm({ control, index, removeStage, form }: GameStageFormProps
         const field_name = `stages.${index}.${tm_type}`;
         console.log(field_name)
         const currentDate = form.getValues(field_name) || new Date();
-        let newDate = new Date(currentDate);
+        const newDate = new Date(currentDate);
 
         if (type === "hour") {
             const hour = parseInt(value, 10);
@@ -778,7 +778,7 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
     }
 
     const string_to_env = (data: string): { name: string, value: string }[] => {
-        let env: { name: string, value: string }[] = []
+        const env: { name: string, value: string }[] = []
 
         data.split(",").forEach((item) => {
             const [name, value] = item.split("=")
@@ -1099,7 +1099,7 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
 
     useEffect(() => {
         table.setPageSize(5)
-        let inputListener = setInterval(() => {
+        const inputListener = setInterval(() => {
             const curTimeStamp = dayjs().valueOf()
             if (lastInputTime.current != 0 && (curTimeStamp - lastInputTime.current) > 500) {
                 lastInputTime.current = 0
@@ -1132,7 +1132,7 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
     function handleTimeChange(type: "hour" | "minute", value: string, tm_type: "start_time" | "end_time" | "wp_expire_time") {
         const field_name = tm_type;
         const currentDate = form.getValues(field_name) || new Date();
-        let newDate = new Date(currentDate);
+        const newDate = new Date(currentDate);
 
         if (type === "hour") {
             const hour = parseInt(value, 10);

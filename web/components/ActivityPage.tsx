@@ -73,7 +73,8 @@ export function ActivityPage({ lng, gameDetailModel } : { lng: string, gameDetai
                 });
             }).then(dataURL => {
                 setPosterData(dataURL as string)
-                setCurSwitchingGame(curGame)
+                // FIXME 这里要修复
+                // setCurSwitchingGame(curGame)
                 setIsChangingGame(true)
 
                 // 动画时间

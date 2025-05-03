@@ -9,6 +9,7 @@ import { Button } from "../ui/button";
 import { GameSimpleInfo } from "@/utils/A1API";
 import { api } from "@/utils/ApiHelper";
 import { useRouter } from "next/navigation";
+import { FastAverageColor } from "fast-average-color"
 
 export function GameManagePage({ lng } : { lng: string }) { 
 
@@ -85,7 +86,6 @@ export function GameManagePage({ lng } : { lng: string }) {
                                     <>
                                         <div className="absolute top-0 left-0 w-full h-full">
                                             <img src={game.poster || "/images/p2g7wm.jpg"} className={`w-full h-full object-cover`} onLoad={(e) => {
-                                                const FastAverageColor = require('fast-average-color').FastAverageColor;
                                                 const fac = new FastAverageColor();
                                                 const container = e.target as HTMLImageElement; 
 

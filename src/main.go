@@ -192,7 +192,17 @@ func StartLoopEvent() {
 			2*time.Second,
 		),
 		gocron.NewTask(
-			jobs.UpdateActivateGames,
+			jobs.UpdateActivateGameScore,
+		),
+		gocron.WithSingletonMode(gocron.LimitModeWait),
+	)
+
+	s.NewJob(
+		gocron.DurationJob(
+			5*time.Second,
+		),
+		gocron.NewTask(
+			jobs.UpdateActiveGameScoreBoard,
 		),
 		gocron.WithSingletonMode(gocron.LimitModeWait),
 	)

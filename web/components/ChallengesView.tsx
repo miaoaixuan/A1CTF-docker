@@ -336,7 +336,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
         }
     }, [curChallenge]);
 
-    let containerCountDownInter: NodeJS.Timeout | null = null;
+    const containerCountDownInter: NodeJS.Timeout | null = null;
 
     // useEffect(() => {
     //     if (containerRunningTrigger == true) {
@@ -587,28 +587,6 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
         // }
     }
 
-    const updateContainer = (inter?: NodeJS.Timeout) => {
-        // TODO 创建靶机逻辑重写
-        // api.game.gameCreateContainer(gameID, curChallenge.challenge_id!).then((res) => {
-        //     setContainerInfo(res.data)
-
-        //     if (res.data.status == ContainerStatus.Running || res.data.status == ContainerStatus.Destroyed) {
-        //         toast.success(t("container_start_success"), { position: "top-center" })
-        //         if (inter) clearInterval(inter)
-        //     }
-        // }).catch((error: AxiosError) => {
-        //     if (error.response?.status) {
-        //         const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-        //         toast.error(errorMessage.title, { position: "top-center" })
-        //     } else {
-        //         toast.error(t("unknow_error"), { position: "top-center" })
-        //     }
-
-        //     if (inter) clearInterval(inter)
-        //     setContainerLaunching(false)
-        // })
-    }
-
     const handleLaunchContainer = () => {
         setContainerLaunching(true)
 
@@ -621,13 +599,11 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     }
 
     const handleExtendContainer = () => {
-        // TODO 延长靶机逻辑重写
 
         api.user.userExtendContainerLifeForAChallenge(gameID, curChallenge?.challenge_id ?? 0)
     }
 
     const handleDestoryContainer = () => {
-        // TODO 销毁靶机逻辑重写
 
         api.user.userDeleteContainerForAChallenge(gameID, curChallenge?.challenge_id ?? 0).then((res) => {
             setContainerRunningTrigger(false)

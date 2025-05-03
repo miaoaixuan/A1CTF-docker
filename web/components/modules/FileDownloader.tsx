@@ -70,7 +70,7 @@ const FileDownloader = (
                     const reader = response.body!.getReader();
                     const totalBytes = parseInt(contentLength, 10);
                     let receivedBytes = 0;
-                    let startTime = Date.now();
+                    const startTime = Date.now();
                     let lastUpdateTime = startTime;
                     let lastReceivedBytes = 0;
     

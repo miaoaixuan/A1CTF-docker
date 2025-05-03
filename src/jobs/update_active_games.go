@@ -44,10 +44,7 @@ func updateActiveGameScores(game_ids []int64) {
 	}
 }
 
-func UpdateActivateGames() {
-
-	// var jobStart = time.Now()
-
+func UpdateActivateGameScore() {
 	var active_games []models.Game
 	query := dbtool.DB().Where("start_time <= ? AND end_time >= ?", time.Now().UTC(), time.Now().UTC())
 
@@ -61,8 +58,23 @@ func UpdateActivateGames() {
 		game_ids = append(game_ids, game.GameID)
 	}
 
-	// 先更新每个比赛每道题目的当前分数
+	// 更新比赛分数
 	updateActiveGameScores(game_ids)
+}
+
+func UpdateActiveGameScoreBoard() {
+	var active_games []models.Game
+	query := dbtool.DB().Where("start_time <= ? AND end_time >= ?", time.Now().UTC(), time.Now().UTC())
+
+	if err := query.Find(&active_games).Error; err != nil {
+		println("Failed to load active games")
+		return
+	}
+
+	var game_ids []int64
+	for _, game := range active_games {
+		game_ids = append(game_ids, game.GameID)
+	}
 
 	// 开始计算每只队伍当前的总分, 1000条分块
 	for _, game_id := range game_ids {
@@ -135,6 +147,4 @@ func UpdateActivateGames() {
 			}
 		}
 	}
-
-	// println("Update active games job finished, cost:", time.Since(jobStart).String())
 }

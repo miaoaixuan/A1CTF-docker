@@ -12,15 +12,9 @@ import (
 	general "a1ctf/src/utils/general"
 )
 
-type login struct {
-	Username string `form:"username" json:"username" binding:"required"`
-	Password string `form:"password" json:"password" binding:"required"`
-	CaptCha  string `form:"captcha" json:"captcha"`
-}
-
 func Login() func(c *gin.Context) (interface{}, error) {
 	return func(c *gin.Context) (interface{}, error) {
-		var loginVals login
+		var loginVals LoginPayload
 		if err := c.ShouldBind(&loginVals); err != nil {
 			return "", jwt.ErrMissingLoginValues
 		}
@@ -40,13 +34,6 @@ func Login() func(c *gin.Context) (interface{}, error) {
 			}
 		}
 	}
-}
-
-type RegisterPayload struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
-	Email    string `json:"email" binding:"required"`
-	Captcha  string `json:"captcha,omitempty"`
 }
 
 func Register(c *gin.Context) {
