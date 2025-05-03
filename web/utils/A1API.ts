@@ -398,6 +398,78 @@ export interface ExposePortInfo {
   }[];
 }
 
+export interface GameScoreboardResponse {
+  /** @example 200 */
+  code?: number;
+  data?: GameScoreboardData;
+}
+
+export interface GameScoreboardData {
+  /** @example 1 */
+  game_id?: number;
+  /** @example "测试比赛1" */
+  name?: string;
+  teams?: TeamScore[];
+  time_lines?: TeamTimeline[];
+}
+
+export interface TeamScore {
+  /** @example 1 */
+  team_id?: number;
+  /** @example "test114514" */
+  team_name?: string;
+  /** @example null */
+  team_avatar?: string | null;
+  /** @example "" */
+  team_slogan?: string;
+  /** @example "" */
+  team_description?: string;
+  /** @example 1 */
+  rank?: number;
+  /**
+   * @format float
+   * @example 500
+   */
+  score?: number;
+  solved_challenges?: SolvedChallenge[];
+}
+
+export interface SolvedChallenge {
+  /** @example 1 */
+  challenge_id?: number;
+  /**
+   * @format float
+   * @example 500
+   */
+  score?: number;
+  /** @example "root" */
+  solver?: string;
+  /** @example 1 */
+  rank?: number;
+  /**
+   * @format date-time
+   * @example "2025-05-03T07:07:34.650351Z"
+   */
+  solve_time?: string;
+}
+
+export interface TeamTimeline {
+  /** @example 1 */
+  team_id?: number;
+  /** @example "test114514" */
+  team_name?: string;
+  scores?: ScoreRecord[];
+}
+
+export interface ScoreRecord {
+  record_time?: number;
+  /**
+   * @format float
+   * @example 500
+   */
+  score?: number;
+}
+
 import type {
   AxiosInstance,
   AxiosRequestConfig,
@@ -1217,6 +1289,22 @@ export class Api<
         void | ErrorMessage
       >({
         path: `/api/game/${gameId}/container/${challengeId}`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags user
+     * @name UserGetGameScoreboard
+     * @summary Get game scoreboard data
+     * @request GET:/api/game/{game_id}/scoreboard
+     */
+    userGetGameScoreboard: (gameId: number, params: RequestParams = {}) =>
+      this.request<GameScoreboardResponse, any>({
+        path: `/api/game/${gameId}/scoreboard`,
         method: "GET",
         format: "json",
         ...params,

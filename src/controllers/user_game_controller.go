@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -18,7 +19,7 @@ import (
 )
 
 // 比赛状态检查中间件
-func GameStatusMiddleware(visibleAfterEnded bool) gin.HandlerFunc {
+func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		gameIDStr := c.Param("game_id")
 		gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
@@ -76,10 +77,12 @@ func GameStatusMiddleware(visibleAfterEnded bool) gin.HandlerFunc {
 			return
 		}
 
-		claims := jwt.ExtractClaims(c)
-		user_id := claims["UserID"].(string)
+		if extractUserID {
+			claims := jwt.ExtractClaims(c)
+			user_id := claims["UserID"].(string)
 
-		c.Set("user_id", user_id)
+			c.Set("user_id", user_id)
+		}
 
 		// 将比赛信息存入上下文
 		c.Set("game", game)
@@ -209,6 +212,10 @@ func UserGetGameChallenges(c *gin.Context) {
 		})
 		return
 	}
+
+	sort.Slice(gameChallenges, func(i, j int) bool {
+		return gameChallenges[i].Challenge.Name < gameChallenges[j].Challenge.Name
+	})
 
 	// 游戏阶段判断
 	gameStages := game.Stages
@@ -1021,6 +1028,209 @@ func UserGameGetJudgeResult(c *gin.Context) {
 }
 
 func UserGameGetScoreBoard(c *gin.Context) {
-	_ = c.MustGet("game").(models.Game)
+	game := c.MustGet("game").(models.Game)
+
+	var gameChallenges []models.GameChallenge
+	if err := dbtool.DB().Preload("Challenge").Where("game_id = ?", game.GameID).Find(&gameChallenges).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load game challenges",
+		})
+		return
+	}
+
+	var scoreboardItems []models.ScoreBoard
+	if err := dbtool.DB().Where("game_id = ?", game.GameID).Find(&scoreboardItems).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load scoreboards",
+		})
+		return
+	}
+
+	var scoreboardRecords []models.ScoreBoardDataWithTime
+
+	// 把所有分块的 ScoreboardItem 合并到一起
+	for _, item := range scoreboardItems {
+		scoreboardRecords = append(scoreboardRecords, item.Data...)
+	}
+
+	// 按照时间升序
+	sort.Slice(scoreboardRecords, func(i, j int) bool {
+		return scoreboardRecords[i].RecordTime.Before(scoreboardRecords[j].RecordTime)
+	})
+
+	// 最新一条记录
+	var lastestRecord = scoreboardRecords[len(scoreboardRecords)-1]
+
+	type kv struct {
+		TeamID int64
+		Value  models.ScoreBoardData
+	}
+
+	var lastRecordItems = make([]kv, 0, len(lastestRecord.Data))
+
+	for k, v := range lastestRecord.Data {
+		lastRecordItems = append(lastRecordItems, kv{
+			TeamID: k,
+			Value:  v,
+		})
+	}
+
+	// 按照分数降序
+	sort.Slice(lastRecordItems, func(i, j int) bool {
+		return lastRecordItems[i].Value.Score > lastRecordItems[j].Value.Score
+	})
+
+	top10 := lastRecordItems[:min(10, len(lastRecordItems))]
+
+	type TimeLineScoreItem struct {
+		RecordTime int64   `json:"record_time"`
+		Score      float64 `json:"score"`
+	}
+
+	type TimeLineItem struct {
+		TeamID   int64               `json:"team_id"`
+		TeamName string              `json:"team_name"`
+		Scores   []TimeLineScoreItem `json:"scores"`
+	}
+
+	// 统计 TOP10 的分数线
+	timeLineMap := make(map[int64]TimeLineItem)
+	prevScoreMap := make(map[int64]float64)
+
+	for _, item := range top10 {
+		timeLineMap[item.TeamID] = TimeLineItem{
+			TeamID:   item.TeamID,
+			TeamName: item.Value.TeamName,
+			Scores:   make([]TimeLineScoreItem, 0),
+		}
+	}
+
+	// 统计所有时间的分数线
+	for _, item := range scoreboardRecords {
+		recordTime := item.RecordTime
+
+		for teamID, scoreValue := range item.Data {
+			if timeline, ok := timeLineMap[teamID]; ok {
+				lastScore, valid := prevScoreMap[teamID]
+				if !valid || lastScore != scoreValue.Score {
+					timeline.Scores = append(timeline.Scores, TimeLineScoreItem{
+						RecordTime: recordTime.UnixMilli(),
+						Score:      scoreValue.Score,
+					})
+					timeLineMap[teamID] = timeline
+					prevScoreMap[teamID] = scoreValue.Score
+				}
+			}
+		}
+	}
+
+	// 转换为 []TimeLineItem
+	var timeLines []TimeLineItem
+
+	for _, item := range timeLineMap {
+		timeLines = append(timeLines, item)
+	}
+
+	// 按照分数降序
+	sort.Slice(timeLines, func(i, j int) bool {
+		return timeLines[i].Scores[len(timeLines[i].Scores)-1].Score > timeLines[j].Scores[len(timeLines[j].Scores)-1].Score
+	})
+
+	// 统计剩下的人的解题状态
+	var teams []models.Team
+	if err := dbtool.DB().Where("game_id = ? AND team_status = ?", game.GameID, models.ParticipateApproved).Find(&teams).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load teams",
+		})
+		return
+	}
+
+	var teamMap = make(map[int64]models.Team)
+	for _, team := range teams {
+		teamMap[team.TeamID] = team
+	}
+
+	// 先生成一张 solveID 和 Solve model 的哈希表
+	var solves []models.Solve
+	if err := dbtool.DB().Where("game_id = ?", game.GameID).Preload("GameChallenge").Preload("Solver").Find(&solves).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load solves",
+		})
+		return
+	}
+
+	var solveMap = make(map[string]models.Solve)
+	for _, solve := range solves {
+		solveMap[solve.SolveID] = solve
+	}
+
+	type TeamSolveItem struct {
+		ChallengeID int64     `json:"challenge_id"`
+		Score       float64   `json:"score"`
+		Solver      string    `json:"solver"`
+		Rank        int64     `json:"rank"`
+		SolveTime   time.Time `json:"solve_time"`
+	}
+
+	type TeamScoreItem struct {
+		TeamID           int64           `json:"team_id"`
+		TeamName         string          `json:"team_name"`
+		TeamAvatar       *string         `json:"team_avatar"`
+		TeamSlogan       *string         `json:"team_slogan"`
+		TeamDescription  *string         `json:"team_description"`
+		Rank             int64           `json:"rank"`
+		Score            float64         `json:"score"`
+		SolvedChallenges []TeamSolveItem `json:"solved_challenges"`
+	}
+
+	var teamSolveMap = make([]TeamScoreItem, 0, len(teams))
+
+	// 遍历最后一次的时间线
+	for teamRank, item := range lastRecordItems {
+		team, ok := teamMap[item.TeamID]
+		if !ok {
+			continue
+		}
+
+		teamSolvedChallenges := make([]TeamSolveItem, 0)
+		for _, solveID := range item.Value.SolvedChallenges {
+			if solve, ok := solveMap[solveID]; ok {
+				teamSolvedChallenges = append(teamSolvedChallenges, TeamSolveItem{
+					ChallengeID: solve.ChallengeID,
+					Score:       solve.GameChallenge.CurScore,
+					Solver:      solve.Solver.Username,
+					Rank:        int64(solve.Rank),
+					SolveTime:   solve.SolveTime,
+				})
+			}
+		}
+
+		teamSolveMap = append(teamSolveMap, TeamScoreItem{
+			TeamID:           team.TeamID,
+			TeamName:         team.TeamName,
+			TeamAvatar:       team.TeamAvatar,
+			TeamSlogan:       team.TeamSlogan,
+			TeamDescription:  team.TeamDescription,
+			Rank:             int64(teamRank + 1),
+			Score:            item.Value.Score,
+			SolvedChallenges: teamSolvedChallenges,
+		})
+	}
+
+	var result = gin.H{
+		"game_id":    game.GameID,
+		"name":       game.Name,
+		"time_lines": timeLines,
+		"teams":      teamSolveMap,
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": result,
+	})
 
 }

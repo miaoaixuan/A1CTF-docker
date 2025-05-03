@@ -961,6 +961,24 @@ paths:
           description: The ID of the challenge to retrieve
           schema:
             type: integer
+  /api/game/{game_id}/scoreboard:
+    get:
+      tags: [user]
+      operationId: userGetGameScoreboard
+      summary: Get game scoreboard data
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameScoreboardResponse'
 components:
   schemas:
     UserLogin:
@@ -1672,3 +1690,105 @@ components:
       required:
         - container_name
         - container_ports
+    GameScoreboardResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        data:
+          $ref: '#/components/schemas/GameScoreboardData'
+
+    GameScoreboardData:
+      type: object
+      properties:
+        game_id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "测试比赛1"
+        teams:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamScore'
+        time_lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamTimeline'
+
+    TeamScore:
+      type: object
+      properties:
+        team_id:
+          type: integer
+          example: 1
+        team_name:
+          type: string
+          example: "test114514"
+        team_avatar:
+          type: string
+          nullable: true
+          example: null
+        team_slogan:
+          type: string
+          example: ""
+        team_description:
+          type: string
+          example: ""
+        rank:
+          type: integer
+          example: 1
+        score:
+          type: number
+          format: float
+          example: 500
+        solved_challenges:
+          type: array
+          items:
+            $ref: '#/components/schemas/SolvedChallenge'
+
+    SolvedChallenge:
+      type: object
+      properties:
+        challenge_id:
+          type: integer
+          example: 1
+        score:
+          type: number
+          format: float
+          example: 500
+        solver:
+          type: string
+          example: "root"
+        rank:
+          type: integer
+          example: 1
+        solve_time:
+          type: string
+          format: date-time
+          example: "2025-05-03T07:07:34.650351Z"
+
+    TeamTimeline:
+      type: object
+      properties:
+        team_id:
+          type: integer
+          example: 1
+        team_name:
+          type: string
+          example: "test114514"
+        scores:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScoreRecord'
+
+    ScoreRecord:
+      type: object
+      properties:
+        record_time:
+          type: number
+        score:
+          type: number
+          format: float
+          example: 500

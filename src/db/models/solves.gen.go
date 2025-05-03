@@ -42,6 +42,7 @@ type Solve struct {
 	ContainerID   *string       `gorm:"column:container_id" json:"container_id"`
 	SolveStatus   SolveStatus   `gorm:"column:solve_status" json:"solve_status"`
 	SolverID      string        `gorm:"column:solver_id;not null" json:"solver_uuid"`
+	Solver        User          `gorm:"foreignKey:SolverID;references:user_id" json:"-"`
 	SolveTime     time.Time     `gorm:"column:solve_time;not null" json:"solve_time"`
 	Rank          int32         `gorm:"column:rank" json:"rank"`
 }

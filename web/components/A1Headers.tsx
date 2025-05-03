@@ -59,7 +59,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
     }, [])
 
     return (
-        <header className="sticky top-0 h-16 backdrop-blur-sm select-none">
+        <header className="sticky top-0 h-16 select-none">
             <SafeComponent animation={false}>
                 <div className="container-wrapper h-full">
                     <div className="container h-16 items-center header-theme hidden md:flex">

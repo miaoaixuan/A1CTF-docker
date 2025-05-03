@@ -2,12 +2,13 @@
 
 import { api, BasicGameInfoModel, ProfileUserInfoModel } from "@/utils/GZApi";
 import { AxiosError } from "axios";
-import React, { createContext, Dispatch, SetStateAction, useContext, useEffect, useState } from "react";
+import React, { createContext, Dispatch, SetStateAction, useContext, useEffect, useRef, useState } from "react";
 import { useCookies } from "react-cookie";
 
 interface TransitionContextType {
     curProfile: ProfileUserInfoModel;
     updateProfile: (callback?: () => void) => void;
+    serialOptions: React.MutableRefObject<echarts.SeriesOption[]>;
 }
 
 const TransitionContext = createContext<TransitionContextType | undefined>(undefined);
@@ -24,6 +25,8 @@ export const GlobalVariableProvider: React.FC<{ children: React.ReactNode }> = (
 
     const [cookies, setCookie, removeCookie] = useCookies(["uid"])
     const [curProfile, setCurProfile] = useState<ProfileUserInfoModel>({})
+
+    const serialOptions = useRef<echarts.SeriesOption[]>([])
 
     const updateProfile = (callback?: () => void) => {
         api.account.accountProfile().then((res) => {
@@ -48,9 +51,8 @@ export const GlobalVariableProvider: React.FC<{ children: React.ReactNode }> = (
     }, [])
 
     return (
-        <TransitionContext.Provider value={{ curProfile, updateProfile }}>
+        <TransitionContext.Provider value={{ curProfile, updateProfile, serialOptions }}>
             {children}
         </TransitionContext.Provider>
     );
 };
-

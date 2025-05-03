@@ -5,13 +5,13 @@ import { MacScrollbar } from "mac-scrollbar";
 import { useTheme } from "next-themes";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import { Button } from "./ui/button";
-import { api, ChallengeInfo, ScoreboardItem, SubmissionType, ScoreboardModel } from "@/utils/GZApi";
 import dayjs from "dayjs";
 
 import ReactDOMServer from 'react-dom/server';
 import Link from "next/link";
+import { GameScoreboardData, TeamScore, UserSimpleGameChallenge } from "@/utils/A1API";
 
-export function ScoreTable ({ scoreBoardModel, setShowUserDetail }: { scoreBoardModel: ScoreboardModel, setShowUserDetail: Dispatch<SetStateAction<ScoreboardItem>> }) {
+export function ScoreTable ({ scoreBoardModel, setShowUserDetail, challenges }: { scoreBoardModel: GameScoreboardData, setShowUserDetail: Dispatch<SetStateAction<TeamScore>>, challenges: Record<string, UserSimpleGameChallenge[]> }) {
 
     const tableRef = useRef<HTMLDivElement | null>(null)
     const [pageLines, setPageLines] = useState(10)
@@ -19,9 +19,8 @@ export function ScoreTable ({ scoreBoardModel, setShowUserDetail }: { scoreBoard
 
     const { theme } = useTheme() 
 
-    const [challenges, setChallenges] = useState<Record<string, ChallengeInfo[]>>({})
-    const [scoreboardItems, setScoreBoardItems] = useState<ScoreboardItem[]>([])
-    const [curPageData, setCurPageData] = useState<ScoreboardItem[]>([])
+    const [scoreboardItems, setScoreBoardItems] = useState<TeamScore[]>([])
+    const [curPageData, setCurPageData] = useState<TeamScore[]>([])
     const [curPage, setCurPage] = useState(1)
     const [totalPage, setTotalPage] = useState(0)
 
@@ -40,15 +39,14 @@ export function ScoreTable ({ scoreBoardModel, setShowUserDetail }: { scoreBoard
             setPageLines(pageLines)
         }
 
-        setScoreBoardItems(scoreBoardModel.items || [])
-        setChallenges(scoreBoardModel.challenges || {})
-        setTotalPage(Math.ceil(scoreBoardModel.items!.length / pageLines))
+        setScoreBoardItems(scoreBoardModel.teams || [])
+        setTotalPage(Math.ceil(scoreBoardModel.teams!.length / pageLines))
 
         const curPageStart = pageLines * (curPage - 1)
-        const pageData: ScoreboardItem[] = [];
+        const pageData: TeamScore[] = [];
 
-        for (let i = curPageStart; i < Math.min(curPageStart + pageLines, scoreBoardModel.items?.length || 0); i++) {
-            pageData.push(scoreBoardModel.items![i])
+        for (let i = curPageStart; i < Math.min(curPageStart + pageLines, scoreBoardModel.teams?.length || 0); i++) {
+            pageData.push(scoreBoardModel.teams![i])
         }
         
         setCurPageData(pageData)
@@ -65,7 +63,7 @@ export function ScoreTable ({ scoreBoardModel, setShowUserDetail }: { scoreBoard
     useEffect(() => {
         setTotalPage(Math.ceil(scoreboardItems.length / pageLines))
         const curPageStart = pageLines * (curPage - 1)
-        const pageData: ScoreboardItem[] = [];
+        const pageData: TeamScore[] = [];
 
         for (let i = curPageStart; i < Math.min(curPageStart + pageLines, scoreboardItems.length); i++) {
             pageData.push(scoreboardItems[i])
@@ -90,24 +88,24 @@ export function ScoreTable ({ scoreBoardModel, setShowUserDetail }: { scoreBoard
         else if (rank == 3) return "#D3883E"
     }
 
-    const getSolveStatus = (challenge: ChallengeInfo, target: ScoreboardItem) => {
+    const getSolveStatus = (challenge: UserSimpleGameChallenge, target: TeamScore) => {
         if (!target) return (<></>)
 
-        const targetChallenge = target.solvedChallenges?.find((e) => e.id == challenge.id)
+        const targetChallenge = target.solved_challenges?.find((e) => e.challenge_id == challenge.challenge_id)
         
 
         if (targetChallenge) {
 
             const cardView = ReactDOMServer.renderToStaticMarkup(
                 <div className="flex flex-col text-[12px]">
-                    <span>{ target.name }</span>
-                    <span>{ challenge.title }</span>
-                    <span>{ dayjs(targetChallenge.time).format("YYYY-MM-DD HH:mm:ss") }</span>
-                    <span className="text-green-300">+ { challenge.score }</span>
+                    <span>{ target.team_name }</span>
+                    <span>{ challenge.challenge_name }</span>
+                    <span>{ dayjs(targetChallenge.solve_time).format("YYYY-MM-DD HH:mm:ss") }</span>
+                    <span className="text-green-300">+ { challenge.cur_score }</span>
                 </div>
             )
 
-            if (targetChallenge.type == SubmissionType.FirstBlood) {
+            if (targetChallenge.rank == 1) {
                 return (
                     <span
                         data-tooltip-id="challengeTooltip"
@@ -116,21 +114,21 @@ export function ScoreTable ({ scoreBoardModel, setShowUserDetail }: { scoreBoard
                         <Award className="stroke-[#FFB02E]"/>
                     </span>
                 )
-            } else if (targetChallenge.type == SubmissionType.SecondBlood) {
+            } else if (targetChallenge.rank == 2) {
                 return (
                     <span
                         data-tooltip-id="challengeTooltip"
                         data-tooltip-html={cardView}
                     ><Award className="stroke-[#BEBEBE]"/></span>
                 )
-            } else if (targetChallenge.type == SubmissionType.ThirdBlood) {
+            } else if (targetChallenge.rank == 3) {
                 return (
                     <span
                         data-tooltip-id="challengeTooltip"
                         data-tooltip-html={cardView}
                     ><Award className="stroke-[#D3883E]"/></span>
                 )
-            } else if (targetChallenge.type == SubmissionType.Normal) {
+            } else {
                 return (
                     <span
                         data-tooltip-id="challengeTooltip"
@@ -164,11 +162,11 @@ export function ScoreTable ({ scoreBoardModel, setShowUserDetail }: { scoreBoard
                                         { getRankIcon(item.rank || 0) }
                                     </div>
                                     <div className="flex-1 overflow-hidden select-none">
-                                        <a className="text-nowrap text-ellipsis overflow-hidden hover:underline focus:underline" data-tooltip-id="challengeTooltip" data-tooltip-html={ `<div class='text-sm'>${item.name} - ${ item.score } pts</div>` } 
+                                        <a className="text-nowrap text-ellipsis overflow-hidden hover:underline focus:underline" data-tooltip-id="challengeTooltip" data-tooltip-html={ `<div class='text-sm'>${item.team_name} - ${ item.score } pts</div>` } 
                                             onClick={() => {
                                                 setShowUserDetail(item || {})
                                             }}
-                                        >{ item.name }</a>
+                                        >{ item.team_name }</a>
                                     </div>
                                     <div className="justify-end gap-1 hidden lg:flex">
                                         <span>{ item.score }</span>
@@ -196,7 +194,7 @@ export function ScoreTable ({ scoreBoardModel, setShowUserDetail }: { scoreBoard
                                             { challenges[key].map((challenge, idx1) => (
                                                 <div className="flex flex-col h-full w-24 flex-shrink-0" key={`col-${idx1}`}>
                                                     <div className={`flex w-full h-12 border-b-2 transition-[border-color] duration-300 items-center justify-center flex-shrink-0 pl-2 pr-2`} >
-                                                        <span className="select-none text-nowrap text-ellipsis overflow-hidden font-bold" data-tooltip-id="challengeTooltip" data-tooltip-html={ `<div class='text-sm'>${challenge.title}</div>` }>{ challenge.title }</span>
+                                                        <span className="select-none text-nowrap text-ellipsis overflow-hidden font-bold" data-tooltip-id="challengeTooltip" data-tooltip-html={ `<div class='text-sm'>${challenge.challenge_name}</div>` }>{ challenge.challenge_name }</span>
                                                     </div>
                                                     { curPageData[0] && curPageData.map((item, idx2) => (
                                                         <div className={`flex w-full h-12 border-b-2 transition-[border-color] duration-300 items-center justify-center flex-shrink-0`} key={`item-${idx2}`} >

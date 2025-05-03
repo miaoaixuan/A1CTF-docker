@@ -207,6 +207,8 @@ CREATE INDEX idx_notices_category ON notices USING GIN(notice_category);
 CREATE TABLE "scoreboard" (
     "score_id" BIGSERIAL NOT NULL,
     "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
+    "cur_records" int4 NOT NULL DEFAULT 0,
+    "prev_score" jsonb NOT NULL,
     "data" jsonb NOT NULL,
     "generate_time" timestamp NOT NULL,
     PRIMARY KEY (score_id)
@@ -214,3 +216,4 @@ CREATE TABLE "scoreboard" (
 
 CREATE INDEX idx_scoreboard_game ON scoreboard(game_id);
 CREATE INDEX idx_scoreboard_time ON scoreboard(generate_time);
+CREATE INDEX idx_scoreboard_records ON scoreboard(cur_records);
