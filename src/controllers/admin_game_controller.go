@@ -131,16 +131,12 @@ func AdminGetGame(c *gin.Context) {
 		return
 	}
 
-	var gameChallenges []struct {
-		models.GameChallenge
-		models.Challenge
-	}
+	var gameChallenges []models.GameChallenge
 
 	// 使用 Preload 进行关联查询
-	if err := dbtool.DB().Table("game_challenges").
-		Joins("LEFT JOIN challenges ON game_challenges.challenge_id = challenges.challenge_id").
+	if err := dbtool.DB().Preload("Challenge").
 		Where("game_id = ?", gameID).
-		Scan(&gameChallenges).Error; err != nil {
+		Find(&gameChallenges).Error; err != nil {
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -169,7 +165,7 @@ func AdminGetGame(c *gin.Context) {
 	}
 
 	for _, gc := range gameChallenges {
-		judgeConfig := gc.GameChallenge.JudgeConfig
+		judgeConfig := gc.JudgeConfig
 		if judgeConfig == nil {
 			judgeConfig = gc.Challenge.JudgeConfig
 		}
@@ -177,14 +173,14 @@ func AdminGetGame(c *gin.Context) {
 		result["challenges"] = append(result["challenges"].([]gin.H), gin.H{
 			"challenge_id":   gc.Challenge.ChallengeID,
 			"challenge_name": gc.Challenge.Name,
-			"total_score":    gc.GameChallenge.TotalScore,
-			"cur_score":      gc.GameChallenge.CurScore,
-			"hints":          gc.GameChallenge.Hints,
+			"total_score":    gc.TotalScore,
+			"cur_score":      gc.CurScore,
+			"hints":          gc.Hints,
 			"solve_count":    gc.SolveCount,
 			"category":       gc.Challenge.Category,
 			"judge_config":   judgeConfig,
-			"belong_stage":   gc.GameChallenge.BelongStage,
-			"visible":        gc.GameChallenge.Visible,
+			"belong_stage":   gc.BelongStage,
+			"visible":        gc.Visible,
 		})
 	}
 

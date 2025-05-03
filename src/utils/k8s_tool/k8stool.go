@@ -10,10 +10,12 @@ import (
 	"log"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/validation"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -22,19 +24,61 @@ import (
 var clientset *kubernetes.Clientset
 
 type PortName struct {
-	Name string `json:"name"`
-	Port int32  `json:"port"`
+	Name string `json:"name" validate:"required,portname" label:"PortName" message:"Port name must be a DNS_LABEL"`
+	Port int32  `json:"port" validate:"min=1,max=65535" label:"Port" message:"Port must be between 1 and 65535"`
 }
 
 type A1Container struct {
-	Name         string          `json:"name"`
-	Image        string          `json:"image"`
-	Command      []string        `json:"command"`
-	Env          []corev1.EnvVar `json:"env"`
-	ExposePorts  []PortName      `json:"expose_ports"`
-	CPULimit     int64           `json:"cpu_limit"`
-	MemoryLimit  int64           `json:"memory_limit"`
-	StorageLimit int64           `json:"storage_limit"`
+	Name         string          `json:"name" validate:"required,dns_label" label:"ContainerName" message:"Container must be a DNS_LABEL"`
+	Image        string          `json:"image" validate:"required" label:"ContainerImage"`
+	Command      []string        `json:"command" validate:"-"`
+	Env          []corev1.EnvVar `json:"env" validate:"-"`
+	ExposePorts  []PortName      `json:"expose_ports" validate:"dive"`
+	CPULimit     int64           `json:"cpu_limit" validate:"min=0" label:"CPULimit" message:"CPU limit must be greater than 0"`
+	MemoryLimit  int64           `json:"memory_limit" validate:"min=0" label:"MemoryLimit" message:"Memory limit must be greater than 0"`
+	StorageLimit int64           `json:"storage_limit" validate:"min=0" label:"StorageLimit" message:"Storage limit must be greater than 0"`
+}
+
+// 自定义验证函数 - 验证DNS标签格式
+func validateDNSLabel(fl validator.FieldLevel) bool {
+	value := fl.Field().String()
+	return len(validation.IsDNS1123Label(value)) == 0
+}
+
+// 自定义验证函数 - 验证端口名称格式
+func validatePortName(fl validator.FieldLevel) bool {
+	value := fl.Field().String()
+	return len(validation.IsValidPortName(value)) == 0
+}
+
+func ValidContainerConfig(containers []A1Container) error {
+	validate := validator.New()
+
+	// 注册自定义验证函数
+	_ = validate.RegisterValidation("dns_label", validateDNSLabel)
+	_ = validate.RegisterValidation("portname", validatePortName)
+
+	for _, container := range containers {
+		log.Printf("Validating container: %+v\n", container)
+		err := validate.Struct(container)
+		if err != nil {
+			// 处理验证错误
+			if validationErrors, ok := err.(validator.ValidationErrors); ok {
+				for _, fieldErr := range validationErrors {
+					log.Printf("Validation error: field %s failed validation with tag %s\n", fieldErr.Field(), fieldErr.Tag())
+					return fmt.Errorf("field %s failed validation with tag %s value %s",
+						fieldErr.Field(),
+						fieldErr.Tag(),
+						fieldErr.Value(),
+					)
+				}
+			} else {
+				log.Printf("Error validating container: %v\n", err)
+				return fmt.Errorf("validation error: %v", err)
+			}
+		}
+	}
+	return nil
 }
 
 type A1Containers []A1Container
@@ -265,14 +309,12 @@ func DeletePod(podInfo *PodInfo) error {
 	if err != nil {
 		return fmt.Errorf("error deleting pod: %v", err)
 	}
-	fmt.Println("Pod deleted")
 
 	// 删除 Service
 	err = clientset.CoreV1().Services(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("error deleting service: %v", err)
 	}
-	fmt.Println("Service deleted")
 
 	return nil
 }

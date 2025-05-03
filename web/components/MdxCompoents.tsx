@@ -49,7 +49,7 @@ export function Mdx({ source }: { source: string }) {
                     <blockquote className={`
                         rounded-sm
                         my-4 p-4 border-l-4 
-                        bg-gray-50 dark:bg-gray-800/50
+                        bg-gray-50/80 dark:bg-gray-800/50
                         border-gray-300 dark:border-gray-600
                         text-gray-700 dark:text-gray-300
                         transition-colors duration-300

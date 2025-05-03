@@ -55,7 +55,7 @@ func UploadFile(c *gin.Context) {
 		}
 	}
 
-	now := time.Now()
+	now := time.Now().UTC()
 	storePath := filepath.Join("uploads", fmt.Sprintf("%d", now.Month()), fmt.Sprintf("%d", now.Day()))
 	if err := os.MkdirAll(storePath, 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

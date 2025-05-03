@@ -19,6 +19,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from 'next/navigation'
 
 import {useLocale, useTranslations} from 'next-intl';
+import React from 'react';
 
 const ThemeSwitcher = ({ lng } : { lng: string }) => {
 
@@ -170,5 +171,4 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
     )
 }
 
-export default ThemeSwitcher
-
+export default React.memo(ThemeSwitcher)

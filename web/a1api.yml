@@ -550,9 +550,19 @@ paths:
                   code:
                     type: integer
                   data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/UserSimpleGameChallenge'
+                    type: object
+                    properties:
+                      challenges:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserSimpleGameChallenge'
+                      solved_challenges:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserSimpleGameSolvedChallenge'
+                    required:
+                      - challenges
+                      - solved_challenges
                 required:
                   - code
                   - data
@@ -694,10 +704,124 @@ paths:
           description: The ID of the game to retrieve
           schema:
             type: integer
+  /api/game/{game_id}/flag/{challenge_id}:
+    post:
+      tags: [user]
+      operationId: userGameSubmitFlag
+      summary: Submit a flag
+      description: Submit a flag
+      responses:
+        '200':
+          description: flag submited
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      judge_id:
+                        type: string
+                    required:
+                      - judge_id
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+              schema:
+                type: object
+                properties:
+                  flag:
+                    type: string
+                required:
+                  - flag
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to submit
+          schema:
+            type: integer
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge to submit
+          schema:
+            type: integer
+  /api/game/{game_id}/flag/{judge_id}:
+    get:
+      tags: [user]
+      operationId: userGameJudgeResult
+      summary: Get a judge result
+      description: Get a judge result
+      responses:
+        '200':
+          description: judge result get
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      judge_id:
+                        type: string
+                      judge_status:
+                        type: string
+                        enum:
+                          - JudgeQueueing
+                          - JudgeRunning
+                          - JudgeError
+                          - JudgeWA
+                          - JudgeAC
+                          - JudgeTimeout
+                    required:
+                      - judge_id
+                      - judge_status
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to submit
+          schema:
+            type: integer
+        - name: judge_id
+          in: path
+          required: true
+          description: The Flag ID
+          schema:
+            type: string
   /api/game/{game_id}/container/{challenge_id}:
     post:
       tags: [user]
-      operationId: UserCreateContainerForAChallenge
+      operationId: userCreateContainerForAChallenge
       summary: Create a container for a challenge
       description: Create a container for a challenge
       responses:
@@ -724,6 +848,137 @@ paths:
           description: The ID of the challenge to retrieve
           schema:
             type: integer
+    delete:
+      tags: [user]
+      operationId: userDeleteContainerForAChallenge
+      summary: Delete a container for a challenge
+      description: Delete a container for a challenge
+      responses:
+        '200':
+          description: Container deleted
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to retrieve
+          schema:
+            type: integer
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge to retrieve
+          schema:
+            type: integer
+    patch:
+      tags: [user]
+      operationId: userExtendContainerLifeForAChallenge
+      summary: Extend a container's life for a challenge
+      description: Extend a container's life for a challenge
+      responses:
+        '200':
+          description: Container life extended
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to retrieve
+          schema:
+            type: integer
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge to retrieve
+          schema:
+            type: integer
+    get:
+      tags: [user]
+      operationId: userGetContainerInfoForAChallenge
+      summary: Get container info for a challenge
+      description: Get container info for a challenge
+      responses:
+        '200':
+          description: Container info geted
+          content:
+            application/json:
+              schema:
+                type:
+                  object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      container_status:
+                        $ref: '#/components/schemas/ContainerStatus'
+                      container_expiretime:
+                        type: string
+                        format: date-time
+                      containers:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ExposePortInfo'
+                    required:
+                      - container_status
+                      - containers
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to retrieve
+          schema:
+            type: integer
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge to retrieve
+          schema:
+            type: integer
+  /api/game/{game_id}/scoreboard:
+    get:
+      tags: [user]
+      operationId: userGetGameScoreboard
+      summary: Get game scoreboard data
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameScoreboardResponse'
 components:
   schemas:
     UserLogin:
@@ -1123,8 +1378,6 @@ components:
         cur_score:
           type: number
           format: double
-        belong_stage:
-          type: string
         solve_count:
           type: number
         category:
@@ -1140,6 +1393,23 @@ components:
         - DYNAMIC_CONTAINER
         - STATIC_CONTAINER
         - NO_CONTAINER
+    UserSimpleGameSolvedChallenge:
+      type: object
+      properties:
+        challenge_id:
+          type: integer
+        challenge_name:
+          type: string
+        solve_time:
+          type: string
+          format: date-time
+        rank:
+          type: number
+      required:
+        - challenge_id
+        - challenge_name
+        - solve_time
+        - rank
     UserAttachmentConfig:
       type: object
       properties:
@@ -1209,6 +1479,11 @@ components:
           $ref: '#/components/schemas/ChallengeCategory'
         container_type:
           $ref: '#/components/schemas/ChallengeContainerType'
+        container_status:
+          $ref: '#/components/schemas/ContainerStatus'
+        container_expiretime:
+          type: string
+          format: date-time
         containers:
           type: array
           items:
@@ -1373,14 +1648,30 @@ components:
         - name
         - description
         - slogan
+    ContainerStatus:
+      type: string
+      enum:
+        - ContainerStopped
+        - ContainerRunning
+        - ContainerStarting
+        - ContainerError
+        - ContainerStopping
+        - ContainerQueueing
+        - NoContainer
+      description: |
+        Possible statuses of a container:
+        - `ContainerStopped`: The container is stopped.
+        - `ContainerRunning`: The container is running.
+        - `ContainerStarting`: The container is starting.
+        - `ContainerError`: The container encountered an error.
+        - `ContainerStopping`: The container is stopping.
+        - `ContainerQueueing`: The container is in a queue.
+        - `NoContainer`: No container exists.
     ExposePortInfo:
       type: object
       properties:
         container_name:
           type: string
-        close_time:
-          type: string
-          format: date-time
         container_ports:
           type: array
           items:
@@ -1399,3 +1690,105 @@ components:
       required:
         - container_name
         - container_ports
+    GameScoreboardResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        data:
+          $ref: '#/components/schemas/GameScoreboardData'
+
+    GameScoreboardData:
+      type: object
+      properties:
+        game_id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "测试比赛1"
+        teams:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamScore'
+        time_lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamTimeline'
+
+    TeamScore:
+      type: object
+      properties:
+        team_id:
+          type: integer
+          example: 1
+        team_name:
+          type: string
+          example: "test114514"
+        team_avatar:
+          type: string
+          nullable: true
+          example: null
+        team_slogan:
+          type: string
+          example: ""
+        team_description:
+          type: string
+          example: ""
+        rank:
+          type: integer
+          example: 1
+        score:
+          type: number
+          format: float
+          example: 500
+        solved_challenges:
+          type: array
+          items:
+            $ref: '#/components/schemas/SolvedChallenge'
+
+    SolvedChallenge:
+      type: object
+      properties:
+        challenge_id:
+          type: integer
+          example: 1
+        score:
+          type: number
+          format: float
+          example: 500
+        solver:
+          type: string
+          example: "root"
+        rank:
+          type: integer
+          example: 1
+        solve_time:
+          type: string
+          format: date-time
+          example: "2025-05-03T07:07:34.650351Z"
+
+    TeamTimeline:
+      type: object
+      properties:
+        team_id:
+          type: integer
+          example: 1
+        team_name:
+          type: string
+          example: "test114514"
+        scores:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScoreRecord'
+
+    ScoreRecord:
+      type: object
+      properties:
+        record_time:
+          type: number
+        score:
+          type: number
+          format: float
+          example: 500

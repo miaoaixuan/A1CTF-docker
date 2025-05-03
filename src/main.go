@@ -103,23 +103,26 @@ type PermissionSetting struct {
 }
 
 var PermissionMap = map[string]PermissionSetting{
-	"\\/api\\/Login":                                       {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/file\\/upload":                               {RequestMethod: []string{"POST"}, Permissions: []string{}},
-	"\\/api\\/admin\\/challenge\\/list":                    {RequestMethod: []string{"GET", "POST"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/admin\\/challenge\\/create":                  {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/admin\\/challenge\\/[\\d]+$":                 {RequestMethod: []string{"GET", "PUT", "DELETE"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/admin\\/challenge\\/search":                  {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/admin\\/game\\/list":                         {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/admin\\/game\\/create":                       {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/admin\\/game\\/[\\d]+$":                      {RequestMethod: []string{"GET", "POST", "PUT"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/admin\\/game\\/[\\d]+\\/challenge\\/[\\d]+$": {RequestMethod: []string{"PUT"}, Permissions: []string{"ADMIN"}},
-	"\\/api\\/game\\/list":                                 {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	"\\/api\\/game\\/[\\d]+$":                              {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	"\\/api\\/game\\/[\\d]+\\/challenges":                  {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	"\\/api\\/game\\/[\\d]+\\/challenge\\/[\\d]+$":         {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	"\\/api\\/game\\/[\\d]+\\/notices":                     {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	"\\/api\\/game\\/[\\d]+\\/createTeam":                  {RequestMethod: []string{"POST"}, Permissions: []string{}},
-	"\\/api\\/game\\/[\\d]+\\/container\\/[\\d]+$":         {RequestMethod: []string{"POST"}, Permissions: []string{}},
+	`^/api/Login$`:                        {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	`^/api/file/upload$`:                  {RequestMethod: []string{"POST"}, Permissions: []string{}},
+	`^/api/admin/challenge/list$`:         {RequestMethod: []string{"GET", "POST"}, Permissions: []string{"ADMIN"}},
+	`^/api/admin/challenge/create$`:       {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	`^/api/admin/challenge/\d+$`:          {RequestMethod: []string{"GET", "PUT", "DELETE"}, Permissions: []string{"ADMIN"}},
+	`^/api/admin/challenge/search$`:       {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	`^/api/admin/game/list$`:              {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	`^/api/admin/game/create$`:            {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
+	`^/api/admin/game/\d+$`:               {RequestMethod: []string{"GET", "POST", "PUT"}, Permissions: []string{"ADMIN"}},
+	`^/api/admin/game/\d+/challenge/\d+$`: {RequestMethod: []string{"PUT"}, Permissions: []string{"ADMIN"}},
+	`^/api/game/list$`:                    {RequestMethod: []string{"GET"}, Permissions: []string{}},
+	`^/api/game/\d+$`:                     {RequestMethod: []string{"GET"}, Permissions: []string{}},
+	`^/api/game/\d+/challenges$`:          {RequestMethod: []string{"GET"}, Permissions: []string{}},
+	`^/api/game/\d+/challenge/\d+$`:       {RequestMethod: []string{"GET"}, Permissions: []string{}},
+	`^/api/game/\d+/notices$`:             {RequestMethod: []string{"GET"}, Permissions: []string{}},
+	`^/api/game/\d+/createTeam$`:          {RequestMethod: []string{"POST"}, Permissions: []string{}},
+	`^/api/game/\d+/scoreboard$`:          {RequestMethod: []string{"GET"}, Permissions: []string{}},
+	`^/api/game/\d+/container/\d+$`:       {RequestMethod: []string{"POST", "DELETE", "PATCH", "GET"}, Permissions: []string{}},
+	`^/api/game/\d+/flag/\d+$`:            {RequestMethod: []string{"POST"}, Permissions: []string{}},
+	`^/api/game/\d+/flag/[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$`: {RequestMethod: []string{"GET"}, Permissions: []string{}},
 }
 
 // Helper function to check if a slice contains a value
@@ -186,11 +189,12 @@ func StartLoopEvent() {
 	s, _ := gocron.NewScheduler()
 	s.NewJob(
 		gocron.DurationJob(
-			5*time.Second,
+			2*time.Second,
 		),
 		gocron.NewTask(
 			jobs.UpdateActivateGames,
 		),
+		gocron.WithSingletonMode(gocron.LimitModeWait),
 	)
 
 	s.NewJob(
@@ -200,6 +204,17 @@ func StartLoopEvent() {
 		gocron.NewTask(
 			jobs.ContainerOperationsJob,
 		),
+		gocron.WithSingletonMode(gocron.LimitModeWait),
+	)
+
+	s.NewJob(
+		gocron.DurationJob(
+			1*time.Second,
+		),
+		gocron.NewTask(
+			jobs.FlagJudgeJob,
+		),
+		gocron.WithSingletonMode(gocron.LimitModeWait),
 	)
 
 	s.Start()
@@ -236,6 +251,9 @@ func main() {
 	{
 		public.POST("/auth/login", authMiddleware.LoginHandler)
 		public.POST("/auth/register", controllers.Register)
+
+		public.GET("/game/list", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.UserListGames)
+		public.GET("/game/:game_id/scoreboard", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(true, false), controllers.UserGameGetScoreBoard)
 
 		fileGroup := public.Group("/file")
 		{
@@ -275,27 +293,33 @@ func main() {
 		// 用户相关接口
 		userGameGroup := auth.Group("/game")
 		{
-			userGameGroup.GET("/list", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.UserListGames)
-
 			// 中间件检查比赛状态
 			userGameGroup.GET("/:game_id", cache.Cache(
 				memoryStore,
 				1*time.Second,
 				cacheByCookie,
-			), controllers.GameStatusMiddleware(true), controllers.UserGetGameDetailWithTeamInfo)
-			userGameGroup.GET("/:game_id/challenges", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false), controllers.UserGetGameChallenges)
+			), controllers.GameStatusMiddleware(true, true), controllers.UserGetGameDetailWithTeamInfo)
+
+			userGameGroup.GET("/:game_id/challenges", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenges)
 
 			// 查询比赛中的某道题
-			userGameGroup.GET("/:game_id/challenge/:challenge_id", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenge)
+			userGameGroup.GET("/:game_id/challenge/:challenge_id", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenge)
 
 			// 比赛通知接口
-			userGameGroup.GET("/:game_id/notices", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false), controllers.TeamStatusMiddleware(), controllers.UserGetGameNotices)
+			userGameGroup.GET("/:game_id/notices", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameNotices)
 
 			// 创建比赛队伍
-			userGameGroup.POST("/:game_id/createTeam", controllers.GameStatusMiddleware(false), controllers.UserCreateGameTeam)
+			userGameGroup.POST("/:game_id/createTeam", controllers.GameStatusMiddleware(false, true), controllers.UserCreateGameTeam)
 
-			// 创建题目容器
-			userGameGroup.POST("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false), controllers.TeamStatusMiddleware(), controllers.UserCreateGameContainer)
+			// 题目容器
+			userGameGroup.POST("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserCreateGameContainer)
+			userGameGroup.DELETE("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserCloseGameContainer)
+			userGameGroup.PATCH("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserExtendGameContainer)
+			userGameGroup.GET("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallengeContainerInfo)
+
+			// 提交 Flag
+			userGameGroup.POST("/:game_id/flag/:challenge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGameChallengeSubmitFlag)
+			userGameGroup.GET("/:game_id/flag/:judge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGameGetJudgeResult)
 		}
 	}
 

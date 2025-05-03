@@ -7,34 +7,34 @@ import { useTheme } from "next-themes";
 import BlurText from "./reactbits/BlurText/BlurText";
 import ASCIIText from "./reactbits/ASCIIText/ASCIIText";
 import Ribbons from "@/components/reactbits/Ribbons/Ribbons";
+import Squares from "./reactbits/Squares/Squares";
+import { useEffect, useState } from "react";
+import FancyBackground from "./modules/FancyBackground";
 
 export function MainPageAnimation() {
+
+    const [ colorTheme, setColorTheme ] = useState<string[]>([])
 
 
     const { theme, systemTheme } = useTheme()
     const getColor = () => {
         if (theme == "system") {
-            if (systemTheme == "dark") return "#ffffff"
-            else return "#000000"
+            if (systemTheme == "dark") return ["ctf_white.png", "rgba(0, 0, 0, 0)", "#060606", "#ffffff"]
+            else return ["ctf_black.png", "rgba(255, 255, 255, 0)", "#fff", "#000000"]
         } else {
-            if (theme == "light") return "#000000"
-            else return "#ffffff"
+            if (theme == "light") return ["ctf_black.png", "rgba(255, 255, 255, 0)", "#fff", "#000000"]
+            else return ["ctf_white.png", "rgba(0, 0, 0, 0)", "#060606", "#ffffff"]
         }
     }
 
+    useEffect(() => {
+        setColorTheme(getColor())
+    }, [theme, systemTheme])
+
+
     return (
         <>
-            <div className="w-screen h-screen absolute top-0 left-0 overflow-hidden blur-sm pointer-events-none">
-                <Ribbons
-                    baseThickness={10}
-                    colors={[getColor()]}
-                    speedMultiplier={0.5}
-                    maxAge={500}
-                    enableFade={true}
-                    enableShaderEffect={true}
-                />
-            </div>
-            <div className="w-full h-full flex flex-col justify-center items-center">
+            <div className="w-full h-full flex flex-col justify-center items-center z-40">
                 {/* <A1Animation />
                 <motion.div className="w-full flex overflow-hidden justify-center"
                     initial={{
@@ -132,30 +132,19 @@ export function MainPageAnimation() {
                     </FuzzyText>
                 </div> */}
 
-                <div className="hidden lg:flex">
-                    <BlurText
-                        text="Welcome to A1CTF"
-                        animateBy="words"
-                        direction="top"
-                        delay={200}
-                        onAnimationComplete={() => {}}
-                        className="text-[4em] font-bold select-none text-bl"
-                    />
-                </div>
-
-                <div className="flex lg:hidden flex-col gap-10">
+                <div className="flex flex-col gap-10">
                     <FuzzyText
                         baseIntensity={0.05} 
-                        color={ getColor() }
-                        fontSize={50}
+                        color={ colorTheme[3] }
+                        fontSize={70}
                         enableHover={true}
                     >
                         Welcome to
                     </FuzzyText>
                     <FuzzyText
                         baseIntensity={0.05} 
-                        color={ getColor() }
-                        fontSize={40}
+                        color={ colorTheme[3] }
+                        fontSize={80}
                         enableHover={true}
                     >
                         A1CTF

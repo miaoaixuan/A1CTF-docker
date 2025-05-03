@@ -692,56 +692,6 @@ interface GameChallengeFormProps {
     removeGameChallenge: (index: number) => void;
 }
 
-function GameChallengeForm({ control, index, form, removeGameChallenge, gameData, onEditChallenge }: GameChallengeFormProps) {
-
-    return (
-        <div className="border-[1px] rounded-lg h-full w-full shadow-md flex items-center p-4 gap-3 px-6">
-            {cateIcon[gameData.category?.toLowerCase() || "misc"]}
-            <span className="font-bold text-nowrap" >{gameData.challenge_name}</span>
-            <span>/</span>
-            <div className="flex gap-4 w-full">
-                <div className="flex items-center gap-2">
-                    <Layers2 size={18} />
-                    <span className="text-sm">{gameData.cur_score}pts</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <FileUser size={18} />
-                    <span>{gameData.solve_count}</span>
-                    <span className="text-sm">solves</span>
-                </div>
-                <div className="flex-1" />
-                <div className="flex gap-1 items-center">
-                    <FormField
-                        control={control}
-                        name={`challenges.${index}.visible`}
-                        render={({ field }) => (
-                            <FormItem className="flex mr-2">
-                                {/* <div className="flex items-center w- h-[20px]">
-                                    <FormLabel>提示</FormLabel>
-                                    <div className="flex-1" />
-                                    <FormMessage className="text-[14px]" />
-                                </div> */}
-                                <FormControl>
-                                    <Switch 
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange} 
-                                    />
-                                </FormControl>
-                            </FormItem>
-                        )}
-                    />
-                    <Button variant={"ghost"} size={"icon"} type="button" onClick={() => onEditChallenge(index)}>
-                        <Pencil />
-                    </Button>
-                    <Button variant={"ghost"} size={"icon"} type="button">
-                        <Trash2 />
-                    </Button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
 export type ChallengeSearchResult = {
     ChallengeID: number,
     Category: string,
@@ -899,6 +849,61 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
         control: form.control,
         name: "stages",
     });
+
+    const GameChallengeForm = ({ control, index, form, removeGameChallenge, gameData, onEditChallenge }: GameChallengeFormProps) => {
+
+        return (
+            <div className="border-[1px] rounded-lg h-full w-full shadow-md flex items-center p-4 gap-3 px-6">
+                {cateIcon[gameData.category?.toLowerCase() || "misc"]}
+                <span className="font-bold text-nowrap" >{gameData.challenge_name}</span>
+                <span>/</span>
+                <div className="flex gap-4 w-full">
+                    <div className="flex items-center gap-2">
+                        <Layers2 size={18} />
+                        <span className="text-sm">{gameData.cur_score}pts</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <FileUser size={18} />
+                        <span>{gameData.solve_count}</span>
+                        <span className="text-sm">solves</span>
+                    </div>
+                    <div className="flex-1" />
+                    <div className="flex gap-1 items-center">
+                        <FormField
+                            control={control}
+                            name={`challenges.${index}.visible`}
+                            render={({ field }) => (
+                                <FormItem className="flex mr-2">
+                                    {/* <div className="flex items-center w- h-[20px]">
+                                        <FormLabel>提示</FormLabel>
+                                        <div className="flex-1" />
+                                        <FormMessage className="text-[14px]" />
+                                    </div> */}
+                                    <FormControl>
+                                        <Switch 
+                                            checked={field.value}
+                                            onCheckedChange={(checked) => {
+                                                field.onChange(checked)
+                                                
+                                                // console.log(challengeFields)
+                                                // console.log(gameData, index)
+                                            }} 
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                        <Button variant={"ghost"} size={"icon"} type="button" onClick={() => onEditChallenge(index)}>
+                            <Pencil />
+                        </Button>
+                        <Button variant={"ghost"} size={"icon"} type="button">
+                            <Trash2 />
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     const columns: ColumnDef<ChallengeSearchResult>[] = [
         {
@@ -1477,7 +1482,7 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
                                     render={({ field }) => (
                                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                                             <div className="space-y-0.5">
-                                                <FormLabel>是否隐藏</FormLabel>
+                                                <FormLabel>是否可见</FormLabel>
                                                 <FormDescription>
                                                     比赛是否可见
                                                 </FormDescription>

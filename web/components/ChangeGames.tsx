@@ -39,6 +39,7 @@ import { useGameSwitchContext } from "@/contexts/GameSwitchContext";
 import { useRouter } from 'next/navigation';
 import { useTranslations } from "next-intl";
 import { LoadingPage } from "./LoadingPage";
+import FancyBackground from "./modules/FancyBackground";
 export function ChangeGames() {
 
     const [curIndex, setCurIndex] = useState(0)
@@ -214,8 +215,8 @@ export function ChangeGames() {
     return (
         <>
             <GameSwitchHover animation={true} />
+            {/* <LoadingPage visible={loadingPageVisible} screen={false} absolute={true} /> */}
             <div className="w-full h-full relative">
-                <LoadingPage visible={loadingPageVisible} screen={false} absolute={true} />
 
                 {(width >= 1050 && !isMobile) ? (
                     <div className="flex items-center h-full pl-[50px] pr-[50px]">
@@ -293,7 +294,7 @@ export function ChangeGames() {
                                 </Sheet>
                             </div>
                             <div className="w-full flex-col flex-1 justify-center items-center 2xl:gap-6  overflow-hidden flex transition-[gap] duration-300 pt-4 pb-4">
-                                <Button variant="ghost" disabled={curIndex == 0} onClick={() => handleSwitch("up")} className="text-lg w-[100px] h-[100px] [&_svg]:size-[80px] hover:scale-110 duration-300 transition-[transform,background] hidden 2xl:flex"><ChevronUp /></Button>
+                                {/* <Button variant="ghost" disabled={curIndex == 0} onClick={() => handleSwitch("up")} className="text-lg w-[100px] h-[100px] [&_svg]:size-[80px] hover:scale-110 duration-300 transition-[transform,background] hidden 2xl:flex"><ChevronUp /></Button> */}
                                 <div className="aspect-[9/5] w-full flex-shrink max-h-[600px] flex-grow overflow-hidden">
                                     <motion.div className="w-full h-full flex flex-col items-center translate-y-[0px]"
                                         animate={{
@@ -361,7 +362,7 @@ export function ChangeGames() {
                                         ))}
                                     </motion.div>
                                 </div>
-                                <Button variant="ghost" disabled={curIndex == curGames.length - 1} onClick={() => handleSwitch("down")} className="text-lg w-[100px] h-[100px] [&_svg]:size-[80px] hover:scale-110 duration-300 transition-[transform,background] hidden 2xl:flex"><ChevronDown /></Button>
+                                {/* <Button variant="ghost" disabled={curIndex == curGames.length - 1} onClick={() => handleSwitch("down")} className="text-lg w-[100px] h-[100px] [&_svg]:size-[80px] hover:scale-110 duration-300 transition-[transform,background] hidden 2xl:flex"><ChevronDown /></Button> */}
                             </div>
                         </div>
                     </div>

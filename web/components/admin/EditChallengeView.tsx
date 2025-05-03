@@ -724,7 +724,7 @@ export function EditChallengeView({ challenge_info, lng } : { challenge_info: Ad
                                         <FormMessage className="text-[14px]" />
                                     </div>
                                     <FormControl>
-                                        <Textarea {...field} />
+                                        <Textarea {...field} className="h-[300px]" />
                                     </FormControl>
                                     <FormDescription>
                                         题目简介

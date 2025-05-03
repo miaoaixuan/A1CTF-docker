@@ -9,6 +9,7 @@ import SafeComponent from "@/components/SafeComponent";
 import { ActivityPage } from "@/components/ActivityPage";
 import { sAPI } from "@/utils/GZApi";
 import { config } from "dotenv";
+import FancyBackground from "@/components/modules/FancyBackground";
 
 export default async function Home({ params }: { params: Promise<{ lng: string }>}) {
 
@@ -33,7 +34,10 @@ export default async function Home({ params }: { params: Promise<{ lng: string }
                     <PageHeader lng={lng} />
                     <main className="flex flex-1 overflow-hidden">
                         <SafeComponent animation={false}>
-                            <MainPageAnimation />
+                            <>
+                                <FancyBackground />
+                                <MainPageAnimation />
+                            </>
                         </SafeComponent>
                     </main>
                     <A1Footer lng={lng} />

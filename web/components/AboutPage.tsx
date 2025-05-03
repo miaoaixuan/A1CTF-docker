@@ -3,7 +3,7 @@
 import { MacScrollbar } from "mac-scrollbar";
 import { Mdx } from "./MdxCompoents";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "@/utils/GZApi";
 import { LoadingPage } from "./LoadingPage";
 
@@ -23,6 +23,16 @@ export function AboutPage () {
         })
     }, [])
 
+    const memoizedDescription = useMemo(() => {
+        return source ? (
+          <div className="flex flex-col gap-0">
+            <Mdx source={source} />
+          </div>
+        ) : (
+          <span>Empty</span>
+        );
+    }, [source]); // 只依赖description
+
     return (
         <div className="flex w-full h-full relative">
             <LoadingPage visible={loadingPageVisible} screen={false} absolute={true} />
@@ -31,7 +41,7 @@ export function AboutPage () {
             >
                 <div className="flex w-full justify-center">
                     <div className="max-w-[90%] md:max-w-[80%] lg:max-w-[75%] xl:max-w-[70%]">
-                        <Mdx source={source} />
+                        { memoizedDescription }
                     </div>
                 </div>
             </MacScrollbar>

@@ -58,6 +58,7 @@ const (
 	ContainerError    ContainerStatus = "ContainerError"
 	ContainerStopping ContainerStatus = "ContainerStopping"
 	ContainerQueueing ContainerStatus = "ContainerQueueing"
+	NoContainer       ContainerStatus = "NoContainer"
 )
 
 func (e ContainerStatus) Value() (driver.Value, error) {
@@ -77,13 +78,14 @@ type Container struct {
 	ContainerID          string               `gorm:"column:container_id;primaryKey" json:"container_id"`
 	GameID               int64                `gorm:"column:game_id;not null" json:"game_id"`
 	TeamID               int64                `gorm:"column:team_id;not null" json:"team_id"`
+	FlagID               int64                `gorm:"column:flag_id;not null" json:"flag_id"`
 	ChallengeID          int64                `gorm:"column:challenge_id;not null" json:"challenge_id"`
 	InGameID             int64                `gorm:"column:ingame_id;not null" json:"ingame_id"`
 	StartTime            time.Time            `gorm:"column:start_time;not null" json:"start_time"`
 	ExpireTime           time.Time            `gorm:"column:expire_time;not null" json:"expire_time"`
 	ContainerExposeInfos ContainerExposeInfos `gorm:"column:expose_ports;not null" json:"expose_ports"`
 	ContainerStatus      ContainerStatus      `gorm:"column:container_status;not null" json:"container_status"`
-	FlagContent          string               `gorm:"column:flag_content;not null" json:"flag_content"`
+	TeamFlag             TeamFlag             `gorm:"foreignKey:FlagID;references:flag_id" json:"-"`
 	ContainerConfig      k8stool.A1Containers `gorm:"column:container_config" json:"container_config"`
 	ChallengeName        string               `gorm:"column:challenge_name;not null" json:"challenge_name"`
 	TeamHash             string               `gorm:"column:team_hash;not null" json:"team_hash"`

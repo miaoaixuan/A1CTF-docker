@@ -1,12 +1,11 @@
 "use client";
 
-import { api, ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeType, ScoreboardModel, ScoreboardItem, ChallengeInfo } from '@/utils/GZApi'
 import { ChartArea, LogOut, X } from 'lucide-react'
 
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
 
 import ReactECharts from 'echarts-for-react';
-import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
+import React, { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import ThemeSwitcher from './ToggleTheme';
 import { useTheme } from 'next-themes';
@@ -20,145 +19,167 @@ import { randomInt } from "mathjs";
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Skeleton } from './ui/skeleton';
 import { MacScrollbar } from 'mac-scrollbar';
+import BetterChart from './BetterChart';
 
-export default function ScoreBoardPage({ gmid, visible, setVisible, gameStatus } : { gmid: number, visible: boolean, setVisible: Dispatch<SetStateAction<boolean>>, gameStatus: string }) {
+import { useGlobalVariableContext } from '@/contexts/GlobalVariableContext';
+import { api } from '@/utils/ApiHelper';
+import { GameScoreboardData, TeamScore, TeamTimeline, UserFullGameInfo, UserSimpleGameChallenge } from '@/utils/A1API';
 
+export default function ScoreBoardPage(
+    { gmid, visible, setVisible, gameStatus, gameInfo, challenges } 
+    : 
+    { gmid: number, visible: boolean, setVisible: Dispatch<SetStateAction<boolean>>, gameStatus: string, gameInfo: UserFullGameInfo | undefined, challenges: Record<string, UserSimpleGameChallenge[]> }
+) {
 
-    const [ gameInfo, setGameInfo ] = useState<DetailedGameInfoModel>()
     const [ chartData, setChartData ] = useState<any>([])
 
     const { theme, resolvedTheme } = useTheme();
-    const [scoreBoardModel, setScoreBoardModel] = useState<ScoreboardModel>()
+    const [scoreBoardModel, setScoreBoardModel] = useState<GameScoreboardData>()
 
     const lastTimeLine = useRef<string>()
     const [ showGraphy, setShowGraphy ] = useState(false)
 
     const [ chartOption, setChartOpton ] = useState<echarts.EChartsOption>() 
-    const [ showUserDetail, setShowUserDetail ] = useState<ScoreboardItem>({})
+    const [ showUserDetail, setShowUserDetail ] = useState<TeamScore>({})
     const [ personalChartOption, setPersonalChartOption ] = useState<echarts.EChartsOption>() 
     const lastPersonalTimeLine = useRef<string>()
+
+    // const serialOptions = useRef<echarts.SeriesOption[]>([])
+
+    const { serialOptions } = useGlobalVariableContext()
 
     const visibleRef = useRef(false)
 
     useEffect(() => {
 
-        if (!gameInfo?.title) return
+        if (!gameInfo?.name) return
+        if (dayjs() < dayjs(gameInfo.start_time)) return
 
         const updateScoreBoard = () => {
-            api.game.gameScoreboard(gmid).then((res) => {
+            api.user.userGetGameScoreboard(gmid).then((res) => {
 
-                setScoreBoardModel(res.data)
+                setScoreBoardModel(res.data.data)
 
                 const current = dayjs()
-                const end = dayjs(gameInfo.end).diff(current) > 0 ? current : dayjs(gameInfo.end)
+                const end = dayjs(gameInfo.end_time).diff(current) > 0 ? current : dayjs(gameInfo.end_time)
                 
-                const curTimeLine = JSON.stringify(res.data.timeLines)
+                const curTimeLine = JSON.stringify(res.data.data?.time_lines)
 
-                if (curTimeLine != lastTimeLine.current) {
+                if (curTimeLine != lastTimeLine.current || true) {
                     lastTimeLine.current = curTimeLine
 
-                    setChartOpton({
-                        backgroundColor: 'transparent',
-                        tooltip: {
-                            trigger: 'axis',
-                            borderWidth: 0,
-                            textStyle: {
-                                fontSize: 12,
-                                color: theme == "dark" ? "#121212" : "#FFFFFF",
-                            },
-                            backgroundColor: theme == "dark" ? "#FFFFFF" : "#121212"
-                        },
-                        title: {
-                            left: 'center',
-                            text: `${gameInfo?.title} - 记分榜`,
-                            textStyle: {
-                                color: theme == "dark" ? "#FFFFFF" : "#121212",
-                            }
-                        },
-                        toolbox: {
-                            show: true,
-                            feature: {
-                                dataZoom: {
-                                    yAxisIndex: 'none'
-                                },
-                                restore: {},
-                                saveAsImage: {}
-                            }
-                        },
-                        xAxis: {
-                            type: 'time',
-                            min: dayjs(gameInfo?.start).toDate(),
-                            max: dayjs(gameInfo?.end).toDate(),
-                            splitLine: {
-                                show: false,
-                            },
-                        },
-                        yAxis: {
-                            type: 'value',
-                            boundaryGap: [0, '100%'],
-                            max: (value: any) => (Math.floor(value.max / 1000) + 1) * 1000,
-                            splitLine: {
-                                show: true,
-                            },
-                        },
-                        dataZoom: [
-                            {
-                                type: 'inside',
-                                start: 0,
-                                end: 100,
-                                xAxisIndex: 0,
-                                filterMode: 'none'
-                            },
-                            {
-                                start: 0,
-                                end: 100,
-                                xAxisIndex: 0,
-                                showDetail: false,
-                            }
-                        ],
-                        series: [
-                            {
-                                type: 'line',
-                                step: 'end',
-                                data: [],
-                                markLine:
-                                    dayjs(gameInfo.end).diff(dayjs(), 's') < 0
-                                        ? undefined
-                                        : {
-                                            symbol: 'none',
-                                            data: [
-                                                {
-                                                    xAxis: +end.toDate(),
-                                                    // lineStyle: {
-                                                    //     color: colorScheme === 'dark' ? "#FFFFFF" : "#000000",
-                                                    //     wight: 2,
-                                                    // },
-                                                    label: {
-                                                        textBorderWidth: 0,
-                                                        fontWeight: 500,
-                                                        formatter: (time: any) => dayjs(time.value).format('YYYY-MM-DD HH:mm'),
-                                                    },
+                    serialOptions.current = [
+                        {
+                            type: 'line',
+                            step: 'end',
+                            data: [],
+                            markLine:
+                                dayjs(gameInfo.end_time).diff(dayjs(), 's') < 0
+                                    ? undefined
+                                    : {
+                                        symbol: 'none',
+                                        data: [
+                                            {
+                                                xAxis: +end.toDate(),
+                                                // lineStyle: {
+                                                //     color: colorScheme === 'dark' ? "#FFFFFF" : "#000000",
+                                                //     wight: 2,
+                                                // },
+                                                label: {
+                                                    textBorderWidth: 0,
+                                                    fontWeight: 500,
+                                                    formatter: (time: any) => dayjs(time.value).format('YYYY-MM-DD HH:mm'),
                                                 },
-                                            ],
-                                        },
+                                            },
+                                        ],
+                                    },
+                        },
+                        ...(res.data.data?.time_lines?.map((team) => ({
+                            name: team.team_name,
+                            type: 'line',
+                            showSymbol: false,
+                            step: 'end',
+                            data: [
+                                [+new Date(dayjs(gameInfo.start_time).toDate()), 0],
+                                ...(team.scores?.map((item) => [item.record_time || 0, item.score || 0]) || []),
+                                [+end.toDate(), (team.scores && team.scores[team.scores.length - 1]?.score) || 0]
+                            ],
+                            lineStyle: {
+                                width: 4
                             },
-                            ...(res.data.timeLines?.all.map((team) => ({
-                                name: team.name,
-                                type: 'line',
-                                showSymbol: false,
-                                step: 'end',
-                                data: [
-                                    [+new Date(dayjs(gameInfo.start).toDate()), 0],
-                                    ...(team.items?.map((item) => [item.time || 0, item.score || 0]) || []),
-                                    [+end.toDate(), (team.items && team.items[team.items.length - 1]?.score) || 0]
-                                ],
-                                lineStyle: {
-                                    width: 3
-                                },
-                                smooth: true,
-                            }) as echarts.SeriesOption) || [])
-                        ] as echarts.SeriesOption[]
-                    })
+                            endLabel: {
+                                show: true,
+                                formatter: `${team.team_name} - ${team.scores![team.scores!.length - 1]?.score} pts`, // {a} 表示系列名称
+                                color: '#333',
+                                fontWeight: 'bold',
+                                fontSize: 14,
+                                distance: 10 // 调整标签与端点的距离
+                            },
+                            smooth: true,
+                        }) as echarts.SeriesOption) || [])
+                    ] as echarts.SeriesOption[]
+
+                    // setChartOpton({
+                    //     backgroundColor: 'transparent',
+                    //     tooltip: {
+                    //         trigger: 'axis',
+                    //         borderWidth: 0,
+                    //         textStyle: {
+                    //             fontSize: 12,
+                    //             color: theme == "dark" ? "#121212" : "#FFFFFF",
+                    //         },
+                    //         backgroundColor: theme == "dark" ? "#FFFFFF" : "#121212"
+                    //     },
+                    //     title: {
+                    //         left: 'center',
+                    //         text: `${gameInfo?.title} - 记分榜`,
+                    //         textStyle: {
+                    //             color: theme == "dark" ? "#FFFFFF" : "#121212",
+                    //         }
+                    //     },
+                    //     toolbox: {
+                    //         show: true,
+                    //         feature: {
+                    //             dataZoom: {
+                    //                 yAxisIndex: 'none'
+                    //             },
+                    //             restore: {},
+                    //             saveAsImage: {}
+                    //         }
+                    //     },
+                    //     xAxis: {
+                    //         type: 'time',
+                    //         min: dayjs(gameInfo?.start).toDate(),
+                    //         max: dayjs(gameInfo?.end).toDate(),
+                    //         splitLine: {
+                    //             show: false,
+                    //         },
+                    //     },
+                    //     yAxis: {
+                    //         type: 'value',
+                    //         boundaryGap: [0, '100%'],
+                    //         max: (value: any) => (Math.floor(value.max / 1000) + 1) * 1000,
+                    //         splitLine: {
+                    //             show: true,
+                    //         },
+                    //     },
+                    //     dataZoom: [
+                    //         {
+                    //             type: 'inside',
+                    //             start: 0,
+                    //             end: 100,
+                    //             xAxisIndex: 0,
+                    //             filterMode: 'none'
+                    //         },
+                    //         {
+                    //             start: 0,
+                    //             end: 100,
+                    //             xAxisIndex: 0,
+                    //             showDetail: false,
+                    //         }
+                    //     ],
+                    //     series: 
+                    // })
                 }
                 
             })
@@ -180,18 +201,15 @@ export default function ScoreBoardPage({ gmid, visible, setVisible, gameStatus }
 
     useEffect(() => {
         console.log(gameStatus)
-        if (gameStatus != "unLogin" && gameStatus != "" && gameStatus != "pending") {
-            api.game.gameGame(gmid).then((res) => { setGameInfo(res.data) })
-        }
     }, [gameStatus])
 
     useEffect(() => {
 
         if (!gameInfo) return
         const current = dayjs()
-        const end = dayjs(gameInfo.end).diff(current) > 0 ? current : dayjs(gameInfo.end)
+        const end = dayjs(gameInfo.end_time).diff(current) > 0 ? current : dayjs(gameInfo.end_time)
         
-        const curTimeLine = JSON.stringify(scoreBoardModel?.timeLines?.all.find((e) => e.id == showUserDetail.id))
+        const curTimeLine = JSON.stringify(scoreBoardModel?.time_lines?.find((e) => e.team_id == showUserDetail.team_id))
 
         if (curTimeLine != lastPersonalTimeLine.current) {
             lastPersonalTimeLine.current = curTimeLine
@@ -209,7 +227,7 @@ export default function ScoreBoardPage({ gmid, visible, setVisible, gameStatus }
                 },
                 title: {
                     left: 'center',
-                    text: `${showUserDetail.name} - 记分榜`,
+                    text: `${showUserDetail.team_name} - 记分榜`,
                     textStyle: {
                         color: theme == "dark" ? "#FFFFFF" : "#121212",
                     }
@@ -226,8 +244,8 @@ export default function ScoreBoardPage({ gmid, visible, setVisible, gameStatus }
                 },
                 xAxis: {
                     type: 'time',
-                    min: dayjs(gameInfo?.start).toDate(),
-                    max: dayjs(gameInfo?.end).toDate(),
+                    min: dayjs(gameInfo?.start_time).toDate(),
+                    max: dayjs(gameInfo?.end_time).toDate(),
                     splitLine: {
                         show: false,
                     },
@@ -261,7 +279,7 @@ export default function ScoreBoardPage({ gmid, visible, setVisible, gameStatus }
                         step: 'end',
                         data: [],
                         markLine:
-                            dayjs(gameInfo.end).diff(dayjs(), 's') < 0
+                            dayjs(gameInfo.end_time).diff(dayjs(), 's') < 0
                                 ? undefined
                                 : {
                                     symbol: 'none',
@@ -281,15 +299,15 @@ export default function ScoreBoardPage({ gmid, visible, setVisible, gameStatus }
                                     ],
                                 },
                     },
-                    ...(scoreBoardModel?.timeLines?.all.filter((e) => e.id == showUserDetail.id).map((team) => ({
-                        name: team.name,
+                    ...(scoreBoardModel?.time_lines?.filter((e) => e.team_id == showUserDetail.team_id).map((team) => ({
+                        name: team.team_name,
                         type: 'line',
                         showSymbol: false,
                         step: 'end',
                         data: [
-                            [+new Date(dayjs(gameInfo.start).toDate()), 0],
-                            ...(team.items?.map((item) => [item.time || 0, item.score || 0]) || []),
-                            [+end.toDate(), (team.items && team.items[team.items.length - 1]?.score) || 0]
+                            [+new Date(dayjs(gameInfo.start_time).toDate()), 0],
+                            ...(team.scores?.map((item) => [item.record_time || 0, item.score || 0]) || []),
+                            [+end.toDate(), (team.scores && team.scores[team.scores.length - 1]?.score) || 0]
                         ],
                         lineStyle: {
                             width: 3
@@ -301,17 +319,16 @@ export default function ScoreBoardPage({ gmid, visible, setVisible, gameStatus }
         }
     }, [showUserDetail])
 
-    const getChallenge = (id: number): ChallengeInfo => {
-        let target = {}
-        if (scoreBoardModel?.challenges) {
-            Object.values(scoreBoardModel.challenges).forEach((es) => {
-                const tmp = es.find((e) => e.id == id)
+    const getChallenge = (id: number): UserSimpleGameChallenge | undefined => {
+        let target: UserSimpleGameChallenge | undefined
+        if (challenges) {
+            Object.values(challenges).forEach((es) => {
+                const tmp = es.find((e) => e.challenge_id == id)
                 if (tmp) target = tmp;
             })
         }
         return target
     }
-
 
     return (
         <>
@@ -347,7 +364,7 @@ export default function ScoreBoardPage({ gmid, visible, setVisible, gameStatus }
                                 <X />
                             </Button>
                         </motion.div>
-                        <motion.div className='w-[90%] lg:w-[80%] h-[60%]'
+                        <motion.div className='w-[90%] lg:w-[90%] h-[75%]'
                             initial={{
                                 opacity: 0
                             }}
@@ -358,31 +375,16 @@ export default function ScoreBoardPage({ gmid, visible, setVisible, gameStatus }
                                 opacity: 0
                             }}
                         >
-                            {
-                                chartOption && (
-                                    <ReactECharts
-                                        option={chartOption}
-                                        notMerge={false}
-                                        lazyUpdate={true}
-                                        style={{
-                                            height: "100%"
-                                        }}
-                                        opts={{
-                                            renderer: 'svg'
-                                        }}
-                                        theme={"theme_name"}
-                                        // onChartReady={this.onChartReadyCallback}
-                                        // onEvents={EventsDict}
-                                        // opts={}
-                                    />
-                                )
-                            }
+                            <BetterChart
+                                theme={"light"}
+                                gameInfo={gameInfo!}
+                            />
                         </motion.div>
                     </motion.div>
                 ) }
             </AnimatePresence>
             <AnimatePresence>
-                { showUserDetail.id && (
+                { showUserDetail.team_id && (
                     <motion.div className='absolute top-0 left-0 w-screen h-screen z-[300] flex items-center justify-center overflow-hidden'
                         initial={{
                             backdropFilter: "blur(0px)"
@@ -430,23 +432,23 @@ export default function ScoreBoardPage({ gmid, visible, setVisible, gameStatus }
                                     <div className='flex flex-col w-full h-full gap-1 lg:basis-1/2 lg:overflow-hidden'>
                                         <div className='flex items-center gap-4 mb-3'>
                                             <Avatar className="select-none w-12 h-12">
-                                                { showUserDetail.avatar ? (
+                                                { showUserDetail.team_avatar ? (
                                                     <>
-                                                        <AvatarImage src={showUserDetail.avatar || "#"} alt="@shadcn" />
+                                                        <AvatarImage src={showUserDetail.team_avatar || "#"} alt="@shadcn" />
                                                         <AvatarFallback><Skeleton className="h-12 w-12 rounded-full" /></AvatarFallback>
                                                     </>
                                                 ) : ( 
                                                     <div className='w-full h-full bg-foreground/80 flex items-center justify-center'>
-                                                        <span className='text-background text-lg'> { showUserDetail.name?.substring(0, 2) } </span>
+                                                        <span className='text-background text-lg'> { showUserDetail.team_name?.substring(0, 2) } </span>
                                                     </div>
                                                 ) }
                                             </Avatar>
-                                            <span className='text-3xl font-bold'>{ showUserDetail.name }</span>
+                                            <span className='text-3xl font-bold'>{ showUserDetail.team_name }</span>
                                         </div>
                                         <span className='text-2xl'>Rank: { showUserDetail.rank } </span>
-                                        <span className='text-2xl'>Solved { showUserDetail.solvedCount } problems</span>
+                                        <span className='text-2xl'>Solved { showUserDetail?.solved_challenges?.length ?? 0 } problems</span>
                                         <span className='text-2xl'>Score: { showUserDetail.score } pts</span>
-                                        <span className='text-2xl'>Slogan: { showUserDetail.bio || "He didn't say anything." } </span>
+                                        <span className='text-2xl'>Slogan: { showUserDetail.team_slogan || "He didn't say anything." } </span>
                                         <div className='lg:pr-14 pt-5 h-[400px] flex-shrink-0 lg:h-auto lg:flex-1'>
                                             { personalChartOption && (
                                                 <ReactECharts
@@ -478,16 +480,16 @@ export default function ScoreBoardPage({ gmid, visible, setVisible, gameStatus }
                                                     <span className=''>Score</span>
                                                 </div>
                                             </div>
-                                            { showUserDetail.solvedChallenges?.map((e, index) => (
+                                            { showUserDetail.solved_challenges?.map((e, index) => (
                                                 <div key={`solved-problem-${index}`} className={`flex h-9 flex-none items-center border-b-2 gap-2`}>
                                                     <div className='w-[150px] flex-shrink-0 justify-center hidden lg:flex'>
-                                                        <span>{ dayjs(e.time).format("MM-DD HH:mm:ss") }</span>
+                                                        <span>{ dayjs(e.solve_time).format("MM-DD HH:mm:ss") }</span>
                                                     </div>
                                                     <div className='flex-1 overflow-hidden'>
                                                         <span className='text-nowrap overflow-hidden text-ellipsis'
                                                             data-tooltip-id="challengeTooltip2"
-                                                            data-tooltip-html={ `<div class='text-sm flex flex-col'><span>${dayjs(e.time).format("MM-DD HH:mm:ss")}</span><span>${e.userName}</span><span>${getChallenge(e.id || 0).title}</span></div>` }
-                                                        >{ getChallenge(e.id || 0).title }</span>
+                                                            data-tooltip-html={ `<div class='text-sm flex flex-col'><span>${dayjs(e.solve_time).format("MM-DD HH:mm:ss")}</span><span>${e.solver}</span><span>${getChallenge(e.challenge_id || 0)?.challenge_name}</span></div>` }
+                                                        >{ getChallenge(e.challenge_id || 0)?.challenge_name }</span>
                                                     </div>
                                                     <div className='w-[100px] flex-shrink-0 flex overflow-hidden'>
                                                         <span className='text-green-500'> + { e.score } pts</span>
@@ -512,16 +514,16 @@ export default function ScoreBoardPage({ gmid, visible, setVisible, gameStatus }
                                                     <span className=''>Score</span>
                                                 </div>
                                             </div>
-                                            { showUserDetail.solvedChallenges?.map((e, index) => (
+                                            { showUserDetail.solved_challenges?.map((e, index) => (
                                                 <div key={`solved-problem-${index}`} className={`flex h-9 flex-none items-center border-b-2`}>
                                                     <div className='w-[150px] flex-shrink-0 flex justify-center'>
-                                                        <span>{ dayjs(e.time).format("MM-DD HH:mm:ss") }</span>
+                                                        <span>{ dayjs(e.solve_time).format("MM-DD HH:mm:ss") }</span>
                                                     </div>
                                                     <div className='w-[100px] flex-shrink-0 flex justify-center overflow-hidden'>
-                                                        <span className='text-nowrap overflow-hidden text-ellipsis'>{ e.userName }</span>
+                                                        <span className='text-nowrap overflow-hidden text-ellipsis'>{ e.solver }</span>
                                                     </div>
                                                     <div className='flex-1 overflow-hidden pl-2 pr-2'>
-                                                        <span className='text-nowrap overflow-hidden text-ellipsis'>{ getChallenge(e.id || 0).title }</span>
+                                                        <span className='text-nowrap overflow-hidden text-ellipsis'>{ getChallenge(e.challenge_id || 0)?.challenge_name }</span>
                                                     </div>
                                                     <div className='w-[120px] flex-none flex overflow-hidden justify-center'>
                                                         <span className='text-green-500'> + { e.score } pts</span>
@@ -566,7 +568,7 @@ export default function ScoreBoardPage({ gmid, visible, setVisible, gameStatus }
                                 <div className='flex overflow-hidden'>
                                     <div className='flex flex-1 overflow-hidden'>
                                         { scoreBoardModel && (
-                                            <ScoreTable scoreBoardModel={scoreBoardModel} setShowUserDetail={setShowUserDetail} />
+                                            <ScoreTable scoreBoardModel={scoreBoardModel} setShowUserDetail={setShowUserDetail} challenges={challenges} />
                                         ) }
                                     </div>
                                 </div>

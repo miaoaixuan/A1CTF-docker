@@ -11,6 +11,7 @@ import (
 
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
+	k8stool "a1ctf/src/utils/k8s_tool"
 )
 
 type ListChallengePayload struct {
@@ -112,8 +113,15 @@ func AdminCreateChallenge(c *gin.Context) {
 		return
 	}
 
-	payload.CreateTime = time.Now()
+	if err := k8stool.ValidContainerConfig(*payload.ContainerConfig); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": err.Error(),
+		})
+		return
+	}
 
+	payload.CreateTime = time.Now().UTC()
 	payload.ChallengeID = nil
 
 	if err := dbtool.DB().Create(&payload).Error; err != nil {
@@ -195,6 +203,14 @@ func AdminUpdateChallenge(c *gin.Context) {
 		return
 	}
 
+	if err := k8stool.ValidContainerConfig(*payload.ContainerConfig); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": err.Error(),
+		})
+		return
+	}
+
 	var existingChallenge models.Challenge
 	if err := dbtool.DB().Where("challenge_id = ?", payload.ChallengeID).First(&existingChallenge).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -244,7 +260,7 @@ func AdminSearchChallenges(c *gin.Context) {
 		return
 	}
 
-	var data []gin.H
+	var data []gin.H = make([]gin.H, 0)
 	for _, challenge := range challenges {
 		data = append(data, gin.H{
 			"challenge_id": challenge.ChallengeID,

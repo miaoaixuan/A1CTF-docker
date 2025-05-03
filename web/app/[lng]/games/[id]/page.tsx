@@ -1,6 +1,7 @@
 import { A1LogoWithoutAnimation } from "@/components/A1LogoWithoutAnimation";
 
 import { ChallengesView } from '@/components/ChallengesView';
+import FancyBackground from "@/components/modules/FancyBackground";
 import Image from "next/image";
 
 export default async function Games({ params }: { params: Promise<{ id: string, lng: string }>}) {
@@ -27,6 +28,7 @@ export default async function Games({ params }: { params: Promise<{ id: string, 
                     />
                 </div>
             </div> */}
+            <FancyBackground />
             <ChallengesView id={id} lng={lng} />
         </div>
     );

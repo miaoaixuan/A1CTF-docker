@@ -6,6 +6,7 @@ import SafeComponent from "@/components/SafeComponent"
 import { MacScrollbar } from "mac-scrollbar";
 import { AboutPage } from "@/components/AboutPage";
 import { VersionView } from "@/components/VersionView";
+import FancyBackground from "@/components/modules/FancyBackground";
 
 export default async function Home({ params }: { params: Promise<{ lng: string }>}) {
 
@@ -17,7 +18,10 @@ export default async function Home({ params }: { params: Promise<{ lng: string }
             <main className="flex flex-1 overflow-hidden">
                 <div className="w-full">
                     <SafeComponent animation={false}>
-                        <VersionView />
+                        <>
+                            <FancyBackground />
+                            <VersionView />
+                        </>
                     </SafeComponent>
                 </div>
             </main>
