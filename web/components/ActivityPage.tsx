@@ -37,7 +37,7 @@ import { isMobile } from 'react-device-detect';
 export function ActivityPage({ lng, gameDetailModel } : { lng: string, gameDetailModel: DetailedGameInfoModel }) {
     
     const t = useTranslations();
-    const { curProfile, updateProfile } = useGlobalVariableContext()
+    const { curProfile, updateProfile, clientConfig } = useGlobalVariableContext()
 
     const [cookies, setCookie, removeCookie] = useCookies(["uid"])
     const { startTransition } = useTransitionContext();
@@ -63,7 +63,7 @@ export function ActivityPage({ lng, gameDetailModel } : { lng: string, gameDetai
     const handleChangeGame = () => {
         if (curGame) {
             // 预下载海报，防闪
-            fetch(curGame.poster || "/images/p2g7wm.jpg").then(res => res.blob())
+            fetch(curGame.poster || clientConfig.DefaultBGImage).then(res => res.blob())
             .then(blob => {
                 return new Promise((resolve, reject) => {
                     const reader = new FileReader();

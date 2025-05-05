@@ -91,6 +91,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "../ui/checkbox";
 import { size } from "mathjs";
 import { useTheme } from "next-themes";
+import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
 
 interface GameStageFormProps {
     control: any;
@@ -123,7 +124,6 @@ function GameStageForm({ control, index, removeStage, form }: GameStageFormProps
         console.log(newDate)
         form.setValue(field_name, newDate);
     }
-
 
     return (
         <div className="border p-6 mb-4 rounded-lg hover:shadow-lg transition-shadow duration-300 space-y-4">
@@ -787,6 +787,8 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
 
         return env
     }
+
+    const { clientConfig } = useGlobalVariableContext()
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -1670,7 +1672,7 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
                                             <span className="text-3xl font-bold">上传海报</span>
                                         </div>
                                     </div>
-                                    <div className="absolute top-0 left-0 w-full h-full" style={{ background: `url(${form.getValues("poster") || "/images/p2g7wm.jpg"})`, backgroundSize: "cover", backgroundPosition: "center" }} >
+                                    <div className="absolute top-0 left-0 w-full h-full" style={{ background: `url(${form.getValues("poster") || clientConfig.DefaultBGImage})`, backgroundSize: "cover", backgroundPosition: "center" }} >
                                     </div>
                                 </div>
                             </div>

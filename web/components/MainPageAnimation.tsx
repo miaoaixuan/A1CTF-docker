@@ -10,20 +10,21 @@ import Ribbons from "@/components/reactbits/Ribbons/Ribbons";
 import Squares from "./reactbits/Squares/Squares";
 import { useEffect, useState } from "react";
 import FancyBackground from "./modules/FancyBackground";
+import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
 
 export function MainPageAnimation() {
 
     const [ colorTheme, setColorTheme ] = useState<string[]>([])
-
-
+    const { clientConfig } = useGlobalVariableContext()
     const { theme, systemTheme } = useTheme()
+
     const getColor = () => {
         if (theme == "system") {
-            if (systemTheme == "dark") return ["ctf_white.png", "rgba(0, 0, 0, 0)", "#060606", "#ffffff"]
-            else return ["ctf_black.png", "rgba(255, 255, 255, 0)", "#fff", "#000000"]
+            if (systemTheme == "dark") return [clientConfig.FancyBackGroundIconWhite, "rgba(0, 0, 0, 0)", "#060606", "#ffffff"]
+            else return [clientConfig.FancyBackGroundIconBlack, "rgba(255, 255, 255, 0)", "#fff", "#000000"]
         } else {
-            if (theme == "light") return ["ctf_black.png", "rgba(255, 255, 255, 0)", "#fff", "#000000"]
-            else return ["ctf_white.png", "rgba(0, 0, 0, 0)", "#060606", "#ffffff"]
+            if (theme == "light") return [clientConfig.FancyBackGroundIconBlack, "rgba(255, 255, 255, 0)", "#fff", "#000000"]
+            else return [clientConfig.FancyBackGroundIconWhite, "rgba(0, 0, 0, 0)", "#060606", "#ffffff"]
         }
     }
 

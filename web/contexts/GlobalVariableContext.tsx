@@ -5,10 +5,25 @@ import { AxiosError } from "axios";
 import React, { createContext, Dispatch, SetStateAction, useContext, useEffect, useRef, useState } from "react";
 import { useCookies } from "react-cookie";
 
+interface ClientConfig {
+    FancyBackGroundIconWhite: string;
+    FancyBackGroundIconBlack: string;
+    DefaultBGImage: string;
+    SVGIcon: string;
+    SVGAltData: string;
+    TrophysGold: string;
+    TrophysSilver: string;
+    TrophysBronze: string;
+    SchoolLogo: string;
+    SchoolSmallIcon: string;
+    SchoolUnionAuthText: string;
+}
+
 interface TransitionContextType {
     curProfile: ProfileUserInfoModel;
     updateProfile: (callback?: () => void) => void;
     serialOptions: React.MutableRefObject<echarts.SeriesOption[]>;
+    clientConfig: ClientConfig;
 }
 
 const TransitionContext = createContext<TransitionContextType | undefined>(undefined);
@@ -25,6 +40,21 @@ export const GlobalVariableProvider: React.FC<{ children: React.ReactNode }> = (
 
     const [cookies, setCookie, removeCookie] = useCookies(["uid"])
     const [curProfile, setCurProfile] = useState<ProfileUserInfoModel>({})
+    const [clientConfig, setClientConfig] = useState<ClientConfig>(
+        {
+            FancyBackGroundIconWhite: "/images/ctf_white.png",
+            FancyBackGroundIconBlack: "/images/ctf_black.png",
+            DefaultBGImage: "/images/defaultbg.jpg",
+            SVGIcon: "/images/A1natas.svg",
+            SVGAltData: "A1natas",
+            TrophysGold: "/images/trophy/gold_trophy.png",
+            TrophysSilver: "/images/trophy/silver_trophy.png",
+            TrophysBronze: "/images/trophy/copper_trophy.png",
+            SchoolLogo: "/images/zjnu_logo.png",
+            SchoolSmallIcon: "/images/zjnu_small_logo.png",
+            SchoolUnionAuthText: "ZJNU Union Authserver"
+        }
+    )
 
     const serialOptions = useRef<echarts.SeriesOption[]>([])
 
@@ -51,7 +81,7 @@ export const GlobalVariableProvider: React.FC<{ children: React.ReactNode }> = (
     }, [])
 
     return (
-        <TransitionContext.Provider value={{ curProfile, updateProfile, serialOptions }}>
+        <TransitionContext.Provider value={{ curProfile, updateProfile, serialOptions, clientConfig}}>
             {children}
         </TransitionContext.Provider>
     );

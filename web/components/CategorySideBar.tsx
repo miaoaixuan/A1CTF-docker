@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { ErrorMessage, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "@/utils/A1API";
 import { api } from "@/utils/ApiHelper";
 import { ChallengeSolveStatus } from "./ChallengesView";
+import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
 
 export function CategorySidebar({ gameid, curChallenge, setCurChallenge, lng, gameStatus, setGameStatus, resizeTrigger, setPageSwitching, challenges, setChallenges, challengeSolveStatusList, setChallengeSolveStatusList } : { 
     gameid: string,
@@ -269,6 +270,8 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, lng, ga
         }
     };
 
+    const { clientConfig } = useGlobalVariableContext()
+
     return (
         <Sidebar className="backdrop-blur-sm hide-scrollbar select-none transition-all duration-200" onTransitionEnd={() => {
             resizeTrigger(Math.floor(Math.random() * 1000000))
@@ -286,8 +289,8 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, lng, ga
                                 <div className="justify-start flex gap-2 items-center mt-[-6px]">
                                     <Image
                                         className="dark:invert transition-all duration-300"
-                                        src="/images/A1natas.svg"
-                                        alt="A1natas"
+                                        src={clientConfig.SVGIcon}
+                                        alt={clientConfig.SVGAltData}
                                         width={40}
                                         height={40}
                                         priority

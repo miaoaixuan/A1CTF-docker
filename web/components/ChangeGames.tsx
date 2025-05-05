@@ -40,6 +40,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from "next-intl";
 import { LoadingPage } from "./LoadingPage";
 import FancyBackground from "./modules/FancyBackground";
+import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
 export function ChangeGames() {
 
     const [curIndex, setCurIndex] = useState(0)
@@ -53,6 +54,8 @@ export function ChangeGames() {
     const [width, setWidth] = useState<number>(0)
 
     const [curGames, setCurGames] = useState<GameSimpleInfo[]>()
+
+    const { clientConfig } = useGlobalVariableContext()
 
     const { setIsChangingGame, setCurSwitchingGame, setPosterData } = useGameSwitchContext();
 
@@ -178,7 +181,7 @@ export function ChangeGames() {
         const curGame = curGames![curIndex]
 
         // 预下载海报，防闪
-        fetch(curGame.poster || "/images/p2g7wm.jpg").then(res => res.blob())
+        fetch(curGame.poster || clientConfig.DefaultBGImage).then(res => res.blob())
         .then(blob => {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -350,7 +353,7 @@ export function ChangeGames() {
                                                         </div>
                                                         <Image
                                                             className="select-none"
-                                                            src={game.poster || "/images/p2g7wm.jpg"}
+                                                            src={game.poster || clientConfig.DefaultBGImage}
                                                             alt="Image"
                                                             fill={true}
                                                             objectFit="cover"
@@ -418,7 +421,7 @@ export function ChangeGames() {
                                     </div>
                                 </div>
                                 <Image
-                                    src={curGames[curIndex].poster || "/images/p2g7wm.jpg"}
+                                    src={curGames[curIndex].poster || clientConfig.DefaultBGImage}
                                     alt="Image"
                                     layout="responsive"
                                     width={1920}

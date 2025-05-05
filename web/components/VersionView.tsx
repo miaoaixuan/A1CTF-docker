@@ -6,6 +6,7 @@ import Image from "next/image"
 import { A1CTF_NAME, A1CTF_VERSION, BUILD_TIME } from "@/version";
 
 export function VersionView() {
+
     return (
         <div className="w-full h-full flex items-center justify-center select-none">
             <div className="flex flex-col items-center">

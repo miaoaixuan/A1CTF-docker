@@ -1,51 +1,11 @@
-import { GalleryVerticalEnd } from "lucide-react"
+import SignupPage from "@/components/SignupPage";
 
-import { LoginForm } from "@/components/LoginForm"
 
-import Image from "next/image";
-
-import ThemeSwitcher from "@/components/ToggleTheme"
-import { TransitionLink } from "@/components/TransitionLink";
-import { RegisterForm } from "@/components/RegisterForm";
-
-export default async function SignupPage({ params }: { params: Promise<{ lng: string }>}) {
+export default async function SignupPageMain({ params }: { params: Promise<{ lng: string }>}) {
 
     const { lng } = await params;
 
     return (
-        <div className="grid min-h-svh lg:grid-cols-2">
-            <div className="flex flex-col gap-4 p-6 md:p-10">
-                <div className="flex justify-center gap-2 md:justify-between">
-                    <TransitionLink href="/" className="flex items-center gap-2 font-medium">
-                        <Image
-                            className="dark:invert"
-                            src="/images/A1natas.svg"
-                            alt="A1natas"
-                            width={40}
-                            height={40}
-                            priority
-                        />
-                        <span className="font-bold text-lg">A1natas SSO</span>
-                    </TransitionLink>
-                    <ThemeSwitcher lng={lng} />
-                </div>
-                <div className="flex flex-1 items-center justify-center">
-                    <div className="w-full max-w-[400px]">
-                        <RegisterForm lng={lng} />
-                    </div>
-                </div>
-            </div>
-            <div className="relative hidden bg-muted lg:block">
-                <Image
-                    src="/images/p2g7wm.jpg"
-                    alt="Image"
-                    width={4000}
-                    height={2000}
-                    placeholder="blur"
-                    blurDataURL="/images/p2g7wm.jpg"
-                    className="absolute inset-0 h-full w-full object-cover"
-                />
-            </div>
-        </div>
+        <SignupPage lng={lng} /> 
     )
 }

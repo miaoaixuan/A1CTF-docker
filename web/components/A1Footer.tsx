@@ -19,6 +19,7 @@ import Image from "next/image";
 import { useLocale } from "next-intl";
 import { useTransitionContext } from "@/contexts/TransitionContext";
 import { useRouter } from "next/navigation";
+import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
 
 const A1Footer = ({ lng } : { lng: string }) => {
 
@@ -26,6 +27,8 @@ const A1Footer = ({ lng } : { lng: string }) => {
 
     const router = useRouter()
     const { startTransition } = useTransitionContext()
+
+    const { clientConfig } = useGlobalVariableContext()
 
     return (
         <>
@@ -64,8 +67,8 @@ const A1Footer = ({ lng } : { lng: string }) => {
                             >
                                 <Image
                                     className="dark:invert"
-                                    src="/images/A1natas.svg"
-                                    alt="A1natas"
+                                    src={clientConfig.SVGIcon}
+                                    alt={clientConfig.SVGAltData}
                                     width={34}
                                     height={34}
                                     priority
