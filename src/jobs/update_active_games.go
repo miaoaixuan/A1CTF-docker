@@ -76,14 +76,14 @@ func UpdateActiveGameScoreBoard() {
 		game_ids = append(game_ids, game.GameID)
 	}
 
-	// 开始计算每只队伍当前的总分, 1000条分块
+	// 开始计算每只队伍当前的总分, 4000条一分块
 	for _, game_id := range game_ids {
 
 		var exists_scoreboard = true
 
-		// 查找当前比赛 cur_records 小于 1000 的分块
+		// 查找当前比赛 cur_records 小于 4000 的分块
 		var scoreboardItem models.ScoreBoard
-		if err := dbtool.DB().Where("game_id = ? AND cur_records < 1000", game_id).First(&scoreboardItem).Error; err != nil {
+		if err := dbtool.DB().Where("game_id = ? AND cur_records < 4000", game_id).First(&scoreboardItem).Error; err != nil {
 			if err != gorm.ErrRecordNotFound {
 				println("Failed to load scoreboard item")
 				return

@@ -48,7 +48,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
     if (path == "") { path = "home"; }
 
     const whetherSelected = (name: string) => {
-        return (path == name) ? "secondary" : "ghost";
+        return (path == name) ? "default" : "ghost";
     }
 
     const { startTransition } = useTransitionContext();

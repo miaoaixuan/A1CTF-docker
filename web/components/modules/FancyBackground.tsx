@@ -24,15 +24,17 @@ export default function FancyBackground() {
     }
 
     useEffect(() => {
-        setColorTheme(getColor())
-    }, [theme, systemTheme])
+        if (clientConfig.FancyBackGroundIconWhite) {
+            setColorTheme(getColor())
+        }
+    }, [clientConfig, theme, systemTheme])
 
-    if (colorTheme.length == 0) return <></>
+    if (!colorTheme.length) return <></>
 
     return (
         <div className="w-screen h-screen absolute top-0 left-0 pointer-events-none opacity-20 blur-[2px] z-[-10]">
             <Squares 
-                speed={0.2} 
+                speed={ clientConfig.BGAnimation ? 0.15 : 0} 
                 imageSizeX={271}
                 imageSizeY={125}
                 direction='diagonal'

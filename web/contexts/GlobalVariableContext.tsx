@@ -17,19 +17,21 @@ interface ClientConfig {
     SchoolLogo: string;
     SchoolSmallIcon: string;
     SchoolUnionAuthText: string;
+    BGAnimation: boolean;
 }
 
-interface TransitionContextType {
+interface GlobalVariableContextType {
     curProfile: ProfileUserInfoModel;
     updateProfile: (callback?: () => void) => void;
     serialOptions: React.MutableRefObject<echarts.SeriesOption[]>;
     clientConfig: ClientConfig;
+    updateClientConfg: (key: keyof ClientConfig, value: any) => void;
 }
 
-const TransitionContext = createContext<TransitionContextType | undefined>(undefined);
+const globalVariableContext = createContext<GlobalVariableContextType | undefined>(undefined);
 
 export const useGlobalVariableContext = () => {
-    const context = useContext(TransitionContext);
+    const context = useContext(globalVariableContext);
     if (!context) {
         throw new Error("useGlobalVariableContext must be used within a TransitionProvider");
     }
@@ -38,23 +40,33 @@ export const useGlobalVariableContext = () => {
 
 export const GlobalVariableProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
-    const [cookies, setCookie, removeCookie] = useCookies(["uid"])
+    const [cookies, setCookie, removeCookie] = useCookies(["uid", "clientConfig"])
     const [curProfile, setCurProfile] = useState<ProfileUserInfoModel>({})
-    const [clientConfig, setClientConfig] = useState<ClientConfig>(
-        {
-            FancyBackGroundIconWhite: "/images/ctf_white.png",
-            FancyBackGroundIconBlack: "/images/ctf_black.png",
-            DefaultBGImage: "/images/defaultbg.jpg",
-            SVGIcon: "/images/A1natas.svg",
-            SVGAltData: "A1natas",
-            TrophysGold: "/images/trophy/gold_trophy.png",
-            TrophysSilver: "/images/trophy/silver_trophy.png",
-            TrophysBronze: "/images/trophy/copper_trophy.png",
-            SchoolLogo: "/images/zjnu_logo.png",
-            SchoolSmallIcon: "/images/zjnu_small_logo.png",
-            SchoolUnionAuthText: "ZJNU Union Authserver"
-        }
-    )
+
+    const defaultClientConfig: ClientConfig = {
+        FancyBackGroundIconWhite: "/images/ctf_white.png",
+        FancyBackGroundIconBlack: "/images/ctf_black.png",
+        DefaultBGImage: "/images/defaultbg.jpg",
+        SVGIcon: "/images/A1natas.svg",
+        SVGAltData: "A1natas",
+        TrophysGold: "/images/trophy/gold_trophy.png",
+        TrophysSilver: "/images/trophy/silver_trophy.png",
+        TrophysBronze: "/images/trophy/copper_trophy.png",
+        SchoolLogo: "/images/zjnu_logo.png",
+        SchoolSmallIcon: "/images/zjnu_small_logo.png",
+        SchoolUnionAuthText: "ZJNU Union Authserver",
+        BGAnimation: true
+    }
+
+    const [clientConfig, setClientConfig] = useState<ClientConfig>({} as ClientConfig)
+
+    const updateClientConfg = (key: keyof ClientConfig, value: any) => {
+        setClientConfig((prevConfig) => ({
+            ...prevConfig,
+            [key]: value
+        }))
+        setCookie("clientConfig", { ...clientConfig, [key]: value }, { path: "/" })
+    }
 
     const serialOptions = useRef<echarts.SeriesOption[]>([])
 
@@ -78,11 +90,18 @@ export const GlobalVariableProvider: React.FC<{ children: React.ReactNode }> = (
                 removeCookie("uid")
             })
         }
+
+        if (cookies.clientConfig) {
+            setClientConfig(cookies.clientConfig)
+        } else {
+            setClientConfig(defaultClientConfig)
+            setCookie("clientConfig", defaultClientConfig, { path: "/" })
+        }
     }, [])
 
     return (
-        <TransitionContext.Provider value={{ curProfile, updateProfile, serialOptions, clientConfig}}>
+        <globalVariableContext.Provider value={{ curProfile, updateProfile, serialOptions, clientConfig, updateClientConfg}}>
             {children}
-        </TransitionContext.Provider>
+        </globalVariableContext.Provider>
     );
 };

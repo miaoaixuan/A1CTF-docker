@@ -40,7 +40,7 @@ import * as signalR from '@microsoft/signalr'
 import dayjs from "dayjs";
 import { LoadingPage } from "./LoadingPage";
 import { Button } from "./ui/button";
-import { AlarmClock, AppWindow, ArrowDownUp, Ban, CalendarClock, CircleCheckBig, CirclePower, CircleX, ClockArrowUp, CloudDownload, Container, Copy, EthernetPort, File, FileDown, Files, Flag, FlaskConical, FoldHorizontal, Hourglass, Info, Link, ListCheck, Loader2, LoaderCircle, LoaderPinwheel, Network, NotebookPen, Package, PackageOpen, Paperclip, Pickaxe, PowerOff, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal, Users, X } from "lucide-react";
+import { AlarmClock, AppWindow, ArrowDownUp, Ban, CalendarClock, CheckCheck, CircleCheckBig, CirclePower, CircleX, ClockArrowUp, CloudDownload, Container, Copy, EthernetPort, File, FileDown, Files, Flag, FlaskConical, FoldHorizontal, Hourglass, Info, Link, ListCheck, Loader2, LoaderCircle, LoaderPinwheel, Network, NotebookPen, Package, PackageOpen, Paperclip, Pickaxe, PowerOff, Presentation, Rocket, ScanHeart, ShieldX, Target, TriangleAlert, UnfoldHorizontal, Users, X } from "lucide-react";
 import { AxiosError } from "axios";
 
 import Image from "next/image";
@@ -86,6 +86,8 @@ import SubmitFlagView from "./modules/SubmitFlagView";
 import { Progress } from "./ui/progress";
 import FileDownloader from "./modules/FileDownloader";
 import ChallengeNameTitle from "./modules/ChallengeNameTitle";
+
+import { useSpring, animated } from "@react-spring/web";
 
 const GameTerminal = dynamic(
     () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
@@ -220,6 +222,8 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     const gameID = parseInt(id, 10)
 
     const [cookies, setCookie, removeCookie] = useCookies(["uid"])
+
+    const [submitFlagWindowVisible, setSubmitFlagWindowVisible] = useState(false)
 
 
     // 更新当前选中题目信息, 根据 Websocket 接收到的信息被动调用
@@ -642,6 +646,12 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
         );
     }, [curChallenge?.description]); // 只依赖description
 
+    const fade = useSpring({
+        opacity: pageSwitch ? 0 : 1,
+        config: { tension: 320, friction: 50 },
+        immediate: pageSwitch
+    });
+
     return (
         <>
             <GameSwitchHover animation={false} />
@@ -649,7 +659,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             {/* 抢血动画 */}
             <SolvedAnimation blood={blood} setBlood={setBlood} bloodMessage={bloodMessage} />
             {/* 提交 Flag 组件 */}
-            <SubmitFlagView lng={lng} curChallenge={curChallenge} gameID={gameID} setChallengeSolved={setChallengeSolved} challengeSolveStatusList={challengeSolveStatusList} />
+            <SubmitFlagView lng={lng} curChallenge={curChallenge} gameID={gameID} setChallengeSolved={setChallengeSolved} challengeSolveStatusList={challengeSolveStatusList} visible={submitFlagWindowVisible} setVisible={setSubmitFlagWindowVisible} />
 
             {/* 比赛各种状态页 */}
             <>
@@ -855,7 +865,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                         </motion.div>
                                     ) : (null)}
                                 </AnimatePresence>
-                                <ResizableScrollablePanel defaultSize={60} minSize={20} className="relative" onResize={(size, prevSize) => {
+                                <ResizableScrollablePanel defaultSize={60} minSize={20} className={`relative ${ pageSwitch ? "opacity-0" : "" } `} onResize={(size, prevSize) => {
                                     setResizeTrigger(size)
                                 }}>
                                     {!curChallenge ? (
@@ -907,6 +917,27 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                     </div>
                                     <div className="flex h-full">
                                         <SafeComponent>
+                                            { curChallenge && challengeSolveStatusList && (
+                                                <div className="absolute bottom-5 right-7 z-10">
+                                                    { challengeSolveStatusList[curChallenge?.challenge_id ?? 0].solved ? (
+                                                        <Button
+                                                            className="h-[57px] px-5 rounded-3xl backdrop-blur-sm bg-green-600/70 hover:bg-green-800/70 [&_svg]:size-9 gap-2 flex items-center justify-center text-white disabled:opacity-100"
+                                                            onClick={() => {}}
+                                                        >
+                                                            <CheckCheck />
+                                                            <span className="font-bold text-xl">Solved!</span>
+                                                        </Button>
+                                                    ) : (
+                                                        <Button
+                                                            className="h-[57px] px-6 rounded-3xl backdrop-blur-sm bg-red-600/70 hover:bg-red-800/70 [&_svg]:size-8 gap-2 flex items-center justify-center text-white"
+                                                            onClick={() => setSubmitFlagWindowVisible(true)}
+                                                        >
+                                                            <Flag className="rotate-12" />
+                                                            <span className="font-bold text-xl">Submit!</span>
+                                                        </Button>
+                                                    ) }
+                                                </div>
+                                            ) }
                                             <MacScrollbar
                                                 className="p-5 lg:p-10 w-full flex flex-col"
                                                 skin={theme === "dark" ? "dark" : "light"}
