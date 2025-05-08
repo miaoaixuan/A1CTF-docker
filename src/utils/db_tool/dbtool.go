@@ -3,11 +3,14 @@ package dbtool
 import (
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"github.com/olahol/melody"
 )
 
 var db *gorm.DB
@@ -38,4 +41,49 @@ func DB() *gorm.DB {
 	db = db_local
 
 	return db
+}
+
+var ml *melody.Melody
+
+var gameSessions map[*melody.Session]int64
+
+func Melody() *melody.Melody {
+
+	if ml != nil {
+		return ml
+	}
+
+	ml = melody.New()
+
+	gameSessions = make(map[*melody.Session]int64)
+
+	ml.HandleConnect(func(s *melody.Session) {
+		// 从会话keys中获取gameID
+		gameIDStr, exists := s.Get("gameID")
+		if !exists {
+			s.Close()
+			return
+		}
+
+		gameID, err := strconv.ParseInt(gameIDStr.(string), 10, 64)
+		if err != nil {
+			s.Close()
+			return
+		}
+
+		gameSessions[s] = gameID
+
+		s.Write([]byte("{ \"status\": \"connected\" }"))
+	})
+
+	ml.HandleClose(func(s *melody.Session, i int, s2 string) error {
+		delete(gameSessions, s)
+		return nil
+	})
+
+	return ml
+}
+
+func GameSessions() map[*melody.Session]int64 {
+	return gameSessions
 }

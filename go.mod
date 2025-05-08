@@ -10,11 +10,17 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.4
 	github.com/joho/godotenv v1.5.1
+	github.com/olahol/melody v1.2.1
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
 	k8s.io/api v0.32.3
 	k8s.io/apimachinery v0.32.3
 	k8s.io/client-go v0.32.3
+)
+
+require (
+	github.com/fsnotify/fsnotify v1.6.0 // indirect
+	github.com/gorilla/websocket v1.5.0 // indirect
 )
 
 require (

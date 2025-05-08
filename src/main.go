@@ -12,6 +12,7 @@ import (
 	"a1ctf/src/controllers"
 	"a1ctf/src/db/models"
 	"a1ctf/src/jobs"
+	dbtool "a1ctf/src/utils/db_tool"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
@@ -122,6 +123,7 @@ var PermissionMap = map[string]PermissionSetting{
 	`^/api/game/\d+/scoreboard$`:          {RequestMethod: []string{"GET"}, Permissions: []string{}},
 	`^/api/game/\d+/container/\d+$`:       {RequestMethod: []string{"POST", "DELETE", "PATCH", "GET"}, Permissions: []string{}},
 	`^/api/game/\d+/flag/\d+$`:            {RequestMethod: []string{"POST"}, Permissions: []string{}},
+	`^/api/hub$`:                          {RequestMethod: []string{"GET"}, Permissions: []string{}},
 	`^/api/game/\d+/flag/[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$`: {RequestMethod: []string{"GET"}, Permissions: []string{}},
 }
 
@@ -331,6 +333,20 @@ func main() {
 			userGameGroup.POST("/:game_id/flag/:challenge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGameChallengeSubmitFlag)
 			userGameGroup.GET("/:game_id/flag/:judge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGameGetJudgeResult)
 		}
+
+		auth.GET("/hub", func(c *gin.Context) {
+			// 在升级为WebSocket前获取查询参数
+			gameID := c.Query("game")
+			if gameID == "" {
+				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "game parameter is required"})
+				return
+			}
+
+			// 处理WebSocket连接
+			dbtool.Melody().HandleRequestWithKeys(c.Writer, c.Request, map[string]interface{}{
+				"gameID": gameID,
+			})
+		})
 	}
 
 	// 未知接口

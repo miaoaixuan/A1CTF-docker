@@ -196,12 +196,14 @@ CREATE TABLE "notices" (
     "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
     "notice_category" jsonb NOT NULL,
     "create_time" timestamp NOT NULL,
-    "data" jsonb NOT NULL,
+    "announced" bool DEFAULT false NOT NULL,
+    "data" text[] NOT NULL,
     PRIMARY KEY (notice_id)
 );
 
 CREATE INDEX idx_notices_game ON notices(game_id);
 CREATE INDEX idx_notices_time ON notices(create_time);
+CREATE INDEX idx_notices_announced ON notices(announced);
 CREATE INDEX idx_notices_category ON notices USING GIN(notice_category);
 
 CREATE TABLE "scoreboard" (

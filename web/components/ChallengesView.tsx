@@ -225,6 +225,8 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
 
     const [submitFlagWindowVisible, setSubmitFlagWindowVisible] = useState(false)
 
+    const wsRef = useRef<WebSocket | null>(null)
+
 
     // 更新当前选中题目信息, 根据 Websocket 接收到的信息被动调用
     const updateChallenge = () => {
@@ -274,7 +276,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
 
                         clearInterval(inter)
                         setRefreshContainerTrigger(false)
-                    } else if (res.data.data.container_status != ContainerStatus.ContainerQueueing && 
+                    } else if (res.data.data.container_status != ContainerStatus.ContainerQueueing &&
                         res.data.data.container_status != ContainerStatus.ContainerStarting
                     ) {
                         setContainerLaunching(false)
@@ -436,65 +438,76 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             })
 
             // Websocket
-            const connection = new signalR.HubConnectionBuilder()
-                .withUrl(`/hub/user?game=${id}`)
-                .withHubProtocol(new signalR.JsonHubProtocol())
-                .withAutomaticReconnect()
-                .configureLogging(signalR.LogLevel.None)
-                .build()
+            const socket = new WebSocket(`ws://localhost:3000/api/hub?game=${gameID}`)
+            wsRef.current = socket
 
-            connection.serverTimeoutInMilliseconds = 60 * 1000 * 60 * 2
+            socket.onopen = () => {
+                console.log('WebSocket connected')
+            }
 
-            connection.on('ReceivedGameNotice', (message: GameNotice) => {
-                console.log(message)
+            socket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data)
+                    if (data.type === 'Notice') {
+                        const message: GameNotice = data.message
+                        console.log(message)
 
-                if (message.notice_category == NoticeCategory.NewHint && message.data[0] == prevChallenge.current?.challenge_name) {
-                    // 防止并发
-                    setTimeout(updateChallenge, randomInt(200, 600))
-                }
+                        if (message.notice_category == NoticeCategory.NewHint && message.data[0] == prevChallenge.current?.challenge_name) {
+                            // 防止并发
+                            setTimeout(updateChallenge, randomInt(200, 600))
+                        }
 
-                if (message.notice_category == NoticeCategory.NewAnnouncement) {
+                        if (message.notice_category == NoticeCategory.NewAnnouncement) {
+                            const newNotices: GameNotice[] = []
+                            newNotices[0] = message
+                            noticesRef.current.forEach((ele, index) => {
+                                newNotices[index + 1] = ele
+                            })
 
-                    const newNotices: GameNotice[] = []
+                            noticesRef.current = newNotices
+                            setNotices(newNotices)
 
-                    newNotices[0] = message
-                    noticesRef.current.forEach((ele, index) => {
-                        newNotices[index + 1] = ele
-                    })
+                            toastNewNotice({
+                                title: message.data[0],
+                                time: new Date(message.create_time).getTime() / 1000,
+                                openNotices: setNoticeOpened
+                            })
+                        }
 
-                    noticesRef.current = newNotices
-                    setNotices(newNotices)
-
-                    toastNewNotice({ title: message.data[0], time: dayjs(message.create_time).unix(), openNotices: setNoticeOpened })
-                }
-
-                if ([NoticeCategory.FirstBlood, NoticeCategory.SecondBlood, NoticeCategory.ThirdBlood].includes(message.notice_category) && gameInfo?.team_info?.team_name?.toString().trim() == message.data[0].toString().trim()) {
-                    switch (message.notice_category) {
-                        case NoticeCategory.FirstBlood:
-                            setBloodMessage(`${t2("congratulations")}${t2("blood_message_p1")} ${message.data[1]} ${t2("blood1")}`)
-                            setBlood("gold")
-                            break
-                        case NoticeCategory.SecondBlood:
-                            setBloodMessage(`${t2("congratulations")}${t2("blood_message_p1")} ${message.data[1]} ${t2("blood2")}`)
-                            setBlood("silver")
-                            break
-                        case NoticeCategory.ThirdBlood:
-                            setBloodMessage(`${t2("congratulations")}${t2("blood_message_p1")} ${message.data[1]} ${t2("blood3")}`)
-                            setBlood("copper")
-                            break
+                        if ([NoticeCategory.FirstBlood, NoticeCategory.SecondBlood, NoticeCategory.ThirdBlood].includes(message.notice_category) &&
+                            gameInfo?.team_info?.team_name?.toString().trim() == message.data[0]?.toString().trim()) {
+                            switch (message.notice_category) {
+                                case NoticeCategory.FirstBlood:
+                                    setBloodMessage(`${t2("congratulations")}${t2("blood_message_p1")} ${message.data[1]} ${t2("blood1")}`)
+                                    setBlood("gold")
+                                    break
+                                case NoticeCategory.SecondBlood:
+                                    setBloodMessage(`${t2("congratulations")}${t2("blood_message_p1")} ${message.data[1]} ${t2("blood2")}`)
+                                    setBlood("silver")
+                                    break
+                                case NoticeCategory.ThirdBlood:
+                                    setBloodMessage(`${t2("congratulations")}${t2("blood_message_p1")} ${message.data[1]} ${t2("blood3")}`)
+                                    setBlood("copper")
+                                    break
+                            }
+                        }
                     }
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error)
                 }
-            })
+            }
 
-            connection.start().catch((error) => {
-                console.error(error)
-            })
+            socket.onerror = (error) => {
+                console.error('WebSocket error:', error)
+            }
+
+            socket.onclose = () => {
+                console.log('WebSocket disconnected')
+            }
 
             return () => {
-                if (connection) {
-                    connection.stop().catch((err) => {
-                        console.error(err)
-                    })
+                if (wsRef.current) {
+                    wsRef.current.close()
                 }
             }
 
@@ -638,11 +651,11 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
 
     const memoizedDescription = useMemo(() => {
         return curChallenge?.description ? (
-          <div className="flex flex-col gap-0">
-            <Mdx source={curChallenge.description} />
-          </div>
+            <div className="flex flex-col gap-0">
+                <Mdx source={curChallenge.description} />
+            </div>
         ) : (
-          <span>题目简介为空哦</span>
+            <span>题目简介为空哦</span>
         );
     }, [curChallenge?.description]); // 只依赖description
 
@@ -865,7 +878,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                         </motion.div>
                                     ) : (null)}
                                 </AnimatePresence>
-                                <ResizableScrollablePanel defaultSize={60} minSize={20} className={`relative ${ pageSwitch ? "opacity-0" : "" } `} onResize={(size, prevSize) => {
+                                <ResizableScrollablePanel defaultSize={60} minSize={20} className={`relative ${pageSwitch ? "opacity-0" : ""} `} onResize={(size, prevSize) => {
                                     setResizeTrigger(size)
                                 }}>
                                     {!curChallenge ? (
@@ -917,12 +930,12 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                     </div>
                                     <div className="flex h-full">
                                         <SafeComponent>
-                                            { curChallenge && challengeSolveStatusList && (
+                                            {curChallenge && challengeSolveStatusList && (
                                                 <div className="absolute bottom-5 right-7 z-10">
-                                                    { challengeSolveStatusList[curChallenge?.challenge_id ?? 0].solved ? (
+                                                    {challengeSolveStatusList[curChallenge?.challenge_id ?? 0].solved ? (
                                                         <Button
                                                             className="h-[57px] px-5 rounded-3xl backdrop-blur-sm bg-green-600/70 hover:bg-green-800/70 [&_svg]:size-9 gap-2 flex items-center justify-center text-white disabled:opacity-100"
-                                                            onClick={() => {}}
+                                                            onClick={() => { }}
                                                         >
                                                             <CheckCheck />
                                                             <span className="font-bold text-xl">Solved!</span>
@@ -935,9 +948,9 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                             <Flag className="rotate-12" />
                                                             <span className="font-bold text-xl">Submit!</span>
                                                         </Button>
-                                                    ) }
+                                                    )}
                                                 </div>
-                                            ) }
+                                            )}
                                             <MacScrollbar
                                                 className="p-5 lg:p-10 w-full flex flex-col"
                                                 skin={theme === "dark" ? "dark" : "light"}
@@ -945,11 +958,11 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                 {curChallenge?.challenge_name && (
                                                     <div className="flex flex-col gap-4 mb-4">
                                                         <ChallengeNameTitle challengeSolveStatusList={challengeSolveStatusList} curChallenge={curChallenge} />
-                                                        { memoizedDescription }
+                                                        {memoizedDescription}
                                                     </div>
                                                 )}
 
-                                                { curChallenge?.containers?.length ? (
+                                                {curChallenge?.containers?.length ? (
                                                     <div className="flex flex-col gap-4 mb-8">
                                                         <div className={`flex items-center gap-2 px-5 py-[9px] border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md select-none`}>
                                                             <Package />
