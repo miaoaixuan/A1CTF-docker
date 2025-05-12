@@ -16,8 +16,6 @@ import { ResizableScrollablePanel } from "@/components/ResizableScrollablePanel"
 import { Mdx } from "./MdxCompoents";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-// import { api, ChallengeDetailModel, GameDetailModel, DetailedGameInfoModel, GameNotice, NoticeCategory, ChallengeInfo, ChallengeType, ErrorMessage, TeamInfoModel, ParticipationStatus, ContainerStatus, ContainerInfoModel } from '@/utils/GZApi'
-
 import { api } from "@/utils/ApiHelper"
 import { ContainerStatus, ErrorMessage, ExposePortInfo, GameNotice, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "@/utils/A1API"
 
@@ -61,39 +59,6 @@ import ChallengeNameTitle from "@/components/modules/challenge/ChallengeNameTitl
 import { useSpring } from "@react-spring/web";
 import GameStatusMask from "@/components/modules/game/GameStatusMask";
 import ChallengeHintPage from "./modules/challenge/ChallengeHintPage";
-
-const GameTerminal = dynamic(
-    () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
-    {
-        ssr: false, // 禁用服务器端渲染
-        loading: () => (
-            // <div className="w-full h-full">
-            //     <SkeletonCard />
-            // </div>
-            <></>
-        ), // 占位符
-    }
-);
-
-// 格式化时间
-const formatDuration = (duration: number) => {
-    duration = Math.floor(duration)
-
-    const days = Math.floor(duration / (24 * 3600));
-    const hours = Math.floor((duration % (24 * 3600)) / 3600);
-    const minutes = Math.floor((duration % 3600) / 60);
-    const seconds = duration % 60;
-
-    if (days > 0) {
-        return `${String(days).padStart(2, '0')}d ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m`;
-    } else if (hours > 0) {
-        return `${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
-    } else if (minutes > 0) {
-        return `${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
-    } else {
-        return `${String(seconds).padStart(2, '0')}s`;
-    }
-}
 
 export interface ChallengeSolveStatus {
     solved: boolean;
@@ -491,7 +456,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
         const checkGameStartedInter = setInterval(() => {
             api.user.userGetGameChallenges(gameID).then((res) => {
                 clearInterval(checkGameStartedInter)
-    
+
                 // 防卡
                 setTimeout(() => {
                     setGameStatus("running")
@@ -575,12 +540,12 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             <ChallengeHintPage curChallenge={curChallenge} visible={showHintsWindowVisible} setVisible={setShowHintsWindowVisible} />
 
             {/* 比赛各种状态页 */}
-            <GameStatusMask 
-                gameStatus={gameStatus} 
-                gameID={gameID} 
-                gameInfo={gameInfo} 
-                lng={lng} 
-                setScoreBoardVisible={setScoreBoardVisible} 
+            <GameStatusMask
+                gameStatus={gameStatus}
+                gameID={gameID}
+                gameInfo={gameInfo}
+                lng={lng}
+                setScoreBoardVisible={setScoreBoardVisible}
                 startCheckForGameStart={startCheckForGameStart}
             />
 

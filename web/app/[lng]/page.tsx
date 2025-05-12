@@ -1,7 +1,6 @@
 import PageHeader from "@/components/A1Headers"
 
 import A1Footer from "@/components/A1Footer";
-import A1Animation from "@/components/A1Animation";
 
 import React from "react";
 import { MainPageAnimation } from "@/components/MainPageAnimation";

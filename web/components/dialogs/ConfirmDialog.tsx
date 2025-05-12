@@ -4,34 +4,14 @@ import { Button } from "@/components/ui/button"
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 
-import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from "@/components/ui/form"
 
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
-import { ChangeEvent, Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
-import { Textarea } from "../ui/textarea";
-import { api } from "@/utils/GZApi";
-import { AxiosError } from "axios";
-import { toast } from "sonner";
-import { CircleAlert, FileUp, Upload } from "lucide-react";
+import { Dispatch, SetStateAction } from "react";
+import { CircleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 interface ErrorMessage {

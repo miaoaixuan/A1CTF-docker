@@ -6,8 +6,6 @@ import { CalendarPlus, CalendarX2, ChevronDown, ChevronsLeft, ChevronsRight, Che
 import { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion";
 
-// import { api, GameSimpleInfo } from '@/utils/GZApi'
-
 import { GameSimpleInfo } from '@/utils/A1API'
 import { api } from "@/utils/ApiHelper";
 

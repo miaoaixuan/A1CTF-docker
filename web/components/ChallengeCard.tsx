@@ -54,7 +54,7 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
     }, [status])
 
     return (
-        <div className={`w-full h-[100px] rounded-xl relative hover:scale-[1.04] pl-4 pt-4 pr-4 pb-3 select-none overflow-hidden transition-transform_bordercolor duration-300 will-change-transform border-[2px] ${ solveStatus ? "bg-green-200/[0.3] border-green-300/40" : "bg-background/50" }`}
+        <div className={`w-full h-[100px] rounded-xl relative hover:scale-[1.04] pl-4 pt-4 pr-4 pb-3 select-none overflow-hidden transition-transform_bordercolor duration-300 will-change-transform border-[2px] ${ solveStatus ? "bg-green-200/[0.3] border-green-300/40" : "bg-background/[0.3]" }`}
             // style={{
             //     backgroundColor: choiced ? colorClass : "transparent"
             // }}
@@ -163,7 +163,7 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
                     </div>
                     <div className="flex-1"/>
                     <div className="flex justify-end items-center">
-                        <span className="font-bold">Try it</span>
+                        {/* <span className="font-bold">Try</span> */}
                         <ChevronsRight size={32}/>
                     </div>
                 </div>

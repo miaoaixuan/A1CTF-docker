@@ -1,4 +1,4 @@
-import { BadgeCent, Binary, Bot, Bug, ChevronDown, ChevronUp, Chrome, CircleArrowLeft, Earth, FileSearch, Github, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
+import { BadgeCent, Binary, Bot, Bug, FileSearch, Github, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
 
 export const challengeCategoryColorMap : { [key: string]: string } = {
     "misc": "rgb(32, 201, 151)",
