@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -134,6 +135,10 @@ func AdminGetGame(c *gin.Context) {
 		})
 		return
 	}
+
+	sort.Slice(gameChallenges, func(i, j int) bool {
+		return gameChallenges[i].Challenge.Name < gameChallenges[j].Challenge.Name
+	})
 
 	result := gin.H{
 		"game_id":                game.GameID,

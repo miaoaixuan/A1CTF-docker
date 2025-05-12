@@ -168,7 +168,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     const [resizeTrigger, setResizeTrigger] = useState<number>(0)
 
     // Hints 折叠状态
-    const [foldedItems, setFoldedItems] = useState<Record<number, boolean>>({});
+    // const [foldedItems, setFoldedItems] = useState<Record<number, boolean>>({});
 
     // 页面切换动画
     const [pageSwitch, setPageSwitch] = useState(false)
@@ -252,12 +252,12 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     }
 
     // 开关某一 Hint 项的折叠状态
-    const toggleFolded = (itemId: number) => {
-        setFoldedItems((prevState) => ({
-            ...prevState,
-            [itemId]: !prevState[itemId], // 切换该项的折叠状态
-        }));
-    }
+    // const toggleFolded = (itemId: number) => {
+    //     setFoldedItems((prevState) => ({
+    //         ...prevState,
+    //         [itemId]: !prevState[itemId], // 切换该项的折叠状态
+    //     }));
+    // }
 
     useEffect(() => {
         if (refreshContainerTrigger == true) {
@@ -329,11 +329,11 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             if (detail) curChallengeDetail.current = detail
         })
 
-        const noneDict: Record<number, boolean> = {}
-        for (let i = 0; i < (curChallenge?.hints?.length || 0); i++) {
-            noneDict[i] = true
-        }
-        setFoldedItems(noneDict)
+        // const noneDict: Record<number, boolean> = {}
+        // for (let i = 0; i < (curChallenge?.hints?.length || 0); i++) {
+        //     noneDict[i] = true
+        // }
+        // setFoldedItems(noneDict)
 
         const timeout = setTimeout(() => setPageSwitch(false), 300)
 
@@ -865,7 +865,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                             <ResizablePanelGroup direction="vertical" className="relative">
                                 <AnimatePresence>
                                     {pageSwitch ? (
-                                        <motion.div className="absolute top-0 left-0 w-full h-full bg-background z-20 flex justify-center items-center"
+                                        <motion.div className="absolute top-0 left-0 w-full h-full z-20 flex justify-center items-center"
                                             exit={{
                                                 opacity: 0
                                             }}
@@ -900,7 +900,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                             )}
                                         </div>
                                     ) : <></>}
-                                    <div className="absolute bottom-2 right-2 flex flex-col gap-2 p-2 opacity-100 ease-in-out">
+                                    {/* <div className="absolute bottom-2 right-2 flex flex-col gap-2 p-2 opacity-100 ease-in-out">
                                         {
                                             curChallenge && curChallenge.hints?.map((value, index) => {
                                                 return (
@@ -927,7 +927,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                 )
                                             })
                                         }
-                                    </div>
+                                    </div> */}
                                     <div className="flex h-full">
                                         <SafeComponent>
                                             {curChallenge && challengeSolveStatusList && (
