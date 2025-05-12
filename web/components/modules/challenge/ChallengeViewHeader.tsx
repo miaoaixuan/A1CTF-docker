@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/avatar"
 
 import { Badge } from "@/components/ui/badge"
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { GameNotice, NoticeCategory, UserFullGameInfo } from "@/utils/A1API";
 import { useTranslations } from "next-intl";
@@ -42,7 +42,7 @@ const ChallengesViewHeader = (
         setScoreBoardVisible: (arg0: boolean) => void,
         notices: GameNotice[],
         lng: string,
-        curProfile: ProfileUserInfoModel
+        curProfile: ProfileUserInfoModel,
     },
 ) => {
 

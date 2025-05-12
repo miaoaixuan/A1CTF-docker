@@ -4,6 +4,7 @@ import { api, BasicGameInfoModel, ProfileUserInfoModel } from "@/utils/GZApi";
 import { AxiosError } from "axios";
 import React, { createContext, Dispatch, SetStateAction, useContext, useEffect, useRef, useState } from "react";
 import { useCookies } from "react-cookie";
+import { browserName } from "react-device-detect";
 
 interface ClientConfig {
     FancyBackGroundIconWhite: string;
@@ -55,7 +56,7 @@ export const GlobalVariableProvider: React.FC<{ children: React.ReactNode }> = (
         SchoolLogo: "/images/zjnu_logo.png",
         SchoolSmallIcon: "/images/zjnu_small_logo.png",
         SchoolUnionAuthText: "ZJNU Union Authserver",
-        BGAnimation: true
+        BGAnimation: false
     }
 
     const [clientConfig, setClientConfig] = useState<ClientConfig>({} as ClientConfig)
@@ -94,7 +95,12 @@ export const GlobalVariableProvider: React.FC<{ children: React.ReactNode }> = (
         if (cookies.clientConfig) {
             setClientConfig(cookies.clientConfig)
         } else {
-            setClientConfig(defaultClientConfig)
+            const copiedConfig = { ...defaultClientConfig }
+            console.log(browserName)
+            if (browserName.includes("Chrome")) {
+                copiedConfig.BGAnimation = true
+            }
+            setClientConfig(copiedConfig)
             setCookie("clientConfig", defaultClientConfig, { path: "/" })
         }
     }, [])

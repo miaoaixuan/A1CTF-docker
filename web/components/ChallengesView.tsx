@@ -181,6 +181,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     const [cookies, setCookie, removeCookie] = useCookies(["uid"])
 
     const [submitFlagWindowVisible, setSubmitFlagWindowVisible] = useState(false)
+    const [showHintsWindowVisible, setShowHintsWindowVisible] = useState(false)
 
     const wsRef = useRef<WebSocket | null>(null)
 
@@ -571,7 +572,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             <SubmitFlagView lng={lng} curChallenge={curChallenge} gameID={gameID} setChallengeSolved={setChallengeSolved} challengeSolveStatusList={challengeSolveStatusList} visible={submitFlagWindowVisible} setVisible={setSubmitFlagWindowVisible} />
 
             {/* Hint 列表 */}
-            <ChallengeHintPage />
+            <ChallengeHintPage curChallenge={curChallenge} visible={showHintsWindowVisible} setVisible={setShowHintsWindowVisible} />
 
             {/* 比赛各种状态页 */}
             <GameStatusMask 
@@ -688,7 +689,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                             >
                                                 {curChallenge?.challenge_name && (
                                                     <div className="flex flex-col gap-4 mb-4">
-                                                        <ChallengeNameTitle challengeSolveStatusList={challengeSolveStatusList} curChallenge={curChallenge} />
+                                                        <ChallengeNameTitle challengeSolveStatusList={challengeSolveStatusList} curChallenge={curChallenge} setShowHintsWindowVisible={setShowHintsWindowVisible} />
                                                         {memoizedDescription}
                                                     </div>
                                                 )}
