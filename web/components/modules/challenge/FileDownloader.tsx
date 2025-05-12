@@ -1,8 +1,8 @@
 "use client";
 
 import { File, Pickaxe, ArrowDownUp, FileDown, Ruler } from "lucide-react";
-import { Button } from "../ui/button";
-import { Progress } from "../ui/progress";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { AttachmentType, UserAttachmentConfig } from "@/utils/A1API";
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";

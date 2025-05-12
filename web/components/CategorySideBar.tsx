@@ -33,6 +33,7 @@ import { ErrorMessage, ParticipationStatus, UserDetailGameChallenge, UserFullGam
 import { api } from "@/utils/ApiHelper";
 import { ChallengeSolveStatus } from "./ChallengesView";
 import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
+import CategoryChallenges from "@/components/modules/game/CategoryChallenges";
 
 export function CategorySidebar({ gameid, curChallenge, setCurChallenge, lng, gameStatus, setGameStatus, resizeTrigger, setPageSwitching, challenges, setChallenges, challengeSolveStatusList, setChallengeSolveStatusList } : { 
     gameid: string,
@@ -309,91 +310,16 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, lng, ga
                             </div>
                             <div className="pl-[7px] pr-[7px] mt-2">
                                 {Object.entries(challenges ?? {}).map(([category, challengeList]) => (
-                                    <div key={category} className="mb-2">
-                                        {/* Sidebar Group Label */}
-                                        <SidebarGroupLabel className="text-[0.9em] transition-colors duration-300 h-10">
-                                            <div className="flex items-center w-full" onClick={() => {
-                                                setCategoryFolded((prev) => ({
-                                                    ...prev,
-                                                    [category.toLowerCase()]: !prev[category.toLowerCase()]
-                                                }))
-                                            }}>
-                                                <div className="flex items-center justify-center gap-2 transition-colors duration-300"
-                                                    style={{
-                                                        color: (!categoryFolded[category.toLowerCase()] || curChallenge?.category?.toString() === category) ? colorMap[category.toLowerCase()] : ""
-                                                    }}
-                                                >
-                                                    { cateIcon[category.toLowerCase()] }
-                                                    <span className="font-bold text-[1.1em]" style={{
-                                                        // color: colorMap[category.toLowerCase()]
-                                                    }}>{category}</span>
-                                                </div>
-                                                <div className="flex-1" />
-                                                <div className="justify-end">
-                                                    <Button variant={"ghost"} size={"icon"}>
-                                                        <ChevronDown className={`transition-transform duration-300 ${ categoryFolded[category.toLowerCase()] ? "" : "rotate-180" }`} />
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </SidebarGroupLabel>
-                                        <SidebarGroupContent>
-                                            <SidebarMenu className="">
-                                                <motion.div className={`flex flex-col gap-3 overflow-hidden ${ categoryPadding[category.toLowerCase()] ? "p-2" : "" } ${categoryFolded[category.toLowerCase()] ? "pointer-events-none" : ""}`}
-                                                    initial={{
-                                                        height: categoryFolded[category.toLowerCase()] ? 0 : "auto",
-                                                        // padding: categoryFolded[category.toLowerCase()] ? 0 : "8px"
-                                                    }}
-                                                    animate={{
-                                                        height: categoryFolded[category.toLowerCase()] ? 0 : "auto",
-                                                        // padding: categoryFolded[category.toLowerCase()] ? 0 : "8px"
-                                                    }}
-                                                    onAnimationComplete={(e: { height: number | string, padding: number }) => {
-                                                        if (e.height === 0) {
-                                                            setCategoryPadding((prev) => ({
-                                                                ...prev,
-                                                                [category.toLowerCase()]: false
-                                                            }))
-                                                        }
-                                                    }}
-                                                    onAnimationStart={(e: { height: number | string, padding: number }) => {
-                                                        if (e.height === "auto") {
-                                                            setCategoryPadding((prev) => ({
-                                                                ...prev,
-                                                                [category.toLowerCase()]: true
-                                                            }))
-                                                        }
-                                                    }}
-                                                    transition={{
-                                                        ease: "linear",
-                                                        duration: challengeList.length > 3 ? 0.3 : 0.2
-                                                    }}
-                                                >
-                                                    {/* Render all ChallengeItems for this category */}
-                                                    {challengeList.map((challenge, index) => (
-                                                        <div
-                                                            key={index}
-                                                            ref={(el) => observeItem(el!, category, challenge.challenge_id?.toString() || "")}
-                                                        >
-                                                            { (visibleItems[category]?.[challenge?.challenge_id ?? 0] && categoryPadding[category.toLowerCase()]) ? (
-                                                                <ChallengeCard
-                                                                    type={challenge.category?.toLocaleLowerCase() || "None"}
-                                                                    name={challenge?.challenge_name ?? "None"}
-                                                                    solved={challenge?.solve_count ?? 0}
-                                                                    score={challenge?.cur_score ?? 0}
-                                                                    rank={3}
-                                                                    choiced={curChallenge?.challenge_id == challenge.challenge_id}
-                                                                    onClick={handleChangeChallenge(challenge?.challenge_id ?? 0)}
-                                                                    status={challengeSolveStatusList[challenge?.challenge_id ?? 0].solved}
-                                                                />
-                                                            ) : (
-                                                                <div className="h-[100px]"></div>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </motion.div>
-                                            </SidebarMenu>
-                                        </SidebarGroupContent>
-                                    </div>
+                                    <CategoryChallenges
+                                        key={category}
+                                        category={category}
+                                        challengeList={challengeList}
+                                        curChallenge={curChallenge}
+                                        observeItem={observeItem}
+                                        visibleItems={visibleItems}
+                                        handleChangeChallenge={handleChangeChallenge}
+                                        challengeSolveStatusList={challengeSolveStatusList}
+                                  />
                                 ))}
 
                             </div>

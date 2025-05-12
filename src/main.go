@@ -235,6 +235,9 @@ func StartLoopEvent() {
 func main() {
 	godotenv.Load()
 
+	// 初始化数据库
+	dbtool.Init()
+
 	// db_init.InitMyDB()
 
 	memoryStore := persist.NewMemoryStore(1 * time.Minute)

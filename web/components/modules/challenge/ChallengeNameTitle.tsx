@@ -1,9 +1,9 @@
 "use client";
 
 import { CircleCheckBig, Citrus, Flag, Info, ScanHeart } from "lucide-react";
-import { ChallengeSolveStatus } from "../ChallengesView";
+import { ChallengeSolveStatus } from "@/components/ChallengesView";
 import { UserDetailGameChallenge } from "@/utils/A1API";
-import { Badge } from "../ui/badge";
+import { Badge } from "@/components/ui/badge";
 
 export default function ChallengeNameTitle({ challengeSolveStatusList, curChallenge }: { challengeSolveStatusList: Record<number, ChallengeSolveStatus>, curChallenge: UserDetailGameChallenge }) {
     return (

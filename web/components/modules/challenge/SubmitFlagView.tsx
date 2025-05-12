@@ -1,9 +1,9 @@
 "use client";
 
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import { CheckCheck, Flag, Loader2, Mail, Send, SendHorizonal, X } from "lucide-react";
-import { Input } from "../ui/input";
+import { Input } from "@/components/ui/input";
 
 import {
     animated,
@@ -12,7 +12,7 @@ import {
 import { JudgeType, UserDetailGameChallenge } from "@/utils/A1API";
 import { api } from "@/utils/ApiHelper";
 import { toast } from "sonner";
-import { ChallengeSolveStatus } from "../ChallengesView";
+import { ChallengeSolveStatus } from "@/components/ChallengesView";
 
 const SubmitFlagView = ({ lng, curChallenge, gameID, setChallengeSolved, challengeSolveStatusList, visible, setVisible } : { lng: string, curChallenge: UserDetailGameChallenge | undefined, gameID: number, setChallengeSolved: (id: number) => void, challengeSolveStatusList: Record<number, ChallengeSolveStatus>, visible: boolean, setVisible: Dispatch<SetStateAction<boolean>> }) => {
 

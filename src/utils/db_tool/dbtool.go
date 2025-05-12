@@ -16,9 +16,20 @@ import (
 var db *gorm.DB
 
 func DB() *gorm.DB {
-	if db != nil {
-		return db
-	}
+	return db
+}
+
+var ml *melody.Melody
+
+var gameSessions map[*melody.Session]int64 = make(map[*melody.Session]int64)
+
+func Melody() *melody.Melody {
+	return ml
+}
+
+func Init() {
+
+	// Init DB
 
 	_ = logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags), // 使用标准输出
@@ -40,19 +51,7 @@ func DB() *gorm.DB {
 
 	db = db_local
 
-	return db
-}
-
-var ml *melody.Melody
-
-var gameSessions map[*melody.Session]int64
-
-func Melody() *melody.Melody {
-
-	if ml != nil {
-		return ml
-	}
-
+	// Init melody
 	ml = melody.New()
 
 	gameSessions = make(map[*melody.Session]int64)
@@ -80,8 +79,6 @@ func Melody() *melody.Melody {
 		delete(gameSessions, s)
 		return nil
 	})
-
-	return ml
 }
 
 func GameSessions() map[*melody.Session]int64 {

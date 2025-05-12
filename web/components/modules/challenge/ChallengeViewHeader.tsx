@@ -7,10 +7,10 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-import { SidebarTrigger } from "../ui/sidebar"
-import { Button } from "../ui/button"
+import { SidebarTrigger } from "@/components/ui/sidebar"
+import { Button } from "@/components/ui/button"
 import { AppWindow, PackageOpen, Presentation } from "lucide-react"
-import ToggleTheme from "../ToggleTheme"
+import ToggleTheme from "@/components/ToggleTheme"
 
 import {
     Avatar,
@@ -23,7 +23,7 @@ import { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { GameNotice, NoticeCategory, UserFullGameInfo } from "@/utils/A1API";
 import { useTranslations } from "next-intl";
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileUserInfoModel } from "@/utils/GZApi";
 
 const ChallengesViewHeader = (
