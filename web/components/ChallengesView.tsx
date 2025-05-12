@@ -60,6 +60,7 @@ import ChallengeNameTitle from "@/components/modules/challenge/ChallengeNameTitl
 
 import { useSpring } from "@react-spring/web";
 import GameStatusMask from "@/components/modules/game/GameStatusMask";
+import ChallengeHintPage from "./modules/challenge/ChallengeHintPage";
 
 const GameTerminal = dynamic(
     () => import("@/components/GameTerminal2").then((mod) => mod.GameTerminal),
@@ -119,8 +120,6 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
         speed: string;
     };
 
-    const [downloadSpeed, setDownloadSpeed] = useState<Record<string, DownloadInfo>>({})
-
     // 前一个题目
     const prevChallenge = useRef<UserDetailGameChallenge>();
 
@@ -139,18 +138,11 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
     // 侧栏打开关闭的时候更新 Terminal 宽度用的钩子
     const [resizeTrigger, setResizeTrigger] = useState<number>(0)
 
-    // Hints 折叠状态
-    // const [foldedItems, setFoldedItems] = useState<Record<number, boolean>>({});
-
     // 页面切换动画
     const [pageSwitch, setPageSwitch] = useState(false)
 
     // 题目是否解决
     const [challengeSolveStatusList, setChallengeSolveStatusList] = useState<Record<number, ChallengeSolveStatus>>({});
-
-    // 附件下载进度
-    const [attachDownloadProgress, setAttachDownloadProgress] = useState<number>(0)
-    const [downloadName, setDownloadName] = useState<string>("")
 
     const [redirectURL, setRedirectURL] = useState<string>("")
 
@@ -174,14 +166,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
 
     const checkInterStarted = useRef(false)
 
-    // FIXME TeamInfoModel
-    // const [availableTeams, setAvailableTeams] = useState<TeamInfoModel[]>([])
-    const [preJoinDataPrepared, setPreJoinDataPrepared] = useState(false)
-
-    const [curChoosedTeam, setCurChoosedTeam] = useState<number>(-1)
-
     const [containerLaunching, setContainerLaunching] = useState(false)
-    // FIXME ContainerInfoModel
 
     const [containerInfo, setContainerInfo] = useState<ExposePortInfo[]>([])
     const [containerRunningTrigger, setContainerRunningTrigger] = useState(false);
@@ -222,14 +207,6 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             curChallengeDetail.current.solve_count = (curChallengeDetail.current.solve_count ?? 0) + 1
         }
     }
-
-    // 开关某一 Hint 项的折叠状态
-    // const toggleFolded = (itemId: number) => {
-    //     setFoldedItems((prevState) => ({
-    //         ...prevState,
-    //         [itemId]: !prevState[itemId], // 切换该项的折叠状态
-    //     }));
-    // }
 
     useEffect(() => {
         if (refreshContainerTrigger == true) {
@@ -313,27 +290,6 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             clearTimeout(timeout)
         }
     }, [curChallenge]);
-
-    const containerCountDownInter: NodeJS.Timeout | null = null;
-
-    // useEffect(() => {
-    //     if (containerRunningTrigger == true) {
-    //         if (containerCountDownInter != null) {
-    //             clearInterval(containerCountDownInter);
-    //         }
-
-    //         containerCountDownInter = setInterval(() => {
-    //             if (curChallenge?.containers?.length) {
-    //                 const leftTime = Math.floor(dayjs(curChallenge?.containers[0].close_time).diff(dayjs()) / 1000)
-    //                 setContainerLeftTime(formatDuration(leftTime))
-    //             }
-    //         }, 1000)
-    //     } else {
-    //         if (containerCountDownInter != null) {
-    //             clearInterval(containerCountDownInter);
-    //         }
-    //     }
-    // }, [containerRunningTrigger])
 
     useEffect(() => {
 
@@ -543,32 +499,6 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
         }, 2000)
     }
 
-    const submitTeam = () => {
-        // TODO 创建比赛队伍逻辑重写
-        // if (curChoosedTeam != -1) {
-        //     api.game.gameJoinGame(gameID, {
-        //         teamId: curChoosedTeam
-        //     }).then((res) => {
-        //         // 更新队伍信息
-        //         api.game.gameGame(gameID).then((res) => {
-        //             setGameInfo(res.data)
-        //             toast.success(t("team_submitted"), { position: "top-center" })
-
-        //             setGameStatus("waitForProcess")
-        //         }).catch((error: AxiosError) => {
-        //             if (error.response?.status) {
-        //                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-        //                 toast.error(errorMessage.title, { position: "top-center" })
-        //             } else {
-        //                 toast.error(t("unknow_error"), { position: "top-center" })
-        //             }
-        //         })
-        //     })
-        // } else {
-        //     toast.error(t("choose_team_first"), { position: "top-center" })
-        // }
-    }
-
     const handleLaunchContainer = () => {
         setContainerLaunching(true)
 
@@ -634,10 +564,14 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
         <>
             <GameSwitchHover animation={false} />
             <LoadingPage visible={loadingVisiblity} />
+
             {/* 抢血动画 */}
             <SolvedAnimation blood={blood} setBlood={setBlood} bloodMessage={bloodMessage} />
             {/* 提交 Flag 组件 */}
             <SubmitFlagView lng={lng} curChallenge={curChallenge} gameID={gameID} setChallengeSolved={setChallengeSolved} challengeSolveStatusList={challengeSolveStatusList} visible={submitFlagWindowVisible} setVisible={setSubmitFlagWindowVisible} />
+
+            {/* Hint 列表 */}
+            <ChallengeHintPage />
 
             {/* 比赛各种状态页 */}
             <GameStatusMask 
@@ -649,8 +583,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                 startCheckForGameStart={startCheckForGameStart}
             />
 
-            {/* 下载动画 */}
-            <DownloadBar key={"download-panel"} progress={attachDownloadProgress} downloadName={downloadName}></DownloadBar>
+            {/* 记分板 */}
             <ScoreBoardPage gmid={gameID} visible={scoreBoardVisible} setVisible={setScoreBoardVisible} gameStatus={gameStatus} gameInfo={gameInfo} challenges={challenges} />
             {/* 重定向警告页 */}
             <RedirectNotice redirectURL={redirectURL} setRedirectURL={setRedirectURL} />
