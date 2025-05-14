@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 
 	"a1ctf/src/controllers"
+	"a1ctf/src/db"
 	"a1ctf/src/db/models"
 	"a1ctf/src/jobs"
 	dbtool "a1ctf/src/utils/db_tool"
@@ -235,8 +236,11 @@ func StartLoopEvent() {
 func main() {
 	godotenv.Load()
 
-	// 初始化数据库
+	// 初始化数据库连接
 	dbtool.Init()
+
+	// 初始化 db
+	db.InitDB()
 
 	// db_init.InitMyDB()
 
