@@ -1,6 +1,7 @@
 /target
 watchexec.exe
 .env
+config.yaml
 /data
 k8sconfig.yaml
 uploads

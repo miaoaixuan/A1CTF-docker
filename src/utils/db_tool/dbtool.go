@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm/logger"
 
 	"github.com/olahol/melody"
+	"github.com/spf13/viper"
 )
 
 var db *gorm.DB
@@ -41,7 +42,7 @@ func Init() {
 		},
 	)
 
-	dsn := os.Getenv("DSN")
+	dsn := viper.GetString("system.sql-dsn")
 	db_local, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		// Logger: newLogger, // 设置自定义 Logger
 	})

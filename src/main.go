@@ -13,13 +13,12 @@ import (
 	"a1ctf/src/db"
 	"a1ctf/src/db/models"
 	"a1ctf/src/jobs"
+	"a1ctf/src/utils"
 	dbtool "a1ctf/src/utils/db_tool"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron/v2"
-
-	"github.com/joho/godotenv"
 
 	cache "github.com/chenyahui/gin-cache"
 	"github.com/chenyahui/gin-cache/persist"
@@ -234,7 +233,8 @@ func StartLoopEvent() {
 }
 
 func main() {
-	godotenv.Load()
+	// 加载配置文件
+	utils.LoadConfig()
 
 	// 初始化数据库连接
 	dbtool.Init()
