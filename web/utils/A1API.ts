@@ -226,7 +226,7 @@ export interface AdminFullGameInfo {
   challenges?: AdminDetailGameChallenge[];
 }
 
-export interface GameSimpleInfo {
+export interface UserGameSimpleInfo {
   /** @format int64 */
   game_id: number;
   name: string;
@@ -869,7 +869,7 @@ export class Api<
       this.request<
         {
           code: number;
-          data: GameSimpleInfo[];
+          data: UserGameSimpleInfo[];
         },
         void | ErrorMessage
       >({
@@ -995,7 +995,7 @@ export class Api<
       this.request<
         {
           code: number;
-          data: GameSimpleInfo[];
+          data: UserGameSimpleInfo[];
         },
         void | ErrorMessage
       >({

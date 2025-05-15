@@ -6,7 +6,7 @@ import { CalendarPlus, CalendarX2, ChevronDown, ChevronsLeft, ChevronsRight, Che
 import { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion";
 
-import { GameSimpleInfo } from '@/utils/A1API'
+import { UserGameSimpleInfo } from '@/utils/A1API'
 import { api } from "@/utils/ApiHelper";
 
 import { MacScrollbar } from "mac-scrollbar";
@@ -51,7 +51,7 @@ export function ChangeGames() {
 
     const [width, setWidth] = useState<number>(0)
 
-    const [curGames, setCurGames] = useState<GameSimpleInfo[]>()
+    const [curGames, setCurGames] = useState<UserGameSimpleInfo[]>()
 
     const { clientConfig } = useGlobalVariableContext()
 
@@ -138,7 +138,7 @@ export function ChangeGames() {
         }
     }, [])
 
-    const checkTime = (game: GameSimpleInfo) => {
+    const checkTime = (game: UserGameSimpleInfo) => {
         const curTime = dayjs()
         const start = dayjs(game.start_time)
         const end = dayjs(game.end_time)
@@ -148,7 +148,7 @@ export function ChangeGames() {
         else return 1
     }
 
-    const getGameFlag = (game: GameSimpleInfo) => {
+    const getGameFlag = (game: UserGameSimpleInfo) => {
         switch (checkTime(game)) {
             case -1:
                 return "bg-blue-500"
@@ -161,7 +161,7 @@ export function ChangeGames() {
         }
     }
 
-    const getGameStatus = (game: GameSimpleInfo) => {
+    const getGameStatus = (game: UserGameSimpleInfo) => {
         switch (checkTime(game)) {
             case -1:
                 return t("game_status_pending")

@@ -293,7 +293,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/GameSimpleInfo'
+                      $ref: '#/components/schemas/UserGameSimpleInfo'
                 required:
                   - code
                   - data
@@ -485,7 +485,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/GameSimpleInfo'
+                      $ref: '#/components/schemas/UserGameSimpleInfo'
                 required:
                   - code
                   - data
@@ -1312,7 +1312,7 @@ components:
         - wp_expire_time
         - stages
         - visible
-    GameSimpleInfo:
+    UserGameSimpleInfo:
       type: object
       properties:
         game_id:

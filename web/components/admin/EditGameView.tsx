@@ -42,7 +42,7 @@ import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageS
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { MacScrollbar } from "mac-scrollbar";
-import { ChallengeCategory, AdminChallengeConfig, AdminFullGameInfo, GameSimpleInfo, JudgeType, AdminDetailGameChallenge } from "@/utils/A1API";
+import { ChallengeCategory, AdminChallengeConfig, AdminFullGameInfo, UserGameSimpleInfo, JudgeType, AdminDetailGameChallenge } from "@/utils/A1API";
 import { api, ErrorMessage } from "@/utils/ApiHelper";
 import dayjs from "dayjs";
 import { toast } from "sonner";

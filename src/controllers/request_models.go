@@ -86,3 +86,8 @@ type AdminAddGameChallengePayload struct {
 	GameID      int64 `json:"game_id" binding:"min=0"`
 	ChallengeID int64 `json:"challenge_id" binding:"min=0"`
 }
+
+type AdminListUsersPayload struct {
+	Size   int `json:"size" binding:"min=0"`
+	Offset int `json:"offset"`
+}

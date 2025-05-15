@@ -6,7 +6,7 @@ import { MacScrollbar } from "mac-scrollbar";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
-import { GameSimpleInfo } from "@/utils/A1API";
+import { UserGameSimpleInfo } from "@/utils/A1API";
 import { api } from "@/utils/ApiHelper";
 import { useRouter } from "next/navigation";
 import { FastAverageColor } from "fast-average-color"
@@ -15,7 +15,7 @@ import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
 export function GameManagePage({ lng } : { lng: string }) { 
 
     const { theme } = useTheme()
-    const [ games, setGames ] = useState<GameSimpleInfo[]>([])
+    const [ games, setGames ] = useState<UserGameSimpleInfo[]>([])
 
     const router = useRouter()
 
