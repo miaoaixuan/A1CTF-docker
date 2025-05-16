@@ -1,0 +1,5 @@
+configVersion: v1
+
+system:
+  sql-dsn: "host=localhost user=postgres password=postgres dbname=a1ctf port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+  k8s-config-file: "k8sconfig.yaml"

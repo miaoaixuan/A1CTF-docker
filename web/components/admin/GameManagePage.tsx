@@ -6,14 +6,16 @@ import { MacScrollbar } from "mac-scrollbar";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
-import { GameSimpleInfo } from "@/utils/A1API";
+import { UserGameSimpleInfo } from "@/utils/A1API";
 import { api } from "@/utils/ApiHelper";
 import { useRouter } from "next/navigation";
+import { FastAverageColor } from "fast-average-color"
+import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
 
 export function GameManagePage({ lng } : { lng: string }) { 
 
     const { theme } = useTheme()
-    const [ games, setGames ] = useState<GameSimpleInfo[]>([])
+    const [ games, setGames ] = useState<UserGameSimpleInfo[]>([])
 
     const router = useRouter()
 
@@ -65,6 +67,8 @@ export function GameManagePage({ lng } : { lng: string }) {
         }
     };
 
+    const { clientConfig } = useGlobalVariableContext()
+
     return (
         <div className="w-full h-full flex">
             <MacScrollbar className="w-full h-full p-5 lg:p-10 overflow-y-auto" skin={theme == "light" ? "light" : "dark"}>
@@ -84,8 +88,7 @@ export function GameManagePage({ lng } : { lng: string }) {
                                 { (visibleItems[index.toString()] || isLoaded[index.toString()]) && (
                                     <>
                                         <div className="absolute top-0 left-0 w-full h-full">
-                                            <img src={game.poster || "/images/p2g7wm.jpg"} className={`w-full h-full object-cover`} onLoad={(e) => {
-                                                const FastAverageColor = require('fast-average-color').FastAverageColor;
+                                            <img src={game.poster || clientConfig.DefaultBGImage} className={`w-full h-full object-cover`} onLoad={(e) => {
                                                 const fac = new FastAverageColor();
                                                 const container = e.target as HTMLImageElement; 
 

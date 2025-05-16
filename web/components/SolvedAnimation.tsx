@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import party from 'party-js';
 import { X } from 'lucide-react';
 import { Button } from './ui/button';
+import { useGlobalVariableContext } from '@/contexts/GlobalVariableContext';
 
 export function SolvedAnimation({ blood, setBlood, bloodMessage } : { blood: string, setBlood: Dispatch<SetStateAction<string>>, bloodMessage: string }) {
 
@@ -30,6 +31,21 @@ export function SolvedAnimation({ blood, setBlood, bloodMessage } : { blood: str
         
     }, [blood])
 
+    const { clientConfig } = useGlobalVariableContext()
+
+    const getBloodImage = (blood: string) => {
+        switch (blood) {
+            case "gold":
+                return clientConfig.TrophysGold;
+            case "silver":
+                return clientConfig.TrophysSilver;
+            case "copper":
+                return clientConfig.TrophysBronze;
+            default:
+                return clientConfig.TrophysBronze;
+        }
+    }
+
     return (
         <AnimatePresence>
             { shouldAnime && (
@@ -52,7 +68,7 @@ export function SolvedAnimation({ blood, setBlood, bloodMessage } : { blood: str
                     </div>
                     <div className='flex flex-col items-center gap-8'>
                         <Image
-                            src={`/images/trophys/${blood}_trophy.png`}
+                            src={getBloodImage(blood)}
                             alt="Gold!"
                             width={350}
                             height={1000}

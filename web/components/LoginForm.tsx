@@ -54,7 +54,7 @@ export function LoginForm({
     const { startTransition } = useTransitionContext()
     const router = useRouter()
 
-    const { updateProfile } = useGlobalVariableContext()
+    const { updateProfile, clientConfig } = useGlobalVariableContext()
 
     const [loading, setLoading] = useState(false)
 
@@ -177,8 +177,8 @@ export function LoginForm({
                     </Button>
                     <Button variant="outline" className="w-full" disabled>
                         <Image 
-                            src="/images/zjnu_small_logo.png"
-                            alt="ZJNU Union Authserver"
+                            src={clientConfig.SchoolSmallIcon}
+                            alt={clientConfig.SchoolUnionAuthText}
                             width={24}
                             height={24}
                         />

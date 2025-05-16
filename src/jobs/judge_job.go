@@ -3,7 +3,9 @@ package jobs
 import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
+	noticetool "a1ctf/src/utils/notice_tool"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -36,6 +38,28 @@ func processQueueingJudge(judge *models.Judge) error {
 			if err := dbtool.DB().Create(&newSolve).Error; err != nil {
 				judge.JudgeStatus = models.JudgeError
 				return fmt.Errorf("database error: %w data: %+v", err, judge)
+			}
+
+			if newSolve.Rank <= 3 {
+				var solveDetail = models.Solve{}
+
+				if err := dbtool.DB().Where("solve_id = ?", newSolve.SolveID).Preload("Challenge").Preload("Team").First(&solveDetail).Error; err != nil {
+					log.Printf("Announce first blood error: %v", err)
+				}
+
+				var noticeCate models.NoticeCategory
+
+				if newSolve.Rank == 1 {
+					noticeCate = models.NoticeFirstBlood
+				} else if newSolve.Rank == 2 {
+					noticeCate = models.NoticeSecondBlood
+				} else {
+					noticeCate = models.NoticeThirdBlood
+				}
+
+				go func() {
+					noticetool.InsertNotice(judge.GameID, noticeCate, []string{solveDetail.Team.TeamName, solveDetail.Challenge.Name})
+				}()
 			}
 
 			judge.JudgeStatus = models.JudgeAC

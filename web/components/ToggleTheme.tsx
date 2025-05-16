@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useTheme } from 'next-themes'
 import { motion } from 'framer-motion'
-import { Sun, Moon, WandSparkles, MonitorCog } from 'lucide-react'
+import { Sun, Moon, WandSparkles, MonitorCog, Shell, Snail, Rabbit } from 'lucide-react'
 
 import {
     DropdownMenu,
@@ -20,8 +20,11 @@ import { usePathname, useSearchParams } from 'next/navigation'
 
 import {useLocale, useTranslations} from 'next-intl';
 import React from 'react';
+import { useGlobalVariableContext } from '@/contexts/GlobalVariableContext';
 
 const ThemeSwitcher = ({ lng } : { lng: string }) => {
+
+    const { clientConfig, updateClientConfg } = useGlobalVariableContext()
 
     const [mounted, setMounted] = useState(false)
     const { theme, setTheme } = useTheme()
@@ -76,8 +79,7 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
                         damping: 20, // 动画阻尼
                     }}
                 >
-                    <motion.div className='flex-col justify-center shadow-md w-44 h-[46px] border-[1.5px] rounded-[12px] overflow-hidden'
-                        style={{ "backgroundColor": "hsl(var(--background))" }}
+                    <motion.div className='flex-col justify-center shadow-md w-44 h-[46px] border-[1.5px] rounded-[12px] overflow-hidden backdrop-blur-md'
                     >
                         <motion.button
                             className="relative w-44 h-11 rounded-[10px] hover:rounded-[0px]  flex items-center justify-center focus:outline-none overflow-hidden"
@@ -114,8 +116,7 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
                         </div>
                     </motion.div>
                 </motion.div>
-                <motion.div className='flex border-[1.5px] rounded-[10px] w-44 shadow-md'
-                    style={{ "backgroundColor": "hsl(var(--background))" }}
+                <motion.div className='flex border-[1.5px] rounded-[10px] w-44 shadow-md bg-background/90'
                     whileHover={{
                         scale: 1.05
                     }}
@@ -144,8 +145,7 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
                         </Button>
                     </div>
                 </motion.div>
-                <motion.div className='flex border-[1.5px] rounded-[10px] w-44 p-1 shadow-md'
-                    style={{ "backgroundColor": "hsl(var(--background))" }}
+                <motion.div className='flex border-[1.5px] rounded-[10px] w-44 p-1 shadow-md bg-background/90'
                     whileHover={{
                         scale: 1.05
                     }}
@@ -160,11 +160,49 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
                     }}
                 >
                     <Button variant="ghost" className="w-full p-2" >
-                        <div className='flex justify-between w-full '>
+                        <div className='flex justify-between w-full items-center'>
                             <span className='font-bold'>{t("system_color")}</span>
                             <MonitorCog />
                         </div>
                     </Button>
+                </motion.div>
+                <motion.div className='flex border-[1.5px] rounded-[10px] w-44 p-1 shadow-md bg-background/90'
+                    whileHover={{
+                        scale: 1.05
+                    }}
+                    whileTap={{
+                        scale: 1.05
+                    }}
+                    transition={{
+                        type: "spring", // 使用弹性动画
+                        stiffness: 400, // 动画弹性
+                        duration: 100,
+                        damping: 20, // 动画阻尼
+                    }}
+                >
+                    { clientConfig.BGAnimation ? (
+                        <Button variant="default" className="w-full p-2" 
+                            onClick={() => {
+                                updateClientConfg("BGAnimation", false)
+                            }}
+                        >
+                            <div className='flex justify-between w-full items-center'>
+                                <span className='font-bold'>关闭背景动画</span>
+                                <Snail />
+                            </div>
+                        </Button>
+                    ) : (
+                        <Button variant="ghost" className="w-full p-2" 
+                            onClick={() => {
+                                updateClientConfg("BGAnimation", true)
+                            }}
+                        >
+                            <div className='flex justify-between w-full items-center'>
+                                <span className='font-bold'>开启背景动画</span>
+                                <Rabbit />
+                            </div>
+                        </Button>
+                    ) }
                 </motion.div>
             </DropdownMenuContent>
         </DropdownMenu>

@@ -90,6 +90,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "../ui/checkbox";
 import { size } from "mathjs";
+import { challengeCategoryColorMap, challengeCategoryIcons } from "@/utils/ClientAssets";
 
 interface GameStageFormProps {
     control: any;
@@ -117,7 +118,7 @@ function GameStageForm({ control, index, removeStage, form }: GameStageFormProps
         const field_name = `stages.${index}.${tm_type}`;
         console.log(field_name)
         const currentDate = form.getValues(field_name) || new Date();
-        let newDate = new Date(currentDate);
+        const newDate = new Date(currentDate);
 
         if (type === "hour") {
             const hour = parseInt(value, 10);
@@ -524,7 +525,7 @@ export function CreateGameView({ lng }: { lng: string }) {
     }
 
     const string_to_env = (data: string): { name: string, value: string }[] => {
-        let env: { name: string, value: string }[] = []
+        const env: { name: string, value: string }[] = []
 
         data.split(",").forEach((item) => {
             const [name, value] = item.split("=")
@@ -611,36 +612,9 @@ export function CreateGameView({ lng }: { lng: string }) {
         })
     }
 
-    const colorMap: { [key: string]: string } = {
-        "misc": "rgb(32, 201, 151)",
-        "crypto": "rgb(132, 94, 247)",
-        "pwn": "rgb(255, 107, 107)",
-        "web": "rgb(51, 154, 240)",
-        "reverse": "rgb(252, 196, 25)",
-        "forensics": "rgb(92, 124, 250)",
-        "hardware": "rgb(208, 208, 208)",
-        "mobile": "rgb(240, 101, 149)",
-        "ppc": "rgb(34, 184, 207)",
-        "ai": "rgb(148, 216, 45)",
-        "pentent": "rgb(204, 93, 232)",
-        "osint": "rgb(255, 146, 43)"
-    };
+    const colorMap: { [key: string]: string } = challengeCategoryColorMap
 
-    const cateIcon: { [key: string]: any } = {
-        "all": <Squirrel size={23} />,
-        "misc": <Radar size={23} />,
-        "crypto": <MessageSquareLock size={23} />,
-        "pwn": <Bug size={23} />,
-        "web": <GlobeLock size={23} />,
-        "reverse": <Binary size={23} />,
-        "forensics": <FileSearch size={23} />,
-        "hardware": <HardDrive size={23} />,
-        "mobile": <Smartphone size={23} />,
-        "PPC": <SquareCode size={23} />,
-        "ai": <Bot size={23} />,
-        "pentent": <BadgeCent size={23} />,
-        "osint": <Github size={23} />
-    };
+    const cateIcon: { [key: string]: any } = challengeCategoryIcons
 
     const [searchContent, setSearchContent] = useState("")
     const [curChoicedCategory, setCurChoicedCategory] = useState("all")
@@ -686,7 +660,7 @@ export function CreateGameView({ lng }: { lng: string }) {
 
     useEffect(() => {
         table.setPageSize(5)
-        let inputListener = setInterval(() => {
+        const inputListener = setInterval(() => {
             const curTimeStamp = dayjs().valueOf()
             if (lastInputTime.current != 0 && (curTimeStamp - lastInputTime.current) > 500) {
                 lastInputTime.current = 0
@@ -718,7 +692,7 @@ export function CreateGameView({ lng }: { lng: string }) {
     function handleTimeChange(type: "hour" | "minute", value: string, tm_type: "start_time" | "end_time" | "wp_expire_time") {
         const field_name = tm_type;
         const currentDate = form.getValues(field_name) || new Date();
-        let newDate = new Date(currentDate);
+        const newDate = new Date(currentDate);
 
         if (type === "hour") {
             const hour = parseInt(value, 10);

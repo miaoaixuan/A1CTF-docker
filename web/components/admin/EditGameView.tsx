@@ -42,7 +42,7 @@ import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageS
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { MacScrollbar } from "mac-scrollbar";
-import { ChallengeCategory, AdminChallengeConfig, AdminFullGameInfo, GameSimpleInfo, JudgeType, AdminDetailGameChallenge } from "@/utils/A1API";
+import { ChallengeCategory, AdminChallengeConfig, AdminFullGameInfo, UserGameSimpleInfo, JudgeType, AdminDetailGameChallenge } from "@/utils/A1API";
 import { api, ErrorMessage } from "@/utils/ApiHelper";
 import dayjs from "dayjs";
 import { toast } from "sonner";
@@ -91,6 +91,8 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "../ui/checkbox";
 import { size } from "mathjs";
 import { useTheme } from "next-themes";
+import { useGlobalVariableContext } from "@/contexts/GlobalVariableContext";
+import { challengeCategoryColorMap, challengeCategoryIcons } from "@/utils/ClientAssets";
 
 interface GameStageFormProps {
     control: any;
@@ -111,7 +113,7 @@ function GameStageForm({ control, index, removeStage, form }: GameStageFormProps
         const field_name = `stages.${index}.${tm_type}`;
         console.log(field_name)
         const currentDate = form.getValues(field_name) || new Date();
-        let newDate = new Date(currentDate);
+        const newDate = new Date(currentDate);
 
         if (type === "hour") {
             const hour = parseInt(value, 10);
@@ -123,7 +125,6 @@ function GameStageForm({ control, index, removeStage, form }: GameStageFormProps
         console.log(newDate)
         form.setValue(field_name, newDate);
     }
-
 
     return (
         <div className="border p-6 mb-4 rounded-lg hover:shadow-lg transition-shadow duration-300 space-y-4">
@@ -652,36 +653,9 @@ function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) {
 }
 
 
-const colorMap: { [key: string]: string } = {
-    "misc": "rgb(32, 201, 151)",
-    "crypto": "rgb(132, 94, 247)",
-    "pwn": "rgb(255, 107, 107)",
-    "web": "rgb(51, 154, 240)",
-    "reverse": "rgb(252, 196, 25)",
-    "forensics": "rgb(92, 124, 250)",
-    "hardware": "rgb(208, 208, 208)",
-    "mobile": "rgb(240, 101, 149)",
-    "ppc": "rgb(34, 184, 207)",
-    "ai": "rgb(148, 216, 45)",
-    "pentent": "rgb(204, 93, 232)",
-    "osint": "rgb(255, 146, 43)"
-};
+const colorMap: { [key: string]: string } = challengeCategoryColorMap
 
-const cateIcon: { [key: string]: any } = {
-    "all": <Squirrel size={23} />,
-    "misc": <Radar size={23} />,
-    "crypto": <MessageSquareLock size={23} />,
-    "pwn": <Bug size={23} />,
-    "web": <GlobeLock size={23} />,
-    "reverse": <Binary size={23} />,
-    "forensics": <FileSearch size={23} />,
-    "hardware": <HardDrive size={23} />,
-    "mobile": <Smartphone size={23} />,
-    "PPC": <SquareCode size={23} />,
-    "ai": <Bot size={23} />,
-    "pentent": <BadgeCent size={23} />,
-    "osint": <Github size={23} />
-};
+const cateIcon: { [key: string]: any } = challengeCategoryIcons
 
 interface GameChallengeFormProps {
     control: any;
@@ -778,7 +752,7 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
     }
 
     const string_to_env = (data: string): { name: string, value: string }[] => {
-        let env: { name: string, value: string }[] = []
+        const env: { name: string, value: string }[] = []
 
         data.split(",").forEach((item) => {
             const [name, value] = item.split("=")
@@ -787,6 +761,8 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
 
         return env
     }
+
+    const { clientConfig } = useGlobalVariableContext()
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -1099,7 +1075,7 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
 
     useEffect(() => {
         table.setPageSize(5)
-        let inputListener = setInterval(() => {
+        const inputListener = setInterval(() => {
             const curTimeStamp = dayjs().valueOf()
             if (lastInputTime.current != 0 && (curTimeStamp - lastInputTime.current) > 500) {
                 lastInputTime.current = 0
@@ -1132,7 +1108,7 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
     function handleTimeChange(type: "hour" | "minute", value: string, tm_type: "start_time" | "end_time" | "wp_expire_time") {
         const field_name = tm_type;
         const currentDate = form.getValues(field_name) || new Date();
-        let newDate = new Date(currentDate);
+        const newDate = new Date(currentDate);
 
         if (type === "hour") {
             const hour = parseInt(value, 10);
@@ -1670,7 +1646,7 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
                                             <span className="text-3xl font-bold">上传海报</span>
                                         </div>
                                     </div>
-                                    <div className="absolute top-0 left-0 w-full h-full" style={{ background: `url(${form.getValues("poster") || "/images/p2g7wm.jpg"})`, backgroundSize: "cover", backgroundPosition: "center" }} >
+                                    <div className="absolute top-0 left-0 w-full h-full" style={{ background: `url(${form.getValues("poster") || clientConfig.DefaultBGImage})`, backgroundSize: "cover", backgroundPosition: "center" }} >
                                     </div>
                                 </div>
                             </div>

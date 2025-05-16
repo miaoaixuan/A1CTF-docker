@@ -3,19 +3,34 @@ package dbtool
 import (
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"github.com/olahol/melody"
+	"github.com/spf13/viper"
 )
 
 var db *gorm.DB
 
 func DB() *gorm.DB {
-	if db != nil {
-		return db
-	}
+	return db
+}
+
+var ml *melody.Melody
+
+var gameSessions map[*melody.Session]int64 = make(map[*melody.Session]int64)
+
+func Melody() *melody.Melody {
+	return ml
+}
+
+func Init() {
+
+	// Init DB
 
 	_ = logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags), // 使用标准输出
@@ -27,7 +42,7 @@ func DB() *gorm.DB {
 		},
 	)
 
-	dsn := os.Getenv("DSN")
+	dsn := viper.GetString("system.sql-dsn")
 	db_local, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		// Logger: newLogger, // 设置自定义 Logger
 	})
@@ -37,5 +52,36 @@ func DB() *gorm.DB {
 
 	db = db_local
 
-	return db
+	// Init melody
+	ml = melody.New()
+
+	gameSessions = make(map[*melody.Session]int64)
+
+	ml.HandleConnect(func(s *melody.Session) {
+		// 从会话keys中获取gameID
+		gameIDStr, exists := s.Get("gameID")
+		if !exists {
+			s.Close()
+			return
+		}
+
+		gameID, err := strconv.ParseInt(gameIDStr.(string), 10, 64)
+		if err != nil {
+			s.Close()
+			return
+		}
+
+		gameSessions[s] = gameID
+
+		s.Write([]byte("{ \"status\": \"connected\" }"))
+	})
+
+	ml.HandleClose(func(s *melody.Session, i int, s2 string) error {
+		delete(gameSessions, s)
+		return nil
+	})
+}
+
+func GameSessions() map[*melody.Session]int64 {
+	return gameSessions
 }

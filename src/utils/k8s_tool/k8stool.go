@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -108,7 +109,7 @@ func GetClient() (*kubernetes.Clientset, error) {
 		return clientset, nil
 	}
 
-	kubeconfig := flag.String("kubeconfig", "k8sconfig.yaml", "absolute path to the kubeconfig file")
+	kubeconfig := flag.String("kubeconfig", viper.GetString("system.k8s-config-file"), "absolute path to the kubeconfig file")
 	flag.Parse()
 
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)

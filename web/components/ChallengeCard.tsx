@@ -4,6 +4,7 @@ import {  ChevronsRight, Dices, CircleCheckBig } from "lucide-react"
 
 import { FC, useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion";
+import { challengeCategoryColorMap } from "@/utils/ClientAssets";
 
 interface ChallengeInfo {
     type: string,
@@ -25,37 +26,7 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
     const [ shouldAnime, setShouldAnime ] = useState(false)
     const prevStatus = useRef(false)
 
-    /* 
-        copied from gzctf (
-        
-        misc: rgb(32, 201, 151)
-        crypto: rgb(132, 94, 247)
-        pwn: rgb(255, 107, 107)
-        web: fill: rgb(51, 154, 240)
-        reverse: rgb(252, 196, 25)
-        forensics: rgb(92, 124, 250)
-        hardware: rgb(208, 208, 208)
-        mobile: rgb(240, 101, 149)
-        ppc: rgb(34, 184, 207)
-        ai: rgb(148, 216, 45)
-        pentent: rgb(204, 93, 232)
-        osint: rgb(255, 146, 43)
-    */
-
-    const colorMap : { [key: string]: string } = {
-        "misc": "rgb(32, 201, 151)",
-        "crypto": "rgb(132, 94, 247)",
-        "pwn": "rgb(255, 107, 107)",
-        "web": "rgb(51, 154, 240)",
-        "reverse": "rgb(252, 196, 25)",
-        "forensics": "rgb(92, 124, 250)",
-        "hardware": "rgb(208, 208, 208)",
-        "mobile": "rgb(240, 101, 149)",
-        "ppc": "rgb(34, 184, 207)",
-        "ai": "rgb(148, 216, 45)",
-        "pentent": "rgb(204, 93, 232)",
-        "osint": "rgb(255, 146, 43)"
-    };
+    const colorMap : { [key: string]: string } = challengeCategoryColorMap
 
     if (type in colorMap) colorClass = colorMap[type]
     else colorClass = colorMap["misc"]
@@ -83,7 +54,7 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
     }, [status])
 
     return (
-        <div className={`w-full h-[100px] rounded-xl relative hover:scale-[1.04] pl-4 pt-4 pr-4 pb-3 select-none overflow-hidden transition-transform_bordercolor duration-300 will-change-transform border-[2px] bg-background ${ solveStatus ? "bg-green-200/[0.3] border-green-300/40" : "" }`}
+        <div className={`w-full h-[100px] rounded-xl relative hover:scale-[1.04] pl-4 pt-4 pr-4 pb-3 select-none overflow-hidden transition-transform_bordercolor duration-300 will-change-transform border-[2px] ${ solveStatus ? "bg-green-200/[0.3] border-green-300/40" : "bg-background/[0.3]" }`}
             // style={{
             //     backgroundColor: choiced ? colorClass : "transparent"
             // }}
@@ -192,7 +163,7 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
                     </div>
                     <div className="flex-1"/>
                     <div className="flex justify-end items-center">
-                        <span className="font-bold">Try it</span>
+                        {/* <span className="font-bold">Try</span> */}
                         <ChevronsRight size={32}/>
                     </div>
                 </div>

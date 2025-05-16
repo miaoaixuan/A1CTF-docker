@@ -59,8 +59,8 @@ CREATE INDEX idx_challenges_category ON challenges USING GIN(category);
 
 CREATE TABLE "game_challenges" (
     "ingame_id" BIGSERIAL NOT NULL,
-    "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
-    "challenge_id" BIGSERIAL NOT NULL REFERENCES challenges(challenge_id),
+    "game_id" BIGSERIAL NOT NULL,
+    "challenge_id" BIGSERIAL NOT NULL,
     "total_score" double precision DEFAULT 0 NOT NULL,
     "cur_score" double precision DEFAULT 0 NOT NULL,
     "minimal_score" double precision DEFAULT 0 NOT NULL,
@@ -70,7 +70,11 @@ CREATE TABLE "game_challenges" (
     "judge_config" jsonb,
     "visible" bool DEFAULT false,
     "belong_stage" text,
-    PRIMARY KEY (ingame_id)
+    PRIMARY KEY (ingame_id),
+    CONSTRAINT game_challenges_game_id_fkey FOREIGN KEY (game_id) 
+        REFERENCES games(game_id) ON DELETE CASCADE,
+    CONSTRAINT game_challenges_challenge_id_fkey FOREIGN KEY (challenge_id) 
+        REFERENCES challenges(challenge_id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_game_challenges_game_challenge ON game_challenges(game_id, challenge_id);
@@ -79,7 +83,7 @@ CREATE INDEX idx_game_challenges_enabled ON game_challenges(visible);
 
 CREATE TABLE "teams" (
     "team_id" BIGSERIAL NOT NULL,
-    "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
+    "game_id" BIGSERIAL NOT NULL,
     "team_name" text NOT NULL,
     "team_avatar" text,
     "team_slogan" text,
@@ -89,7 +93,9 @@ CREATE TABLE "teams" (
     "team_hash" text unique NOT NULL,
     "invite_code" text,
     "team_status" jsonb NOT NULL,
-    PRIMARY KEY (team_id)
+    PRIMARY KEY (team_id),
+    CONSTRAINT teams_game_id_fkey FOREIGN KEY (game_id) 
+        REFERENCES games(game_id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_teams_invite_code ON teams(invite_code);
@@ -98,10 +104,16 @@ CREATE INDEX idx_teams_members ON teams USING GIN(team_members);
 CREATE TABLE "team_flags" (
     "flag_id" BIGSERIAL NOT NULL,
     "flag_content" text NOT NULL,
-    "team_id" BIGSERIAL NOT NULL REFERENCES teams(team_id),
-    "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
-    "challenge_id" BIGSERIAL NOT NULL REFERENCES challenges(challenge_id),
-    PRIMARY KEY (flag_id)
+    "team_id" BIGSERIAL NOT NULL,
+    "game_id" BIGSERIAL NOT NULL,
+    "challenge_id" BIGSERIAL NOT NULL,
+    PRIMARY KEY (flag_id),
+    CONSTRAINT team_flags_team_id_fkey FOREIGN KEY (team_id) 
+        REFERENCES teams(team_id) ON DELETE CASCADE,
+    CONSTRAINT team_flags_game_id_fkey FOREIGN KEY (game_id) 
+        REFERENCES games(game_id) ON DELETE CASCADE,
+    CONSTRAINT team_flags_challenge_id_fkey FOREIGN KEY (challenge_id) 
+        REFERENCES challenges(challenge_id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_team_flags_content ON team_flags(flag_content);
@@ -111,11 +123,11 @@ CREATE INDEX idx_team_flags_challenge ON team_flags(challenge_id);
 
 CREATE TABLE "containers" (
     "container_id" uuid NOT NULL,
-    "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
-    "team_id" BIGSERIAL NOT NULL REFERENCES teams(team_id),
-    "flag_id" BIGSERIAL NOT NULL REFERENCES team_flags(flag_id),
-    "challenge_id" BIGSERIAL NOT NULL REFERENCES challenges(challenge_id),
-    "ingame_id" BIGSERIAL NOT NULL REFERENCES game_challenges(ingame_id),
+    "game_id" BIGSERIAL NOT NULL,
+    "team_id" BIGSERIAL NOT NULL,
+    "flag_id" BIGSERIAL NOT NULL,
+    "challenge_id" BIGSERIAL NOT NULL,
+    "ingame_id" BIGSERIAL NOT NULL,
     "start_time" timestamp NOT NULL,
     "expire_time" timestamp NOT NULL,
     "container_config" jsonb NOT NULL,
@@ -123,7 +135,17 @@ CREATE TABLE "containers" (
     "team_hash" text NOT NULL,
     "expose_ports" jsonb NOT NULL,
     "container_status" jsonb NOT NULL,
-    PRIMARY KEY (container_id)
+    PRIMARY KEY (container_id),
+    CONSTRAINT containers_game_id_fkey FOREIGN KEY (game_id) 
+        REFERENCES games(game_id) ON DELETE CASCADE,
+    CONSTRAINT containers_team_id_fkey FOREIGN KEY (team_id) 
+        REFERENCES teams(team_id) ON DELETE CASCADE,
+    CONSTRAINT containers_flag_id_fkey FOREIGN KEY (flag_id) 
+        REFERENCES team_flags(flag_id) ON DELETE CASCADE,
+    CONSTRAINT containers_challenge_id_fkey FOREIGN KEY (challenge_id) 
+        REFERENCES challenges(challenge_id) ON DELETE CASCADE,
+    CONSTRAINT containers_ingame_id_fkey FOREIGN KEY (ingame_id) 
+        REFERENCES game_challenges(ingame_id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_containers_game_team ON containers(game_id, team_id);
@@ -131,19 +153,31 @@ CREATE INDEX idx_containers_challenge ON containers(challenge_id);
 CREATE INDEX idx_containers_time_range ON containers(start_time, expire_time);
 
 CREATE TABLE "judges" (
-    "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
-    "ingame_id" BIGSERIAL NOT NULL REFERENCES game_challenges(ingame_id),
-    "challenge_id" BIGSERIAL NOT NULL REFERENCES challenges(challenge_id),
-    "team_id" BIGSERIAL NOT NULL REFERENCES teams(team_id),
-    "flag_id" BIGSERIAL NOT NULL REFERENCES team_flags(flag_id),
+    "game_id" BIGSERIAL NOT NULL,
+    "ingame_id" BIGSERIAL NOT NULL,
+    "challenge_id" BIGSERIAL NOT NULL,
+    "team_id" BIGSERIAL NOT NULL,
+    "flag_id" BIGSERIAL NOT NULL,
     "judge_type" jsonb NOT NULL,
     "judge_status" jsonb NOT NULL,
     "judge_result" text,
-    "submiter_id" uuid NOT NULL REFERENCES users(user_id),
+    "submiter_id" uuid NOT NULL,
     "judge_id" uuid NOT NULL,
     "judge_time" timestamp NOT NULL,
     "judge_content" text NOT NULL,
-    PRIMARY KEY (judge_id)
+    PRIMARY KEY (judge_id),
+    CONSTRAINT judges_game_id_fkey FOREIGN KEY (game_id) 
+        REFERENCES games(game_id) ON DELETE CASCADE,
+    CONSTRAINT judges_ingame_id_fkey FOREIGN KEY (ingame_id) 
+        REFERENCES game_challenges(ingame_id) ON DELETE CASCADE,
+    CONSTRAINT judges_challenge_id_fkey FOREIGN KEY (challenge_id) 
+        REFERENCES challenges(challenge_id) ON DELETE CASCADE,
+    CONSTRAINT judges_team_id_fkey FOREIGN KEY (team_id) 
+        REFERENCES teams(team_id) ON DELETE CASCADE,
+    CONSTRAINT judges_flag_id_fkey FOREIGN KEY (flag_id) 
+        REFERENCES team_flags(flag_id) ON DELETE CASCADE,
+    CONSTRAINT judges_submiter_id_fkey FOREIGN KEY (submiter_id) 
+        REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_judges_challenge_team ON judges(challenge_id, team_id);
@@ -153,14 +187,16 @@ CREATE INDEX idx_judges_time ON judges(judge_time);
 
 CREATE TABLE "uploads" (
     "file_id" uuid NOT NULL,
-    "user_id" uuid NOT NULL REFERENCES users(user_id),
+    "user_id" uuid NOT NULL,
     "file_name" text NOT NULL,
     "file_path" text NOT NULL,
     "file_hash" text NOT NULL,
     "file_type" text NOT NULL,
     "file_size" int8 NOT NULL,
     "upload_time" timestamp NOT NULL,
-    PRIMARY KEY (file_id)
+    PRIMARY KEY (file_id),
+    CONSTRAINT uploads_user_id_fkey FOREIGN KEY (user_id) 
+        REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_uploads_user ON uploads(user_id);
@@ -168,18 +204,32 @@ CREATE INDEX idx_uploads_file_hash ON uploads(file_hash);
 CREATE INDEX idx_uploads_time ON uploads(upload_time);
 
 CREATE TABLE "solves" (
-    "judge_id" uuid NOT NULL REFERENCES judges(judge_id),
+    "judge_id" uuid NOT NULL,
     "solve_id" uuid NOT NULL,
-    "ingame_id" BIGSERIAL NOT NULL REFERENCES game_challenges(ingame_id),
-    "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
-    "challenge_id" BIGSERIAL NOT NULL REFERENCES challenges(challenge_id),
-    "team_id" BIGSERIAL NOT NULL REFERENCES teams(team_id),
-    "container_id" uuid REFERENCES containers(container_id),
+    "ingame_id" BIGSERIAL NOT NULL,
+    "game_id" BIGSERIAL NOT NULL,
+    "challenge_id" BIGSERIAL NOT NULL,
+    "team_id" BIGSERIAL NOT NULL,
+    "container_id" uuid,
     "solve_status" jsonb NOT NULL,
     "solve_time" timestamp NOT NULL,
-    "solver_id" uuid NOT NULL NOT NULL REFERENCES users(user_id),
+    "solver_id" uuid NOT NULL,
     "rank" int4 NOT NULL,
-    PRIMARY KEY (solve_id)
+    PRIMARY KEY (solve_id),
+    CONSTRAINT solves_judge_id_fkey FOREIGN KEY (judge_id) 
+        REFERENCES judges(judge_id) ON DELETE CASCADE,
+    CONSTRAINT solves_ingame_id_fkey FOREIGN KEY (ingame_id) 
+        REFERENCES game_challenges(ingame_id) ON DELETE CASCADE,
+    CONSTRAINT solves_game_id_fkey FOREIGN KEY (game_id) 
+        REFERENCES games(game_id) ON DELETE CASCADE,
+    CONSTRAINT solves_challenge_id_fkey FOREIGN KEY (challenge_id) 
+        REFERENCES challenges(challenge_id) ON DELETE CASCADE,
+    CONSTRAINT solves_team_id_fkey FOREIGN KEY (team_id) 
+        REFERENCES teams(team_id) ON DELETE CASCADE,
+    CONSTRAINT solves_container_id_fkey FOREIGN KEY (container_id) 
+        REFERENCES containers(container_id) ON DELETE CASCADE,
+    CONSTRAINT solves_solver_id_fkey FOREIGN KEY (solver_id) 
+        REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_solves_game_team ON solves(game_id, team_id);
@@ -193,25 +243,31 @@ CREATE INDEX idx_solve_judge_id ON solves(judge_id);
 
 CREATE TABLE "notices" (
     "notice_id" BIGSERIAL NOT NULL,
-    "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
+    "game_id" BIGSERIAL NOT NULL,
     "notice_category" jsonb NOT NULL,
     "create_time" timestamp NOT NULL,
-    "data" jsonb NOT NULL,
-    PRIMARY KEY (notice_id)
+    "announced" bool DEFAULT false NOT NULL,
+    "data" text[] NOT NULL,
+    PRIMARY KEY (notice_id),
+    CONSTRAINT notices_game_id_fkey FOREIGN KEY (game_id) 
+        REFERENCES games(game_id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_notices_game ON notices(game_id);
 CREATE INDEX idx_notices_time ON notices(create_time);
+CREATE INDEX idx_notices_announced ON notices(announced);
 CREATE INDEX idx_notices_category ON notices USING GIN(notice_category);
 
 CREATE TABLE "scoreboard" (
     "score_id" BIGSERIAL NOT NULL,
-    "game_id" BIGSERIAL NOT NULL REFERENCES games(game_id),
+    "game_id" BIGSERIAL NOT NULL,
     "cur_records" int4 NOT NULL DEFAULT 0,
     "prev_score" jsonb NOT NULL,
     "data" jsonb NOT NULL,
     "generate_time" timestamp NOT NULL,
-    PRIMARY KEY (score_id)
+    PRIMARY KEY (score_id),
+    CONSTRAINT scoreboard_game_id_fkey FOREIGN KEY (game_id) 
+        REFERENCES games(game_id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_scoreboard_game ON scoreboard(game_id);

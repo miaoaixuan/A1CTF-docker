@@ -48,15 +48,13 @@ const PageHeader = ({ lng } : { lng: string }) => {
     if (path == "") { path = "home"; }
 
     const whetherSelected = (name: string) => {
-        return (path == name) ? "secondary" : "ghost";
+        return (path == name) ? "default" : "ghost";
     }
 
     const { startTransition } = useTransitionContext();
     const router = useRouter()
 
-    useEffect(() => {
-
-    }, [])
+    const { clientConfig } = useGlobalVariableContext()
 
     return (
         <header className="sticky top-0 h-16 select-none">
@@ -67,8 +65,8 @@ const PageHeader = ({ lng } : { lng: string }) => {
                             <TransitionLink href={`/${lng}`} className="flex-shrink-0">
                                 <Image
                                     className="dark:invert"
-                                    src="/images/A1natas.svg"
-                                    alt="A1natas"
+                                    src={clientConfig.SVGIcon}
+                                    alt={clientConfig.SVGAltData}
                                     width={40}
                                     height={40}
                                     priority
@@ -178,8 +176,8 @@ const PageHeader = ({ lng } : { lng: string }) => {
                             <TransitionLink href={`/${lng}`} className="flex items-center">
                                 <Image
                                     className="dark:invert"
-                                    src="/images/A1natas.svg"
-                                    alt="A1natas"
+                                    src={clientConfig.SVGIcon}
+                                    alt={clientConfig.SVGAltData}
                                     width={34}
                                     height={34}
                                     priority

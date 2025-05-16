@@ -9,10 +9,6 @@ import Image from "next/image";
 
 import { useGameSwitchContext } from "@/contexts/GameSwitchContext";
 import { LoaderPinwheel } from 'lucide-react';
-import { BasicGameInfoModel } from '@/utils/GZApi';
-
-import { useLocale } from 'next-intl';
-import { url } from 'inspector';
 
 export default function GameSwitchHover({ animation } : { animation: boolean }) {
 
@@ -143,7 +139,7 @@ export default function GameSwitchHover({ animation } : { animation: boolean }) 
                                         ease: "easeInOut"
                                     }}
                                 >
-                                    <span className="text-3xl font-bold">{ curSwitchingGame.title }</span>
+                                    <span className="text-3xl font-bold">{ curSwitchingGame.name }</span>
                                     <p className="mt-2">{ curSwitchingGame.summary }</p>
                                     <div className='flex mt-4'>
                                         <LoaderPinwheel className="animate-spin" />
