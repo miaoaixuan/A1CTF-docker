@@ -9,11 +9,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"slices"
 	"sort"
 	"strconv"
 	"time"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
+	"github.com/bytedance/sonic"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -46,7 +48,7 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool) gin.Handle
 			}
 
 			return game, nil
-		}); err != nil {
+		}, 1*time.Second, true); err != nil {
 			log.Printf("+%v", err)
 			c.JSON(http.StatusInternalServerError, ErrorMessage{
 				Code:    500,
@@ -55,40 +57,6 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool) gin.Handle
 			c.Abort()
 			return
 		}
-
-		// game_key := fmt.Sprintf("game_info_%d", gameID)
-		// game_info, err := dbtool.Redis().Get(game_key).Result()
-		// var game models.Game
-
-		// if err != nil {
-		// 	if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
-		// 		if err == gorm.ErrRecordNotFound {
-		// 			c.JSON(http.StatusNotFound, ErrorMessage{
-		// 				Code:    404,
-		// 				Message: "Game not found",
-		// 			})
-		// 		} else {
-		// 			c.JSON(http.StatusInternalServerError, ErrorMessage{
-		// 				Code:    500,
-		// 				Message: "Failed to load game",
-		// 			})
-		// 		}
-		// 		c.Abort()
-		// 		return
-		// 	}
-
-		// 	gameJSON, _ := sonic.Marshal(game)
-		// 	dbtool.Redis().Set(game_key, gameJSON, 2*time.Second)
-		// } else {
-		// 	if err := sonic.Unmarshal([]byte(game_info), &game); err != nil {
-		// 		c.JSON(http.StatusInternalServerError, ErrorMessage{
-		// 			Code:    500,
-		// 			Message: "Failed to parse game data",
-		// 		})
-		// 		c.Abort()
-		// 		return
-		// 	}
-		// }
 
 		if !game.Visible {
 			c.JSON(http.StatusNotFound, ErrorMessage{
@@ -139,7 +107,15 @@ func TeamStatusMiddleware() gin.HandlerFunc {
 		c.Set("user_id", user_id)
 
 		var team models.Team
-		if err := dbtool.DB().Where("? = ANY(team_members)", user_id).First(&team).Error; err != nil {
+
+		if err := redis_tool.GetOrCache(fmt.Sprintf("team_info_for_user_%s", user_id), &team, func() (interface{}, error) {
+			if err := dbtool.DB().Where("? = ANY(team_members)", user_id).First(&team).Error; err != nil {
+				return nil, err
+			}
+
+			return team, nil
+		}, 1*time.Second, true); err != nil {
+			log.Printf("+%v", err)
 			c.JSON(http.StatusForbidden, ErrorMessage{
 				Code:    403,
 				Message: "You must join a team in this game",
@@ -199,15 +175,36 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 
 	team_status := models.ParticipateUnRegistered
 
-	// 查找队伍
-	var team models.Team
-	if err := dbtool.DB().Where("? = ANY(team_members)", user_id).First(&team).Error; err != nil {
-		team_status = models.ParticipateUnRegistered
-	} else {
-		team_status = team.TeamStatus
+	var allTeams []models.Team
+	if err := redis_tool.GetOrCache(fmt.Sprintf("all_teams_for_game_%d", game.GameID), &allTeams, func() (interface{}, error) {
+		if err := dbtool.DB().Find(&allTeams).Where("game_id = ?", game.GameID).Error; err != nil {
+			return nil, err
+		}
+
+		return allTeams, nil
+	}, 1*time.Second, true); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorMessage{
+			Code:    500,
+			Message: "Failed to load teams",
+		})
+		c.Abort()
+		return
 	}
 
-	// team_status = models.ParticipateApproved
+	// 查找队伍
+	var team models.Team
+
+	for _, curTeam := range allTeams {
+		if curTeam.TeamMembers != nil && slices.Contains(curTeam.TeamMembers, user_id) {
+			team = curTeam
+			team_status = team.TeamStatus
+			break
+		}
+	}
+
+	if team.TeamID == 0 {
+		team_status = models.ParticipateUnRegistered
+	}
 
 	result := UserFullGameInfo{
 		GameID:               game.GameID,
@@ -241,43 +238,92 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 func UserGetGameChallenges(c *gin.Context) {
 	game := c.MustGet("game").(models.Game)
 
-	// 查找队伍
-	var gameChallenges []models.GameChallenge
+	var result map[string]interface{} = make(map[string]interface{})
 
-	// 使用 Preload 进行关联查询
-	if err := dbtool.DB().Preload("Challenge").Find(&gameChallenges).Error; err != nil {
+	// Cache challenge list to redis
+	if err := redis_tool.GetOrCache(fmt.Sprintf("challenges_for_game_%d", game.GameID), &result, func() (interface{}, error) {
+		// 查找队伍
+		var gameChallenges []models.GameChallenge
 
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
-			Code:    500,
-			Message: "Failed to load game challenges",
+		// 使用 Preload 进行关联查询
+		if err := dbtool.DB().Preload("Challenge").Find(&gameChallenges).Error; err != nil {
+			errJSON, _ := sonic.Marshal(ErrorMessage{
+				Code:    500,
+				Message: "Failed to load game challenges",
+			})
+			return nil, errors.New(string(errJSON))
+		}
+
+		sort.Slice(gameChallenges, func(i, j int) bool {
+			return gameChallenges[i].Challenge.Name < gameChallenges[j].Challenge.Name
 		})
+
+		// 游戏阶段判断
+		gameStages := game.Stages
+		var curStage = ""
+
+		if gameStages != nil {
+			for _, stage := range *gameStages {
+				if stage.StartTime.Before(time.Now().UTC()) && stage.EndTime.After(time.Now().UTC()) {
+					curStage = stage.StageName
+					break
+				}
+			}
+		}
+
+		result["challenges"] = make([]UserSimpleGameChallenge, 0, len(gameChallenges))
+
+		for _, gc := range gameChallenges {
+
+			if gc.BelongStage != nil && *gc.BelongStage != curStage {
+				continue
+			}
+
+			if !gc.Visible {
+				continue
+			}
+
+			result["challenges"] = append(result["challenges"].([]UserSimpleGameChallenge), UserSimpleGameChallenge{
+				ChallengeID:   *gc.Challenge.ChallengeID,
+				ChallengeName: gc.Challenge.Name,
+				TotalScore:    gc.TotalScore,
+				CurScore:      gc.CurScore,
+				SolveCount:    gc.SolveCount,
+				Category:      gc.Challenge.Category,
+			})
+		}
+
+		return result, nil
+	}, 1*time.Second, true); err != nil {
+		var errMsg ErrorMessage
+		sonic.Unmarshal([]byte(err.Error()), &errMsg)
+		c.JSON(http.StatusInternalServerError, errMsg)
 		return
 	}
 
-	sort.Slice(gameChallenges, func(i, j int) bool {
-		return gameChallenges[i].Challenge.Name < gameChallenges[j].Challenge.Name
-	})
+	var team = c.MustGet("team").(models.Team)
 
-	// 游戏阶段判断
-	gameStages := game.Stages
-	var curStage = ""
-
-	if gameStages != nil {
-		for _, stage := range *gameStages {
-			if stage.StartTime.Before(time.Now().UTC()) && stage.EndTime.After(time.Now().UTC()) {
-				curStage = stage.StageName
-				break
-			}
+	// Cache all solves to redis
+	var totalSolves []models.Solve
+	if err := redis_tool.GetOrCache(fmt.Sprintf("solved_challenges_for_game_%d", game.GameID), &totalSolves, func() (interface{}, error) {
+		if err := dbtool.DB().Where("game_id = ? AND solve_status = ?", game.GameID, models.SolveCorrect).Preload("Challenge").Find(&totalSolves).Error; err != nil {
+			return nil, err
 		}
-	}
 
-	var solves []models.Solve
-	if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND solve_status = ?", game.GameID, c.MustGet("team").(models.Team).TeamID, models.SolveCorrect).Preload("Challenge").Find(&solves).Error; err != nil {
+		return totalSolves, nil
+	}, 1*time.Second, true); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorMessage{
 			Code:    500,
 			Message: "System error",
 		})
 		return
+	}
+
+	var solves []models.Solve
+	for _, solve := range totalSolves {
+		if team.TeamID == solve.TeamID {
+			solves = append(solves, solve)
+		}
 	}
 
 	var solved_challenges []UserSimpleGameSolvedChallenge = make([]UserSimpleGameSolvedChallenge, 0, len(solves))
@@ -288,30 +334,6 @@ func UserGetGameChallenges(c *gin.Context) {
 			ChallengeName: solve.Challenge.Name,
 			SolveTime:     solve.SolveTime,
 			Rank:          solve.Rank,
-		})
-	}
-
-	var result = gin.H{}
-
-	result["challenges"] = make([]UserSimpleGameChallenge, 0, len(gameChallenges))
-
-	for _, gc := range gameChallenges {
-
-		if gc.BelongStage != nil && *gc.BelongStage != curStage {
-			continue
-		}
-
-		if !gc.Visible {
-			continue
-		}
-
-		result["challenges"] = append(result["challenges"].([]UserSimpleGameChallenge), UserSimpleGameChallenge{
-			ChallengeID:   *gc.Challenge.ChallengeID,
-			ChallengeName: gc.Challenge.Name,
-			TotalScore:    gc.TotalScore,
-			CurScore:      gc.CurScore,
-			SolveCount:    gc.SolveCount,
-			Category:      gc.Challenge.Category,
 		})
 	}
 

@@ -275,6 +275,22 @@ func main() {
 	memoryStore := persist.NewMemoryStore(1 * time.Minute)
 	// r := gin.Default()
 
+	// cacheByCookieURI := cache.Cache(
+	// 	memoryStore,
+	// 	1*time.Second,
+	// 	cache.WithCacheStrategyByRequest(func(c *gin.Context) (bool, cache.Strategy) {
+	// 		cookie, err := c.Cookie("a1token")
+	// 		req_path := c.Request.URL.Path
+	// 		if err != nil {
+	// 			return false, cache.Strategy{}
+	// 		} else {
+	// 			return true, cache.Strategy{
+	// 				CacheKey: cookie + req_path,
+	// 			}
+	// 		}
+	// 	}),
+	// )
+
 	// 关闭日志输出
 	r := gin.New()
 
@@ -347,20 +363,7 @@ func main() {
 		userGameGroup := auth.Group("/game")
 		{
 			// 中间件检查比赛状态
-			userGameGroup.GET("/:game_id", cache.Cache(
-				memoryStore,
-				1*time.Second,
-				cache.WithCacheStrategyByRequest(func(c *gin.Context) (bool, cache.Strategy) {
-					cookie, err := c.Cookie("a1token")
-					if err != nil {
-						return false, cache.Strategy{}
-					} else {
-						return true, cache.Strategy{
-							CacheKey: cookie,
-						}
-					}
-				}),
-			), controllers.GameStatusMiddleware(true, true), controllers.UserGetGameDetailWithTeamInfo)
+			userGameGroup.GET("/:game_id", controllers.GameStatusMiddleware(true, true), controllers.UserGetGameDetailWithTeamInfo)
 
 			userGameGroup.GET("/:game_id/challenges", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenges)
 
