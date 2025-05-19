@@ -13,7 +13,7 @@ import {
     useReactTable,
 } from "@tanstack/react-table"
 
-import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, Pencil, KeyIcon, TrashIcon } from "lucide-react"
+import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, Pencil, LockIcon, CheckIcon, TrashIcon, UnlockIcon } from "lucide-react"
 
 import * as React from "react"
 
@@ -40,13 +40,12 @@ import {
 } from "@/components/ui/table"
 
 import { MacScrollbar } from "mac-scrollbar";
-import { Avatar } from "@radix-ui/react-avatar";
-import { AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Skeleton } from "../ui/skeleton";
+
 import { Badge } from "../ui/badge";
-import { AdminListUserItem, UserRole } from "@/utils/A1API";
+import { AdminListTeamItem, ParticipationStatus } from "@/utils/A1API";
 
 import { api, ErrorMessage } from "@/utils/ApiHelper";
+import AvatarUsername from "../modules/AvatarUsername";
 import { toast } from "sonner";
 import { 
     AlertDialog,
@@ -58,21 +57,19 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { UserEditDialog } from "../dialogs/UserEditDialog";
 
-export type UserModel = {
-    id: string,
-    Role: UserRole,
-    Email: string,
-    Username: string,
-    StudentID: string,
-    RealName: string,
-    IP: string,
-    Phone: string,
-    Slogan: string,
-    Avatar: string | null,
-    RegisterTime: string,
-    LastLoginTime: string,
+export type TeamModel = {
+    team_id: number,
+    team_name: string,
+    team_avatar: string | null,
+    team_slogan: string | null,
+    members: {
+        avatar: string | null,
+        user_name: string,
+        user_id: string
+    }[],
+    status: ParticipationStatus,
+    score: number
 }
 
 interface ConfirmDialogProps {
@@ -106,9 +103,8 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     );
 };
 
-export function UserManageView() {
-
-    const [data, setData] = React.useState<UserModel[]>([])
+export function TeamManageView() {
+    const [data, setData] = React.useState<TeamModel[]>([])
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
         []
@@ -120,8 +116,7 @@ export function UserManageView() {
     const [pageSize, setPageSize] = React.useState(30);
     const [curPage, setCurPage] = React.useState(0);
     const [totalCount, setTotalCount] = React.useState(0);
-
-    const [curPageData, setCurPageData] = React.useState<AdminListUserItem[]>([])
+    const [gameId, setGameId] = React.useState(1); // 默认游戏ID，实际使用时可能需要从URL或其他地方获取
     
     // 对话框状态
     const [confirmDialog, setConfirmDialog] = React.useState({
@@ -130,76 +125,112 @@ export function UserManageView() {
         description: "",
         onConfirm: () => {},
     });
-    
-    // 处理用户删除
-    const handleDeleteUser = (userId: string) => {
+
+    // 处理队伍状态变更
+    const handleUpdateTeamStatus = (teamId: number, action: 'approve' | 'ban' | 'unban') => {
+        // 根据不同操作调用不同API
+        let apiCall;
+        let loadingMessage;
+        
+        switch(action) {
+            case 'approve':
+                apiCall = api.admin.adminApproveTeam({ team_id: teamId, game_id: gameId });
+                loadingMessage = '正在批准队伍...';
+                break;
+            case 'ban':
+                apiCall = api.admin.adminBanTeam({ team_id: teamId, game_id: gameId });
+                loadingMessage = '正在锁定队伍...';
+                break;
+            case 'unban':
+                apiCall = api.admin.adminUnbanTeam({ team_id: teamId, game_id: gameId });
+                loadingMessage = '正在解锁队伍...';
+                break;
+        }
+            
+        // 使用toast.promise包装API调用
+        toast.promise(apiCall, {
+            loading: loadingMessage,
+            success: (data) => {
+                fetchTeams(); // 刷新数据
+                return '队伍状态已更新';
+            },
+            error: '更新队伍状态失败'
+        });
+    };
+
+    // 处理队伍删除
+    const handleDeleteTeam = (teamId: number) => {
         setConfirmDialog({
             isOpen: true,
             title: "确认删除",
-            description: "您确定要删除这个用户吗？此操作不可逆。",
+            description: "您确定要删除这个队伍吗？此操作不可逆。",
             onConfirm: () => {
-                // 临时修复 API 类型问题
-                const deleteUserApi = api.admin as any;
                 toast.promise(
-                    deleteUserApi.adminDeleteUser({ user_id: userId }),
+                    api.admin.adminDeleteTeam({ team_id: teamId, game_id: gameId }),
                     {
-                        loading: '正在删除用户...',
+                        loading: '正在删除队伍...',
                         success: (data) => {
-                            fetchUsers(); // 刷新数据
+                            fetchTeams(); // 刷新数据
                             setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-                            return '用户已删除';
+                            return '队伍已删除';
                         },
-                        error: '删除用户失败'
+                        error: '删除队伍失败'
                     }
                 );
+            }
+        });
+    };
+
+    // 设置队伍为已批准状态
+    const handleApproveTeam = (teamId: number) => {
+        handleUpdateTeamStatus(teamId, 'approve');
+    };
+
+    // 设置队伍为已禁赛状态
+    const handleBanTeam = (teamId: number) => {
+        setConfirmDialog({
+            isOpen: true,
+            title: "确认锁定",
+            description: "您确定要锁定这个队伍吗？这将禁止他们参与比赛。",
+            onConfirm: () => {
+                handleUpdateTeamStatus(teamId, 'ban');
+                setConfirmDialog(prev => ({ ...prev, isOpen: false }));
             }
         });
     };
     
-    // 处理重置密码
-    const handleResetPassword = (userId: string) => {
+    // 设置队伍从禁赛状态解锁
+    const handleUnbanTeam = (teamId: number) => {
         setConfirmDialog({
             isOpen: true,
-            title: "确认重置密码",
-            description: "您确定要重置这个用户的密码吗？",
+            title: "确认解锁",
+            description: "您确定要解锁这个队伍吗？这将允许他们继续参与比赛。",
             onConfirm: () => {
-                // 临时修复 API 类型问题
-                const resetPasswordApi = api.admin as any;
-                toast.promise(
-                    resetPasswordApi.adminResetUserPassword({ user_id: userId }),
-                    {
-                        loading: '正在重置密码...',
-                        success: (response: any) => {
-                            setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-                            // 显示新密码
-                            toast.success(`新密码: ${response.data.new_password}`, { 
-                                duration: 10000,
-                                position: "top-center"
-                            });
-                            return '密码已重置';
-                        },
-                        error: '重置密码失败'
-                    }
-                );
+                handleUpdateTeamStatus(teamId, 'unban');
+                setConfirmDialog(prev => ({ ...prev, isOpen: false }));
             }
         });
     };
 
-    // 获取角色对应的颜色和中文显示
-    const getRoleColorAndText = (role: UserRole) => {
-        switch (role) {
-            case UserRole.ADMIN:
-                return { color: "#FF4D4F", text: "管理员" };
-            case UserRole.MONITOR:
-                return { color: "#1890FF", text: "监控员" };
-            case UserRole.USER:
-                return { color: "#52C41A", text: "用户" };
+    // 获取状态对应的颜色和中文显示
+    const getStatusColorAndText = (status: ParticipationStatus) => {
+        switch (status) {
+            case ParticipationStatus.Approved:
+                return { color: "#52C41A", text: "已审核" };
+            case ParticipationStatus.Pending:
+                return { color: "#FAAD14", text: "待审核" };
+            case ParticipationStatus.Banned:
+                return { color: "#FF4D4F", text: "已禁赛" };
+            case ParticipationStatus.Rejected:
+                return { color: "#F5222D", text: "已拒绝" };
+            case ParticipationStatus.Participated:
+                return { color: "#1890FF", text: "已参加" };
             default:
-                return { color: "#D9D9D9", text: "未知" };
+                return { color: "#D9D9D9", text: "未报名" };
         }
     };
 
-    const columns: ColumnDef<UserModel>[] = [
+    const columns: ColumnDef<TeamModel>[] = [
         {
             id: "select",
             header: ({ table }) => (
@@ -223,38 +254,24 @@ export function UserManageView() {
             enableHiding: false,
         },
         {
-            accessorKey: "Username",
-            header: "用户名",
+            accessorKey: "team_name",
+            header: "队伍名称",
             cell: ({ row }) => {
-                const avatar_url = row.original.Avatar;
-    
+                const avatar_url = row.original.team_avatar;
                 return (
                     <div className="flex gap-3 items-center">
-                        <Avatar className="select-none w-[35px] h-[35px]">
-                            { avatar_url ? (
-                                <>
-                                    <AvatarImage src={avatar_url || "#"} alt="@shadcn"
-                                        className={`rounded-2xl`}
-                                    />
-                                    <AvatarFallback><Skeleton className="h-full w-full rounded-full" /></AvatarFallback>
-                                </>
-                            ) : ( 
-                                <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
-                                    <span className='text-background text-md'> { (row.getValue("Username") as string).substring(0, 2) } </span>
-                                </div>
-                            ) }
-                        </Avatar>
-                        {row.getValue("Username")}
+                        <AvatarUsername avatar_url={avatar_url} username={row.getValue("team_name") as string} />
+                        {row.getValue("team_name")}
                     </div>
                 )
             },
         },
         {
-            accessorKey: "Role",
-            header: "角色",
+            accessorKey: "status",
+            header: "状态",
             cell: ({ row }) => {
-                const role = row.getValue("Role") as UserRole;
-                const { color, text } = getRoleColorAndText(role);
+                const status = row.getValue("status") as ParticipationStatus;
+                const { color, text } = getStatusColorAndText(status);
                 return (
                     <Badge 
                         className="capitalize w-[60px] px-[5px] flex justify-center select-none"
@@ -266,59 +283,63 @@ export function UserManageView() {
             },
         },
         {
-            accessorKey: "Email",
+            accessorKey: "score",
             header: ({ column }) => {
                 return (
                     <Button
                         variant="ghost"
                         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                     >
-                        邮箱
+                        分数
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                 )
             },
-            cell: ({ row }) => <div className="lowercase">{row.getValue("Email")}</div>,
+            cell: ({ row }) => <div>{row.getValue("score")}</div>,
         },
         {
-            accessorKey: "IP",
-            header: "IP",
-            cell: ({ row }) => (
-                <div>{row.getValue("IP")}</div>
-            ),
+            accessorKey: "members",
+            header: "队伍成员",
+            cell: ({ row }) => {
+                const members = row.original.members;
+                return (
+                    <div className="flex flex-wrap gap-2">
+                        {members.map((member, index) => (
+                            <div key={index} className="flex items-center gap-1">
+                                <AvatarUsername 
+                                    avatar_url={member.avatar} 
+                                    username={member.user_name} 
+                                />
+                            </div>
+                        ))}
+                    </div>
+                )
+            },
         },
         {
-            accessorKey: "RealName",
-            header: "真实姓名",
-            cell: ({ row }) => (
-                <div>{row.getValue("RealName")}</div>
-            ),
-        },
-        {
-            accessorKey: "StudentID",
-            header: "学号",
-            cell: ({ row }) => (
-                <div>{row.getValue("StudentID")}</div>
-            ),
+            accessorKey: "team_slogan",
+            header: "队伍口号",
+            cell: ({ row }) => <div>{row.getValue("team_slogan") || "暂无"}</div>,
         },
         {
             id: "actions",
             header: "操作",
             enableHiding: false,
             cell: ({ row }) => {
-                const user = row.original;
-                const userItem = curPageData.find(u => u.user_id === user.id);
-                
-                if (!userItem) return null;
+                const team = row.original;
                 
                 return (
                     <div className="flex gap-2">
-                        <UserEditDialog user={userItem} updateUsers={fetchUsers}>
-                            <Button variant="ghost" className="h-8 w-8 p-0" title="编辑用户">
-                                <span className="sr-only">编辑</span>
-                                <Pencil className="h-4 w-4" />
-                            </Button>
-                        </UserEditDialog>
+                        <Button 
+                            variant="ghost" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleApproveTeam(team.team_id)}
+                            disabled={team.status !== ParticipationStatus.Pending}
+                            title="批准队伍"
+                        >
+                            <span className="sr-only">批准</span>
+                            <CheckIcon className="h-4 w-4" />
+                        </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="h-8 w-8 p-0">
@@ -329,24 +350,33 @@ export function UserManageView() {
                             <DropdownMenuContent align="end" >
                                 <DropdownMenuLabel>操作</DropdownMenuLabel>
                                 <DropdownMenuItem
-                                    onClick={() => navigator.clipboard.writeText(user.id)}
+                                    onClick={() => navigator.clipboard.writeText(team.team_id.toString())}
                                 >
-                                    复制用户ID
+                                    复制队伍ID
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
-                                    onClick={() => handleResetPassword(user.id)}
+                                    onClick={() => handleBanTeam(team.team_id)}
+                                    disabled={team.status === ParticipationStatus.Banned}
                                     className="text-amber-600"
                                 >
-                                    <KeyIcon className="h-4 w-4 mr-2" />
-                                    重置密码
+                                    <LockIcon className="h-4 w-4 mr-2" />
+                                    锁定队伍
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                    onClick={() => handleDeleteUser(user.id)}
+                                    onClick={() => handleUnbanTeam(team.team_id)}
+                                    disabled={team.status !== ParticipationStatus.Banned}
+                                    className="text-green-600"
+                                >
+                                    <UnlockIcon className="h-4 w-4 mr-2" />
+                                    解锁队伍
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => handleDeleteTeam(team.team_id)}
                                     className="text-red-600"
                                 >
                                     <TrashIcon className="h-4 w-4 mr-2" />
-                                    删除用户
+                                    删除队伍
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -356,32 +386,31 @@ export function UserManageView() {
         },
     ]
 
-    // 获取用户列表数据
-    const fetchUsers = () => {
-        api.admin.listUsers({ 
+    // 获取队伍列表数据
+    const fetchTeams = () => {
+        api.admin.adminListTeams({ 
+            game_id: gameId, 
             size: pageSize, 
             offset: pageSize * curPage 
         }).then((res) => {
             setTotalCount(res.data.total ?? 0);
-            setCurPageData(res.data.data);
-            const formattedData = res.data.data.map(user => ({
-                id: user.user_id,
-                Username: user.user_name || "",
-                Email: user.email || "",
-                Role: user.role,
-                RealName: user.real_name || "",
-                StudentID: user.student_id || "",
-                IP: user.last_login_ip || "",
-                Phone: user.phone || "",
-                Slogan: user.slogan || "",
-                Avatar: user.avatar || null,
-                RegisterTime: user.register_time,
-                LastLoginTime: user.last_login_time
+            const formattedData: TeamModel[] = res.data.data.map(item => ({
+                team_id: item.team_id,
+                team_name: item.team_name,
+                team_avatar: item.team_avatar || null,
+                team_slogan: item.team_slogan || null,
+                members: item.members.map(member => ({
+                    avatar: member.avatar || null,
+                    user_name: member.user_name,
+                    user_id: member.user_id
+                })),
+                status: item.status,
+                score: item.score
             }));
             setData(formattedData);
         }).catch((err) => {
-            toast.error("获取用户列表失败");
-            console.error("获取用户列表失败:", err);
+            toast.error("获取队伍列表失败");
+            console.error("获取队伍列表失败:", err);
         });
     };
 
@@ -406,8 +435,8 @@ export function UserManageView() {
 
     React.useEffect(() => {
         table.setPageSize(pageSize);
-        fetchUsers();
-    }, [curPage, pageSize]);
+        fetchTeams();
+    }, [curPage, pageSize, gameId]);
 
     return (
         <MacScrollbar className="overflow-hidden w-full">
@@ -415,7 +444,7 @@ export function UserManageView() {
                 <div className="w-[80%]">
                     <div className="flex items-center justify-end space-x-2 select-none">
                         <div className="flex-1 text-sm text-muted-foreground flex items-center">
-                            {table.getFilteredSelectedRowModel().rows.length} / {" "}
+                            {table.getFilteredSelectedRowModel().rows.length} of{" "}
                             {table.getFilteredRowModel().rows.length} 行已选择
                         </div>
                         <div className="flex gap-3 items-center">
@@ -442,10 +471,10 @@ export function UserManageView() {
                     </div>
                     <div className="flex items-center py-4">
                         <Input
-                            placeholder="按用户名过滤..."
-                            value={(table.getColumn("Username")?.getFilterValue() as string) ?? ""}
+                            placeholder="按队伍名称过滤..."
+                            value={(table.getColumn("team_name")?.getFilterValue() as string) ?? ""}
                             onChange={(event) =>
-                                table.getColumn("Username")?.setFilterValue(event.target.value)
+                                table.getColumn("team_name")?.setFilterValue(event.target.value)
                             }
                             className="max-w-sm"
                         />

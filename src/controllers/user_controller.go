@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"time"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
@@ -24,9 +25,18 @@ func Login() func(c *gin.Context) (interface{}, error) {
 			return nil, jwt.ErrFailedAuthentication
 		} else {
 			if user_result.Password == general.SaltPassword(loginVals.Password, user_result.Salt) {
+
+				// Update last login time
+				if err := dbtool.DB().Model(&user_result).Updates(map[string]interface{}{
+					"last_login_time": time.Now().UTC(),
+					"last_login_ip":   c.ClientIP(),
+				}).Error; err != nil {
+					return nil, jwt.ErrFailedAuthentication
+				}
+
 				return &models.JWTUser{
 					UserName: user_result.Username,
-					Role:     "ADMIN",
+					Role:     user_result.Role,
 					UserID:   user_result.UserID,
 				}, nil
 			} else {
@@ -71,7 +81,7 @@ func Register(c *gin.Context) {
 		Username:      payload.Username,
 		Password:      saltedPassword,
 		Salt:          newSalt,
-		Role:          0,
+		Role:          models.UserRoleAdmin,
 		CurToken:      nil,
 		Phone:         nil,
 		StudentNumber: nil,
@@ -81,6 +91,7 @@ func Register(c *gin.Context) {
 		SsoData:       nil,
 		Email:         &payload.Email,
 		EmailVerified: false,
+		RegisterTime:  time.Now().UTC(),
 	}
 
 	if err := dbtool.DB().Create(&newUser).Error; err != nil {

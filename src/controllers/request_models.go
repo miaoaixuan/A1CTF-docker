@@ -91,3 +91,14 @@ type AdminListUsersPayload struct {
 	Size   int `json:"size" binding:"min=0"`
 	Offset int `json:"offset"`
 }
+
+type AdminListTeamsPayload struct {
+	GameID int `json:"game_id"`
+	Size   int `json:"size" binding:"min=0"`
+	Offset int `json:"offset"`
+}
+
+type AdminTeamOperationPayload struct {
+	TeamID int64 `json:"team_id" binding:"required"`
+	GameID int64 `json:"game_id"`
+}

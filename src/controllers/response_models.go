@@ -94,3 +94,37 @@ type GameScoreboardData struct {
 	TimeLines  []TimeLineItem  `json:"time_lines"`
 	TeamScores []TeamScoreItem `json:"teams"`
 }
+
+// Admin User Controller
+
+type AdminListUserItem struct {
+	UserID        string          `json:"user_id"`
+	UserName      string          `json:"user_name"`
+	RealName      *string         `json:"real_name"`
+	StudentID     *string         `json:"student_id"`
+	Phone         *string         `json:"phone"`
+	Slogan        *string         `json:"slogan"`
+	RegisterTime  time.Time       `json:"register_time"`
+	LastLoginTime time.Time       `json:"last_login_time"`
+	LastLoginIP   *string         `json:"last_login_ip"`
+	Email         *string         `json:"email"`
+	Avatar        *string         `json:"avatar"`
+	Role          models.UserRole `json:"role"`
+	EmailVerified bool            `json:"email_verified"`
+}
+
+type AdminSimpleTeamMemberInfo struct {
+	Avatar   *string `json:"avatar"`
+	UserName string  `json:"user_name"`
+	UserID   string  `json:"user_id"`
+}
+
+type AdminListTeamItem struct {
+	TeamID     int64                       `json:"team_id"`
+	TeamName   string                      `json:"team_name"`
+	TeamAvatar *string                     `json:"team_avatar"`
+	TeamSlogan *string                     `json:"team_slogan"`
+	Members    []AdminSimpleTeamMemberInfo `json:"members"`
+	Status     models.ParticipationStatus  `json:"status"`
+	Score      float64                     `json:"score"`
+}

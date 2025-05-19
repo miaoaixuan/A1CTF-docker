@@ -1,6 +1,7 @@
 import SafeComponent from "@/components/SafeComponent"
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { EditChallengePage } from "@/components/admin/EditChallengePage";
+import { TeamManageView } from "@/components/admin/TeamManageView";
 
 export default async function Home ({ params }: { params: Promise<{ lng: string }>}) {
 
@@ -8,13 +9,14 @@ export default async function Home ({ params }: { params: Promise<{ lng: string 
 
     return (
         <div className="p-0 h-screen flex flex-col">
-            <main className="flex flex-1 overflow-hidden">
-                <div className="w-full">
-                    <SafeComponent animation={false}>
-                        <AdminHeader lng={lng} />
-                    </SafeComponent>
-                </div>
-            </main>
+            <SafeComponent animation={false}>
+                <AdminHeader lng={lng} />
+                <main className="flex flex-1 overflow-hidden">
+                    <div className="w-full flex justify-center">
+                        <TeamManageView />
+                    </div>
+                </main>
+            </SafeComponent>
         </div>
     );
 }

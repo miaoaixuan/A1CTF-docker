@@ -80,7 +80,7 @@ func identityHandler() func(c *gin.Context) interface{} {
 		return &models.JWTUser{
 			UserID:   claims[identityKey].(string),
 			UserName: claims["UserName"].(string),
-			Role:     claims["Role"].(string),
+			Role:     models.UserRole(claims["Role"].(string)),
 		}
 	}
 }
@@ -100,35 +100,58 @@ func payloadFunc() func(data interface{}) jwt.MapClaims {
 
 type PermissionSetting struct {
 	RequestMethod []string
-	Permissions   []string
+	Permissions   []models.UserRole
 }
 
 var PermissionMap = map[string]PermissionSetting{
-	`^/api/Login$`:                        {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	`^/api/file/upload$`:                  {RequestMethod: []string{"POST"}, Permissions: []string{}},
-	`^/api/admin/challenge/list$`:         {RequestMethod: []string{"GET", "POST"}, Permissions: []string{"ADMIN"}},
-	`^/api/admin/challenge/create$`:       {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	`^/api/admin/challenge/\d+$`:          {RequestMethod: []string{"GET", "PUT", "DELETE"}, Permissions: []string{"ADMIN"}},
-	`^/api/admin/challenge/search$`:       {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	`^/api/admin/game/list$`:              {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	`^/api/admin/game/create$`:            {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	`^/api/admin/game/\d+$`:               {RequestMethod: []string{"GET", "POST", "PUT"}, Permissions: []string{"ADMIN"}},
-	`^/api/admin/game/\d+/challenge/\d+$`: {RequestMethod: []string{"PUT"}, Permissions: []string{"ADMIN"}},
-	`^/api/game/list$`:                    {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	`^/api/game/\d+$`:                     {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	`^/api/game/\d+/challenges$`:          {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	`^/api/game/\d+/challenge/\d+$`:       {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	`^/api/game/\d+/notices$`:             {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	`^/api/game/\d+/createTeam$`:          {RequestMethod: []string{"POST"}, Permissions: []string{}},
-	`^/api/game/\d+/scoreboard$`:          {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	`^/api/game/\d+/container/\d+$`:       {RequestMethod: []string{"POST", "DELETE", "PATCH", "GET"}, Permissions: []string{}},
-	`^/api/game/\d+/flag/\d+$`:            {RequestMethod: []string{"POST"}, Permissions: []string{}},
-	`^/api/hub$`:                          {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	`^/api/game/\d+/flag/[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$`: {RequestMethod: []string{"GET"}, Permissions: []string{}},
+	`^/api/Login$`:       {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/file/upload$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+
+	`^/api/admin/challenge/list$`:   {RequestMethod: []string{"GET", "POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/admin/challenge/create$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/admin/challenge/\d+$`:    {RequestMethod: []string{"GET", "PUT", "DELETE"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/admin/challenge/search$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+
+	`^/api/admin/user/list$`:           {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/admin/user/update$`:         {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/admin/user/reset-password$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/admin/user/delete$`:         {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+
+	`^/api/admin/team/list$`:    {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/admin/team/approve$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/admin/team/ban$`:     {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/admin/team/unban$`:   {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/admin/team/delete$`:  {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+
+	`^/api/admin/game/list$`:              {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/admin/game/create$`:            {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/admin/game/\d+$`:               {RequestMethod: []string{"GET", "POST", "PUT"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/admin/game/\d+/challenge/\d+$`: {RequestMethod: []string{"PUT"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+
+	`^/api/game/list$`:              {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	`^/api/game/\d+$`:               {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	`^/api/game/\d+/challenges$`:    {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	`^/api/game/\d+/challenge/\d+$`: {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	`^/api/game/\d+/notices$`:       {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	`^/api/game/\d+/createTeam$`:    {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	`^/api/game/\d+/scoreboard$`:    {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	`^/api/game/\d+/container/\d+$`: {RequestMethod: []string{"POST", "DELETE", "PATCH", "GET"}, Permissions: []models.UserRole{}},
+	`^/api/game/\d+/flag/\d+$`:      {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	`^/api/hub$`:                    {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	`^/api/game/\d+/flag/[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$`: {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
 }
 
 // Helper function to check if a slice contains a value
-func contains(slice []string, value string) bool {
+func contains_role(slice []models.UserRole, value models.UserRole) bool {
+	for _, item := range slice {
+		if item == value {
+			return true
+		}
+	}
+	return false
+}
+
+func contains_str(slice []string, value string) bool {
 	for _, item := range slice {
 		if item == value {
 			return true
@@ -150,7 +173,7 @@ func authorizator() func(data interface{}, c *gin.Context) bool {
 					// 	return false
 					// }
 
-					if !contains(rules.RequestMethod, c.Request.Method) {
+					if !contains_str(rules.RequestMethod, c.Request.Method) {
 						return false
 					}
 
@@ -158,7 +181,7 @@ func authorizator() func(data interface{}, c *gin.Context) bool {
 						return true
 					}
 
-					if contains(rules.Permissions, v.Role) {
+					if contains_role(rules.Permissions, v.Role) {
 						return true
 					} else {
 						return false
@@ -298,6 +321,23 @@ func main() {
 			challengeGroup.PUT("/:challenge_id", controllers.AdminUpdateChallenge)
 
 			challengeGroup.POST("/search", controllers.AdminSearchChallenges)
+		}
+
+		userGroup := auth.Group("/admin/user")
+		{
+			userGroup.POST("/list", controllers.AdminListUsers)
+			userGroup.POST("/update", controllers.AdminUpdateUser)
+			userGroup.POST("/reset-password", controllers.AdminResetUserPassword)
+			userGroup.POST("/delete", controllers.AdminDeleteUser)
+		}
+
+		teamGroup := auth.Group("/admin/team")
+		{
+			teamGroup.POST("/list", controllers.AdminListTeams)
+			teamGroup.POST("/approve", controllers.AdminApproveTeam)
+			teamGroup.POST("/ban", controllers.AdminBanTeam)
+			teamGroup.POST("/unban", controllers.AdminUnbanTeam)
+			teamGroup.POST("/delete", controllers.AdminDeleteTeam)
 		}
 
 		gameGroup := auth.Group("/admin/game")

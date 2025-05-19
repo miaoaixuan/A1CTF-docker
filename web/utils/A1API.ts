@@ -11,6 +11,19 @@
  */
 
 /**
+ * User role enumeration:
+ * - ADMIN - Administrator
+ * - USER - Regular user
+ * - MONITOR - Monitor
+ * @example "USER"
+ */
+export enum UserRole {
+  ADMIN = "ADMIN",
+  USER = "USER",
+  MONITOR = "MONITOR",
+}
+
+/**
  * Possible statuses of a container:
  * - `ContainerStopped`: The container is stopped.
  * - `ContainerRunning`: The container is running.
@@ -39,6 +52,15 @@ export enum NoticeCategory {
   NewAnnouncement = "NewAnnouncement",
 }
 
+/**
+ * Team participation status:
+ * - UnRegistered: 未报名
+ * - Pending: 已报名，等待审核
+ * - Approved: 已报名，审核通过
+ * - Rejected: 已报名，审核不通过
+ * - Participated: 已报名，已参加
+ * - Banned: 已被禁赛
+ */
 export enum ParticipationStatus {
   UnRegistered = "UnRegistered",
   Pending = "Pending",
@@ -348,6 +370,15 @@ export interface UserTeamInfo {
   team_score: number;
   team_hash: string;
   invite_code?: string | null;
+  /**
+   * Team participation status:
+   * - UnRegistered: 未报名
+   * - Pending: 已报名，等待审核
+   * - Approved: 已报名，审核通过
+   * - Rejected: 已报名，审核不通过
+   * - Participated: 已报名，已参加
+   * - Banned: 已被禁赛
+   */
   team_status: ParticipationStatus;
 }
 
@@ -370,6 +401,15 @@ export interface UserFullGameInfo {
   wp_expire_time: string;
   visible: boolean;
   stages: GameStage[];
+  /**
+   * Team participation status:
+   * - UnRegistered: 未报名
+   * - Pending: 已报名，等待审核
+   * - Approved: 已报名，审核通过
+   * - Rejected: 已报名，审核不通过
+   * - Participated: 已报名，已参加
+   * - Banned: 已被禁赛
+   */
   team_status: ParticipationStatus;
   team_info?: UserTeamInfo;
 }
@@ -468,6 +508,111 @@ export interface ScoreRecord {
    * @example 500
    */
   score?: number;
+}
+
+export interface AdminListUserItem {
+  /** The unique identifier of the user */
+  user_id: string;
+  /** The username of the user */
+  user_name: string;
+  /** The real name of the user */
+  real_name?: string | null;
+  /** The student ID of the user */
+  student_id?: string | null;
+  /** The phone number of the user */
+  phone?: string | null;
+  /** The user's slogan or motto */
+  slogan?: string | null;
+  /**
+   * The timestamp when the user registered
+   * @format date-time
+   */
+  register_time: string;
+  /**
+   * The timestamp of the user's last login
+   * @format date-time
+   */
+  last_login_time: string;
+  /** The IP address of the user's last login */
+  last_login_ip?: string | null;
+  /** The email address of the user */
+  email?: string | null;
+  /** URL to the user's avatar image */
+  avatar?: string | null;
+  /** The role of the user */
+  role: UserRole;
+  /** Whether the user's email has been verified */
+  email_verified: boolean;
+}
+
+export interface AdminSimpleTeamMemberInfo {
+  avatar?: string | null;
+  user_name: string;
+  user_id: string;
+}
+
+export interface AdminListTeamItem {
+  /** @format int64 */
+  team_id: number;
+  team_name: string;
+  team_avatar?: string | null;
+  team_slogan?: string | null;
+  members: AdminSimpleTeamMemberInfo[];
+  /**
+   * Team participation status:
+   * - UnRegistered: 未报名
+   * - Pending: 已报名，等待审核
+   * - Approved: 已报名，审核通过
+   * - Rejected: 已报名，审核不通过
+   * - Participated: 已报名，已参加
+   * - Banned: 已被禁赛
+   */
+  status: ParticipationStatus;
+  /** @format double */
+  score: number;
+}
+
+export interface AdminListTeamsPayload {
+  game_id: number;
+  /** @min 0 */
+  size: number;
+  offset?: number;
+}
+
+export interface AdminTeamOperationPayload {
+  /**
+   * 要操作的队伍ID
+   * @format int64
+   */
+  team_id: number;
+  /** 游戏ID（可选） */
+  game_id?: number;
+}
+
+export interface AdminUpdateUserPayload {
+  /** The unique identifier of the user */
+  user_id: string;
+  /** The username of the user */
+  user_name: string;
+  /** The real name of the user */
+  real_name?: string | null;
+  /** The student ID of the user */
+  student_id?: string | null;
+  /** The phone number of the user */
+  phone?: string | null;
+  /** The user's slogan or motto */
+  slogan?: string | null;
+  /** The email address of the user */
+  email?: string | null;
+  /** URL to the user's avatar image */
+  avatar?: string | null;
+  /** The role of the user */
+  role: UserRole;
+}
+
+export interface AdminUserOperationPayload {
+  /** The unique identifier of the user */
+  user_id: string;
 }
 
 import type {
@@ -978,6 +1123,272 @@ export class Api<
       >({
         path: `/api/admin/game/${gameId}/challenge/${challengeId}`,
         method: "PUT",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags admin
+     * @name ListUsers
+     * @summary List users
+     * @request POST:/api/admin/user/list
+     */
+    listUsers: (
+      data: {
+        size: number;
+        offset: number;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: AdminListUserItem[];
+          total?: number;
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/admin/user/list`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 管理员更新用户的基本信息
+     *
+     * @tags admin
+     * @name AdminUpdateUser
+     * @summary 更新用户信息
+     * @request POST:/api/admin/user/update
+     */
+    adminUpdateUser: (
+      data: AdminUpdateUserPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "用户信息已更新" */
+          message: string;
+        },
+        ErrorMessage
+      >({
+        path: `/api/admin/user/update`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 管理员重置用户的密码
+     *
+     * @tags admin
+     * @name AdminResetUserPassword
+     * @summary 重置用户密码
+     * @request POST:/api/admin/user/reset-password
+     */
+    adminResetUserPassword: (
+      data: AdminUserOperationPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "密码已重置" */
+          message: string;
+          /**
+           * 新生成的随机密码
+           * @example "Abcd1234"
+           */
+          new_password: string;
+        },
+        ErrorMessage
+      >({
+        path: `/api/admin/user/reset-password`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 管理员删除用户账号
+     *
+     * @tags admin
+     * @name AdminDeleteUser
+     * @summary 删除用户
+     * @request POST:/api/admin/user/delete
+     */
+    adminDeleteUser: (
+      data: AdminUserOperationPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "用户已删除" */
+          message: string;
+        },
+        ErrorMessage
+      >({
+        path: `/api/admin/user/delete`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 管理员根据游戏ID获取参与该游戏的队伍列表，支持分页
+     *
+     * @tags admin
+     * @name AdminListTeams
+     * @summary 管理员获取队伍列表
+     * @request POST:/api/admin/team/list
+     */
+    adminListTeams: (data: AdminListTeamsPayload, params: RequestParams = {}) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          data: AdminListTeamItem[];
+          /** 总队伍数量 */
+          total: number;
+        },
+        ErrorMessage
+      >({
+        path: `/api/admin/team/list`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 将队伍状态设置为已批准(Approved)
+     *
+     * @tags admin
+     * @name AdminApproveTeam
+     * @summary 批准队伍
+     * @request POST:/api/admin/team/approve
+     */
+    adminApproveTeam: (
+      data: AdminTeamOperationPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "队伍已批准" */
+          message: string;
+        },
+        ErrorMessage
+      >({
+        path: `/api/admin/team/approve`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 将队伍状态设置为已禁赛(Banned)
+     *
+     * @tags admin
+     * @name AdminBanTeam
+     * @summary 锁定队伍
+     * @request POST:/api/admin/team/ban
+     */
+    adminBanTeam: (
+      data: AdminTeamOperationPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "队伍已锁定" */
+          message: string;
+        },
+        ErrorMessage
+      >({
+        path: `/api/admin/team/ban`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 将队伍从禁赛状态(Banned)恢复为已批准状态(Approved)
+     *
+     * @tags admin
+     * @name AdminUnbanTeam
+     * @summary 解锁队伍
+     * @request POST:/api/admin/team/unban
+     */
+    adminUnbanTeam: (
+      data: AdminTeamOperationPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "队伍已解锁" */
+          message: string;
+        },
+        ErrorMessage
+      >({
+        path: `/api/admin/team/unban`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 从系统中删除队伍
+     *
+     * @tags admin
+     * @name AdminDeleteTeam
+     * @summary 删除队伍
+     * @request POST:/api/admin/team/delete
+     */
+    adminDeleteTeam: (
+      data: AdminTeamOperationPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "队伍已删除" */
+          message: string;
+        },
+        ErrorMessage
+      >({
+        path: `/api/admin/team/delete`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),

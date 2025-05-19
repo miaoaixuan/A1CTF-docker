@@ -467,6 +467,197 @@ paths:
           description: The ID of the challenge to add
           schema:
             type: integer
+  /api/admin/user/list:
+    post:
+      tags: [admin]
+      operationId: listUsers
+      summary: List users
+      responses:
+        '200':
+          description: user listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminListUserItem'
+                  total:
+                    type: number
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+              schema:
+                type: object
+                properties:
+                  size:
+                    type: number
+                  offset:
+                    type: number
+                required:
+                  - size
+                  - offset
+  /api/admin/user/update:
+    post:
+      tags: [admin]
+      operationId: adminUpdateUser
+      summary: 更新用户信息
+      description: 管理员更新用户的基本信息
+      responses:
+        '200':
+          description: 用户信息更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "用户信息已更新"
+                required:
+                  - code
+                  - message
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '404':
+          description: 用户不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUpdateUserPayload'
+        required: true
+  /api/admin/user/reset-password:
+    post:
+      tags: [admin]
+      operationId: adminResetUserPassword
+      summary: 重置用户密码
+      description: 管理员重置用户的密码
+      responses:
+        '200':
+          description: 密码重置成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "密码已重置"
+                  new_password:
+                    type: string
+                    description: 新生成的随机密码
+                    example: "Abcd1234"
+                required:
+                  - code
+                  - message
+                  - new_password
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '404':
+          description: 用户不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUserOperationPayload'
+        required: true
+  /api/admin/user/delete:
+    post:
+      tags: [admin]
+      operationId: adminDeleteUser
+      summary: 删除用户
+      description: 管理员删除用户账号
+      responses:
+        '200':
+          description: 用户删除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "用户已删除"
+                required:
+                  - code
+                  - message
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '404':
+          description: 用户不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUserOperationPayload'
+        required: true
   /api/game/list:
     get:
       tags: [user]
@@ -979,6 +1170,240 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GameScoreboardResponse'
+  /api/admin/team/list:
+    post:
+      tags: [admin]
+      operationId: adminListTeams
+      summary: 管理员获取队伍列表
+      description: 管理员根据游戏ID获取参与该游戏的队伍列表，支持分页
+      responses:
+        '200':
+          description: 成功获取队伍列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminListTeamItem'
+                  total:
+                    type: integer
+                    description: 总队伍数量
+                required:
+                  - code
+                  - data
+                  - total
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminListTeamsPayload'
+        required: true
+  /api/admin/team/approve:
+    post:
+      tags: [admin]
+      operationId: adminApproveTeam
+      summary: 批准队伍
+      description: 将队伍状态设置为已批准(Approved)
+      responses:
+        '200':
+          description: 成功更新队伍状态
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "队伍已批准"
+                required:
+                  - code
+                  - message
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '404':
+          description: 未找到队伍
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminTeamOperationPayload'
+        required: true
+  /api/admin/team/ban:
+    post:
+      tags: [admin]
+      operationId: adminBanTeam
+      summary: 锁定队伍
+      description: 将队伍状态设置为已禁赛(Banned)
+      responses:
+        '200':
+          description: 成功锁定队伍
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "队伍已锁定"
+                required:
+                  - code
+                  - message
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '404':
+          description: 未找到队伍
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminTeamOperationPayload'
+        required: true
+  /api/admin/team/unban:
+    post:
+      tags: [admin]
+      operationId: adminUnbanTeam
+      summary: 解锁队伍
+      description: 将队伍从禁赛状态(Banned)恢复为已批准状态(Approved)
+      responses:
+        '200':
+          description: 成功解锁队伍
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "队伍已解锁"
+                required:
+                  - code
+                  - message
+        '400':
+          description: 请求参数错误或队伍当前不是禁赛状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '404':
+          description: 未找到队伍
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminTeamOperationPayload'
+        required: true
+  /api/admin/team/delete:
+    post:
+      tags: [admin]
+      operationId: adminDeleteTeam
+      summary: 删除队伍
+      description: 从系统中删除队伍
+      responses:
+        '200':
+          description: 成功删除队伍
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "队伍已删除"
+                required:
+                  - code
+                  - message
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '404':
+          description: 未找到队伍
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminTeamOperationPayload'
+        required: true
 components:
   schemas:
     UserLogin:
@@ -1500,12 +1925,20 @@ components:
     ParticipationStatus:
       type: string
       enum:
-        - UnRegistered
-        - Pending
-        - Approved
-        - Rejected
-        - Participated
-        - Banned
+        - "UnRegistered"
+        - "Pending"
+        - "Approved"
+        - "Rejected"
+        - "Participated"
+        - "Banned"
+      description: |
+        Team participation status:
+        - UnRegistered: 未报名
+        - Pending: 已报名，等待审核
+        - Approved: 已报名，审核通过
+        - Rejected: 已报名，审核不通过
+        - Participated: 已报名，已参加
+        - Banned: 已被禁赛
     UserTeamInfo:
       type: object
       properties:
@@ -1792,3 +2225,190 @@ components:
           type: number
           format: float
           example: 500
+    
+    UserRole:
+      type: string
+      enum:
+        - ADMIN
+        - USER
+        - MONITOR
+      description: |
+        User role enumeration:
+        - ADMIN - Administrator
+        - USER - Regular user
+        - MONITOR - Monitor
+      example: "USER"
+    
+    AdminListUserItem:
+      type: object
+      properties:
+        user_id:
+          type: string
+          description: The unique identifier of the user
+        user_name:
+          type: string
+          description: The username of the user
+        real_name:
+          type: string
+          nullable: true
+          description: The real name of the user
+        student_id:
+          type: string
+          nullable: true
+          description: The student ID of the user
+        phone:
+          type: string
+          nullable: true
+          description: The phone number of the user
+        slogan:
+          type: string
+          nullable: true
+          description: The user's slogan or motto
+        register_time:
+          type: string
+          format: date-time
+          description: The timestamp when the user registered
+        last_login_time:
+          type: string
+          format: date-time
+          description: The timestamp of the user's last login
+        last_login_ip:
+          type: string
+          nullable: true
+          description: The IP address of the user's last login
+        email:
+          type: string
+          nullable: true
+          description: The email address of the user
+        avatar:
+          type: string
+          nullable: true
+          description: URL to the user's avatar image
+        role:
+          $ref: '#/components/schemas/UserRole'
+          description: The role of the user
+        email_verified:
+          type: boolean
+          description: Whether the user's email has been verified
+      required:
+        - user_id
+        - user_name
+        - register_time
+        - last_login_time
+        - role
+        - email_verified
+    AdminSimpleTeamMemberInfo:
+      type: object
+      properties:
+        avatar:
+          type: string
+          nullable: true
+        user_name:
+          type: string
+        user_id:
+          type: string
+      required:
+        - user_name
+        - user_id
+    AdminListTeamItem:
+      type: object
+      properties:
+        team_id:
+          type: integer
+          format: int64
+        team_name:
+          type: string
+        team_avatar:
+          type: string
+          nullable: true
+        team_slogan:
+          type: string
+          nullable: true
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminSimpleTeamMemberInfo'
+        status:
+          $ref: '#/components/schemas/ParticipationStatus'
+        score:
+          type: number
+          format: double
+      required:
+        - team_id
+        - team_name
+        - members
+        - status
+        - score
+    AdminListTeamsPayload:
+      type: object
+      properties:
+        game_id:
+          type: integer
+        size:
+          type: integer
+          minimum: 0
+        offset:
+          type: integer
+      required:
+        - game_id
+        - size
+    AdminTeamOperationPayload:
+      type: object
+      properties:
+        team_id:
+          type: integer
+          format: int64
+          description: 要操作的队伍ID
+        game_id:
+          type: integer
+          description: 游戏ID（可选）
+      required:
+        - team_id
+    AdminUpdateUserPayload:
+      type: object
+      properties:
+        user_id:
+          type: string
+          description: The unique identifier of the user
+        user_name:
+          type: string
+          description: The username of the user
+        real_name:
+          type: string
+          nullable: true
+          description: The real name of the user
+        student_id:
+          type: string
+          nullable: true
+          description: The student ID of the user
+        phone:
+          type: string
+          nullable: true
+          description: The phone number of the user
+        slogan:
+          type: string
+          nullable: true
+          description: The user's slogan or motto
+        email:
+          type: string
+          nullable: true
+          description: The email address of the user
+        avatar:
+          type: string
+          nullable: true
+          description: URL to the user's avatar image
+        role:
+          $ref: '#/components/schemas/UserRole'
+          description: The role of the user
+      required:
+        - user_id
+        - user_name
+        - role
+    AdminUserOperationPayload:
+      type: object
+      properties:
+        user_id:
+          type: string
+          description: The unique identifier of the user
+      required:
+        - user_id
