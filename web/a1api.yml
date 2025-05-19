@@ -1404,6 +1404,198 @@ paths:
             schema:
               $ref: '#/components/schemas/AdminTeamOperationPayload'
         required: true
+  /api/admin/container/list:
+    post:
+      tags: [admin]
+      operationId: adminListContainers
+      summary: 获取容器列表
+      description: 管理员获取所有容器的列表
+      responses:
+        '200':
+          description: 容器列表获取成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminContainerItem'
+                  total:
+                    type: integer
+                    description: 总容器数量
+                required:
+                  - code
+                  - data
+                  - total
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminListContainersPayload'
+        required: true
+  /api/admin/container/delete:
+    post:
+      tags: [admin]
+      operationId: adminDeleteContainer
+      summary: 删除容器
+      description: 管理员删除指定的容器
+      responses:
+        '200':
+          description: 容器删除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "容器已删除"
+                required:
+                  - code
+                  - message
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '404':
+          description: 容器不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminContainerOperationPayload'
+        required: true
+  /api/admin/container/extend:
+    post:
+      tags: [admin]
+      operationId: adminExtendContainer
+      summary: 延长容器周期
+      description: 管理员延长指定容器的生命周期
+      responses:
+        '200':
+          description: 容器生命周期延长成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "容器生命周期已延长"
+                  new_expire_time:
+                    type: string
+                    format: date-time
+                    description: 新的过期时间
+                required:
+                  - code
+                  - message
+                  - new_expire_time
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '404':
+          description: 容器不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminExtendContainerPayload'
+        required: true
+  /api/admin/container/flag:
+    get:
+      tags: [admin]
+      operationId: adminGetContainerFlag
+      summary: 获取容器Flag
+      description: 管理员获取指定容器的Flag
+      parameters:
+        - name: container_id
+          in: query
+          required: true
+          description: 容器ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Flag获取成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      flag_content:
+                        type: string
+                        description: 容器Flag内容
+                    required:
+                      - flag_content
+                required:
+                  - code
+                  - data
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '404':
+          description: 容器或Flag不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
 components:
   schemas:
     UserLogin:
@@ -2412,3 +2604,75 @@ components:
           description: The unique identifier of the user
       required:
         - user_id
+    AdminContainerItem:
+      type: object
+      properties:
+        container_id:
+          type: string
+        container_name:
+          type: string
+        container_status:
+          type: string
+        container_expiretime:
+          type: string
+          format: date-time
+        container_type:
+          type: string
+        container_ports:
+          type: array
+          items:
+            type: object
+            properties:
+              port_name:
+                type: string
+              port:
+                type: integer
+              ip:
+                type: string
+            required:
+              - port_name
+              - port
+              - ip
+        team_name:
+          type: string
+        game_name:
+          type: string
+        challenge_name:
+          type: string
+      required:
+        - container_id
+        - container_name
+        - container_status
+        - container_expiretime
+        - container_type
+        - container_ports
+        - team_name
+        - game_name
+        - challenge_name
+    AdminListContainersPayload:
+      type: object
+      properties:
+        game_id:
+          type: integer
+        size:
+          type: integer
+          minimum: 0
+        offset:
+          type: integer
+      required:
+        - game_id
+        - size
+    AdminContainerOperationPayload:
+      type: object
+      properties:
+        container_id:
+          type: string
+      required:
+        - container_id
+    AdminExtendContainerPayload:
+      type: object
+      properties:
+        container_id:
+          type: string
+      required:
+        - container_id

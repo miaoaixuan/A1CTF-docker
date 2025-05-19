@@ -13,7 +13,7 @@ import {
     useReactTable,
 } from "@tanstack/react-table"
 
-import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, Pencil } from "lucide-react"
+import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, PlayIcon, StopCircle, TimerIcon, CopyIcon, ClockIcon } from "lucide-react"
 
 import * as React from "react"
 
@@ -39,38 +39,172 @@ import {
     TableRow,
 } from "@/components/ui/table"
 
-import { api, ContainerInfoModel, Role, UserInfoModel } from "@/utils/GZApi";
+import { api, ErrorMessage } from "@/utils/ApiHelper";
 import { MacScrollbar } from "mac-scrollbar";
-import { Avatar } from "@radix-ui/react-avatar";
-import { AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Skeleton } from "../ui/skeleton";
 import { Badge } from "../ui/badge";
+import { 
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { AdminContainerItem, ContainerStatus } from "@/utils/A1API";
+import { toast } from "sonner";
 import dayjs from "dayjs";
+import { 
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 export type ContainerModel = {
     ID: string,
     TeamName: string,
     GameName: string,
-    LifeCycle: string,
-    Entry: string
+    ChallengeName: string,
+    Status: ContainerStatus,
+    ExpireTime: Date,
+    Ports: string
 }
 
-export function ContainerManageView() {
+interface ConfirmDialogProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+    title: string;
+    description: string;
+}
 
+const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    title,
+    description
+}) => {
+    return (
+        <AlertDialog open={isOpen} onOpenChange={onClose}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>{title}</AlertDialogTitle>
+                    <AlertDialogDescription>{description}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>取消</AlertDialogCancel>
+                    <AlertDialogAction onClick={onConfirm}>确认</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+};
+
+export function ContainerManageView() {
     const [data, setData] = React.useState<ContainerModel[]>([])
     const [sorting, setSorting] = React.useState<SortingState>([])
-    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-        []
-    )
-    const [columnVisibility, setColumnVisibility] =
-        React.useState<VisibilityState>({})
+    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
     const [rowSelection, setRowSelection] = React.useState({})
 
     const [pageSize, setPageSize] = React.useState(30);
     const [curPage, setCurPage] = React.useState(0);
     const [totalCount, setTotalCount] = React.useState(0);
+    const [gameId, setGameId] = React.useState(1); // 默认游戏ID
+    
+    // 对话框状态
+    const [confirmDialog, setConfirmDialog] = React.useState({
+        isOpen: false,
+        title: "",
+        description: "",
+        onConfirm: () => {},
+    });
+    
 
-    const [curPageData, setCurPageData] = React.useState<ContainerInfoModel[]>([])
+    // 处理容器删除
+    const handleDeleteContainer = (containerId: string) => {
+        setConfirmDialog({
+            isOpen: true,
+            title: "确认停止",
+            description: "您确定要停止这个容器吗？",
+            onConfirm: () => {
+                toast.promise(
+                    api.admin.adminDeleteContainer({ container_id: containerId }),
+                    {
+                        loading: '正在停止容器...',
+                        success: (data) => {
+                            fetchContainers(); // 刷新数据
+                            setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                            return '容器正在停止';
+                        },
+                        error: '停止容器失败'
+                    }
+                );
+            }
+        });
+    };
+    
+    // 提交延长容器生命周期
+    const submitExtendContainer = (containerId: string) => {
+        toast.promise(
+            api.admin.adminExtendContainer({
+                container_id: containerId,
+            }),
+            {
+                loading: '正在延长容器生命周期...',
+                success: (response) => {
+                    fetchContainers(); // 刷新数据
+                    return '容器生命周期已延长';
+                },
+                error: '延长容器生命周期失败'
+            }
+        );
+    };
+    
+    // 获取容器Flag
+    const handleGetContainerFlag = (containerId: string) => {
+        toast.promise(
+            api.admin.adminGetContainerFlag({ container_id: containerId }),
+            {
+                loading: '正在获取容器Flag...',
+                success: (response) => {
+                    const flagContent = response.data.data.flag_content;
+                    // 复制到剪贴板
+                    navigator.clipboard.writeText(flagContent);
+                    return `Flag已复制到剪贴板`;
+                },
+                error: '获取容器Flag失败'
+            }
+        );
+    };
+
+    // 获取状态对应的颜色和中文显示
+    const getStatusColorAndText = (status: ContainerStatus) => {
+        switch (status) {
+            case ContainerStatus.ContainerRunning:
+                return { color: "#52C41A", text: "运行中" };
+            case ContainerStatus.ContainerStopped:
+                return { color: "#8C8C8C", text: "已停止" };
+            case ContainerStatus.ContainerStarting:
+                return { color: "#1890FF", text: "启动中" };
+            case ContainerStatus.ContainerError:
+                return { color: "#FF4D4F", text: "错误" };
+            case ContainerStatus.ContainerStopping:
+                return { color: "#FAAD14", text: "停止中" };
+            case ContainerStatus.ContainerQueueing:
+                return { color: "#722ED1", text: "队列中" };
+            case ContainerStatus.NoContainer:
+                return { color: "#D9D9D9", text: "无容器" };
+            default:
+                return { color: "#D9D9D9", text: "未知" };
+        }
+    };
 
     const columns: ColumnDef<ContainerModel>[] = [
         {
@@ -82,14 +216,14 @@ export function ContainerManageView() {
                         (table.getIsSomePageRowsSelected() && "indeterminate")
                     }
                     onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                    aria-label="Select all"
+                    aria-label="全选"
                 />
             ),
             cell: ({ row }) => (
                 <Checkbox
                     checked={row.getIsSelected()}
                     onCheckedChange={(value) => row.toggleSelected(!!value)}
-                    aria-label="Select row"
+                    aria-label="选择行"
                 />
             ),
             enableSorting: false,
@@ -97,73 +231,115 @@ export function ContainerManageView() {
         },
         {
             accessorKey: "TeamName",
-            header: "TeamName",
+            header: "队伍名称",
             cell: ({ row }) => {    
                 return (
-                    <div>
+                    <div className="flex gap-3 items-center">
                         {row.getValue("TeamName")}
                     </div>
                 )
             },
         },
         {
-            accessorKey: "GameName",
-            header: "GameName",
+            accessorKey: "ChallengeName",
+            header: "题目名称",
             cell: ({ row }) => (
-                <div>
-                    { row.getValue("GameName") }
-                </div>
+                <div>{row.getValue("ChallengeName")}</div>
             ),
         },
         {
-            accessorKey: "LifeCycle",
-            header: "LifeCycle",
-            cell: ({ row }) => <div className="lowercase">{row.getValue("LifeCycle")}</div>,
+            accessorKey: "Status",
+            header: "状态",
+            cell: ({ row }) => {
+                const status = row.getValue("Status") as ContainerStatus;
+                const { color, text } = getStatusColorAndText(status);
+                return (
+                    <Badge 
+                        className="capitalize w-[60px] px-[5px] flex justify-center select-none"
+                        style={{ backgroundColor: color }}
+                    >
+                        {text}
+                    </Badge>
+                )
+            },
         },
         {
-            accessorKey: "ID",
-            header: "ID",
-            cell: ({ row }) => (
-                <div>{row.getValue("ID")}</div>
-            ),
+            accessorKey: "ExpireTime",
+            header: ({ column }) => {
+                return (
+                    <Button
+                        variant="ghost"
+                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                    >
+                        过期时间
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                )
+            },
+            cell: ({ row }) => {
+                const expireTime = row.getValue("ExpireTime") as Date;
+                return <div>{dayjs(expireTime).format('YYYY-MM-DD HH:mm:ss')}</div>
+            },
+            sortingFn: (rowA, rowB, columnId) => {
+                const dateA = rowA.getValue(columnId) as Date;
+                const dateB = rowB.getValue(columnId) as Date;
+                return dateA.getTime() - dateB.getTime();
+            }
         },
         {
-            accessorKey: "Entry",
-            header: "Entry",
+            accessorKey: "Ports",
+            header: "访问入口",
             cell: ({ row }) => (
-                <div>{row.getValue("Entry")}</div>
+                <div>{row.getValue("Ports")}</div>
             ),
         },
         {
             id: "actions",
-            header: "Action",
+            header: "操作",
             enableHiding: false,
             cell: ({ row }) => {
-                const payment = row.original
-    
+                const container = row.original;
+                
                 return (
                     <div className="flex gap-2">
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Edit</span>
-                            <Pencil />
+                        <Button 
+                            variant="ghost" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleGetContainerFlag(container.ID)}
+                            title="复制Flag"
+                        >
+                            <span className="sr-only">复制Flag</span>
+                            <CopyIcon className="h-4 w-4" />
                         </Button>
-                        <DropdownMenu modal={false}>
+                        <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="h-8 w-8 p-0">
-                                    <span className="sr-only">Open menu</span>
-                                    <MoreHorizontal />
+                                    <span className="sr-only">打开菜单</span>
+                                    <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" >
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuLabel>操作</DropdownMenuLabel>
                                 <DropdownMenuItem
-                                    onClick={() => navigator.clipboard.writeText(payment.ID)}
+                                    onClick={() => navigator.clipboard.writeText(container.ID)}
                                 >
-                                    Copy payment ID
+                                    复制容器ID
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem>View customer</DropdownMenuItem>
-                                <DropdownMenuItem>View payment details</DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => submitExtendContainer(container.ID)}
+                                    className="text-blue-600"
+                                >
+                                    <ClockIcon className="h-4 w-4 mr-2" />
+                                    延长生命周期
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => handleDeleteContainer(container.ID)}
+                                    className="text-red-600"
+                                >
+                                    <StopCircle className="h-4 w-4 mr-2" />
+                                    停止容器
+                                </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
@@ -171,6 +347,40 @@ export function ContainerManageView() {
             },
         },
     ]
+
+    // 获取容器列表数据
+    const fetchContainers = () => {
+        api.admin.adminListContainers({ 
+            game_id: gameId, 
+            size: pageSize, 
+            offset: pageSize * curPage 
+        }).then((res: any) => {
+            setTotalCount(res.data.total ?? 0);
+            const formattedData: ContainerModel[] = res.data.data.map((item: AdminContainerItem) => {
+                // 格式化端口信息为可读字符串
+                let portsStr = "";
+                if (item.container_ports && item.container_ports.length > 0) {
+                    portsStr = item.container_ports.map(port => 
+                        `${port.ip}:${port.port} (${port.port_name})`
+                    ).join(", ");
+                }
+                
+                return {
+                    ID: item.container_id,
+                    TeamName: item.team_name || "未知队伍",
+                    GameName: item.game_name || "未知比赛",
+                    ChallengeName: item.challenge_name || item.container_name || "未知题目",
+                    Status: item.container_status,
+                    ExpireTime: new Date(item.container_expiretime),
+                    Ports: portsStr
+                };
+            });
+            setData(formattedData);
+        }).catch((err: any) => {
+            toast.error("获取容器列表失败");
+            console.error("获取容器列表失败:", err);
+        });
+    };
 
     const table = useReactTable({
         data,
@@ -192,26 +402,9 @@ export function ContainerManageView() {
     })
 
     React.useEffect(() => {
-        table.setPageSize(pageSize)
-
-        api.admin.adminInstances().then((res) => {
-
-            setTotalCount(res.data.total ?? 0)
-            setCurPageData(res.data.data)
-            const data: ContainerModel[] = []
-            res.data.data.forEach((container) => {
-                data.push({
-                    "Entry": `${container.ip}:${container.port}`,
-                    "ID": container.containerId ?? "",
-                    "LifeCycle": `${ dayjs(container.startedAt).format() } - ${ dayjs(container.expectStopAt).format() }`,
-                    "GameName": container.challenge?.title ?? "",
-                    "TeamName": container.team?.name ?? ""
-                })
-            })
-
-            setData(data)
-        })
-    }, [curPage, pageSize])
+        table.setPageSize(pageSize);
+        fetchContainers();
+    }, [curPage, pageSize, gameId]);
 
     return (
         <MacScrollbar className="overflow-hidden w-full">
@@ -219,8 +412,8 @@ export function ContainerManageView() {
                 <div className="w-[80%]">
                     <div className="flex items-center justify-end space-x-2 select-none">
                         <div className="flex-1 text-sm text-muted-foreground flex items-center">
-                            {table.getFilteredSelectedRowModel().rows.length} of{" "}
-                            {table.getFilteredRowModel().rows.length} row(s) selected.
+                            {table.getFilteredSelectedRowModel().rows.length} / {" "}
+                            {table.getFilteredRowModel().rows.length} 行已选择
                         </div>
                         <div className="flex gap-3 items-center">
                             <Button
@@ -246,7 +439,7 @@ export function ContainerManageView() {
                     </div>
                     <div className="flex items-center py-4">
                         <Input
-                            placeholder="Filter team names..."
+                            placeholder="按队伍名称过滤..."
                             value={(table.getColumn("TeamName")?.getFilterValue() as string) ?? ""}
                             onChange={(event) =>
                                 table.getColumn("TeamName")?.setFilterValue(event.target.value)
@@ -256,7 +449,7 @@ export function ContainerManageView() {
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" className="ml-auto">
-                                    Columns <ChevronDown />
+                                    列 <ChevronDown />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="select-none">
@@ -323,7 +516,7 @@ export function ContainerManageView() {
                                             colSpan={columns.length}
                                             className="h-24 text-center"
                                         >
-                                            No results.
+                                            暂无数据
                                         </TableCell>
                                     </TableRow>
                                 )}
@@ -332,6 +525,15 @@ export function ContainerManageView() {
                     </div>
                 </div>
             </div>
+            
+            {/* 确认对话框 */}
+            <ConfirmDialog
+                isOpen={confirmDialog.isOpen}
+                onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmDialog.onConfirm}
+                title={confirmDialog.title}
+                description={confirmDialog.description}
+            />
         </MacScrollbar>
     )
 }

@@ -615,6 +615,38 @@ export interface AdminUserOperationPayload {
   user_id: string;
 }
 
+export interface AdminContainerItem {
+  container_id: string;
+  container_name: string;
+  container_status: string;
+  /** @format date-time */
+  container_expiretime: string;
+  container_type: string;
+  container_ports: {
+    port_name: string;
+    port: number;
+    ip: string;
+  }[];
+  team_name: string;
+  game_name: string;
+  challenge_name: string;
+}
+
+export interface AdminListContainersPayload {
+  game_id: number;
+  /** @min 0 */
+  size: number;
+  offset?: number;
+}
+
+export interface AdminContainerOperationPayload {
+  container_id: string;
+}
+
+export interface AdminExtendContainerPayload {
+  container_id: string;
+}
+
 import type {
   AxiosInstance,
   AxiosRequestConfig,
@@ -1389,6 +1421,132 @@ export class Api<
         method: "POST",
         body: data,
         type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 管理员获取所有容器的列表
+     *
+     * @tags admin
+     * @name AdminListContainers
+     * @summary 获取容器列表
+     * @request POST:/api/admin/container/list
+     */
+    adminListContainers: (
+      data: AdminListContainersPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          data: AdminContainerItem[];
+          /** 总容器数量 */
+          total: number;
+        },
+        ErrorMessage
+      >({
+        path: `/api/admin/container/list`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 管理员删除指定的容器
+     *
+     * @tags admin
+     * @name AdminDeleteContainer
+     * @summary 删除容器
+     * @request POST:/api/admin/container/delete
+     */
+    adminDeleteContainer: (
+      data: AdminContainerOperationPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "容器已删除" */
+          message: string;
+        },
+        ErrorMessage
+      >({
+        path: `/api/admin/container/delete`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 管理员延长指定容器的生命周期
+     *
+     * @tags admin
+     * @name AdminExtendContainer
+     * @summary 延长容器周期
+     * @request POST:/api/admin/container/extend
+     */
+    adminExtendContainer: (
+      data: AdminExtendContainerPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "容器生命周期已延长" */
+          message: string;
+          /**
+           * 新的过期时间
+           * @format date-time
+           */
+          new_expire_time: string;
+        },
+        ErrorMessage
+      >({
+        path: `/api/admin/container/extend`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 管理员获取指定容器的Flag
+     *
+     * @tags admin
+     * @name AdminGetContainerFlag
+     * @summary 获取容器Flag
+     * @request GET:/api/admin/container/flag
+     */
+    adminGetContainerFlag: (
+      query: {
+        /** 容器ID */
+        container_id: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          data: {
+            /** 容器Flag内容 */
+            flag_content: string;
+          };
+        },
+        ErrorMessage
+      >({
+        path: `/api/admin/container/flag`,
+        method: "GET",
+        query: query,
         format: "json",
         ...params,
       }),

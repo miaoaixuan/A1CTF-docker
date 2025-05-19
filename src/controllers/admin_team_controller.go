@@ -3,7 +3,6 @@ package controllers
 import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -18,15 +17,11 @@ func AdminListTeams(c *gin.Context) {
 		return
 	}
 
-	log.Printf("payloads: %v", payload)
-
 	var teams []models.Team
 	if err := dbtool.DB().Find(&teams).Where("game_id", payload.GameID).Offset(payload.Offset).Limit(payload.Size).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
 		return
 	}
-
-	log.Printf("teams: %v", teams)
 
 	var count int64
 	if err := dbtool.DB().Model(&models.Team{}).Count(&count).Error; err != nil {

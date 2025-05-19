@@ -139,6 +139,11 @@ var PermissionMap = map[string]PermissionSetting{
 	`^/api/game/\d+/flag/\d+$`:      {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
 	`^/api/hub$`:                    {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
 	`^/api/game/\d+/flag/[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$`: {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+
+	`^/api/admin/container/list$`:   {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/admin/container/delete$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/admin/container/extend$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/admin/container/flag$`:   {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 }
 
 // Helper function to check if a slice contains a value
@@ -394,6 +399,14 @@ func main() {
 				"gameID": gameID,
 			})
 		})
+
+		containerGroup := auth.Group("/admin/container")
+		{
+			containerGroup.POST("/list", controllers.AdminListContainers)
+			containerGroup.POST("/delete", controllers.AdminDeleteContainer)
+			containerGroup.POST("/extend", controllers.AdminExtendContainer)
+			containerGroup.GET("/flag", controllers.AdminGetContainerFlag)
+		}
 	}
 
 	// 未知接口
