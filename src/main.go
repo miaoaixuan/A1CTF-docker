@@ -273,21 +273,10 @@ func main() {
 	// db_init.InitMyDB()
 
 	memoryStore := persist.NewMemoryStore(1 * time.Minute)
-	r := gin.Default()
+	// r := gin.Default()
 
 	// 关闭日志输出
-	// r := gin.New()
-
-	cacheByCookie := cache.WithCacheStrategyByRequest(func(c *gin.Context) (bool, cache.Strategy) {
-		cookie, err := c.Cookie("a1token")
-		if err != nil {
-			return false, cache.Strategy{}
-		} else {
-			return true, cache.Strategy{
-				CacheKey: cookie,
-			}
-		}
-	})
+	r := gin.New()
 
 	authMiddleware, err := jwt.New(initParams())
 	if err != nil {
@@ -361,7 +350,16 @@ func main() {
 			userGameGroup.GET("/:game_id", cache.Cache(
 				memoryStore,
 				1*time.Second,
-				cacheByCookie,
+				cache.WithCacheStrategyByRequest(func(c *gin.Context) (bool, cache.Strategy) {
+					cookie, err := c.Cookie("a1token")
+					if err != nil {
+						return false, cache.Strategy{}
+					} else {
+						return true, cache.Strategy{
+							CacheKey: cookie,
+						}
+					}
+				}),
 			), controllers.GameStatusMiddleware(true, true), controllers.UserGetGameDetailWithTeamInfo)
 
 			userGameGroup.GET("/:game_id/challenges", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenges)

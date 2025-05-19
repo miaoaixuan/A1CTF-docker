@@ -1,6 +1,7 @@
 package dbtool
 
 import (
+	"context"
 	"log"
 	"os"
 	"strconv"
@@ -10,22 +11,31 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	"github.com/go-redis/redis"
 	"github.com/olahol/melody"
 	"github.com/spf13/viper"
 )
 
 var db *gorm.DB
+var redis_instance *redis.Client
+var ml *melody.Melody
+var gameSessions map[*melody.Session]int64 = make(map[*melody.Session]int64)
+var ctx = context.Background()
 
 func DB() *gorm.DB {
 	return db
 }
 
-var ml *melody.Melody
-
-var gameSessions map[*melody.Session]int64 = make(map[*melody.Session]int64)
-
 func Melody() *melody.Melody {
 	return ml
+}
+
+func Redis() *redis.Client {
+	return redis_instance
+}
+
+func Context() context.Context {
+	return ctx
 }
 
 func Init() {
@@ -79,6 +89,12 @@ func Init() {
 	ml.HandleClose(func(s *melody.Session, i int, s2 string) error {
 		delete(gameSessions, s)
 		return nil
+	})
+
+	redis_instance = redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
 	})
 }
 

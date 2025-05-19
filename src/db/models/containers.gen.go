@@ -3,9 +3,10 @@ package models
 import (
 	k8stool "a1ctf/src/utils/k8s_tool"
 	"database/sql/driver"
-	"encoding/json"
 	"errors"
 	"time"
+
+	"github.com/bytedance/sonic"
 )
 
 const TableNameContainer = "containers"
@@ -26,7 +27,7 @@ type ContainerExposeInfo struct {
 type ContainerExposeInfos []ContainerExposeInfo
 
 func (e ExposePorts) Value() (driver.Value, error) {
-	return json.Marshal(e)
+	return sonic.Marshal(e)
 }
 
 func (e *ExposePorts) Scan(value interface{}) error {
@@ -34,11 +35,11 @@ func (e *ExposePorts) Scan(value interface{}) error {
 	if !ok {
 		return errors.New("type assertion to []byte failed")
 	}
-	return json.Unmarshal(b, e)
+	return sonic.Unmarshal(b, e)
 }
 
 func (e ContainerExposeInfos) Value() (driver.Value, error) {
-	return json.Marshal(e)
+	return sonic.Marshal(e)
 }
 
 func (e *ContainerExposeInfos) Scan(value interface{}) error {
@@ -46,7 +47,7 @@ func (e *ContainerExposeInfos) Scan(value interface{}) error {
 	if !ok {
 		return errors.New("type assertion to []byte failed")
 	}
-	return json.Unmarshal(b, e)
+	return sonic.Unmarshal(b, e)
 }
 
 type ContainerStatus string
@@ -62,7 +63,7 @@ const (
 )
 
 func (e ContainerStatus) Value() (driver.Value, error) {
-	return json.Marshal(e)
+	return sonic.Marshal(e)
 }
 
 func (e *ContainerStatus) Scan(value interface{}) error {
@@ -70,7 +71,7 @@ func (e *ContainerStatus) Scan(value interface{}) error {
 	if !ok {
 		return errors.New("type assertion to []byte failed")
 	}
-	return json.Unmarshal(b, e)
+	return sonic.Unmarshal(b, e)
 }
 
 // Container mapped from table <containers>

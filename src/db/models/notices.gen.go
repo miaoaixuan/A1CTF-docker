@@ -2,10 +2,10 @@ package models
 
 import (
 	"database/sql/driver"
-	"encoding/json"
 	"errors"
 	"time"
 
+	"github.com/bytedance/sonic"
 	"github.com/lib/pq"
 )
 
@@ -24,7 +24,7 @@ const (
 )
 
 func (e NoticeCategory) Value() (driver.Value, error) {
-	return json.Marshal(e)
+	return sonic.Marshal(e)
 }
 
 func (e *NoticeCategory) Scan(value interface{}) error {
@@ -32,7 +32,7 @@ func (e *NoticeCategory) Scan(value interface{}) error {
 	if !ok {
 		return errors.New("type assertion to []byte failed")
 	}
-	return json.Unmarshal(b, e)
+	return sonic.Unmarshal(b, e)
 }
 
 // Notice mapped from table <notices>

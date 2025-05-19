@@ -3,13 +3,13 @@ package k8stool
 import (
 	"context"
 	"database/sql/driver"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"time"
 
+	"github.com/bytedance/sonic"
 	"github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
@@ -85,7 +85,7 @@ func ValidContainerConfig(containers []A1Container) error {
 type A1Containers []A1Container
 
 func (e A1Containers) Value() (driver.Value, error) {
-	return json.Marshal(e)
+	return sonic.Marshal(e)
 }
 
 func (e *A1Containers) Scan(value interface{}) error {
@@ -93,7 +93,7 @@ func (e *A1Containers) Scan(value interface{}) error {
 	if !ok {
 		return errors.New("type assertion to []byte failed")
 	}
-	return json.Unmarshal(b, e)
+	return sonic.Unmarshal(b, e)
 }
 
 type PodInfo struct {

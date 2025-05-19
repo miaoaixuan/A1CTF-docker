@@ -4,6 +4,8 @@ import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
+	"a1ctf/src/utils/redis_tool"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -33,21 +35,60 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool) gin.Handle
 		}
 
 		var game models.Game
-		if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
-			if err == gorm.ErrRecordNotFound {
-				c.JSON(http.StatusNotFound, ErrorMessage{
-					Code:    404,
-					Message: "Game not found",
-				})
-			} else {
-				c.JSON(http.StatusInternalServerError, ErrorMessage{
-					Code:    500,
-					Message: "Failed to load game",
-				})
+
+		if err := redis_tool.GetOrCache(fmt.Sprintf("game_info_%d", gameID), &game, func() (interface{}, error) {
+			if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
+				if err == gorm.ErrRecordNotFound {
+					return nil, errors.New("game not found")
+				} else {
+					return nil, err
+				}
 			}
+
+			return game, nil
+		}); err != nil {
+			log.Printf("+%v", err)
+			c.JSON(http.StatusInternalServerError, ErrorMessage{
+				Code:    500,
+				Message: "Failed to load game",
+			})
 			c.Abort()
 			return
 		}
+
+		// game_key := fmt.Sprintf("game_info_%d", gameID)
+		// game_info, err := dbtool.Redis().Get(game_key).Result()
+		// var game models.Game
+
+		// if err != nil {
+		// 	if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
+		// 		if err == gorm.ErrRecordNotFound {
+		// 			c.JSON(http.StatusNotFound, ErrorMessage{
+		// 				Code:    404,
+		// 				Message: "Game not found",
+		// 			})
+		// 		} else {
+		// 			c.JSON(http.StatusInternalServerError, ErrorMessage{
+		// 				Code:    500,
+		// 				Message: "Failed to load game",
+		// 			})
+		// 		}
+		// 		c.Abort()
+		// 		return
+		// 	}
+
+		// 	gameJSON, _ := sonic.Marshal(game)
+		// 	dbtool.Redis().Set(game_key, gameJSON, 2*time.Second)
+		// } else {
+		// 	if err := sonic.Unmarshal([]byte(game_info), &game); err != nil {
+		// 		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		// 			Code:    500,
+		// 			Message: "Failed to parse game data",
+		// 		})
+		// 		c.Abort()
+		// 		return
+		// 	}
+		// }
 
 		if !game.Visible {
 			c.JSON(http.StatusNotFound, ErrorMessage{
