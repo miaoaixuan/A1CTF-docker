@@ -273,7 +273,7 @@ func main() {
 	// db_init.InitMyDB()
 
 	memoryStore := persist.NewMemoryStore(1 * time.Minute)
-	// r := gin.Default()
+	r := gin.Default()
 
 	// cacheByCookieURI := cache.Cache(
 	// 	memoryStore,
@@ -292,7 +292,7 @@ func main() {
 	// )
 
 	// 关闭日志输出
-	r := gin.New()
+	// r := gin.New()
 
 	authMiddleware, err := jwt.New(initParams())
 	if err != nil {

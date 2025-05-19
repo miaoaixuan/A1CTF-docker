@@ -13,7 +13,7 @@ import {
     useReactTable,
 } from "@tanstack/react-table"
 
-import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, PlayIcon, StopCircle, TimerIcon, CopyIcon, ClockIcon } from "lucide-react"
+import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, PlayIcon, StopCircle, TimerIcon, CopyIcon, ClockIcon, ClipboardList, ZapOff } from "lucide-react"
 
 import * as React from "react"
 
@@ -278,7 +278,7 @@ export function ContainerManageView() {
             },
             cell: ({ row }) => {
                 const expireTime = row.getValue("ExpireTime") as Date;
-                return <div>{dayjs(expireTime).format('YYYY-MM-DD HH:mm:ss')}</div>
+                return <div>{dayjs(expireTime).format('YYYY-MM-DD HH:mm:ss')} ({dayjs(expireTime).diff(dayjs(), 'minutes')}mins)</div>
             },
             sortingFn: (rowA, rowB, columnId) => {
                 const dateA = rowA.getValue(columnId) as Date;
@@ -306,10 +306,23 @@ export function ContainerManageView() {
                             variant="ghost" 
                             className="h-8 w-8 p-0"
                             onClick={() => handleGetContainerFlag(container.ID)}
-                            title="复制Flag"
+                            data-tooltip-id="my-tooltip"
+                            data-tooltip-content="复制Flag"
+                            data-tooltip-place="top"
                         >
                             <span className="sr-only">复制Flag</span>
                             <CopyIcon className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                            variant="ghost" 
+                            className="h-8 w-8 p-0 text-red-600"
+                            onClick={() => handleDeleteContainer(container.ID)}
+                            data-tooltip-id="my-tooltip"
+                            data-tooltip-content="停止容器"
+                            data-tooltip-place="top"
+                        >
+                            <span className="sr-only">停止容器</span>
+                            <ZapOff className="h-4 w-4" />
                         </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -323,22 +336,15 @@ export function ContainerManageView() {
                                 <DropdownMenuItem
                                     onClick={() => navigator.clipboard.writeText(container.ID)}
                                 >
+                                    <ClipboardList className="h-4 w-4 mr-2" />
                                     复制容器ID
                                 </DropdownMenuItem>
-                                <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                     onClick={() => submitExtendContainer(container.ID)}
                                     className="text-blue-600"
                                 >
                                     <ClockIcon className="h-4 w-4 mr-2" />
                                     延长生命周期
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => handleDeleteContainer(container.ID)}
-                                    className="text-red-600"
-                                >
-                                    <StopCircle className="h-4 w-4 mr-2" />
-                                    停止容器
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

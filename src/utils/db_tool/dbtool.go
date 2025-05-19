@@ -96,6 +96,11 @@ func Init() {
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
+
+	_, err = redis_instance.Ping().Result()
+	if err != nil {
+		log.Fatalf("Connect to redis failed: %v", err)
+	}
 }
 
 func GameSessions() map[*melody.Session]int64 {

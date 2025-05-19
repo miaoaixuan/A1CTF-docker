@@ -124,6 +124,24 @@ func TeamStatusMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		if team.TeamStatus == models.ParticipateParticipated || team.TeamStatus == models.ParticipatePending || team.TeamStatus == models.ParticipateRejected {
+			c.JSON(http.StatusForbidden, ErrorMessage{
+				Code:    403,
+				Message: "You must join a team in this game",
+			})
+			c.Abort()
+			return
+		}
+
+		if team.TeamStatus == models.ParticipateBanned {
+			c.JSON(http.StatusForbidden, ErrorMessage{
+				Code:    403,
+				Message: "You are banned from this game",
+			})
+			c.Abort()
+			return
+		}
+
 		c.Set("team", team)
 		c.Next()
 	}
