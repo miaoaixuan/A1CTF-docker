@@ -85,15 +85,15 @@ export function LoginForm({
                 })
     
                 setTimeout(() => {
-                    toast.success(t("login_successful"), { position: "top-center" })
+                    toast.success(t("login_successful"))
                 }, 300)
             })
         }).catch((error: AxiosError) => {
             if (error.response?.status == 401) {
                 const response = error.response.data as ErrorLoginResponse
-                toast.error(response.title, { position: "top-center" })
+                toast.error(response.title)
             } else {
-                toast.error(t("unknow_error"), { position: "top-center" })
+                toast.error(t("unknow_error"))
             }
         }).finally(() => {
             setTimeout(() => {

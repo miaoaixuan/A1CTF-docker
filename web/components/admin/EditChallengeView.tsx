@@ -576,13 +576,13 @@ export function EditChallengeView({ challenge_info, lng } : { challenge_info: Ad
             type_: challenge_info.type_,
         };
         api.admin.updateChallenge(challenge_info.challenge_id!, finalData as AdminChallengeConfig).then((res) => {
-            toast.success("更新成功", { position: "top-center" })
+            toast.success("更新成功")
         }).catch((error: AxiosError) => {
             if (error.response?.status) {
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.message, { position: "top-center" })
+                toast.error(errorMessage.message)
             } else {
-                toast.error("Unknow Error", { position: "top-center" })
+                toast.error("Unknow Error")
             }
         })
     }

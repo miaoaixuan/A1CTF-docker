@@ -58,13 +58,13 @@ export function PasswordView () {
             old: values.originalPassword,
             new: values.newPassword
         }).then((res) => {
-            toast.success(t("change_password_success"), { position: "top-center" })
+            toast.success(t("change_password_success"))
         }).catch((error: AxiosError) => {
             if (error.response?.status) {
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.title, { position: "top-center" })
+                toast.error(errorMessage.title)
             } else {
-                toast.error(t("unknow_error"), { position: "top-center" })
+                toast.error(t("unknow_error"))
             }
         })
     }

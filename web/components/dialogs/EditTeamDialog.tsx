@@ -90,16 +90,16 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
             name: values.teamName,
             bio: values.slogan
         }).then((res) => {
-            toast.success(t("update_successful"), { position: "top-center" })
+            toast.success(t("update_successful"))
             updateTeam()
             setSubmitDisabled(false)
             setIsOpen(false)
         }).catch((error: AxiosError) => {
             if (error.response?.status) {
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.title, { position: "top-center" })
+                toast.error(errorMessage.title)
             } else {
-                toast.error(t("unknow_error"), { position: "top-center" })
+                toast.error(t("unknow_error"))
             }
         })
     }
@@ -107,47 +107,47 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
     const handleKickMember = (member: TeamUserInfoModel) => {
         setSubmitDisabled(true)
         api.team.teamKickUser(teamModel.id!, member.id!).then((res) => {
-            toast.success(`${t("kick_user_info_p1")} ${ member.userName } ${t("kick_user_info_p2")}`, { position: "top-center" })
+            toast.success(`${t("kick_user_info_p1")} ${ member.userName } ${t("kick_user_info_p2")}`)
             setSubmitDisabled(false)
             updateTeam()
         }).catch((error: AxiosError) => {
             if (error.response?.status) {
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.title, { position: "top-center" })
+                toast.error(errorMessage.title)
             } else {
-                toast.error(t("unknow_error"), { position: "top-center" })
+                toast.error(t("unknow_error"))
             }
         })
     }
 
     const deleteTeam = () => {
         api.team.teamDeleteTeam(teamModel.id!).then(() => {
-            toast.success(`${t("disband_info_p1")} ${ teamModel.name } ${t("disband_info_p2")}`, { position: "top-center" })
+            toast.success(`${t("disband_info_p1")} ${ teamModel.name } ${t("disband_info_p2")}`)
             setSubmitDisabled(false)
             updateTeam()
             setIsOpen(false)
         }).catch((error: AxiosError) => {
             if (error.response?.status) {
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.title, { position: "top-center" })
+                toast.error(errorMessage.title)
             } else {
-                toast.error(t("unknow_error"), { position: "top-center" })
+                toast.error(t("unknow_error"))
             }
         })
     }
 
     const leaveTeam = () => {
         api.team.teamLeave(teamModel.id!).then(() => {
-            toast.success(`${t("leave_team_info_p1")} ${ teamModel.name } ${t("leave_team_info_p2")}`, { position: "top-center" })
+            toast.success(`${t("leave_team_info_p1")} ${ teamModel.name } ${t("leave_team_info_p2")}`)
             setSubmitDisabled(false)
             updateTeam()
             setIsOpen(false)
         }).catch((error: AxiosError) => {
             if (error.response?.status) {
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.title, { position: "top-center" })
+                toast.error(errorMessage.title)
             } else {
-                toast.error(t("unknow_error"), { position: "top-center" })
+                toast.error(t("unknow_error"))
             }
         })
     }

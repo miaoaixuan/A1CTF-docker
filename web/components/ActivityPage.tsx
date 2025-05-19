@@ -265,7 +265,7 @@ export function ActivityPage({ lng, gameDetailModel } : { lng: string, gameDetai
                                     api.account.accountLogOut().then(() => {
                                         updateProfile(() => {
                                             router.push(`/${lng}/`)
-                                            toast.success(t("login_out_success"), { position: "top-center" })
+                                            toast.success(t("login_out_success"))
                                         })
                                     })
                                 }}>

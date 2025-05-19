@@ -3,9 +3,8 @@ package controllers
 import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
-	"math/rand"
+	general "a1ctf/src/utils/general"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -110,17 +109,6 @@ func AdminUpdateUser(c *gin.Context) {
 	})
 }
 
-// 生成随机密码
-func generateRandomPassword(length int) string {
-	rand.Seed(time.Now().UnixNano())
-	chars := "ABCDEFGHJKMNPQRSTWXYZabcdefghjkmnpqrstwxyz23456789"
-	password := make([]byte, length)
-	for i := 0; i < length; i++ {
-		password[i] = chars[rand.Intn(len(chars))]
-	}
-	return string(password)
-}
-
 // AdminResetUserPassword 重置用户密码
 func AdminResetUserPassword(c *gin.Context) {
 	var payload AdminUserOperationPayload
@@ -150,11 +138,13 @@ func AdminResetUserPassword(c *gin.Context) {
 	}
 
 	// 生成新密码
-	newPassword := generateRandomPassword(8)
+	newPassword := general.RandomPassword(16)
+	newSalt := general.GenerateSalt()
+	saltedPassword := general.SaltPassword(newPassword, newSalt)
 
 	// 更新用户密码
-	// 注意：实际应用中应该对密码进行哈希处理
-	user.Password = newPassword
+	user.Password = saltedPassword
+	user.Salt = newSalt
 
 	if err := dbtool.DB().Save(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

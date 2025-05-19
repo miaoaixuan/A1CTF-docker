@@ -66,15 +66,15 @@ export const CreateTeamDialog: React.FC<{ updateTeam: () => void, gameID: number
             slogan: values.slogan,
             description: values.description ?? ""
         }).then((res) => {
-            toast.success(t("create_team_success"), { position: "top-center" })
+            toast.success(t("create_team_success"))
             updateTeam()
             setIsOpen(false)
         }).catch((error: AxiosError) => {
             if (error.response?.status) {
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.title, { position: "top-center" })
+                toast.error(errorMessage.title)
             } else {
-                toast.error(t("unknow_error"), { position: "top-center" })
+                toast.error(t("unknow_error"))
             }
         })
     }

@@ -80,13 +80,13 @@ export function ProfileView ({ lng } : { lng: string }) {
             "bio": values.desc,
             "phone": values.phone
         }).then((res) => {
-            toast.success(t("save_profile_success"), { position: "top-center" })
+            toast.success(t("save_profile_success"))
         }).catch((error: AxiosError) => {
             if (error.response?.status) {
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.title, { position: "top-center" })
+                toast.error(errorMessage.title)
             } else {
-                toast.error(t("unknow_error"), { position: "top-center" })
+                toast.error(t("unknow_error"))
             }
         })
     }

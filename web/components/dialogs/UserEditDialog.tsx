@@ -105,12 +105,12 @@ export const UserEditDialog: React.FC<UserEditDialogProps> = ({
             avatar: user.avatar || null,
             role: values.role as UserRole
         }).then(() => {
-            toast.success("用户信息更新成功", { position: "top-center" });
+            toast.success("用户信息更新成功");
             updateUsers();
             setSubmitDisabled(false);
             setIsOpen(false);
         }).catch((_) => {
-            toast.error("更新用户信息失败", { position: "top-center" });
+            toast.error("更新用户信息失败");
             setSubmitDisabled(false);
         });
     }

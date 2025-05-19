@@ -61,17 +61,17 @@ const SubmitFlagView = ({ lng, curChallenge, gameID, setChallengeSolved, challen
                                             setChallengeSolved(curChallenge?.challenge_id || 0)
                                         }, 200)
                                     } else if (res2.data.data.judge_status == "JudgeWA") {
-                                        toast.error("错误", { position: "top-center" });
+                                        toast.error("错误");
                                         setBorderRed(true)
                                         setJudgeing(false)
                                         clearInterval(judgeingInter)
                                     } else if (res2.data.data.judge_status == "JudgeError" || res2.data.data.judge_status == "JudgeTimeout") {
-                                        toast.error("Error", { position: "top-center" });
+                                        toast.error("Error");
                                         setJudgeing(false)
                                         clearInterval(judgeingInter)
                                     }
                                 } else {
-                                    toast.error("Error", { position: "top-center" });
+                                    toast.error("Error");
                                     setJudgeing(false)
                                     clearInterval(judgeingInter)
                                 }
@@ -80,7 +80,7 @@ const SubmitFlagView = ({ lng, curChallenge, gameID, setChallengeSolved, challen
                 }
             }
         ).catch((err) => {  
-            toast.error("提交 Flag 失败: " + err.message, { position: "top-center" });
+            toast.error("提交 Flag 失败: " + err.message);
             setJudgeing(false)
         });
     }

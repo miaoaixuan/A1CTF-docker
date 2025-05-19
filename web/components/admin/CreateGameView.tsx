@@ -601,13 +601,13 @@ export function CreateGameView({ lng }: { lng: string }) {
         };
 
         api.admin.createGame(finalData as AdminFullGameInfo).then((res) => {
-            toast.success("创建成功", { position: "top-center" })
+            toast.success("创建成功")
         }).catch((error: AxiosError) => {
             if (error.response?.status) {
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.message, { position: "top-center" })
+                toast.error(errorMessage.message)
             } else {
-                toast.error("Unknow Error", { position: "top-center" })
+                toast.error("Unknow Error")
             }
         })
     }

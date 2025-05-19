@@ -13,7 +13,7 @@ import {
     useReactTable,
 } from "@tanstack/react-table"
 
-import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, Pencil, KeyIcon, TrashIcon } from "lucide-react"
+import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, Pencil, KeyIcon, TrashIcon, ClipboardList } from "lucide-react"
 
 import * as React from "react"
 
@@ -168,15 +168,13 @@ export function UserManageView() {
                 toast.promise(
                     resetPasswordApi.adminResetUserPassword({ user_id: userId }),
                     {
+                        position: "top-center",
                         loading: '正在重置密码...',
                         success: (response: any) => {
                             setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                             // 显示新密码
-                            toast.success(`新密码: ${response.data.new_password}`, { 
-                                duration: 10000,
-                                position: "top-center"
-                            });
-                            return '密码已重置';
+                            navigator.clipboard.writeText(response.data.new_password);
+                            return `新密码: ${response.data.new_password}，已复制到剪切板`;
                         },
                         error: '重置密码失败'
                     }
@@ -331,9 +329,9 @@ export function UserManageView() {
                                 <DropdownMenuItem
                                     onClick={() => navigator.clipboard.writeText(user.id)}
                                 >
+                                    <ClipboardList className="h-4 w-4 mr-2" />
                                     复制用户ID
                                 </DropdownMenuItem>
-                                <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                     onClick={() => handleResetPassword(user.id)}
                                     className="text-amber-600"

@@ -13,7 +13,7 @@ import {
     useReactTable,
 } from "@tanstack/react-table"
 
-import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, Pencil, LockIcon, CheckIcon, TrashIcon, UnlockIcon } from "lucide-react"
+import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, Pencil, LockIcon, CheckIcon, TrashIcon, UnlockIcon, ClipboardList } from "lucide-react"
 
 import * as React from "react"
 
@@ -335,7 +335,9 @@ export function TeamManageView() {
                             className="h-8 w-8 p-0"
                             onClick={() => handleApproveTeam(team.team_id)}
                             disabled={team.status !== ParticipationStatus.Pending}
-                            title="批准队伍"
+                            data-tooltip-id="my-tooltip"
+                            data-tooltip-content="批准队伍"
+                            data-tooltip-place="top"
                         >
                             <span className="sr-only">批准</span>
                             <CheckIcon className="h-4 w-4" />
@@ -352,9 +354,9 @@ export function TeamManageView() {
                                 <DropdownMenuItem
                                     onClick={() => navigator.clipboard.writeText(team.team_id.toString())}
                                 >
+                                    <ClipboardList className="h-4 w-4 mr-2" />
                                     复制队伍ID
                                 </DropdownMenuItem>
-                                <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                     onClick={() => handleBanTeam(team.team_id)}
                                     disabled={team.status === ParticipationStatus.Banned}

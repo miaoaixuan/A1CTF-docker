@@ -63,15 +63,15 @@ export const JoinTeamDialog: React.FC<{ updateTeam: () => void, children: React.
         setSubmitDisabled(true)
 
         api.team.teamAccept(values.inviteCode).then(() => {
-            toast.success(t("join_team_success"), { position: "top-center" })
+            toast.success(t("join_team_success"))
             updateTeam()
             setIsOpen(false)
         }).catch((error: AxiosError) => {
             if (error.response?.status) {
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.title, { position: "top-center" })
+                toast.error(errorMessage.title)
             } else {
-                toast.error(t("unknow_error"), { position: "top-center" })
+                toast.error(t("unknow_error"))
             }
         }).finally(() => {
             setSubmitDisabled(false)

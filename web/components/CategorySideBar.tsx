@@ -180,7 +180,7 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, lng, ga
                     //     if (res.data.status == ParticipationStatus.Banned) {
                     //         setGameStatus("banned")
                     //     } else {
-                    //         toast.error("Unknow error!", { position: "top-center" })
+                    //         toast.error("Unknow error!")
                     //     }
                     // })
                 }

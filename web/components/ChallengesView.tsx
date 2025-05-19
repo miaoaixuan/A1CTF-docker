@@ -187,7 +187,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                             ? dayjs(res.data.data.container_expiretime)
                             : null)
 
-                        toast.success(t("container_start_success"), { position: "top-center" })
+                        toast.success(t("container_start_success"))
 
                         clearInterval(inter)
                         setRefreshContainerTrigger(false)
@@ -202,7 +202,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                         setRefreshContainerTrigger(false)
                     }
                 }).catch(() => {
-                    toast.error("靶机开启失败", { position: "top-center" })
+                    toast.error("靶机开启失败")
                     setContainerLaunching(false)
                     setContainerRunningTrigger(false)
 
@@ -721,9 +721,9 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                                                                             onClick={() => {
                                                                                                 const status = copy(`${port.ip}:${port.port}`)
                                                                                                 if (status) {
-                                                                                                    toast.success(t("copied"), { position: "top-center" })
+                                                                                                    toast.success(t("copied"))
                                                                                                 } else {
-                                                                                                    toast.success(t("fail_copy"), { position: "top-center" })
+                                                                                                    toast.success(t("fail_copy"))
                                                                                                 }
                                                                                             }}
                                                                                         >

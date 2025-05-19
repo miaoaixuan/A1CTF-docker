@@ -149,7 +149,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
                                                 api.account.accountLogOut().then(() => {
                                                     updateProfile(() => {
                                                         router.push(`/${lng}/`)
-                                                        toast.success(t("login_out_success"), { position: "top-center" })
+                                                        toast.success(t("login_out_success"))
                                                     })
                                                 })
                                             }}>
@@ -275,7 +275,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
                                                             api.account.accountLogOut().then(() => {
                                                                 updateProfile(() => {
                                                                     router.push(`/${lng}/`)
-                                                                    toast.success(t("login_out_success"), { position: "top-center" })
+                                                                    toast.success(t("login_out_success"))
                                                                 })
                                                             })
                                                         }}>

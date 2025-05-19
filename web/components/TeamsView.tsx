@@ -66,7 +66,7 @@ export function TeamsView({ lng } : { lng: string }) {
             setTeams(res.data)
         }).catch((error: AxiosError) => {
             if (error.response?.status == 401) {
-                toast.error(t("please_login_first"), { position: "top-center" })
+                toast.error(t("please_login_first"))
                 router.push(`/${lng}/login`)
             }
         })
@@ -109,7 +109,7 @@ export function TeamsView({ lng } : { lng: string }) {
 
     const refreshInviteCode = (team: TeamInfoModel) => {
         api.team.teamUpdateInviteToken(team.id!).then((res) => {
-            toast.success(t("update_invite_code_success"), { position: "top-center" })
+            toast.success(t("update_invite_code_success"))
             setInviteCodes((prev) => ({
                 ...prev,
                 [team.id!]: res.data
@@ -117,9 +117,9 @@ export function TeamsView({ lng } : { lng: string }) {
         }).catch((error: AxiosError) => {
             if (error.response?.status) {
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.title, { position: "top-center" })
+                toast.error(errorMessage.title)
             } else {
-                toast.error(t("unknow_error"), { position: "top-center" })
+                toast.error(t("unknow_error"))
             }
         })
     }
@@ -172,10 +172,10 @@ export function TeamsView({ lng } : { lng: string }) {
                                         onClick={() => {
                                             if (inviteCodes[e.id!] != "null") {
                                                 const status = copy(inviteCodes[e.id!])
-                                                if (status) toast.success(t("copied"), { position: "top-center" })
-                                                else toast.error(t("fail_copy"), { position: "top-center" })
+                                                if (status) toast.success(t("copied"))
+                                                else toast.error(t("fail_copy"))
                                             } else {
-                                                toast.error(t("unknow_error"), { position: "top-center" })
+                                                toast.error(t("unknow_error"))
                                             }
                                         }}>
                                         <Clipboard />

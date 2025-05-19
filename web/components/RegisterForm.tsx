@@ -83,15 +83,15 @@ export function RegisterForm({
                 })
     
                 setTimeout(() => {
-                    toast.success(t("signup_success"), { position: "top-center" })
+                    toast.success(t("signup_success"))
                 }, 300)
             })
         }).catch((error: AxiosError) => {
             if (error.response?.status == 400) {
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.title, { position: "top-center" })
+                toast.error(errorMessage.title)
             } else {
-                toast.error(t("unknow_error"), { position: "top-center" })
+                toast.error(t("unknow_error"))
             }
         })
     }

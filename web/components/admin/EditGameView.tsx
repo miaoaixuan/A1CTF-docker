@@ -979,13 +979,13 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
                                         flag_template: challenge.judge_config?.flag_template || "",
                                     }
                                 })
-                                toast.success("题目添加成功", { position: "top-center" })
+                                toast.success("题目添加成功")
                             }).catch((err: AxiosError) => {
                                 const errorMessage: ErrorMessage = err.response?.data as ErrorMessage
                                 if (err.response?.status == 409) {
-                                    toast.error("此题目已经添加到比赛中了", { position: "top-center" })
+                                    toast.error("此题目已经添加到比赛中了")
                                 } else {
-                                    toast.error(errorMessage.message, { position: "top-center" })
+                                    toast.error(errorMessage.message)
                                 }
                             })
                             // console.log(data)
@@ -1023,9 +1023,9 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
         };
 
         api.admin.updateGame(game_info.game_id ,  finalData as any as AdminFullGameInfo).then((res) => {
-            toast.success("比赛信息更新成功", { position: "top-center" })
+            toast.success("比赛信息更新成功")
         }).catch((err: AxiosError) => {
-            toast.error(err.response?.data as string, { position: "top-center" })
+            toast.error(err.response?.data as string)
         })
     }
 
@@ -1826,7 +1826,7 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
                                 const checkResult = await form.trigger(`challenges.${curEditChallengeID}`)
                                 if (checkResult) setIsJudgeOpen(status)
                                 else {
-                                    toast.error("请检查题目设置是否正确", { position: "top-center" })
+                                    toast.error("请检查题目设置是否正确")
                                 }
                             }}>
                                 <DialogContent className="sm:max-w-[825px] p-0" onInteractOutside={(e) => e.preventDefault()}>

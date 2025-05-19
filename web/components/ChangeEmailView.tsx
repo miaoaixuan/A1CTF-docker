@@ -24,7 +24,7 @@ export function ChangeEmailView() {
 
     const handleSendCode = async () => {
         if (!newEmail) {
-            toast.error(t("please_input_email"), { position: "top-center" })
+            toast.error(t("please_input_email"))
             return
         }
 
@@ -34,11 +34,11 @@ export function ChangeEmailView() {
             if (res.data.data) {
                 setStep(2)
             } else {
-                toast.error(res.data.title, { position: "top-center" })
+                toast.error(res.data.title)
             }
         }).catch((error: AxiosError) => {
             const errorMessage: ErrorMessage = error.response?.data as ErrorMessage
-            toast.error(errorMessage.title, { position: "top-center" })
+            toast.error(errorMessage.title)
         })
     };
 

@@ -59,7 +59,7 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number,
             api.team.teamAvatar(id, {
                 file: file
             }).then((res) => {
-                toast.success(t("set_avatar_success"), { position: "top-center" })
+                toast.success(t("set_avatar_success"))
 
                 if (updateTeam) updateTeam()
                 setTimeout(() => {
@@ -68,9 +68,9 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number,
             }).catch((error: AxiosError) => {
                 if (error.response?.status) {
                     const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                    toast.error(errorMessage.title, { position: "top-center" })
+                    toast.error(errorMessage.title)
                 } else {
-                    toast.error(t("unknow_error"), { position: "top-center" })
+                    toast.error(t("unknow_error"))
                 }
             })
         }
@@ -78,7 +78,7 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number,
             api.account.accountAvatar({
                 file: file
             }).then((res) => {
-                toast.success(t("set_avatar_success"), { position: "top-center" })
+                toast.success(t("set_avatar_success"))
 
                 if (updateTeam) updateTeam()
                 setTimeout(() => {
@@ -87,9 +87,9 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number,
             }).catch((error: AxiosError) => {
                 if (error.response?.status) {
                     const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                    toast.error(errorMessage.title, { position: "top-center" })
+                    toast.error(errorMessage.title)
                 } else {
-                    toast.error(t("unknow_error"), { position: "top-center" })
+                    toast.error(t("unknow_error"))
                 }
             })
         }

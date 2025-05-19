@@ -111,14 +111,14 @@ export function ChallengesManageView({ lng }: { lng: string }) {
                                                         message: "你确定要删除这道题目吗?",
                                                         onConfirm: () => {
                                                             api.admin.deleteChallenge(chal.challenge_id).then(() => {
-                                                                toast.success("删除成功", { position: "top-center" })
+                                                                toast.success("删除成功")
                                                                 setChallenges(challenges.filter((res) => res.challenge_id !== chal.challenge_id))
                                                             }).catch((error: AxiosError) => {
                                                                 if (error.response?.status) {
                                                                     const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                                                                    toast.error(errorMessage.message, { position: "top-center" })
+                                                                    toast.error(errorMessage.message)
                                                                 } else {
-                                                                    toast.error("Unknow Error", { position: "top-center" })
+                                                                    toast.error("Unknow Error")
                                                                 }
                                                             })
                                                         },
