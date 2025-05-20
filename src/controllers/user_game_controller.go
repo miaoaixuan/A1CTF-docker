@@ -50,9 +50,9 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool) gin.Handle
 			return game, nil
 		}, 1*time.Second, true); err != nil {
 			log.Printf("+%v", err)
-			c.JSON(http.StatusInternalServerError, ErrorMessage{
-				Code:    500,
-				Message: "Failed to load game",
+			c.JSON(http.StatusNotFound, ErrorMessage{
+				Code:    404,
+				Message: err.Error(),
 			})
 			c.Abort()
 			return

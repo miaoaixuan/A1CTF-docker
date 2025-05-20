@@ -17,6 +17,7 @@ CREATE TABLE "users" (
     "email_verified" bool DEFAULT false,
     "register_time" timestamp NOT NULL,
     "last_login_time" timestamp,
+    "jwt_version" text NOT NULL,
     "last_login_ip" text,
     PRIMARY KEY (user_id)
 );

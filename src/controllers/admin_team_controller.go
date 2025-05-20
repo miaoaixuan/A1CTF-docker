@@ -18,7 +18,7 @@ func AdminListTeams(c *gin.Context) {
 	}
 
 	var teams []models.Team
-	if err := dbtool.DB().Find(&teams).Where("game_id", payload.GameID).Offset(payload.Offset).Limit(payload.Size).Error; err != nil {
+	if err := dbtool.DB().Where("game_id = ?", payload.GameID).Offset(payload.Offset).Limit(payload.Size).Find(&teams).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
 		return
 	}

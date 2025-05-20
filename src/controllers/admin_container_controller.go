@@ -92,10 +92,10 @@ func AdminListContainers(c *gin.Context) {
 			gameName = game.Name
 		}
 
-		// 简化处理容器端口，仅使用第一个容器的端口
+		// 处理容器端口，返回所有容器的暴露端口信息
 		var containerPorts models.ExposePorts
-		if len(container.ContainerExposeInfos) > 0 {
-			containerPorts = container.ContainerExposeInfos[0].ExposePorts
+		for _, exposeInfo := range container.ContainerExposeInfos {
+			containerPorts = append(containerPorts, exposeInfo.ExposePorts...)
 		}
 
 		containerItems = append(containerItems, AdminContainerItem{
