@@ -42,7 +42,7 @@ import {
 import { MacScrollbar } from "mac-scrollbar";
 
 import { Badge } from "../ui/badge";
-import { AdminListTeamItem, ParticipationStatus } from "@/utils/A1API";
+import { AdminListTeamItem, ParticipationStatus, UserGameSimpleInfo } from "@/utils/A1API";
 
 import { api, ErrorMessage } from "@/utils/ApiHelper";
 import AvatarUsername from "../modules/AvatarUsername";
@@ -57,6 +57,21 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+} from "@/components/ui/command"
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { Check, ChevronsUpDown } from "lucide-react"
+import { AxiosResponse } from "axios";
 
 export type TeamModel = {
     team_id: number,
@@ -116,7 +131,12 @@ export function TeamManageView() {
     const [pageSize, setPageSize] = React.useState(30);
     const [curPage, setCurPage] = React.useState(0);
     const [totalCount, setTotalCount] = React.useState(0);
-    const [gameId, setGameId] = React.useState(1); // 默认游戏ID，实际使用时可能需要从URL或其他地方获取
+    const [gameId, setGameId] = React.useState(1);
+    
+    // 比赛选择相关状态
+    const [games, setGames] = React.useState<UserGameSimpleInfo[]>([]);
+    const [open, setOpen] = React.useState(false);
+    const [searchValue, setSearchValue] = React.useState("");
     
     // 对话框状态
     const [confirmDialog, setConfirmDialog] = React.useState({
@@ -125,6 +145,25 @@ export function TeamManageView() {
         description: "",
         onConfirm: () => {},
     });
+
+    // 获取比赛列表
+    const fetchGames = () => {
+        api.admin.listGames({ size: 100, offset: 0 }).then((res: AxiosResponse<{ code: number; data: UserGameSimpleInfo[] }>) => {
+            if (res.data.code === 200) {
+                setGames(res.data.data);
+            } else {
+                toast.error("获取比赛列表失败");
+            }
+        }).catch((err: Error) => {
+            toast.error("获取比赛列表失败");
+            console.error("获取比赛列表失败:", err);
+        });
+    };
+
+    // 在组件加载时获取比赛列表
+    React.useEffect(() => {
+        fetchGames();
+    }, []);
 
     // 处理队伍状态变更
     const handleUpdateTeamStatus = (teamId: number, action: 'approve' | 'ban' | 'unban') => {
@@ -305,7 +344,11 @@ export function TeamManageView() {
                 return (
                     <div className="flex flex-wrap gap-2">
                         {members.map((member, index) => (
-                            <div key={index} className="flex items-center gap-1">
+                            <div key={index} className="flex items-center gap-1"
+                                data-tooltip-id="my-tooltip"
+                                data-tooltip-content={member.user_name}
+                                data-tooltip-place="top"
+                            >
                                 <AvatarUsername 
                                     avatar_url={member.avatar} 
                                     username={member.user_name} 
@@ -444,31 +487,85 @@ export function TeamManageView() {
         <MacScrollbar className="overflow-hidden w-full">
             <div className="w-full flex justify-center pb-10 pt-4">
                 <div className="w-[80%]">
-                    <div className="flex items-center justify-end space-x-2 select-none">
-                        <div className="flex-1 text-sm text-muted-foreground flex items-center">
-                            {table.getFilteredSelectedRowModel().rows.length} of{" "}
-                            {table.getFilteredRowModel().rows.length} 行已选择
+                    <div className="flex items-center justify-between space-x-2 select-none mb-4">
+                        <div className="flex items-center space-x-2">
+                            <Popover open={open} onOpenChange={setOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        aria-expanded={open}
+                                        className="w-[300px] justify-between"
+                                    >
+                                        {gameId
+                                            ? games.find((game) => game.game_id === gameId)?.name
+                                            : "选择比赛..."}
+                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[300px] p-0">
+                                    <Command>
+                                        <CommandInput 
+                                            placeholder="搜索比赛..." 
+                                            value={searchValue}
+                                            onValueChange={setSearchValue}
+                                        />
+                                        <CommandEmpty>未找到比赛</CommandEmpty>
+                                        <CommandGroup>
+                                            {games
+                                                .filter(game => 
+                                                    game.name.toLowerCase().includes(searchValue.toLowerCase())
+                                                )
+                                                .map((game) => (
+                                                    <CommandItem
+                                                        key={game.game_id}
+                                                        value={game.name}
+                                                        onSelect={() => {
+                                                            setGameId(game.game_id);
+                                                            setOpen(false);
+                                                            setSearchValue("");
+                                                        }}
+                                                    >
+                                                        <Check
+                                                            className={cn(
+                                                                "mr-2 h-4 w-4",
+                                                                gameId === game.game_id ? "opacity-100" : "opacity-0"
+                                                            )}
+                                                        />
+                                                        {game.name}
+                                                    </CommandItem>
+                                                ))}
+                                        </CommandGroup>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
                         </div>
-                        <div className="flex gap-3 items-center">
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => setCurPage( curPage - 1 )}
-                                disabled={ curPage == 0 }
-                            >
-                                <ArrowLeft />
-                            </Button>
-                            <div className="text-sm text-muted-foreground">
-                                {curPage + 1} / {Math.ceil(totalCount / pageSize)}
+                        <div className="flex items-center space-x-2">
+                            <div className="flex-1 text-sm text-muted-foreground flex items-center">
+                                {table.getFilteredSelectedRowModel().rows.length} of{" "}
+                                {table.getFilteredRowModel().rows.length} 行已选择
                             </div>
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => setCurPage( curPage + 1 )}
-                                disabled={ curPage >= Math.ceil(totalCount / pageSize) - 1 }
-                            >
-                                <ArrowRight />
-                            </Button>
+                            <div className="flex gap-3 items-center">
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => setCurPage( curPage - 1 )}
+                                    disabled={ curPage == 0 }
+                                >
+                                    <ArrowLeft />
+                                </Button>
+                                <div className="text-sm text-muted-foreground">
+                                    {curPage + 1} / {Math.ceil(totalCount / pageSize)}
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => setCurPage( curPage + 1 )}
+                                    disabled={ curPage >= Math.ceil(totalCount / pageSize) - 1 }
+                                >
+                                    <ArrowRight />
+                                </Button>
+                            </div>
                         </div>
                     </div>
                     <div className="flex items-center py-4">
