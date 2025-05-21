@@ -13,7 +13,7 @@ export function ClientToaster() {
                 style={{ backgroundColor: "hsl(var(--background))" }}
                 className="z-[400]"
                 richColors
-                position="top-center"
+                position="top-right"
                 visibleToasts={4}
                 closeButton={true}
             />
