@@ -58,6 +58,7 @@ body {
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
+  --section-background: oklch(0.145 0 0 / 90%);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -92,6 +93,7 @@ body {
 
 .dark {
   --background: oklch(0.145 0 0);
+  --section-background: oklch(1 0 0 / 90%);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
@@ -278,64 +280,13 @@ body {
 }
 
 ::-moz-selection {
-    background: hsl(var(--foreground) / 0.9);
-    color: hsl(var(--background));
+    background: var(--section-background);
+    color: var(--background);
 }
 
 ::selection {
-    background: hsl(var(--foreground) / 0.9);
-    color: hsl(var(--background));
-}
-
-.stack {
-	width: 85%;
-	/* max-width: 400px; */
-	transition: .25s ease;
-	&:hover {			
-		transform: rotate(5deg);
-		.card:before {
-			transform: translatey(-2%) rotate(-4deg);
-		}	
-		.card:after {
-			transform: translatey(2%) rotate(4deg);
-		}
-	}
-}
-
-.card {
-	min-height: 115px;
-    /* height: 100%; */
-	border: 4px solid;
-    border-color: hsl(var(--foreground));
-    border-radius: 10px;
-	background-color: hsl(var(--background));
-	position: relative;
-	transition: .15s ease;
-	cursor: pointer;
-	/* padding: 5% 5% 15% 5%; */
-	&:before, &:after {
-		content: "";
-		display: block;
-		position: absolute;
-		height: 100%;
-		width: 100%;
-		border: 4px solid;
-        border-radius: 10px;
-		background-color: hsl(var(--background));
-		transform-origin: center center;
-		z-index: -1;
-		transition: .15s ease;
-		top: 0;
-		left: 0;
-	}
-
-	&:before {
-		transform: translatey(-2%) rotate(-6deg);
-	}
-
-	&:after {
-		transform: translatey(2%) rotate(6deg);
-	}
+    background: var(--section-background);
+    color: var(--background);
 }
 
 /* pixel style */
