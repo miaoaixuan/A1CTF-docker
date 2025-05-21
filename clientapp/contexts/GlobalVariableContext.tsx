@@ -1,8 +1,9 @@
-import { api, BasicGameInfoModel, ProfileUserInfoModel } from "utils/GZApi";
 import { AxiosError } from "axios";
 import React, { createContext, Dispatch, SetStateAction, useContext, useEffect, useRef, useState } from "react";
 import { useCookies } from "react-cookie";
 import { browserName } from "react-device-detect";
+import { UserProfile } from "utils/A1API";
+import { api } from "utils/ApiHelper";
 
 interface ClientConfig {
     FancyBackGroundIconWhite: string;
@@ -20,7 +21,7 @@ interface ClientConfig {
 }
 
 interface GlobalVariableContextType {
-    curProfile: ProfileUserInfoModel;
+    curProfile: UserProfile;
     updateProfile: (callback?: () => void) => void;
     serialOptions: React.MutableRefObject<echarts.SeriesOption[]>;
     clientConfig: ClientConfig;
@@ -40,7 +41,7 @@ export const useGlobalVariableContext = () => {
 export const GlobalVariableProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     const [cookies, setCookie, removeCookie] = useCookies(["uid", "clientConfig"])
-    const [curProfile, setCurProfile] = useState<ProfileUserInfoModel>({})
+    const [curProfile, setCurProfile] = useState<UserProfile>({} as UserProfile)
 
     const defaultClientConfig: ClientConfig = {
         FancyBackGroundIconWhite: "/images/ctf_white.png",
@@ -70,9 +71,9 @@ export const GlobalVariableProvider: React.FC<{ children: React.ReactNode }> = (
     const serialOptions = useRef<echarts.SeriesOption[]>([])
 
     const updateProfile = (callback?: () => void) => {
-        api.account.accountProfile().then((res) => {
-            setCurProfile(res.data)
-            setCookie("uid", res.data.userId, { path: "/" })
+        api.user.getUserProfile().then((res) => {
+            setCurProfile(res.data.data)
+            setCookie("uid", res.data.data.user_id, { path: "/" })
         }).catch((error: AxiosError) => {
             removeCookie("uid")
         }).finally(() => {
@@ -81,10 +82,10 @@ export const GlobalVariableProvider: React.FC<{ children: React.ReactNode }> = (
     }
     
     useEffect(() => {
-        if (!curProfile.userId) {
-            api.account.accountProfile().then((res) => {
-                setCurProfile(res.data)
-                setCookie("uid", res.data.userId, { path: "/" })
+        if (!curProfile.user_id) {
+            api.user.getUserProfile().then((res) => {
+                setCurProfile(res.data.data)
+                setCookie("uid", res.data.data.user_id, { path: "/" })
             }).catch((error: AxiosError) => {
                 removeCookie("uid")
             })

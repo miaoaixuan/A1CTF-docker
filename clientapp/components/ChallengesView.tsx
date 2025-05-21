@@ -436,7 +436,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
 
     useEffect(() => {
         setAvatarURL(curProfile.avatar || "#")
-        setUserName(curProfile.userName || "")
+        setUserName(curProfile.username || "")
     }, [curProfile])
 
     useEffect(() => {

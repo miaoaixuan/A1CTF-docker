@@ -647,6 +647,30 @@ export interface AdminExtendContainerPayload {
   container_id: string;
 }
 
+export interface UserProfile {
+  user_id: string;
+  username: string;
+  /**
+   * User role enumeration:
+   * - ADMIN - Administrator
+   * - USER - Regular user
+   * - MONITOR - Monitor
+   */
+  role: UserRole;
+  phone?: string | null;
+  student_number?: string | null;
+  realname?: string | null;
+  slogan?: string | null;
+  avatar?: string | null;
+  email?: string | null;
+  email_verified: boolean;
+  /** @format date-time */
+  register_time: string;
+  /** @format date-time */
+  last_login_time: string;
+  last_login_ip: string | null;
+}
+
 import type {
   AxiosInstance,
   AxiosRequestConfig,
@@ -861,6 +885,358 @@ export class Api<
         method: "POST",
         body: data,
         type: ContentType.Json,
+        ...params,
+      }),
+  };
+  user = {
+    /**
+     * @description Get current user profile information
+     *
+     * @tags user
+     * @name GetUserProfile
+     * @summary Get current user profile
+     * @request GET:/api/account/profile
+     * @secure
+     */
+    getUserProfile: (params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+          data: UserProfile;
+        },
+        void
+      >({
+        path: `/api/account/profile`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags user
+     * @name UserListGames
+     * @summary List games
+     * @request GET:/api/game/list
+     */
+    userListGames: (params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+          data: UserGameSimpleInfo[];
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/game/list`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get a game info with team info
+     *
+     * @tags user
+     * @name UserGetGameInfoWithTeamInfo
+     * @summary Get a game info with team info
+     * @request GET:/api/game/{game_id}
+     */
+    userGetGameInfoWithTeamInfo: (gameId: number, params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+          data: UserFullGameInfo;
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/game/${gameId}`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get game challenges
+     *
+     * @tags user
+     * @name UserGetGameChallenges
+     * @summary Get game challenges
+     * @request GET:/api/game/{game_id}/challenges
+     */
+    userGetGameChallenges: (gameId: number, params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+          data: {
+            challenges: UserSimpleGameChallenge[];
+            solved_challenges: UserSimpleGameSolvedChallenge[];
+          };
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/game/${gameId}/challenges`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get a game challenge
+     *
+     * @tags user
+     * @name UserGetGameChallenge
+     * @summary Get a game challenge
+     * @request GET:/api/game/{game_id}/challenge/{challenge_id}
+     */
+    userGetGameChallenge: (
+      gameId: number,
+      challengeId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: UserDetailGameChallenge;
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/game/${gameId}/challenge/${challengeId}`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get game notices
+     *
+     * @tags user
+     * @name UserGetGameNotices
+     * @summary Get game notices
+     * @request GET:/api/game/{game_id}/notices
+     */
+    userGetGameNotices: (gameId: number, params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+          data: GameNotice[];
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/game/${gameId}/notices`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Create a team for a game
+     *
+     * @tags user
+     * @name UserGameCreateTeam
+     * @summary Create a team for a game
+     * @request POST:/api/game/{game_id}/createTeam
+     */
+    userGameCreateTeam: (
+      gameId: number,
+      data: CreateGameTeamPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: GameNotice[];
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/game/${gameId}/createTeam`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Submit a flag
+     *
+     * @tags user
+     * @name UserGameSubmitFlag
+     * @summary Submit a flag
+     * @request POST:/api/game/{game_id}/flag/{challenge_id}
+     */
+    userGameSubmitFlag: (
+      gameId: number,
+      challengeId: number,
+      data: {
+        flag: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: {
+            judge_id: string;
+          };
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/game/${gameId}/flag/${challengeId}`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get a judge result
+     *
+     * @tags user
+     * @name UserGameJudgeResult
+     * @summary Get a judge result
+     * @request GET:/api/game/{game_id}/flag/{judge_id}
+     */
+    userGameJudgeResult: (
+      gameId: number,
+      judgeId: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: {
+            judge_id: string;
+            judge_status:
+              | "JudgeQueueing"
+              | "JudgeRunning"
+              | "JudgeError"
+              | "JudgeWA"
+              | "JudgeAC"
+              | "JudgeTimeout";
+          };
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/game/${gameId}/flag/${judgeId}`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Create a container for a challenge
+     *
+     * @tags user
+     * @name UserCreateContainerForAChallenge
+     * @summary Create a container for a challenge
+     * @request POST:/api/game/{game_id}/container/{challenge_id}
+     */
+    userCreateContainerForAChallenge: (
+      gameId: number,
+      challengeId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, void | ErrorMessage>({
+        path: `/api/game/${gameId}/container/${challengeId}`,
+        method: "POST",
+        ...params,
+      }),
+
+    /**
+     * @description Delete a container for a challenge
+     *
+     * @tags user
+     * @name UserDeleteContainerForAChallenge
+     * @summary Delete a container for a challenge
+     * @request DELETE:/api/game/{game_id}/container/{challenge_id}
+     */
+    userDeleteContainerForAChallenge: (
+      gameId: number,
+      challengeId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, void | ErrorMessage>({
+        path: `/api/game/${gameId}/container/${challengeId}`,
+        method: "DELETE",
+        ...params,
+      }),
+
+    /**
+     * @description Extend a container's life for a challenge
+     *
+     * @tags user
+     * @name UserExtendContainerLifeForAChallenge
+     * @summary Extend a container's life for a challenge
+     * @request PATCH:/api/game/{game_id}/container/{challenge_id}
+     */
+    userExtendContainerLifeForAChallenge: (
+      gameId: number,
+      challengeId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, void | ErrorMessage>({
+        path: `/api/game/${gameId}/container/${challengeId}`,
+        method: "PATCH",
+        ...params,
+      }),
+
+    /**
+     * @description Get container info for a challenge
+     *
+     * @tags user
+     * @name UserGetContainerInfoForAChallenge
+     * @summary Get container info for a challenge
+     * @request GET:/api/game/{game_id}/container/{challenge_id}
+     */
+    userGetContainerInfoForAChallenge: (
+      gameId: number,
+      challengeId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: {
+            /**
+             * Possible statuses of a container:
+             * - `ContainerStopped`: The container is stopped.
+             * - `ContainerRunning`: The container is running.
+             * - `ContainerStarting`: The container is starting.
+             * - `ContainerError`: The container encountered an error.
+             * - `ContainerStopping`: The container is stopping.
+             * - `ContainerQueueing`: The container is in a queue.
+             * - `NoContainer`: No container exists.
+             */
+            container_status: ContainerStatus;
+            /** @format date-time */
+            container_expiretime?: string;
+            containers: ExposePortInfo[];
+          };
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/game/${gameId}/container/${challengeId}`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags user
+     * @name UserGetGameScoreboard
+     * @summary Get game scoreboard data
+     * @request GET:/api/game/{game_id}/scoreboard
+     */
+    userGetGameScoreboard: (gameId: number, params: RequestParams = {}) =>
+      this.request<GameScoreboardResponse, any>({
+        path: `/api/game/${gameId}/scoreboard`,
+        method: "GET",
+        format: "json",
         ...params,
       }),
   };
@@ -1547,334 +1923,6 @@ export class Api<
         path: `/api/admin/container/flag`,
         method: "GET",
         query: query,
-        format: "json",
-        ...params,
-      }),
-  };
-  user = {
-    /**
-     * No description
-     *
-     * @tags user
-     * @name UserListGames
-     * @summary List games
-     * @request GET:/api/game/list
-     */
-    userListGames: (params: RequestParams = {}) =>
-      this.request<
-        {
-          code: number;
-          data: UserGameSimpleInfo[];
-        },
-        void | ErrorMessage
-      >({
-        path: `/api/game/list`,
-        method: "GET",
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * @description Get a game info with team info
-     *
-     * @tags user
-     * @name UserGetGameInfoWithTeamInfo
-     * @summary Get a game info with team info
-     * @request GET:/api/game/{game_id}
-     */
-    userGetGameInfoWithTeamInfo: (gameId: number, params: RequestParams = {}) =>
-      this.request<
-        {
-          code: number;
-          data: UserFullGameInfo;
-        },
-        void | ErrorMessage
-      >({
-        path: `/api/game/${gameId}`,
-        method: "GET",
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * @description Get game challenges
-     *
-     * @tags user
-     * @name UserGetGameChallenges
-     * @summary Get game challenges
-     * @request GET:/api/game/{game_id}/challenges
-     */
-    userGetGameChallenges: (gameId: number, params: RequestParams = {}) =>
-      this.request<
-        {
-          code: number;
-          data: {
-            challenges: UserSimpleGameChallenge[];
-            solved_challenges: UserSimpleGameSolvedChallenge[];
-          };
-        },
-        void | ErrorMessage
-      >({
-        path: `/api/game/${gameId}/challenges`,
-        method: "GET",
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * @description Get a game challenge
-     *
-     * @tags user
-     * @name UserGetGameChallenge
-     * @summary Get a game challenge
-     * @request GET:/api/game/{game_id}/challenge/{challenge_id}
-     */
-    userGetGameChallenge: (
-      gameId: number,
-      challengeId: number,
-      params: RequestParams = {},
-    ) =>
-      this.request<
-        {
-          code: number;
-          data: UserDetailGameChallenge;
-        },
-        void | ErrorMessage
-      >({
-        path: `/api/game/${gameId}/challenge/${challengeId}`,
-        method: "GET",
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * @description Get game notices
-     *
-     * @tags user
-     * @name UserGetGameNotices
-     * @summary Get game notices
-     * @request GET:/api/game/{game_id}/notices
-     */
-    userGetGameNotices: (gameId: number, params: RequestParams = {}) =>
-      this.request<
-        {
-          code: number;
-          data: GameNotice[];
-        },
-        void | ErrorMessage
-      >({
-        path: `/api/game/${gameId}/notices`,
-        method: "GET",
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * @description Create a team for a game
-     *
-     * @tags user
-     * @name UserGameCreateTeam
-     * @summary Create a team for a game
-     * @request POST:/api/game/{game_id}/createTeam
-     */
-    userGameCreateTeam: (
-      gameId: number,
-      data: CreateGameTeamPayload,
-      params: RequestParams = {},
-    ) =>
-      this.request<
-        {
-          code: number;
-          data: GameNotice[];
-        },
-        void | ErrorMessage
-      >({
-        path: `/api/game/${gameId}/createTeam`,
-        method: "POST",
-        body: data,
-        type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * @description Submit a flag
-     *
-     * @tags user
-     * @name UserGameSubmitFlag
-     * @summary Submit a flag
-     * @request POST:/api/game/{game_id}/flag/{challenge_id}
-     */
-    userGameSubmitFlag: (
-      gameId: number,
-      challengeId: number,
-      data: {
-        flag: string;
-      },
-      params: RequestParams = {},
-    ) =>
-      this.request<
-        {
-          code: number;
-          data: {
-            judge_id: string;
-          };
-        },
-        void | ErrorMessage
-      >({
-        path: `/api/game/${gameId}/flag/${challengeId}`,
-        method: "POST",
-        body: data,
-        type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * @description Get a judge result
-     *
-     * @tags user
-     * @name UserGameJudgeResult
-     * @summary Get a judge result
-     * @request GET:/api/game/{game_id}/flag/{judge_id}
-     */
-    userGameJudgeResult: (
-      gameId: number,
-      judgeId: string,
-      params: RequestParams = {},
-    ) =>
-      this.request<
-        {
-          code: number;
-          data: {
-            judge_id: string;
-            judge_status:
-              | "JudgeQueueing"
-              | "JudgeRunning"
-              | "JudgeError"
-              | "JudgeWA"
-              | "JudgeAC"
-              | "JudgeTimeout";
-          };
-        },
-        void | ErrorMessage
-      >({
-        path: `/api/game/${gameId}/flag/${judgeId}`,
-        method: "GET",
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * @description Create a container for a challenge
-     *
-     * @tags user
-     * @name UserCreateContainerForAChallenge
-     * @summary Create a container for a challenge
-     * @request POST:/api/game/{game_id}/container/{challenge_id}
-     */
-    userCreateContainerForAChallenge: (
-      gameId: number,
-      challengeId: number,
-      params: RequestParams = {},
-    ) =>
-      this.request<void, void | ErrorMessage>({
-        path: `/api/game/${gameId}/container/${challengeId}`,
-        method: "POST",
-        ...params,
-      }),
-
-    /**
-     * @description Delete a container for a challenge
-     *
-     * @tags user
-     * @name UserDeleteContainerForAChallenge
-     * @summary Delete a container for a challenge
-     * @request DELETE:/api/game/{game_id}/container/{challenge_id}
-     */
-    userDeleteContainerForAChallenge: (
-      gameId: number,
-      challengeId: number,
-      params: RequestParams = {},
-    ) =>
-      this.request<void, void | ErrorMessage>({
-        path: `/api/game/${gameId}/container/${challengeId}`,
-        method: "DELETE",
-        ...params,
-      }),
-
-    /**
-     * @description Extend a container's life for a challenge
-     *
-     * @tags user
-     * @name UserExtendContainerLifeForAChallenge
-     * @summary Extend a container's life for a challenge
-     * @request PATCH:/api/game/{game_id}/container/{challenge_id}
-     */
-    userExtendContainerLifeForAChallenge: (
-      gameId: number,
-      challengeId: number,
-      params: RequestParams = {},
-    ) =>
-      this.request<void, void | ErrorMessage>({
-        path: `/api/game/${gameId}/container/${challengeId}`,
-        method: "PATCH",
-        ...params,
-      }),
-
-    /**
-     * @description Get container info for a challenge
-     *
-     * @tags user
-     * @name UserGetContainerInfoForAChallenge
-     * @summary Get container info for a challenge
-     * @request GET:/api/game/{game_id}/container/{challenge_id}
-     */
-    userGetContainerInfoForAChallenge: (
-      gameId: number,
-      challengeId: number,
-      params: RequestParams = {},
-    ) =>
-      this.request<
-        {
-          code: number;
-          data: {
-            /**
-             * Possible statuses of a container:
-             * - `ContainerStopped`: The container is stopped.
-             * - `ContainerRunning`: The container is running.
-             * - `ContainerStarting`: The container is starting.
-             * - `ContainerError`: The container encountered an error.
-             * - `ContainerStopping`: The container is stopping.
-             * - `ContainerQueueing`: The container is in a queue.
-             * - `NoContainer`: No container exists.
-             */
-            container_status: ContainerStatus;
-            /** @format date-time */
-            container_expiretime?: string;
-            containers: ExposePortInfo[];
-          };
-        },
-        void | ErrorMessage
-      >({
-        path: `/api/game/${gameId}/container/${challengeId}`,
-        method: "GET",
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags user
-     * @name UserGetGameScoreboard
-     * @summary Get game scoreboard data
-     * @request GET:/api/game/{game_id}/scoreboard
-     */
-    userGetGameScoreboard: (gameId: number, params: RequestParams = {}) =>
-      this.request<GameScoreboardResponse, any>({
-        path: `/api/game/${gameId}/scoreboard`,
-        method: "GET",
         format: "json",
         ...params,
       }),

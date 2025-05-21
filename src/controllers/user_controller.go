@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
+	"a1ctf/src/utils/redis_tool"
 )
 
 func Login() func(c *gin.Context) (interface{}, error) {
@@ -35,15 +37,70 @@ func Login() func(c *gin.Context) (interface{}, error) {
 				}
 
 				return &models.JWTUser{
-					UserName: user_result.Username,
-					Role:     user_result.Role,
-					UserID:   user_result.UserID,
+					UserName:   user_result.Username,
+					Role:       user_result.Role,
+					UserID:     user_result.UserID,
+					JWTVersion: user_result.JWTVersion,
 				}, nil
 			} else {
 				return nil, jwt.ErrFailedAuthentication
 			}
 		}
 	}
+}
+
+// GetProfile 获取用户的基本资料信息
+func GetProfile(c *gin.Context) {
+	// 从JWT中提取用户信息
+	claims := jwt.ExtractClaims(c)
+	userID := claims["UserID"].(string)
+
+	var all_users []models.User
+
+	if err := redis_tool.GetOrCache("user_list", &all_users, func() (interface{}, error) {
+		if err := dbtool.DB().Find(&all_users).Error; err != nil {
+			return nil, err
+		}
+
+		return all_users, nil
+	}, 1*time.Second, true); err != nil {
+		log.Printf("+%v", err)
+		c.JSON(http.StatusForbidden, ErrorMessage{
+			Code:    403,
+			Message: "Error",
+		})
+		return
+	}
+
+	for _, user := range all_users {
+		if user.UserID == userID {
+			c.JSON(http.StatusOK, gin.H{
+				"code": 200,
+				"data": gin.H{
+					"user_id":         user.UserID,
+					"username":        user.Username,
+					"role":            user.Role,
+					"phone":           user.Phone,
+					"student_number":  user.StudentNumber,
+					"realname":        user.Realname,
+					"slogan":          user.Slogan,
+					"avatar":          user.Avatar,
+					"email":           user.Email,
+					"email_verified":  user.EmailVerified,
+					"register_time":   user.RegisterTime,
+					"last_login_time": user.LastLoginTime,
+					"last_login_ip":   user.LastLoginIP,
+				},
+			})
+
+			return
+		}
+	}
+
+	c.JSON(http.StatusNotFound, gin.H{
+		"code":    404,
+		"message": "User not found",
+	})
 }
 
 func Register(c *gin.Context) {

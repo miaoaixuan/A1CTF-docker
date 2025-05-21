@@ -19,7 +19,7 @@ import {
 import { Badge } from "components/ui/badge"
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { GameNotice, NoticeCategory, UserFullGameInfo } from "utils/A1API";
+import { GameNotice, NoticeCategory, UserFullGameInfo, UserProfile } from "utils/A1API";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "components/ui/skeleton";
 import { ProfileUserInfoModel } from "utils/GZApi";
@@ -40,7 +40,7 @@ const ChallengesViewHeader = (
         setScoreBoardVisible: (arg0: boolean) => void,
         notices: GameNotice[],
         lng: string,
-        curProfile: ProfileUserInfoModel,
+        curProfile: UserProfile,
     },
 ) => {
 
@@ -163,7 +163,7 @@ const ChallengesViewHeader = (
                         </>
                     ) : (
                         <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
-                            <span className='text-background text-md'> {curProfile.userName?.substring(0, 2)} </span>
+                            <span className='text-background text-md'> {curProfile.username?.substring(0, 2)} </span>
                         </div>
                     )}
                 </Avatar>

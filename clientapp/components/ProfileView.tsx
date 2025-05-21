@@ -62,11 +62,11 @@ export function ProfileView ({ lng } : { lng: string }) {
     const { curProfile, updateProfile } = useGlobalVariableContext()
 
     useEffect(() => {
-        form.setValue("userName", curProfile.userName || "")
+        form.setValue("userName", curProfile.username || "")
         form.setValue("phone", curProfile.phone || "")
-        form.setValue("studentNumber", curProfile.stdNumber || "")
-        form.setValue("realName", curProfile.realName || "")
-        form.setValue("desc", curProfile.bio || "")
+        form.setValue("studentNumber", curProfile.student_number || "")
+        form.setValue("realName", curProfile.realname || "")
+        form.setValue("desc", curProfile.slogan || "")
     }, [curProfile])
     
     function onSubmit(values: z.infer<typeof formSchema>) {
@@ -129,7 +129,7 @@ export function ProfileView ({ lng } : { lng: string }) {
                                                 </>
                                             ) : ( 
                                                 <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
-                                                    <span className='text-background text-xl'> { curProfile.userName?.substring(0, 2) } </span>
+                                                    <span className='text-background text-xl'> { curProfile.username?.substring(0, 2) } </span>
                                                 </div>
                                             ) }
                                         </Avatar>

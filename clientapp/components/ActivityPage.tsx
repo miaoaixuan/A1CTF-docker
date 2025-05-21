@@ -235,7 +235,7 @@ export function ActivityPage({ lng, gameDetailModel } : { lng: string, gameDetai
                                     </>
                                 ) : ( 
                                     <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
-                                        <span className='text-background text-md'> { curProfile.userName?.substring(0, 2) } </span>
+                                        <span className='text-background text-md'> { curProfile.username?.substring(0, 2) } </span>
                                     </div>
                                 ) }
                             </Avatar>

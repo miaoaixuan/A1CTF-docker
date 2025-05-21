@@ -27,6 +27,7 @@ import { api, Role } from "utils/GZApi";
 import { toast } from "sonner";
 import { Link, useLocation, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
+import { UserRole } from "utils/A1API"
 
 const PageHeader = ({ lng } : { lng: string }) => {
     
@@ -97,9 +98,9 @@ const PageHeader = ({ lng } : { lng: string }) => {
                             </nav>
                         </div>
                         <div className="flex flex-1 items-center justify-between gap-3 md:justify-end">
-                            { ((curProfile.role == Role.Admin || curProfile.role == Role.Monitor) && cookies.uid) && (
+                            { ((curProfile.role == UserRole.ADMIN || curProfile.role == UserRole.MONITOR) && cookies.uid) && (
                                 <Button variant={"outline"} onClick={() => {
-                                    navigate("/admin/games")
+                                    navigate(`/${lng}/admin/`)
                                 }}><Wrench />Admin</Button>
                             ) }
                             <ThemeSwitcher lng={lng} />
@@ -117,7 +118,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
                                                 </>
                                             ) : ( 
                                                 <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
-                                                    <span className='text-background text-md'> { curProfile.userName?.substring(0, 2) } </span>
+                                                    <span className='text-background text-md'> { curProfile.username?.substring(0, 2) } </span>
                                                 </div>
                                             ) }
                                         </Avatar>
@@ -240,11 +241,11 @@ const PageHeader = ({ lng } : { lng: string }) => {
                                                                     </>
                                                                 ) : ( 
                                                                     <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
-                                                                        <span className='text-background text-md'> { curProfile.userName?.substring(0, 2) } </span>
+                                                                        <span className='text-background text-md'> { curProfile.username?.substring(0, 2) } </span>
                                                                     </div>
                                                                 ) }
                                                             </Avatar>
-                                                            <span className="text-md"> { curProfile.userName } </span>
+                                                            <span className="text-md"> { curProfile.username } </span>
                                                         </div>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent className="mt-2">

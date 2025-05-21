@@ -53,9 +53,10 @@ type User struct {
 }
 
 type JWTUser struct {
-	UserID   string
-	UserName string
-	Role     UserRole
+	UserID     string
+	UserName   string
+	Role       UserRole
+	JWTVersion string
 }
 
 // TableName User's table name

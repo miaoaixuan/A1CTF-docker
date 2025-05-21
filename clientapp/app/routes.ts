@@ -1,4 +1,5 @@
 import { type RouteConfig, index, route } from "@react-router/dev/routes";
+import { redirect } from "react-router";
 
 export default [
     route(":lng/", "routes/[lng]/page.tsx"),

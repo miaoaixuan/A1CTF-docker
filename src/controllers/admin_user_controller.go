@@ -145,6 +145,8 @@ func AdminResetUserPassword(c *gin.Context) {
 	// 更新用户密码
 	user.Password = saltedPassword
 	user.Salt = newSalt
+	// 作废老令牌
+	user.JWTVersion = general.RandomPassword(16)
 
 	if err := dbtool.DB().Save(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

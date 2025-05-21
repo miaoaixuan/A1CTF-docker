@@ -15,6 +15,7 @@ import (
 	"a1ctf/src/jobs"
 	"a1ctf/src/utils"
 	dbtool "a1ctf/src/utils/db_tool"
+	"a1ctf/src/utils/redis_tool"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
@@ -78,9 +79,10 @@ func identityHandler() func(c *gin.Context) interface{} {
 	return func(c *gin.Context) interface{} {
 		claims := jwt.ExtractClaims(c)
 		return &models.JWTUser{
-			UserID:   claims[identityKey].(string),
-			UserName: claims["UserName"].(string),
-			Role:     models.UserRole(claims["Role"].(string)),
+			UserID:     claims[identityKey].(string),
+			UserName:   claims["UserName"].(string),
+			Role:       models.UserRole(claims["Role"].(string)),
+			JWTVersion: claims["JWTVersion"].(string),
 		}
 	}
 }
@@ -89,9 +91,10 @@ func payloadFunc() func(data interface{}) jwt.MapClaims {
 	return func(data interface{}) jwt.MapClaims {
 		if v, ok := data.(*models.JWTUser); ok {
 			return jwt.MapClaims{
-				identityKey: v.UserID,
-				"UserName":  v.UserName,
-				"Role":      v.Role,
+				identityKey:  v.UserID,
+				"UserName":   v.UserName,
+				"Role":       v.Role,
+				"JWTVersion": v.JWTVersion,
 			}
 		}
 		return jwt.MapClaims{}
@@ -104,8 +107,9 @@ type PermissionSetting struct {
 }
 
 var PermissionMap = map[string]PermissionSetting{
-	`^/api/Login$`:       {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/file/upload$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	`^/api/Login$`:           {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/account/profile$`: {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	`^/api/file/upload$`:     {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
 
 	`^/api/admin/challenge/list$`:   {RequestMethod: []string{"GET", "POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	`^/api/admin/challenge/create$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
@@ -182,15 +186,43 @@ func authorizator() func(data interface{}, c *gin.Context) bool {
 						return false
 					}
 
-					if len(rules.Permissions) == 0 {
-						return true
-					}
-
-					if contains_role(rules.Permissions, v.Role) {
-						return true
-					} else {
+					if len(rules.Permissions) != 0 && !contains_role(rules.Permissions, v.Role) {
 						return false
 					}
+
+					var all_users []models.User
+
+					if err := redis_tool.GetOrCache("user_list", &all_users, func() (interface{}, error) {
+						if err := dbtool.DB().Find(&all_users).Error; err != nil {
+							return nil, err
+						}
+
+						return all_users, nil
+					}, 1*time.Second, true); err != nil {
+						return false
+					}
+
+					var valid = false
+					var finalUser models.User
+
+					for _, user := range all_users {
+						if user.UserID == v.UserID && user.JWTVersion == v.JWTVersion {
+							valid = true
+							finalUser = user
+							break
+						}
+					}
+
+					if !valid {
+						return false
+					}
+
+					if finalUser.JWTVersion != v.JWTVersion {
+						c.SetCookie("a1token", "", -1, "/", "", false, false)
+						return false
+					}
+
+					return true
 				}
 			}
 		}
@@ -273,7 +305,6 @@ func main() {
 	// db_init.InitMyDB()
 
 	memoryStore := persist.NewMemoryStore(1 * time.Minute)
-	r := gin.Default()
 
 	// cacheByCookieURI := cache.Cache(
 	// 	memoryStore,
@@ -291,8 +322,10 @@ func main() {
 	// 	}),
 	// )
 
+	// r := gin.Default()
+
 	// 关闭日志输出
-	// r := gin.New()
+	r := gin.New()
 
 	authMiddleware, err := jwt.New(initParams())
 	if err != nil {
@@ -319,6 +352,12 @@ func main() {
 		fileGroup := auth.Group("/file")
 		{
 			fileGroup.POST("/upload", controllers.UploadFile)
+		}
+
+		// 添加账户相关接口
+		accountGroup := auth.Group("/account")
+		{
+			accountGroup.GET("/profile", controllers.GetProfile)
 		}
 
 		challengeGroup := auth.Group("/admin/challenge")

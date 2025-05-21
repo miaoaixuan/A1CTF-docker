@@ -175,7 +175,7 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
     }
 
     const isLeader = () => {
-        const target = teamModel.members?.find((e) => e.id == curProfile.userId)
+        const target = teamModel.members?.find((e) => e.id == curProfile.user_id)
         return target?.captain
     }
 
