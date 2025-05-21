@@ -1,3 +1,5 @@
+"use client";
+
 import PageHeader from "@/components/A1Headers"
 import { ChangeGames } from "@/components/ChangeGames";
 import FancyBackground from "@/components/modules/FancyBackground";
@@ -6,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import Image from "next/image";
 
-export default async function Games({ params }: { params: Promise<{ lng: string }>}) {
+export default function Games() {
 
-   const { lng } = await params;
+    //    const { lng } = await params;
+    const lng = "zh";
 
     return (
         <div className="p-0 h-screen flex flex-col">

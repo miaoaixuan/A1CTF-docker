@@ -13,8 +13,6 @@ import { Tooltip } from "react-tooltip";
 import { toast } from "sonner";
 
 import copy from 'copy-to-clipboard';
-import { CreateTeamDialog } from "./dialogs/CreateTeamDialog";
-import { JoinTeamDialog } from "./dialogs/JoinTeamDialog";
 import { EditTeamDialog } from "./dialogs/EditTeamDialog";
 import { AxiosError } from "axios";
 import { useTheme } from "next-themes";
@@ -214,20 +212,6 @@ export function TeamsView({ lng } : { lng: string }) {
                             </div>
                         </div>
                     )) }
-                    <div className="flex w-full gap-10 lg:gap-12 items-center justify-center select-none h-full border-2 border-cyan-500 border-dashed bg-background transition-[background,border-color,box-shadow] duration-300 rounded-2xl">
-                        <CreateTeamDialog updateTeam={updateTeams}>
-                            <div className="w-[100px] h-[100px] lg:w-32 lg:h-32 flex-col transition-[transform] duration-300 border-2 hover:scale-105 border-cyan-500 border-dashed rounded-2xl flex items-center justify-center p-3">
-                                <Plus className="size-9 stroke-cyan-500" />
-                                <span className="text-cyan-500 text-lg lg:text-xl">{ t("create_button") }</span>
-                            </div>
-                        </CreateTeamDialog>
-                        <JoinTeamDialog updateTeam={updateTeams}>
-                            <div className="w-[100px] h-[100px] lg:w-32 lg:h-32 border-2 flex-col transition-[transform] duration-300 hover:scale-105 border-cyan-500 border-dashed rounded-2xl flex items-center justify-center p-3">
-                                <Asterisk className="size-9 stroke-cyan-500" />
-                                <span className="text-cyan-500 text-lg lg:text-xl">{ t("join_button") }</span>
-                            </div>
-                        </JoinTeamDialog>
-                    </div>
                 </div>
             </MacScrollbar>
         </div>

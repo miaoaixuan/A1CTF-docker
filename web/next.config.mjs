@@ -25,7 +25,8 @@ const nextConfig = {
         ];
     },
     reactStrictMode: false,
-    output: "standalone",
+    // 使用静态导出，完全禁用SSR
+    output: "export"
 };
 
 export default withNextIntl(nextConfig);

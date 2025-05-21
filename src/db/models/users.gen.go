@@ -44,6 +44,7 @@ type User struct {
 	Slogan        *string   `gorm:"column:slogan" json:"slogan"`
 	Avatar        *string   `gorm:"column:avatar" json:"avatar"`
 	SsoData       *string   `gorm:"column:sso_data" json:"sso_data"`
+	JWTVersion    string    `gorm:"column:jwt_version" json:"jwt_version"`
 	Email         *string   `gorm:"column:email" json:"email"`
 	EmailVerified bool      `gorm:"column:email_verified" json:"email_verified"`
 	RegisterTime  time.Time `gorm:"column:register_time" json:"register_time"`

@@ -91,6 +91,7 @@ func Register(c *gin.Context) {
 		SsoData:       nil,
 		Email:         &payload.Email,
 		EmailVerified: false,
+		JWTVersion:    general.RandomString(16),
 		RegisterTime:  time.Now().UTC(),
 	}
 
