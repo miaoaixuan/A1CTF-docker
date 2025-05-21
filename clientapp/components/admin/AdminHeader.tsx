@@ -3,7 +3,7 @@ import { Button } from "../ui/button";
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router";
 
-export function AdminHeader({ lng }: { lng: string }) {
+export function AdminHeader() {
 
     const path = useLocation().pathname.split("/").slice(-1)[0];
     const router = useNavigate()
@@ -13,7 +13,7 @@ export function AdminHeader({ lng }: { lng: string }) {
     }
 
     const move_to_page = function(name: string) {
-        if (path != name) router(`/${lng}/admin/${name}`)
+        if (path != name) router(`/admin/${name}`)
     }
 
     useEffect(() => {

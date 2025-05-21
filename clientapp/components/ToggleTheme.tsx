@@ -23,13 +23,15 @@ import { useTranslation } from 'react-i18next';
 // 记忆化 SkyBackground 组件，防止不必要的重渲染
 const MemoizedSkyBackground = React.memo(SkyBackground);
 
-const ThemeSwitcher = ({ lng } : { lng: string }) => {
+const ThemeSwitcher = () => {
 
     const { clientConfig, updateClientConfg } = useGlobalVariableContext()
 
     const [mounted, setMounted] = useState(false)
     const { theme, setTheme } = useTheme()
     const { t } = useTranslation()
+
+    const { i18n } = useTranslation();
 
     const asPath = useLocation().pathname + ( useLocation().search.length ? "?" + useLocation().search : ""); // 获取当前路径
 
@@ -161,13 +163,17 @@ const ThemeSwitcher = ({ lng } : { lng: string }) => {
                 >
                     <div className='flex justify-center w-full gap-1 py-1'>
                         <Button variant="ghost" size="icon">
-                            <a href={`/zh${asPath.slice(lng.length + 1)}`}><span className='font-bold'>简</span></a>
+                            <a onClick={() => {
+                                i18n.changeLanguage("zh")
+                            }}><span className='font-bold'>简</span></a>
                         </Button>
                         <Button variant="ghost" size="icon" disabled>
                             <span className='font-bold'>繁</span>
                         </Button>
                         <Button variant="ghost" size="icon">
-                            <a href={`/en${asPath.slice(lng.length + 1)}`}><span className='font-bold'>En</span></a>
+                            <a onClick={() => {
+                                i18n.changeLanguage("en")
+                            }}><span className='font-bold'>En</span></a>
                         </Button>
                         <Button variant="ghost" size="icon" disabled>
                             <span className='font-bold'>日</span>

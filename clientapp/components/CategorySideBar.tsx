@@ -28,12 +28,10 @@ import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import CategoryChallenges from "components/modules/game/CategoryChallenges";
 import { challengeCategoryColorMap, challengeCategoryIcons } from "utils/ClientAssets";
 
-export function CategorySidebar({ gameid, curChallenge, setCurChallenge, lng, gameStatus, setGameStatus, resizeTrigger, setPageSwitching, challenges, setChallenges, challengeSolveStatusList, setChallengeSolveStatusList } : { 
+export function CategorySidebar({ gameid, curChallenge, setCurChallenge, gameStatus, setGameStatus, resizeTrigger, setPageSwitching, challenges, setChallenges, challengeSolveStatusList, setChallengeSolveStatusList } : { 
     gameid: string,
     curChallenge: UserDetailGameChallenge | undefined,
     setCurChallenge: Dispatch<SetStateAction<UserDetailGameChallenge | undefined>>,
-    // setGameDetail: Dispatch<SetStateAction<UserFullGameInfo>>,
-    lng: string,
     gameStatus: string,
     setGameStatus: Dispatch<SetStateAction<string>>,
     resizeTrigger: Dispatch<SetStateAction<number>>,
@@ -267,7 +265,7 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, lng, ga
                                 <div className="flex-1" />
                                 <div className="justify-end">
                                     <Button className="rounded-3xl p-4 pointer-events-auto w-[100px] mt-[5px] ml-[5px] mb-[10px]" asChild>
-                                        <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                                        <TransitionLink className="transition-colors" href={`/games`}>
                                             <CircleArrowLeft/>
                                             <span>Back</span>
                                         </TransitionLink>

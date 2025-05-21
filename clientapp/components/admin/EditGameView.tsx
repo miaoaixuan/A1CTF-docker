@@ -672,7 +672,7 @@ export type ChallengeSearchResult = {
     GameID: number
 }
 
-export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo, lng: string }) {
+export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
 
     const categories: { [key: string]: any } = {
         "MISC": <Radar size={21} />,
@@ -717,7 +717,7 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
                 category: z.enum(Object.keys(categories) as [string, ...string[]], {
                     errorMap: () => ({ message: "需要选择一个有效的题目类别" })
                 }),
-                total_score: z.coerce.number({ message: "请输入一个有效的数字" }),
+                total_score: z.coerce.number().min(1, "请输入一个有效的数字"),
                 cur_score: z.number(),
                 solve_count: z.number(),
                 hints: z.array(z.object({
@@ -842,31 +842,19 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
                         <span className="text-sm">solves</span>
                     </div>
                     <div className="flex-1" />
-                    <div className="flex gap-1 items-center">
-                        <FormField
-                            control={control}
-                            name={`challenges.${index}.visible`}
-                            render={({ field }) => (
-                                <FormItem className="flex mr-2">
-                                    {/* <div className="flex items-center w- h-[20px]">
-                                        <FormLabel>提示</FormLabel>
-                                        <div className="flex-1" />
-                                        <FormMessage className="text-[14px]" />
-                                    </div> */}
-                                    <FormControl>
-                                        <Switch 
-                                            checked={field.value}
-                                            onCheckedChange={(checked) => {
-                                                field.onChange(checked)
-                                                
-                                                // console.log(challengeFields)
-                                                // console.log(gameData, index)
-                                            }} 
-                                        />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
+                    <div className="flex gap-1 items-center h-full">
+                        <div className="flex h-full items-center mr-2">
+                            <FormField
+                                control={control}
+                                name={`challenges.${index}.visible`}
+                                render={({ field }) => (
+                                    <Switch 
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange} 
+                                    />
+                                )}
+                            />
+                        </div>
                         <Button variant={"ghost"} size={"icon"} type="button" onClick={() => onEditChallenge(index)}>
                             <Pencil />
                         </Button>
@@ -1125,7 +1113,7 @@ export function EditGameView({ game_info, lng }: { game_info: AdminFullGameInfo,
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20 pt-20 w-[80%] flex flex-col">
                         <div className="flex">
                             <Button type="button" variant={"default"} onClick={() => {
-                                router(`/${lng}/admin/games`)
+                                router(`/admin/games`)
                             }}>
                                 <CircleArrowLeft />
                                 Back to games

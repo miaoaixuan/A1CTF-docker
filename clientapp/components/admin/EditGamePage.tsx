@@ -4,7 +4,7 @@ import { AdminChallengeConfig, AdminFullGameInfo } from "utils/A1API";
 import { api } from "utils/ApiHelper";
 import { EditGameView } from "./EditGameView";
 
-export function EditGamePage ({ game_id, lng }: { game_id: number, lng: string })
+export function EditGamePage ({ game_id }: { game_id: number })
 {
     const [ gameInfo, setGameInfo ] = useState<AdminFullGameInfo>();
 
@@ -17,7 +17,7 @@ export function EditGamePage ({ game_id, lng }: { game_id: number, lng: string }
 
     return (
         <>
-            { gameInfo && <EditGameView lng={lng} game_info={gameInfo} /> }
+            { gameInfo && <EditGameView game_info={gameInfo} /> }
             
         </>
     );

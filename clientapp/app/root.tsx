@@ -87,7 +87,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 >
                     <TransitionProvider>
                         <I18nextProvider i18n={i18n}>
-                            <LanguageProvider>
+                            {/* <LanguageProvider> */}
                                 <CookiesProvider>
                                     <GlobalVariableProvider>
                                         <GameSwitchProvider>
@@ -100,7 +100,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                         </GameSwitchProvider>
                                     </GlobalVariableProvider>
                                 </CookiesProvider>
-                            </LanguageProvider>
+                            {/* </LanguageProvider> */}
                         </I18nextProvider>
                     </TransitionProvider>
                 </ThemeProvider>

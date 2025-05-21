@@ -454,7 +454,7 @@ export const columns: ColumnDef<ChallengeSearchResult>[] = [
     },
 ]
 
-export function CreateGameView({ lng }: { lng: string }) {
+export function CreateGameView() {
 
     const categories: { [key: string]: any } = {
         "MISC": <Radar size={21} />,
@@ -708,7 +708,7 @@ export function CreateGameView({ lng }: { lng: string }) {
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20 pt-20 w-[80%] flex flex-col">
                         <div className="flex">
                             <Button type="button" variant={"default"} onClick={() => {
-                                router.push(`/${lng}/admin/games`)
+                                router(`/admin/games`)
                             }}>
                                 <CircleArrowLeft />
                                 Back to games

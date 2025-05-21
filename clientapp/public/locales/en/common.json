@@ -14,6 +14,8 @@
     "title": "A1CTF | A1natas",
     "system_color": "System Color",
     "close": "Close",
+    "back_to_home": "Back to home",
+    "page_not_found": "Page not found",
 
     "games": {
         "game_list": "Game list",

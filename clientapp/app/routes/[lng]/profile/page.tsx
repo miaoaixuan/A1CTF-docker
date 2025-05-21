@@ -8,18 +8,12 @@ import { useParams } from "react-router";
 
 export default function Profile() {
 
-    const { lng } = useParams();
-
-    if (!lng) {
-        return <div>Not found</div>;
-    }
-
     return (
         <div className="p-0 h-screen flex flex-col">
-            <PageHeader lng={lng} />
+            <PageHeader />
             <main className="flex w-full flex-1 overflow-hidden">
                 <SafeComponent animation={false}>
-                    <ProfileView lng={lng} />
+                    <ProfileView />
                 </SafeComponent>
             </main>
         </div>

@@ -77,7 +77,7 @@ export function ActivityPage({ lng, gameDetailModel } : { lng: string, gameDetai
 
                 // 动画时间
                 setTimeout(() => {
-                    router(`/zh/games/${curGame.id}`);
+                    router(`/games/${curGame.id}`);
                 }, 1800)
             })
         }

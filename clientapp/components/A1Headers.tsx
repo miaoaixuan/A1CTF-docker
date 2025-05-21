@@ -29,7 +29,7 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { UserRole } from "utils/A1API"
 
-const PageHeader = ({ lng } : { lng: string }) => {
+const PageHeader = () => {
     
     const { t } = useTranslation()
 
@@ -40,7 +40,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
     const [cookies, setCookie, removeCookie] = useCookies(["uid"])
     const { curProfile, updateProfile } = useGlobalVariableContext()
 
-    let path = (useLocation().pathname || "/zh").slice(lng.length + 2);
+    let path = useLocation().pathname.split("/")[1];
 
     if (path == "") { path = "home"; }
 
@@ -60,7 +60,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
                 <div className="flex w-full h-full items-center justify-center">
                     <div className="container h-16 items-center hidden md:flex">
                         <div className="md:flex items-center">
-                            <Link to={`/${lng}`} className="flex-shrink-0">
+                            <Link to={``} className="flex-shrink-0">
                                 <img
                                     className="dark:invert"
                                     src={clientConfig.SVGIcon}
@@ -71,19 +71,19 @@ const PageHeader = ({ lng } : { lng: string }) => {
                             </Link>
                             <nav className="flex items-center pl-6 gap-1 text-sm xl:gap-2">
                                 <Button variant={whetherSelected("home")} onClick={() => {
-                                    if (curPath != `/${lng}` ) navigate(`/${lng}`)
+                                    if (curPath != `/` ) navigate(`/`)
                                 }}>
                                     <House />
                                     <span className="font-bold text-base ml-[-2px]">{t("home")}</span>
                                 </Button>
                                 <Button variant={whetherSelected("games")} onClick={() => {
-                                    if (curPath != `/${lng}/games` ) navigate(`/${lng}/games`)
+                                    if (curPath != `/games` ) navigate(`/games`)
                                 }}>
                                     <Flag />
                                     <span className="font-bold text-base ml-[-2px]">{t("race")}</span>
                                 </Button>
                                 <Button variant={whetherSelected("about")} onClick={() => {
-                                    if (curPath != `/${lng}/about` ) navigate(`/${lng}/about`)
+                                    if (curPath != `/about` ) navigate(`/about`)
                                 }}>
                                     <Info />
                                     <span className="font-bold text-base ml-[-2px]">{t("about")}</span>
@@ -100,10 +100,10 @@ const PageHeader = ({ lng } : { lng: string }) => {
                         <div className="flex flex-1 items-center justify-between gap-3 md:justify-end">
                             { ((curProfile.role == UserRole.ADMIN || curProfile.role == UserRole.MONITOR) && cookies.uid) && (
                                 <Button variant={"outline"} onClick={() => {
-                                    navigate(`/${lng}/admin/`)
+                                    navigate(`/admin/`)
                                 }}><Wrench />Admin</Button>
                             ) }
-                            <ThemeSwitcher lng={lng} />
+                            <ThemeSwitcher />
                             { cookies.uid ? (
                                 <>
                                     <DropdownMenu modal={false}>
@@ -125,19 +125,19 @@ const PageHeader = ({ lng } : { lng: string }) => {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent className="mt-2">
                                             <DropdownMenuItem onClick={() => startTransition(() => {
-                                                navigate(`/${lng}/profile`)
+                                                navigate(`/profile`)
                                             })}>
                                                 <Settings />
                                                 <span>{ t("settings") }</span>
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => startTransition(() => {
-                                                navigate(`/${lng}/teams`)
+                                                navigate(`/teams`)
                                             })}>
                                                 <UsersRound />
                                                 <span>{ t("team") }</span>
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => startTransition(() => {
-                                                navigate(`/${lng}/profile/password`)
+                                                navigate(`/profile/password`)
                                             })}>
                                                 <KeyRound />
                                                 <span>{ t("change_password_header") }</span>
@@ -145,7 +145,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
                                             <DropdownMenuItem onClick={() => {
                                                 api.account.accountLogOut().then(() => {
                                                     updateProfile(() => {
-                                                        navigate(`/${lng}/`)
+                                                        navigate(`/`)
                                                         toast.success(t("login_out_success"))
                                                     })
                                                 })
@@ -159,10 +159,10 @@ const PageHeader = ({ lng } : { lng: string }) => {
                             ) : (
                                 <>
                                     <Button asChild>
-                                        <Link to={`/${lng}/signup`}>{t("signup")}</Link>
+                                        <Link to={`/signup`}>{t("signup")}</Link>
                                     </Button>
                                     <Button asChild variant="outline">
-                                        <Link to={`/${lng}/login`}>{t("login")}</Link>
+                                        <Link to={`/login`}>{t("login")}</Link>
                                     </Button>
                                 </>
                             ) }
@@ -170,7 +170,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
                     </div>
                     <div className="flex md:hidden items-center h-full">
                         <div className="flex w-full justify-start ml-4">
-                            <Link to={`/${lng}`} className="flex items-center">
+                            <Link to={`/`} className="flex items-center">
                                 <img
                                     className="dark:invert"
                                     src={clientConfig.SVGIcon}
@@ -182,7 +182,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
                             </Link>
                         </div>
                         <div className="flex justify-end w-full">
-                            <ThemeSwitcher lng={lng} />
+                            <ThemeSwitcher />
                             <div className="mr-2"></div>
                             <DropdownMenu onOpenChange={(open) => setIsOpen(open)}>
                                 <DropdownMenuTrigger asChild>
@@ -199,19 +199,19 @@ const PageHeader = ({ lng } : { lng: string }) => {
                                 <DropdownMenuContent className="w-54 mr-4 mt-2">
                                     <div className="grid gap-[2px] p-[0.5px]">
                                     <Button variant={whetherSelected("home")} onClick={() => {
-                                        if (curPath != `/${lng}` ) navigate(`/${lng}`)
+                                        if (curPath != `/` ) navigate(`/`)
                                     }}>
                                         <House />
                                         <span className="font-bold text-base ml-[-2px]">{t("home")}</span>
                                     </Button>
                                     <Button variant={whetherSelected("games")} onClick={() => {
-                                        if (curPath != `/${lng}/games` ) navigate(`/${lng}/games`)
+                                        if (curPath != `/games` ) navigate(`/games`)
                                     }}>
                                         <Flag />
                                         <span className="font-bold text-base ml-[-2px]">{t("race")}</span>
                                     </Button>
                                     <Button variant={whetherSelected("about")} onClick={() => {
-                                        if (curPath != `/${lng}/about` ) navigate(`/${lng}/about`)
+                                        if (curPath != `/about` ) navigate(`/about`)
                                     }}>
                                         <Info />
                                         <span className="font-bold text-base ml-[-2px]">{t("about")}</span>
@@ -250,19 +250,19 @@ const PageHeader = ({ lng } : { lng: string }) => {
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent className="mt-2">
                                                         <DropdownMenuItem onClick={() => startTransition(() => {
-                                                            navigate(`/${lng}/profile`)
+                                                            navigate(`/profile`)
                                                         })}>
                                                             <Settings />
                                                             <span>{ t("settings") }</span>
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => startTransition(() => {
-                                                            navigate(`/${lng}/teams`)
+                                                            navigate(`/teams`)
                                                         })}>
                                                             <UsersRound />
                                                             <span>{ t("team") }</span>
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => startTransition(() => {
-                                                            navigate(`/${lng}/profile/password`)
+                                                            navigate(`/profile/password`)
                                                         })}>
                                                             <KeyRound />
                                                             <span>{ t("change_password_header") }</span>
@@ -270,7 +270,7 @@ const PageHeader = ({ lng } : { lng: string }) => {
                                                         <DropdownMenuItem onClick={() => {
                                                             api.account.accountLogOut().then(() => {
                                                                 updateProfile(() => {
-                                                                    navigate(`/${lng}/`)
+                                                                    navigate(`/`)
                                                                     toast.success(t("login_out_success"))
                                                                 })
                                                             })
@@ -284,12 +284,12 @@ const PageHeader = ({ lng } : { lng: string }) => {
                                         ) : (
                                             <>
                                                 <Button asChild variant="ghost" className="mt-[0.5px]">
-                                                    <Link to={`/${lng}/login`}>
+                                                    <Link to={`/login`}>
                                                         <KeyRound /><span className="font-bold">{t("login")}</span>
                                                     </Link>
                                                 </Button>
                                                 <Button asChild variant="ghost" className="mt-[0.5px] [&_svg]:size-[18px]">
-                                                    <Link to={`/${lng}/signup`}>
+                                                    <Link to={`/signup`}>
                                                         <User /><span className="font-bold">{t("signup")}</span>
                                                     </Link>
                                                 </Button>

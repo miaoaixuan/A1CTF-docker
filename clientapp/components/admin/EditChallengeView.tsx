@@ -406,7 +406,7 @@ function AttachmentForm({ control, index, form, removeAttachment }: AttachmentFo
     );
 }
 
-export function EditChallengeView({ challenge_info, lng } : { challenge_info: AdminChallengeConfig, lng: string }) {
+export function EditChallengeView({ challenge_info } : { challenge_info: AdminChallengeConfig }) {
 
     const categories: { [key: string]: any } = {
         "MISC": <Radar size={21} />,
@@ -453,9 +453,9 @@ export function EditChallengeView({ challenge_info, lng } : { challenge_info: Ad
                             .max(65535, { message: "端口号不能大于 65535" })
                     })
                 ),
-                cpu_limit: z.coerce.number({ message: "请输入 CPU 限制" }),
-                memory_limit: z.coerce.number({ message: "请输入内存限制" }),
-                storage_limit: z.coerce.number({ message: "请输入存储空间限制" })
+                cpu_limit: z.coerce.number({ invalid_type_error: "请输入 CPU 限制" }),
+                memory_limit: z.coerce.number({ invalid_type_error: "请输入内存限制" }),
+                storage_limit: z.coerce.number({ invalid_type_error: "请输入存储空间限制" })
             })
         ),
         attachments: z.array(
@@ -597,7 +597,7 @@ export function EditChallengeView({ challenge_info, lng } : { challenge_info: Ad
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20 pt-20 w-[80%] flex flex-col">
                         <div className="flex">
                             <Button type="button" variant={"default"} onClick={() => {
-                                router(`/${lng}/admin/challenges`)
+                                router(`/admin/challenges`)
                             }}>
                                 <CircleArrowLeft />
                                 Back to challenges

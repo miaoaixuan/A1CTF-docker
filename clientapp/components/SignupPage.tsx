@@ -7,7 +7,7 @@ import { TransitionLink } from "components/TransitionLink";
 import { RegisterForm } from "components/RegisterForm";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 
-export default function SignupPage({ lng } : { lng: string }) {
+export default function SignupPage() {
 
     const { clientConfig } = useGlobalVariableContext()
 
@@ -25,11 +25,11 @@ export default function SignupPage({ lng } : { lng: string }) {
                         />
                         <span className="font-bold text-lg">A1natas SSO</span>
                     </TransitionLink>
-                    <ThemeSwitcher lng={lng} />
+                    <ThemeSwitcher />
                 </div>
                 <div className="flex flex-1 items-center justify-center">
                     <div className="w-full max-w-[400px]">
-                        <RegisterForm lng={lng} />
+                        <RegisterForm />
                     </div>
                 </div>
             </div>

@@ -26,7 +26,7 @@ import { useTransitionContext } from "contexts/TransitionContext";
 import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 
-export function ProfileView ({ lng } : { lng: string }) {
+export function ProfileView () {
 
     const { startTransition } = useTransitionContext()
     const router = useNavigate()
@@ -202,7 +202,7 @@ export function ProfileView ({ lng } : { lng: string }) {
                             />
                             <Button type="submit" className="transition-all duration-300 mr-4">{ t("submit") }</Button>
                             <Button type="button" className="transition-all duration-300" onClick={() => startTransition(() => {
-                                router(`/${lng}/profile/email`)
+                                router(`/profile/email`)
                             })}>{ t("change_email") }</Button>
                         </form>
                     </Form>

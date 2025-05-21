@@ -44,6 +44,7 @@ import { api, ErrorMessage } from "utils/ApiHelper";
 import dayjs from "dayjs";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
+import { useNavigate } from "react-router";
 
 interface ContainerFormProps {
     control: any;
@@ -345,7 +346,7 @@ function AttachmentForm({ control, index, form, removeAttachment }: AttachmentFo
     );
 }
 
-export function CreateChallengeView({ lng } : { lng: string }) {
+export function CreateChallengeView() {
 
     const categories: { [key: string]: any } = {
         "MISC": <Radar size={21} />,
@@ -499,7 +500,7 @@ export function CreateChallengeView({ lng } : { lng: string }) {
         })
     }
 
-    const router = useRouter()
+    const router = useNavigate()
 
     useEffect(() => {
         // form.reset(challenge_info as any);
@@ -513,7 +514,7 @@ export function CreateChallengeView({ lng } : { lng: string }) {
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20 pt-20 w-[80%] flex flex-col">
                         <div className="flex">
                             <Button type="button" variant={"default"} onClick={() => {
-                                router(`/${lng}/admin/challenges`)
+                                router(`/admin/challenges`)
                             }}>
                                 <CircleArrowLeft />
                                 Back to challenges

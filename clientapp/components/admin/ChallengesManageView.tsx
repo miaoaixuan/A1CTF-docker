@@ -16,7 +16,7 @@ import { ConfirmDialog, DialogOption } from "../dialogs/ConfirmDialog";
 import { challengeCategoryColorMap, challengeCategoryIcons } from "utils/ClientAssets";
 import { useNavigate } from "react-router";
 
-export function ChallengesManageView({ lng }: { lng: string }) {
+export function ChallengesManageView() {
 
     const { theme } = useTheme()
     const router = useNavigate()
@@ -60,7 +60,7 @@ export function ChallengesManageView({ lng }: { lng: string }) {
                     <Input value={searchContent} onChange={(e) => setSearchContent(e.target.value)} placeholder="在这里输入就可以搜索题目标题了"></Input>
                 </div>
                 <Button onClick={() => {
-                    router(`/${lng}/admin/challenges/create`)
+                    router(`/admin/challenges/create`)
                 }}>
                     <CirclePlus />
                     添加题目
@@ -97,7 +97,7 @@ export function ChallengesManageView({ lng }: { lng: string }) {
                                                 <Copy />
                                             </Button>
                                             <Button variant={"ghost"} size={"icon"} onClick={() => {
-                                                router(`/${lng}/admin/challenges/${chal.challenge_id}`)
+                                                router(`/admin/challenges/${chal.challenge_id}`)
                                             }}>
                                                 <Pencil />
                                             </Button>

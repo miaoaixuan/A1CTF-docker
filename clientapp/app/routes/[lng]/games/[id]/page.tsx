@@ -5,9 +5,9 @@ import { useParams } from "react-router";
 
 export default function Games() {
     
-    const { id, lng } = useParams();
+    const { id } = useParams();
 
-    if (!id || !lng) {
+    if (!id) {
         return <div>404</div>
     }
 
@@ -20,7 +20,7 @@ export default function Games() {
                 {/* <div className="absolute w-[calc(100vw-2px)] h-[calc(100vh-2px)] top-[0px] left-[0px] border-2 z-[-20] dark:border-white">
                 </div> */}
             </div>
-            <ChallengesView id={id} lng={lng} />
+            <ChallengesView id={id} />
         </div>
     );
 }

@@ -62,7 +62,7 @@ export interface ChallengeSolveStatus {
     cur_score: number;
 }
 
-export function ChallengesView({ id, lng }: { id: string, lng: string }) {
+export function ChallengesView({ id }: { id: string }) {
 
     const { t } = useTranslation()
 
@@ -529,7 +529,7 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
             {/* 抢血动画 */}
             <SolvedAnimation blood={blood} setBlood={setBlood} bloodMessage={bloodMessage} />
             {/* 提交 Flag 组件 */}
-            <SubmitFlagView lng={lng} curChallenge={curChallenge} gameID={gameID} setChallengeSolved={setChallengeSolved} challengeSolveStatusList={challengeSolveStatusList} visible={submitFlagWindowVisible} setVisible={setSubmitFlagWindowVisible} />
+            <SubmitFlagView curChallenge={curChallenge} gameID={gameID} setChallengeSolved={setChallengeSolved} challengeSolveStatusList={challengeSolveStatusList} visible={submitFlagWindowVisible} setVisible={setSubmitFlagWindowVisible} />
 
             {/* Hint 列表 */}
             <ChallengeHintPage curChallenge={curChallenge} visible={showHintsWindowVisible} setVisible={setShowHintsWindowVisible} />
@@ -539,7 +539,6 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                 gameStatus={gameStatus}
                 gameID={gameID}
                 gameInfo={gameInfo}
-                lng={lng}
                 setScoreBoardVisible={setScoreBoardVisible}
                 startCheckForGameStart={startCheckForGameStart}
             />
@@ -561,7 +560,6 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                         // setGameDetail={setGameDeatail}
                         resizeTrigger={setResizeTrigger}
                         setPageSwitching={setPageSwitch}
-                        lng={lng}
                         challenges={challenges || {}}
                         setChallenges={setChallenges}
                         challengeSolveStatusList={challengeSolveStatusList}
@@ -579,7 +577,6 @@ export function ChallengesView({ id, lng }: { id: string, lng: string }) {
                                 gameStatus={gameStatus} gameInfo={gameInfo}
                                 setNoticeOpened={setNoticeOpened} setScoreBoardVisible={setScoreBoardVisible}
                                 notices={notices}
-                                lng={lng}
                                 curProfile={curProfile}
                             />
                             <ResizablePanelGroup direction="vertical" className="relative">

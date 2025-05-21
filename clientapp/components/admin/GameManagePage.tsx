@@ -10,7 +10,7 @@ import { FastAverageColor } from "fast-average-color"
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useNavigate } from "react-router";
 
-export function GameManagePage({ lng } : { lng: string }) { 
+export function GameManagePage() { 
 
     const { theme } = useTheme()
     const [ games, setGames ] = useState<UserGameSimpleInfo[]>([])
@@ -73,7 +73,7 @@ export function GameManagePage({ lng } : { lng: string }) {
                 <div className="flex items-center justify-between mb-6 select-none">
                     <span className="font-bold text-3xl">比赛列表</span>
                     <Button onClick={() => {
-                        router(`/${lng}/admin/games/create`)
+                        router(`/admin/games/create`)
                     }}>
                         <CirclePlus />
                         添加比赛
@@ -133,7 +133,7 @@ export function GameManagePage({ lng } : { lng: string }) {
                                                 </div>
                                                 <div className="w-[60px] h-[60px] rounded-full hover:text-cyan-500 flex items-center justify-center transition-colors duration-300 [&_svg]:size-10"
                                                     onClick={() => {
-                                                        router(`/${lng}/admin/games/${game.game_id}`)
+                                                        router(`/admin/games/${game.game_id}`)
                                                     }}
                                                 >
                                                     <FilePenLine />

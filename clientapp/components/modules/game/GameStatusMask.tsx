@@ -14,10 +14,9 @@ import TimerDisplay from "../TimerDisplay";
 import dayjs from "dayjs";
 
 export default function GameStatusMask(
-    { gameStatus, gameInfo, lng, setScoreBoardVisible, gameID, startCheckForGameStart }: {
+    { gameStatus, gameInfo, setScoreBoardVisible, gameID, startCheckForGameStart }: {
         gameStatus: string,
         gameInfo: UserFullGameInfo | undefined,
-        lng: string,
         setScoreBoardVisible: Dispatch<SetStateAction<boolean>>,
         gameID: number,
         startCheckForGameStart: () => void
@@ -53,7 +52,7 @@ export default function GameStatusMask(
                             <Button variant="secondary"
                                 onClick={() => setScoreBoardVisible(true)}
                             ><Presentation />{t("rank")}</Button>
-                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                            <TransitionLink className="transition-colors" href={`/games`}>
                                 <Button variant="secondary">{t("back_to_main")}</Button>
                             </TransitionLink>
                         </div>
@@ -100,7 +99,7 @@ export default function GameStatusMask(
                                             <Button variant="outline"
                                                 onClick={() => setScoreBoardVisible(true)}
                                             ><Presentation />{t("rank")}</Button>
-                                            <TransitionLink className="transition-colors flex items-center" href={`/${lng}/games`}>
+                                            <TransitionLink className="transition-colors flex items-center" href={`/games`}>
                                                 <Button>{t("back_to_main")}</Button>
                                             </TransitionLink>
                                         </div>
@@ -117,7 +116,7 @@ export default function GameStatusMask(
                                             <Button variant="outline"
                                                 onClick={() => setScoreBoardVisible(true)}
                                             ><Presentation />{t("rank")}</Button>
-                                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                                            <TransitionLink className="transition-colors" href={`/games`}>
                                                 <Button variant="outline">{t("back_to_main")}</Button>
                                             </TransitionLink>
                                         </div>
@@ -156,7 +155,7 @@ export default function GameStatusMask(
                                             <Button variant="outline"
                                                 onClick={() => setScoreBoardVisible(true)}
                                             ><Presentation />{t("rank")}</Button>
-                                            <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                                            <TransitionLink className="transition-colors" href={`/games`}>
                                                 <Button variant="outline">{t("back_to_main")}</Button>
                                             </TransitionLink>
                                         </div>
@@ -176,7 +175,7 @@ export default function GameStatusMask(
                     <div className="flex flex-col items-center gap-4 select-none">
                         <Info size={80} className="mb-4" />
                         <span className="text-2xl mb-4">{t("no_such_game")}</span>
-                        <TransitionLink className="transition-colors" href={`/${lng}/games`}>
+                        <TransitionLink className="transition-colors" href={`/games`}>
                             <Button variant="outline">{t("back_to_main")}</Button>
                         </TransitionLink>
                     </div>

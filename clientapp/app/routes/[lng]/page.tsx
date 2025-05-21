@@ -23,17 +23,12 @@ import { useTranslation } from "react-i18next";
 
 
 export default function Home() {
-    const { lng } = useParams();
     const { t } = useTranslation();
-
-    if (!lng) {
-        return <div>No language provided</div>;
-    }
 
     return (
         <>
             <div className="p-0 h-screen flex flex-col">
-                <PageHeader lng={lng} />
+                <PageHeader />
                 <main className="flex flex-1 overflow-hidden">
                     <SafeComponent animation={false}>
                         <>
@@ -41,7 +36,7 @@ export default function Home() {
                         </>
                     </SafeComponent>
                 </main>
-                <A1Footer lng={lng} />
+                <A1Footer />
             </div>
         </>
     );

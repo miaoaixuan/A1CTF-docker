@@ -18,6 +18,7 @@ import (
 	"a1ctf/src/utils/redis_tool"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron/v2"
 
@@ -327,6 +328,8 @@ func main() {
 	// 关闭日志输出
 	r := gin.New()
 
+	r.Use(gzip.Gzip(gzip.DefaultCompression))
+
 	authMiddleware, err := jwt.New(initParams())
 	if err != nil {
 		log.Fatal("JWT Error:" + err.Error())
@@ -450,7 +453,15 @@ func main() {
 	}
 
 	// 未知接口
-	r.NoRoute(authMiddleware.MiddlewareFunc(), handleNoRoute())
+	// r.NoRoute(authMiddleware.MiddlewareFunc(), handleNoRoute())
+
+	r.Static("/assets", "./clientapp/build/client/assets")
+	r.Static("/favicon.ico", "./clientapp/build/client/favicon.ico")
+	r.Static("/images", "./clientapp/build/client/images")
+	r.Static("/locales", "./clientapp/build/client/locales")
+	r.NoRoute(func(c *gin.Context) {
+		c.File("./clientapp/build/client/index.html")
+	})
 
 	// 任务线程
 	StartLoopEvent()

@@ -16,7 +16,7 @@ import { useTransitionContext } from "contexts/TransitionContext";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useNavigate } from "react-router";
 
-const A1Footer = ({ lng } : { lng: string }) => {
+const A1Footer = () => {
 
     const [infoViewShow, setInfoViewShow] = useState(false)
 
@@ -56,7 +56,7 @@ const A1Footer = ({ lng } : { lng: string }) => {
                                 onClick={() => {
                                     setInfoViewShow(false)
                                     startTransition(() => {
-                                        router(`/${lng}/version`)
+                                        router(`/version`)
                                     })
                                 }}
                             >

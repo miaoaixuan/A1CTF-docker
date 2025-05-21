@@ -6,7 +6,7 @@ import ThemeSwitcher from "components/ToggleTheme"
 import { TransitionLink } from "components/TransitionLink";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 
-export default function LoginPage({ lng } : { lng: string }) {
+export default function LoginPage() {
 
 
     const { clientConfig } = useGlobalVariableContext()
@@ -25,11 +25,11 @@ export default function LoginPage({ lng } : { lng: string }) {
                         />
                         <span className="font-bold text-lg">A1natas SSO</span>
                     </a>
-                    <ThemeSwitcher lng={lng} />
+                    <ThemeSwitcher />
                 </div>
                 <div className="flex flex-1 items-center justify-center">
                     <div className="w-full max-w-[400px]">
-                        <LoginForm lng={lng} />
+                        <LoginForm />
                     </div>
                 </div>
             </div>

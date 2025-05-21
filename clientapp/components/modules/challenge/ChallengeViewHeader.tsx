@@ -31,7 +31,6 @@ const ChallengesViewHeader = (
         setNoticeOpened,
         setScoreBoardVisible,
         notices,
-        lng,
         curProfile
     } : {
         gameStatus: string,
@@ -39,7 +38,6 @@ const ChallengesViewHeader = (
         setNoticeOpened: (arg0: boolean) => void,
         setScoreBoardVisible: (arg0: boolean) => void,
         notices: GameNotice[],
-        lng: string,
         curProfile: UserProfile,
     },
 ) => {
@@ -152,7 +150,7 @@ const ChallengesViewHeader = (
                     </div>
                 </Button>
                 {/* <Button size="icon" variant="outline" onClick={testFunction}><FlaskConical /></Button> */}
-                <ToggleTheme lng={lng} />
+                <ToggleTheme />
                 <Avatar className="select-none">
                     {curProfile.avatar ? (
                         <>

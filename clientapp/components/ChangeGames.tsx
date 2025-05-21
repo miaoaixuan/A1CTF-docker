@@ -194,7 +194,7 @@ export function ChangeGames() {
 
             // 动画时间
             setTimeout(() => {
-                router(`/zh/games/${curGame.game_id}`);
+                router(`/games/${curGame.game_id}`);
             }, 1800)
         })
     }

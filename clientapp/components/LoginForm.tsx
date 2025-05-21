@@ -39,10 +39,9 @@ interface ErrorLoginResponse {
 }
 
 export function LoginForm({
-    lng,
     className,
     ...props
-}: { lng: string } & React.ComponentPropsWithoutRef<"form">) {
+}: React.ComponentPropsWithoutRef<"form">) {
     const { t } = useTranslation("login_form");
 
     const userNameRef = useRef<HTMLInputElement>(null)
@@ -78,7 +77,7 @@ export function LoginForm({
         }).then(response => {
             updateProfile(() => {
                 startTransition(() => {
-                    router(`/${lng}/`)
+                    router(`/`)
                 })
     
                 setTimeout(() => {
@@ -152,7 +151,7 @@ export function LoginForm({
                 <div className="text-center text-sm">
                     {t("dont_have_account")}{" "}
                     <a className="underline underline-offset-4" onClick={() => startTransition(() => {
-                        router(`/${lng}/signup`)
+                        router(`/signup`)
                     })}>
                         {t("sign_up_title")}
                     </a>

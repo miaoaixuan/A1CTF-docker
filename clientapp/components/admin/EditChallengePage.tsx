@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { EditChallengeView } from "./EditChallengeView";
 import { AdminChallengeConfig } from "utils/A1API";
 import { api } from "utils/ApiHelper";
-
-export function EditChallengePage ({ challenge_id, lng }: { challenge_id: number, lng: string })
+export function EditChallengePage ({ challenge_id }: { challenge_id: number })
 {
     const [ challengeInfo, setChallengeInfo ] = useState<AdminChallengeConfig>();
 
@@ -16,7 +15,7 @@ export function EditChallengePage ({ challenge_id, lng }: { challenge_id: number
 
     return (
         <>
-            { challengeInfo && <EditChallengeView challenge_info={challengeInfo} lng={lng} /> }
+            { challengeInfo && <EditChallengeView challenge_info={challengeInfo} /> }
         </>
     );
 }

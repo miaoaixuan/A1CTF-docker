@@ -26,10 +26,9 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 
 export function RegisterForm({
-    lng,
     className,
     ...props
-}: { lng: string } & React.ComponentPropsWithoutRef<"form">) {
+}: React.ComponentPropsWithoutRef<"form">) {
     const { t } = useTranslation("register_form");
 
     const [loading, setLoading] = useState(false)
@@ -76,7 +75,7 @@ export function RegisterForm({
         }).then((res) => {
             updateProfile(() => {
                 startTransition(() => {
-                    router(`/${lng}/`)
+                    router(`/`)
                 })
     
                 setTimeout(() => {
@@ -172,7 +171,7 @@ export function RegisterForm({
                         </span>
                     </div>
                     <Button type="button" variant={"outline"} className="transition-all duration-300 w-full" onClick={() => startTransition(() => {
-                        router(`/${lng}/login`)
+                        router(`/login`)
                     })}>{ t("login") }</Button>
                 </form>
             </Form>

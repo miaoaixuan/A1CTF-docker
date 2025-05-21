@@ -8,18 +8,10 @@ import { AboutPage } from "components/AboutPage";
 import { useParams } from "react-router";
 
 export default function Home() {
-    
-    const { lng } = useParams();
-
-    if (!lng) {
-        return <div>Not found</div>;
-    }
-
-    const source = fs.readFileSync("public/md/about.mdx").toString("utf-8");
 
     return (
         <div className="p-0 h-screen flex flex-col">
-            <PageHeader lng={lng} />
+            <PageHeader />
             <main className="flex flex-1 overflow-hidden">
                 <div className="w-full">
                     <SafeComponent animation={false}>
