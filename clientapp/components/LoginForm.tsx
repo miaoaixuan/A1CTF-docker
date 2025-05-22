@@ -33,6 +33,8 @@ import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 
+import Turnstile, { useTurnstile } from "react-turnstile";
+
 interface ErrorLoginResponse {
     title: string;
     status: number;
@@ -43,6 +45,8 @@ export function LoginForm({
     ...props
 }: React.ComponentPropsWithoutRef<"form">) {
     const { t } = useTranslation("login_form");
+
+    const [token, setToken] = useState<string>("")
 
     const userNameRef = useRef<HTMLInputElement>(null)
     const passwordRef = useRef<HTMLInputElement>(null)
@@ -74,20 +78,22 @@ export function LoginForm({
         api.auth.userLogin({
             username: values.userName,
             password: values.password,
+            captcha: token
         }).then(response => {
             updateProfile(() => {
                 startTransition(() => {
                     router(`/`)
                 })
-    
+
                 setTimeout(() => {
                     toast.success(t("login_successful"))
                 }, 300)
             })
         }).catch((error: AxiosError) => {
             if (error.response?.status == 401) {
-                const response = error.response.data as ErrorLoginResponse
-                toast.error(response.title)
+                toast.error((error.response.data as any).message)
+                turnstile.reset()
+                setToken("")
             } else {
                 toast.error(t("unknow_error"))
             }
@@ -97,6 +103,8 @@ export function LoginForm({
             }, 300)
         })
     }
+
+    const turnstile = useTurnstile();
 
     return (
         <Form {...form}>
@@ -112,12 +120,12 @@ export function LoginForm({
                     name="userName"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>{ t("form_account") }</FormLabel>
+                            <FormLabel>{t("form_account")}</FormLabel>
                             <FormControl>
                                 <Input {...field} />
                             </FormControl>
                             <FormDescription>
-                                { t("form_account_desc") }
+                                {t("form_account_desc")}
                             </FormDescription>
                             <FormMessage />
                         </FormItem>
@@ -129,15 +137,15 @@ export function LoginForm({
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>
-                            <div className="flex items-center">
-                                <Label htmlFor="password">{t("password")}</Label>
-                                <a
-                                    href="#"
-                                    className="ml-auto text-sm underline-offset-4 hover:underline"
-                                >
-                                    {t("forget_password")}
-                                </a>
-                            </div>
+                                <div className="flex items-center">
+                                    <Label htmlFor="password">{t("password")}</Label>
+                                    <a
+                                        href="#"
+                                        className="ml-auto text-sm underline-offset-4 hover:underline"
+                                    >
+                                        {t("forget_password")}
+                                    </a>
+                                </div>
                             </FormLabel>
                             <FormControl>
                                 <Input type="password" {...field} />
@@ -146,8 +154,20 @@ export function LoginForm({
                         </FormItem>
                     )}
                 />
+                { clientConfig.turnstileEnabled ? (
+                    <div className="w-full items-center justify-center flex">
+                        <Turnstile
+                            theme={theme as "dark" | "light" | "auto"}
+                            refreshExpired="auto"
+                            sitekey={clientConfig.turnstileSiteKey}
+                            onVerify={(token) => {
+                                setToken(token)
+                            }}
+                        />
+                    </div>
+                ) : <></> } 
                 <div className='h-0' />
-                <Button type="submit" className="transition-all duration-300 w-full" disabled={loading}>{ t("login") }</Button>
+                <Button type="submit" className="transition-all duration-300 w-full" disabled={loading || token == ""}>{t("login")}</Button>
                 <div className="text-center text-sm">
                     {t("dont_have_account")}{" "}
                     <a className="underline underline-offset-4" onClick={() => startTransition(() => {
@@ -172,7 +192,7 @@ export function LoginForm({
                         {t("login_with_github")}
                     </Button>
                     <Button variant="outline" className="w-full" disabled>
-                        <img 
+                        <img
                             src={clientConfig.SchoolSmallIcon}
                             alt={clientConfig.SchoolUnionAuthText}
                             width={24}

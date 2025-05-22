@@ -1,9 +1,10 @@
 import { AxiosError } from "axios";
-import React, { createContext, Dispatch, SetStateAction, useContext, useEffect, useRef, useState } from "react";
+import React, { createContext, Dispatch, SetStateAction, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { useCookies } from "react-cookie";
 import { browserName } from "react-device-detect";
 import { UserProfile } from "utils/A1API";
 import { api } from "utils/ApiHelper";
+import axios from 'axios';
 
 interface ClientConfig {
     FancyBackGroundIconWhite: string;
@@ -18,6 +19,21 @@ interface ClientConfig {
     SchoolSmallIcon: string;
     SchoolUnionAuthText: string;
     BGAnimation: boolean;
+    systemName: string;
+    systemLogo: string;
+    systemFavicon: string;
+    systemSlogan: string;
+    systemFooter: string;
+    systemICP: string;
+    systemOrganization: string;
+    systemOrganizationURL: string;
+    themeColor: string;
+    darkModeDefault: boolean;
+    allowUserTheme: boolean;
+    defaultLanguage: string;
+    turnstileEnabled: boolean;
+    turnstileSiteKey: string;
+    updateVersion: string;
 }
 
 interface GlobalVariableContextType {
@@ -26,6 +42,9 @@ interface GlobalVariableContextType {
     serialOptions: React.MutableRefObject<echarts.SeriesOption[]>;
     clientConfig: ClientConfig;
     updateClientConfg: (key: keyof ClientConfig, value: any) => void;
+    isDarkMode: boolean;
+    setIsDarkMode: (isDark: boolean) => void;
+    refreshClientConfig: () => Promise<void>;
 }
 
 const globalVariableContext = createContext<GlobalVariableContextType | undefined>(undefined);
@@ -38,7 +57,7 @@ export const useGlobalVariableContext = () => {
     return context;
 };
 
-export const GlobalVariableProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
     const [cookies, setCookie, removeCookie] = useCookies(["uid", "clientConfig"])
     const [curProfile, setCurProfile] = useState<UserProfile>({} as UserProfile)
@@ -55,10 +74,26 @@ export const GlobalVariableProvider: React.FC<{ children: React.ReactNode }> = (
         SchoolLogo: "/images/zjnu_logo.png",
         SchoolSmallIcon: "/images/zjnu_small_logo.png",
         SchoolUnionAuthText: "ZJNU Union Authserver",
-        BGAnimation: false
+        BGAnimation: false,
+        systemName: 'A1CTF',
+        systemLogo: '',
+        systemFavicon: '',
+        systemSlogan: 'A Modern CTF Platform',
+        systemFooter: '© 2025 A1CTF Team',
+        systemICP: '',
+        systemOrganization: '浙江师范大学',
+        systemOrganizationURL: 'https://www.zjnu.edu.cn',
+        themeColor: 'blue',
+        darkModeDefault: true,
+        allowUserTheme: true,
+        defaultLanguage: 'zh-CN',
+        turnstileEnabled: false,
+        turnstileSiteKey: '',
+        updateVersion: '',
     }
 
     const [clientConfig, setClientConfig] = useState<ClientConfig>({} as ClientConfig)
+    const [isDarkMode, setIsDarkMode] = useState<boolean>(defaultClientConfig.darkModeDefault);
 
     const updateClientConfg = (key: keyof ClientConfig, value: any) => {
         setClientConfig((prevConfig) => ({
@@ -94,19 +129,87 @@ export const GlobalVariableProvider: React.FC<{ children: React.ReactNode }> = (
         if (cookies.clientConfig) {
             setClientConfig(cookies.clientConfig)
         } else {
-            const copiedConfig = { ...defaultClientConfig }
-            console.log(browserName)
-            if (browserName.includes("Chrome")) {
-                copiedConfig.BGAnimation = true
-            }
-            setClientConfig(copiedConfig)
-            setCookie("clientConfig", defaultClientConfig, { path: "/" })
+            refreshClientConfig()
         }
     }, [])
 
+    useEffect(() => {
+        if (curProfile.client_config_version && curProfile.client_config_version !== clientConfig.updateVersion) {
+            fetchClientConfig()
+        }
+    }, [curProfile])
+
+    // 获取客户端配置
+    const fetchClientConfig = async () => {
+        try {
+            const response = await axios.get('/api/client-config');
+            if (response.data && response.data.code === 200) {
+
+                if (browserName.includes("Chrome")) {
+                    response.data.data.BGAnimation = true
+                }
+
+                if (clientConfig.updateVersion) {
+                    response.data.data.BGAnimation = clientConfig.BGAnimation
+                }
+
+                setClientConfig(response.data.data);
+                setCookie("clientConfig", response.data.data, { path: "/" })
+                
+                // 如果用户未手动设置主题，则使用配置的默认主题
+                if (!localStorage.getItem('theme-preference')) {
+                    setIsDarkMode(response.data.data.darkModeDefault);
+                }
+            }
+        } catch (error) {
+            console.error('获取客户端配置失败:', error);
+        }
+    };
+    
+    // 刷新客户端配置
+    const refreshClientConfig = async () => {
+        await fetchClientConfig();
+    };
+    
+    // 更新主题
+    const updateTheme = (isDark: boolean) => {
+        setIsDarkMode(isDark);
+        localStorage.setItem('theme-preference', isDark ? 'dark' : 'light');
+        
+        if (isDark) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    };
+    
+    // 设置主题
+    const handleSetIsDarkMode = (isDark: boolean) => {
+        if (clientConfig.allowUserTheme) {
+            updateTheme(isDark);
+        }
+    };
+    
+    // 组件挂载时获取配置
+    useEffect(() => {
+        // 检查用户偏好
+        const savedTheme = localStorage.getItem('theme-preference');
+        if (savedTheme) {
+            setIsDarkMode(savedTheme === 'dark');
+        }
+        
+    }, []);
+    
+    // 监听暗色模式变化
+    useEffect(() => {
+        updateTheme(isDarkMode);
+    }, [isDarkMode]);
+
     return (
-        <globalVariableContext.Provider value={{ curProfile, updateProfile, serialOptions, clientConfig, updateClientConfg}}>
+        <globalVariableContext.Provider value={{ curProfile, updateProfile, serialOptions, clientConfig, updateClientConfg, isDarkMode, setIsDarkMode, refreshClientConfig }}>
             {children}
         </globalVariableContext.Provider>
     );
 };
+
+export default globalVariableContext;

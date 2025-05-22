@@ -2746,6 +2746,9 @@ components:
         last_login_ip:
           type: string
           nullable: true
+        client_config_version:
+          type: string
+          format: date-time
       required:
         - user_id
         - username

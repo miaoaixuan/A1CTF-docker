@@ -13,6 +13,7 @@ import (
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
 	"a1ctf/src/utils/redis_tool"
+	"a1ctf/src/utils/turnstile"
 )
 
 func Login() func(c *gin.Context) (interface{}, error) {
@@ -20,6 +21,16 @@ func Login() func(c *gin.Context) (interface{}, error) {
 		var loginVals LoginPayload
 		if err := c.ShouldBind(&loginVals); err != nil {
 			return "", jwt.ErrMissingLoginValues
+		}
+
+		turnstile := turnstile.New(ClientConfig.TurnstileSecretKey)
+		response, err := turnstile.Verify(loginVals.CaptCha, c.ClientIP())
+		if err != nil {
+			return nil, jwt.ErrMissingLoginValues
+		}
+
+		if !response.Success {
+			return nil, jwt.ErrMissingLoginValues
 		}
 
 		user_result := models.User{}
@@ -77,19 +88,20 @@ func GetProfile(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
 				"code": 200,
 				"data": gin.H{
-					"user_id":         user.UserID,
-					"username":        user.Username,
-					"role":            user.Role,
-					"phone":           user.Phone,
-					"student_number":  user.StudentNumber,
-					"realname":        user.Realname,
-					"slogan":          user.Slogan,
-					"avatar":          user.Avatar,
-					"email":           user.Email,
-					"email_verified":  user.EmailVerified,
-					"register_time":   user.RegisterTime,
-					"last_login_time": user.LastLoginTime,
-					"last_login_ip":   user.LastLoginIP,
+					"user_id":               user.UserID,
+					"username":              user.Username,
+					"role":                  user.Role,
+					"phone":                 user.Phone,
+					"student_number":        user.StudentNumber,
+					"realname":              user.Realname,
+					"slogan":                user.Slogan,
+					"avatar":                user.Avatar,
+					"email":                 user.Email,
+					"email_verified":        user.EmailVerified,
+					"register_time":         user.RegisterTime,
+					"last_login_time":       user.LastLoginTime,
+					"last_login_ip":         user.LastLoginIP,
+					"client_config_version": ClientConfig.UpdatedTime,
 				},
 			})
 

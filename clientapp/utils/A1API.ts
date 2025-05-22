@@ -669,6 +669,8 @@ export interface UserProfile {
   /** @format date-time */
   last_login_time: string;
   last_login_ip: string | null;
+  /** @format date-time */
+  client_config_version?: string;
 }
 
 import type {

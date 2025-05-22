@@ -149,6 +149,12 @@ var PermissionMap = map[string]PermissionSetting{
 	`^/api/admin/container/delete$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	`^/api/admin/container/extend$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	`^/api/admin/container/flag$`:   {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+
+	// 系统设置相关API权限
+	`^/api/admin/system/settings$`:  {RequestMethod: []string{"GET", "POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/admin/system/upload$`:    {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/admin/system/test-smtp$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	`^/api/client-config$`:          {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
 }
 
 // Helper function to check if a slice contains a value
@@ -303,6 +309,9 @@ func main() {
 	// 初始化 db
 	db.InitDB()
 
+	// 加载配置文件
+	controllers.LoadSystemSettings()
+
 	// db_init.InitMyDB()
 
 	memoryStore := persist.NewMemoryStore(1 * time.Minute)
@@ -347,6 +356,8 @@ func main() {
 		{
 			fileGroup.GET("/download/:file_id", controllers.DownloadFile)
 		}
+
+		public.GET("/client-config", controllers.GetClientConfig)
 	}
 
 	auth := r.Group("/api")
@@ -449,6 +460,15 @@ func main() {
 			containerGroup.POST("/delete", controllers.AdminDeleteContainer)
 			containerGroup.POST("/extend", controllers.AdminExtendContainer)
 			containerGroup.GET("/flag", controllers.AdminGetContainerFlag)
+		}
+
+		// 系统设置相关API
+		systemGroup := auth.Group("/admin/system")
+		{
+			systemGroup.GET("/settings", controllers.GetSystemSettings)
+			systemGroup.POST("/settings", controllers.UpdateSystemSettings)
+			systemGroup.POST("/upload", controllers.UploadSystemFile)
+			systemGroup.POST("/test-smtp", controllers.TestSMTPSettings)
 		}
 	}
 
