@@ -9,7 +9,7 @@ export default function AvatarUsername({
     username: string
 }) {
     return (
-        <Avatar className="select-none w-[35px] h-[35px]">
+        <Avatar className="select-none w-[35px] h-[35px] flex-shrink-0">
             { avatar_url ? (
                 <>
                     <AvatarImage src={avatar_url || "#"} alt="@shadcn"

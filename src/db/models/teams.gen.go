@@ -3,12 +3,14 @@ package models
 import (
 	"database/sql/driver"
 	"errors"
+	"time"
 
 	"github.com/bytedance/sonic"
 	"github.com/lib/pq"
 )
 
 const TableNameTeam = "teams"
+const TableNameTeamMember = "team_members"
 
 type ParticipationStatus string
 
@@ -33,22 +35,24 @@ func (e *ParticipationStatus) Scan(value interface{}) error {
 	return sonic.Unmarshal(b, e)
 }
 
-// Team mapped from table <teams>
+// Team 团队模型
 type Team struct {
-	TeamID          int64               `gorm:"column:team_id;primaryKey;autoIncrement:true" json:"team_id"`
+	TeamID          int64               `gorm:"column:team_id;primaryKey;autoIncrement" json:"team_id"`
 	GameID          int64               `gorm:"column:game_id;not null" json:"game_id"`
 	TeamName        string              `gorm:"column:team_name;not null" json:"team_name"`
 	TeamAvatar      *string             `gorm:"column:team_avatar" json:"team_avatar"`
 	TeamSlogan      *string             `gorm:"column:team_slogan" json:"team_slogan"`
 	TeamDescription *string             `gorm:"column:team_description" json:"team_description"`
 	TeamMembers     pq.StringArray      `gorm:"column:team_members;type:text[]" json:"team_members"`
-	TeamScore       float64             `gorm:"column:team_score;not null" json:"team_score"`
+	TeamScore       float64             `gorm:"column:team_score;not null;default:0" json:"team_score"`
 	TeamHash        string              `gorm:"column:team_hash;not null" json:"team_hash"`
 	InviteCode      *string             `gorm:"column:invite_code" json:"invite_code"`
 	TeamStatus      ParticipationStatus `gorm:"column:team_status;not null" json:"team_status"`
+	CreateTime      time.Time           `gorm:"column:create_time;not null" json:"create_time"`
+	UpdateTime      *time.Time          `gorm:"column:update_time" json:"update_time"`
 }
 
-// TableName Team's table name
+// TableName 获取Team的表名
 func (*Team) TableName() string {
 	return TableNameTeam
 }

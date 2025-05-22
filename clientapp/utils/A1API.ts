@@ -365,7 +365,15 @@ export interface UserTeamInfo {
   team_avatar?: string | null;
   team_slogan?: string | null;
   team_description?: string | null;
-  team_members?: string[] | null;
+  team_members?: {
+    captain?: boolean;
+    /** 用户头像URL */
+    avatar?: string | null;
+    /** 用户名 */
+    user_name: string;
+    /** 用户ID */
+    user_id: string;
+  }[];
   /** @format double */
   team_score: number;
   team_hash: string;
@@ -1241,6 +1249,45 @@ export class Api<
         format: "json",
         ...params,
       }),
+
+    /**
+     * @description 上传用户头像图片并更新用户资料
+     *
+     * @tags user
+     * @name UploadUserAvatar
+     * @summary 上传用户头像
+     * @request POST:/api/user/avatar/upload
+     * @secure
+     */
+    uploadUserAvatar: (
+      data: {
+        /**
+         * 要上传的头像图片文件，支持jpg、png、gif等常见图片格式
+         * @format binary
+         */
+        avatar: File;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "头像上传成功" */
+          message: string;
+          /** 头像访问URL */
+          avatar_url: string;
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/user/avatar/upload`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.FormData,
+        format: "json",
+        ...params,
+      }),
   };
   admin = {
     /**
@@ -1640,7 +1687,7 @@ export class Api<
      * @request POST:/api/admin/user/delete
      */
     adminDeleteUser: (
-      data: AdminUserOperationPayload,
+      data: AdminTeamOperationPayload,
       params: RequestParams = {},
     ) =>
       this.request<
@@ -1925,6 +1972,106 @@ export class Api<
         path: `/api/admin/container/flag`,
         method: "GET",
         query: query,
+        format: "json",
+        ...params,
+      }),
+  };
+  file = {
+    /**
+     * @description 上传文件并存储到服务器，返回文件ID
+     *
+     * @tags file
+     * @name UploadFile
+     * @summary 上传文件
+     * @request POST:/api/file/upload
+     * @secure
+     */
+    uploadFile: (
+      data: {
+        /**
+         * 要上传的文件
+         * @format binary
+         */
+        file: File;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /**
+           * 上传文件的唯一标识符
+           * @format uuid
+           */
+          file_id: string;
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/file/upload`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.FormData,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 根据文件ID下载之前上传的文件
+     *
+     * @tags file
+     * @name DownloadFile
+     * @summary 下载文件
+     * @request GET:/api/file/download/{file_id}
+     * @secure
+     */
+    downloadFile: (fileId: string, params: RequestParams = {}) =>
+      this.request<File, ErrorMessage>({
+        path: `/api/file/download/${fileId}`,
+        method: "GET",
+        secure: true,
+        ...params,
+      }),
+  };
+  team = {
+    /**
+     * @description 上传团队头像图片并更新团队资料，需要团队成员权限
+     *
+     * @tags team
+     * @name UploadTeamAvatar
+     * @summary 上传团队头像
+     * @request POST:/api/team/avatar/upload
+     * @secure
+     */
+    uploadTeamAvatar: (
+      data: {
+        /**
+         * 要上传的团队头像图片文件，支持jpg、png、gif等常见图片格式
+         * @format binary
+         */
+        avatar: File;
+        /** 团队ID */
+        team_id: number;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "团队头像上传成功" */
+          message: string;
+          /** 团队头像访问URL */
+          avatar_url: string;
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/team/avatar/upload`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.FormData,
         format: "json",
         ...params,
       }),

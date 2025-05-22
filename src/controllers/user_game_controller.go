@@ -224,32 +224,80 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 		team_status = models.ParticipateUnRegistered
 	}
 
-	result := UserFullGameInfo{
-		GameID:               game.GameID,
-		Name:                 game.Name,
-		Summary:              game.Summary,
-		Description:          game.Description,
-		Poster:               game.Poster,
-		StartTime:            game.StartTime,
-		EndTime:              game.EndTime,
-		PracticeMode:         game.PracticeMode,
-		TeamNumberLimit:      game.TeamNumberLimit,
-		ContainerNumberLimit: game.ContainerNumberLimit,
-		RequireWP:            game.RequireWp,
-		WPExpireTime:         game.WpExpireTime,
-		Stages:               game.Stages,
-		Visible:              game.Visible,
-		TeamStatus:           team_status,
-		TeamInfo:             &team,
+	// 基本游戏信息
+	gameInfo := gin.H{
+		"game_id":                game.GameID,
+		"name":                   game.Name,
+		"summary":                game.Summary,
+		"description":            game.Description,
+		"poster":                 game.Poster,
+		"start_time":             game.StartTime,
+		"end_time":               game.EndTime,
+		"practice_mode":          game.PracticeMode,
+		"team_number_limit":      game.TeamNumberLimit,
+		"container_number_limit": game.ContainerNumberLimit,
+		"require_wp":             game.RequireWp,
+		"wp_expire_time":         game.WpExpireTime,
+		"stages":                 game.Stages,
+		"visible":                game.Visible,
+		"team_status":            team_status,
+		"team_info":              nil,
 	}
 
-	if team_status == models.ParticipateUnRegistered {
-		result.TeamInfo = nil
+	// 如果用户已加入队伍，添加队伍信息
+	if team_status != models.ParticipateUnRegistered && team.TeamID != 0 {
+		// 获取团队成员信息
+		var members []TeamMemberInfo
+		if team.TeamMembers != nil && len(team.TeamMembers) > 0 {
+			var users []models.User
+			// 将pq.StringArray转换为普通的[]string类型
+			memberIDs := []string(team.TeamMembers)
+			if err := dbtool.DB().Where("user_id IN (?)", memberIDs).Find(&users).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, ErrorMessage{
+					Code:    500,
+					Message: "Failed to load team members",
+				})
+				return
+			}
+
+			// 构建成员详细信息
+			for _, user := range users {
+				members = append(members, TeamMemberInfo{
+					Avatar:   user.Avatar,
+					UserName: user.Username,
+					UserID:   user.UserID,
+					Captain:  false,
+				})
+			}
+
+			// 设置第一个成员为队长
+			if len(members) > 0 {
+				// 假设第一个成员是队长/创建者
+				members[0].Captain = true
+			}
+		}
+
+		// 构建团队信息
+		teamInfo := gin.H{
+			"team_id":          team.TeamID,
+			"game_id":          team.GameID,
+			"team_name":        team.TeamName,
+			"team_avatar":      team.TeamAvatar,
+			"team_slogan":      team.TeamSlogan,
+			"team_description": team.TeamDescription,
+			"team_members":     members,
+			"team_score":       team.TeamScore,
+			"team_hash":        team.TeamHash,
+			"invite_code":      team.InviteCode,
+			"team_status":      team.TeamStatus,
+		}
+
+		gameInfo["team_info"] = teamInfo
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
-		"data": result,
+		"data": gameInfo,
 	})
 }
 

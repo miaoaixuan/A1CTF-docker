@@ -1,36 +1,18 @@
-import { Button } from "components/ui/button"
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
 } from "components/ui/dialog"
-import { Input } from "components/ui/input"
-import { Label } from "components/ui/label"
 
-import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from "components/ui/form"
 
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
-import { ChangeEvent, useEffect, useRef, useState } from "react";
-import { Textarea } from "../ui/textarea";
-import { api } from "utils/GZApi";
+import { useRef, useState } from "react";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
-import { FileUp, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { api } from "utils/ApiHelper";
 
 interface ErrorMessage {
     status: number;
@@ -45,7 +27,9 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number,
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const { t } = useTranslation("upload_image")
+    const { t } = useTranslation("upload_image", { 
+        useSuspense: false  // 禁用 Suspense 模式
+    })
 
     const handleUpload = () => {
         fileInputRef.current?.click();
@@ -54,8 +38,9 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number,
     const handleFileChange = (event: any) => {
         const file = event.target.files[0];
         if (type == "team" && id) {
-            api.team.teamAvatar(id, {
-                file: file
+            api.team.uploadTeamAvatar({
+                avatar: file,
+                team_id: id
             }).then((res) => {
                 toast.success(t("set_avatar_success"))
 
@@ -73,8 +58,8 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number,
             })
         }
         if (type == "person") {
-            api.account.accountAvatar({
-                file: file
+            api.user.uploadUserAvatar({
+                avatar: file
             }).then((res) => {
                 toast.success(t("set_avatar_success"))
 

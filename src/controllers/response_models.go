@@ -119,6 +119,14 @@ type AdminSimpleTeamMemberInfo struct {
 	UserID   string  `json:"user_id"`
 }
 
+// 添加一个新的结构体用于团队成员信息
+type TeamMemberInfo struct {
+	Avatar   *string `json:"avatar"`
+	UserName string  `json:"user_name"`
+	UserID   string  `json:"user_id"`
+	Captain  bool    `json:"captain"`
+}
+
 type AdminListTeamItem struct {
 	TeamID     int64                       `json:"team_id"`
 	TeamName   string                      `json:"team_name"`

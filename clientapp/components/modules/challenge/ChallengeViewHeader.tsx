@@ -7,7 +7,7 @@ import {
 
 import { SidebarTrigger } from "components/ui/sidebar"
 import { Button } from "components/ui/button"
-import { AppWindow, PackageOpen, Presentation } from "lucide-react"
+import { AppWindow, PackageOpen, Presentation, Settings } from "lucide-react"
 import ToggleTheme from "components/ToggleTheme"
 
 import {
@@ -17,12 +17,14 @@ import {
 } from "components/ui/avatar"
 
 import { Badge } from "components/ui/badge"
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, Suspense, useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { GameNotice, NoticeCategory, UserFullGameInfo, UserProfile } from "utils/A1API";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "components/ui/skeleton";
 import { ProfileUserInfoModel } from "utils/GZApi";
+import AvatarUsername from "../AvatarUsername"
+import { EditTeamDialog } from "components/dialogs/EditTeamDialog"
 
 const ChallengesViewHeader = (
     { 
@@ -151,20 +153,18 @@ const ChallengesViewHeader = (
                 </Button>
                 {/* <Button size="icon" variant="outline" onClick={testFunction}><FlaskConical /></Button> */}
                 <ToggleTheme />
-                <Avatar className="select-none">
-                    {curProfile.avatar ? (
-                        <>
-                            <AvatarImage src={curProfile.avatar || "#"} alt="@shadcn"
-                                className={`rounded-2xl`}
-                            />
-                            <AvatarFallback><Skeleton className="h-full w-full rounded-full" /></AvatarFallback>
-                        </>
-                    ) : (
-                        <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
-                            <span className='text-background text-md'> {curProfile.username?.substring(0, 2)} </span>
+                <DropdownMenu>
+                    <DropdownMenuTrigger>
+                        <div className="w-[35px] h-[35px] flex-shrink-0">
+                            <AvatarUsername avatar_url={gameInfo?.team_info?.team_avatar} username={gameInfo?.team_info?.team_name || "loading..."} />
                         </div>
-                    )}
-                </Avatar>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="mr-4 mt-4">
+                        <EditTeamDialog updateTeam={() => {}} teamModel={gameInfo?.team_info} >
+                            <Button variant="ghost"><Settings />队伍设置</Button>
+                        </EditTeamDialog>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
         </div>
     )

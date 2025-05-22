@@ -111,6 +111,9 @@ var PermissionMap = map[string]PermissionSetting{
 	`^/api/Login$`:           {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	`^/api/account/profile$`: {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
 	`^/api/file/upload$`:     {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	`^/api/file/download/[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$`: {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	`^/api/user/avatar/upload$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	`^/api/team/avatar/upload$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
 
 	`^/api/admin/challenge/list$`:   {RequestMethod: []string{"GET", "POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	`^/api/admin/challenge/create$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
@@ -372,6 +375,18 @@ func main() {
 		accountGroup := auth.Group("/account")
 		{
 			accountGroup.GET("/profile", controllers.GetProfile)
+		}
+
+		// 用户头像上传接口
+		userAvatarGroup := auth.Group("/user")
+		{
+			userAvatarGroup.POST("/avatar/upload", controllers.UploadUserAvatar)
+		}
+
+		// 团队头像上传接口
+		teamAvatarGroup := auth.Group("/team")
+		{
+			teamAvatarGroup.POST("/avatar/upload", controllers.UploadTeamAvatar)
 		}
 
 		challengeGroup := auth.Group("/admin/challenge")

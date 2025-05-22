@@ -683,7 +683,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AdminUserOperationPayload'
+              $ref: '#/components/schemas/AdminTeamOperationPayload'
         required: true
   /api/game/list:
     get:
@@ -1623,6 +1623,241 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorMessage'
+  /api/file/upload:
+    post:
+      tags: [file]
+      operationId: uploadFile
+      summary: 上传文件
+      description: 上传文件并存储到服务器，返回文件ID
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: 文件上传成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  file_id:
+                    type: string
+                    format: uuid
+                    description: 上传文件的唯一标识符
+                required:
+                  - code
+                  - file_id
+        '400':
+          description: 请求错误，未上传文件或格式不正确
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '401':
+          description: 未授权，用户未登录
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 要上传的文件
+              required:
+                - file
+        required: true
+  /api/file/download/{file_id}:
+    get:
+      tags: [file]
+      operationId: downloadFile
+      summary: 下载文件
+      description: 根据文件ID下载之前上传的文件
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          description: 要下载的文件ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 文件下载成功
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: 请求错误，文件ID格式不正确
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '404':
+          description: 文件不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+  /api/user/avatar/upload:
+    post:
+      tags: [user]
+      operationId: uploadUserAvatar
+      summary: 上传用户头像
+      description: 上传用户头像图片并更新用户资料
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: 头像上传成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "头像上传成功"
+                  avatar_url:
+                    type: string
+                    description: 头像访问URL
+                required:
+                  - code
+                  - message
+                  - avatar_url
+        '400':
+          description: 请求错误，未上传文件或格式不正确
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '401':
+          description: 未授权，用户未登录
+        '415':
+          description: 不支持的媒体类型，上传的不是图片文件
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+                  description: 要上传的头像图片文件，支持jpg、png、gif等常见图片格式
+              required:
+                - avatar
+        required: true
+  /api/team/avatar/upload:
+    post:
+      tags: [team]
+      operationId: uploadTeamAvatar
+      summary: 上传团队头像
+      description: 上传团队头像图片并更新团队资料，需要团队成员权限
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: 团队头像上传成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "团队头像上传成功"
+                  avatar_url:
+                    type: string
+                    description: 团队头像访问URL
+                required:
+                  - code
+                  - message
+                  - avatar_url
+        '400':
+          description: 请求错误，未上传文件或格式不正确
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '401':
+          description: 未授权，用户未登录
+        '403':
+          description: 权限不足，非团队成员
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '404':
+          description: 团队不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '415':
+          description: 不支持的媒体类型，上传的不是图片文件
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+                  description: 要上传的团队头像图片文件，支持jpg、png、gif等常见图片格式
+                team_id:
+                  type: integer
+                  description: 团队ID
+              required:
+                - avatar
+                - team_id
+        required: true
 components:
   securitySchemes:
     cookieAuth:
@@ -2186,8 +2421,23 @@ components:
         team_members:
           type: array
           items:
-            type: string
-            format: uuid
+            type: object
+            properties:
+              captain:
+                type: boolean
+              avatar:
+                type: string
+                nullable: true
+                description: 用户头像URL
+              user_name:
+                type: string
+                description: 用户名
+              user_id:
+                type: string
+                description: 用户ID
+            required:
+              - user_name
+              - user_id
           nullable: true
         team_score:
           type: number

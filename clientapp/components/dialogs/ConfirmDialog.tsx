@@ -30,7 +30,9 @@ export const ConfirmDialog: React.FC<DialogSettings> = ({ settings: {
     onConfirm, onCancel, isOpen, message, title = "Are you sure"
 }, setSettings }) => {
 
-    const { t } = useTranslation("teams")
+    const { t } = useTranslation("teams", { 
+        useSuspense: false  // 禁用 Suspense 模式
+    })
 
     const setIsOpen = (status: boolean) => {
         setSettings((prev) => (

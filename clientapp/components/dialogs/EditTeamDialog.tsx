@@ -38,14 +38,17 @@ import { Trash2 } from "lucide-react";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { ConfirmDialog, DialogOption } from "./ConfirmDialog";
 import { useTranslation } from "react-i18next";
+import { UserTeamInfo } from "utils/A1API"
 interface ErrorMessage {
     status: number;
     title: string;
 }
 
-export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamInfoModel, children: React.ReactNode }> = ({ updateTeam, teamModel, children }) => {
+export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: UserTeamInfo | undefined, children: React.ReactNode }> = ({ updateTeam, teamModel, children }) => {
 
-    const { t } = useTranslation("teams")
+    const { t } = useTranslation("teams", { 
+        useSuspense: false  // 禁用 Suspense 模式
+    })
 
     const formSchema = z.object({
         teamName: z.string().min(2, {
@@ -57,14 +60,14 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            teamName: teamModel.name || "",
-            slogan: teamModel.bio || ""
+            teamName: teamModel?.team_name || "",
+            slogan: teamModel?.team_slogan || ""
         },
     })
 
     const resetValue = () => {
-        form.setValue("slogan", teamModel.bio || "")
-        form.setValue("teamName", teamModel.name || "")
+        form.setValue("slogan", teamModel?.team_slogan || "")
+        form.setValue("teamName", teamModel?.team_name || "")
     }
 
     useEffect(() => {
@@ -82,7 +85,7 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
 
     function onSubmit(values: z.infer<typeof formSchema>) {
         setSubmitDisabled(true)
-        api.team.teamUpdateTeam(teamModel.id!, {
+        api.team.teamUpdateTeam(teamModel?.team_id!, {
             name: values.teamName,
             bio: values.slogan
         }).then((res) => {
@@ -102,7 +105,7 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
 
     const handleKickMember = (member: TeamUserInfoModel) => {
         setSubmitDisabled(true)
-        api.team.teamKickUser(teamModel.id!, member.id!).then((res) => {
+        api.team.teamKickUser(teamModel?.team_id!, member.id!).then((res) => {
             toast.success(`${t("kick_user_info_p1")} ${ member.userName } ${t("kick_user_info_p2")}`)
             setSubmitDisabled(false)
             updateTeam()
@@ -117,8 +120,8 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
     }
 
     const deleteTeam = () => {
-        api.team.teamDeleteTeam(teamModel.id!).then(() => {
-            toast.success(`${t("disband_info_p1")} ${ teamModel.name } ${t("disband_info_p2")}`)
+        api.team.teamDeleteTeam(teamModel?.team_id!).then(() => {
+            toast.success(`${t("disband_info_p1")} ${ teamModel?.team_name } ${t("disband_info_p2")}`)
             setSubmitDisabled(false)
             updateTeam()
             setIsOpen(false)
@@ -133,8 +136,8 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
     }
 
     const leaveTeam = () => {
-        api.team.teamLeave(teamModel.id!).then(() => {
-            toast.success(`${t("leave_team_info_p1")} ${ teamModel.name } ${t("leave_team_info_p2")}`)
+        api.team.teamLeave(teamModel?.team_id!).then(() => {
+            toast.success(`${t("leave_team_info_p1")} ${ teamModel?.team_name } ${t("leave_team_info_p2")}`)
             setSubmitDisabled(false)
             updateTeam()
             setIsOpen(false)
@@ -175,7 +178,7 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
     }
 
     const isLeader = () => {
-        const target = teamModel.members?.find((e) => e.id == curProfile.user_id)
+        const target = teamModel?.team_members?.find((e) => e.user_id == curProfile.user_id)
         return target?.captain
     }
 
@@ -192,7 +195,7 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
             >
                 <ConfirmDialog settings={dialogOption} setSettings={setDialogOption} />
                 <DialogHeader>
-                    <DialogTitle>{ t("edit_team") } - { teamModel.name || "" }</DialogTitle>
+                    <DialogTitle>{ t("edit_team") } - { teamModel?.team_name || "" }</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -216,34 +219,34 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
                                 />
                             </div>
                             { isLeader() ? (
-                                <UploadImageDialog id={teamModel.id!} type="team" updateTeam={updateTeam}>
+                                <UploadImageDialog id={teamModel?.team_id!} type="team" updateTeam={updateTeam}>
                                     <Avatar className="select-none w-20 h-20 mr-4">
-                                        { teamModel.avatar ? (
+                                        { teamModel?.team_avatar ? (
                                             <>
-                                                <AvatarImage src={teamModel.avatar || "#"} alt="@shadcn"
+                                                <AvatarImage src={teamModel?.team_avatar || "#"} alt="@shadcn"
                                                     className={`rounded-2xl`}
                                                 />
                                                 <AvatarFallback><Skeleton className="h-20 w-20 rounded-full" /></AvatarFallback>
                                             </>
                                         ) : ( 
                                             <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
-                                                <span className='text-background text-xl'> { teamModel.name?.substring(0, 2) } </span>
+                                                <span className='text-background text-xl'> { teamModel?.team_name?.substring(0, 2) } </span>
                                             </div>
                                         ) }
                                     </Avatar>
                                 </UploadImageDialog>
                             ) : (
                                 <Avatar className="select-none w-20 h-20 mr-4">
-                                    { teamModel.avatar ? (
+                                    { teamModel?.team_avatar ? (
                                         <>
-                                            <AvatarImage src={teamModel.avatar || "#"} alt="@shadcn"
+                                            <AvatarImage src={teamModel?.team_avatar || "#"} alt="@shadcn"
                                                 className={`rounded-2xl`}
                                             />
                                             <AvatarFallback><Skeleton className="h-20 w-20 rounded-full" /></AvatarFallback>
                                         </>
                                     ) : ( 
                                         <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
-                                            <span className='text-background text-xl'> { teamModel.name?.substring(0, 2) } </span>
+                                            <span className='text-background text-xl'> { teamModel?.team_name?.substring(0, 2) } </span>
                                         </div>
                                     ) }
                                 </Avatar>
@@ -269,7 +272,7 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
                             <FormLabel>{ t("members") }</FormLabel>
                             <FormControl>
                                 <div className="flex flex-col gap-3">
-                                    { teamModel.members?.map((e, index) => (
+                                    { teamModel?.team_members?.map((e, index) => (
                                         <div className="flex items-center gap-4" key={`edit_member_${index}`}>
                                             <Avatar className="select-none w-12 h-12" key={`user-${index}`}>
                                                 { e.avatar ? (
@@ -281,11 +284,11 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: TeamI
                                                     </>
                                                 ) : ( 
                                                     <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-xl'>
-                                                        <span className='text-background text-xl'> { e.userName?.substring(0, 2) } </span>
+                                                        <span className='text-background text-xl'> { e.user_name?.substring(0, 2) } </span>
                                                     </div>
                                                 ) }
                                             </Avatar>
-                                            <span className="text-lg">{ e.userName }</span>
+                                            <span className="text-lg">{ e.user_name }</span>
                                             <div className="flex-1"/>
                                             <Badge className={`pl-2 pr-2 ${ e.captain ? "bg-yellow-500 hover:bg-yellow-400" : "bg-blue-500 hover:bg-blue-400" }`}> { e.captain ? t("leader") : t("member") } </Badge>
                                             { e.captain || !isLeader() || submitDisabled ? (
