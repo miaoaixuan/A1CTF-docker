@@ -23,14 +23,16 @@ func Login() func(c *gin.Context) (interface{}, error) {
 			return "", jwt.ErrMissingLoginValues
 		}
 
-		turnstile := turnstile.New(ClientConfig.TurnstileSecretKey)
-		response, err := turnstile.Verify(loginVals.CaptCha, c.ClientIP())
-		if err != nil {
-			return nil, jwt.ErrMissingLoginValues
-		}
+		if ClientConfig.TurnstileEnabled {
+			turnstile := turnstile.New(ClientConfig.TurnstileSecretKey)
+			response, err := turnstile.Verify(loginVals.CaptCha, c.ClientIP())
+			if err != nil {
+				return nil, jwt.ErrMissingLoginValues
+			}
 
-		if !response.Success {
-			return nil, jwt.ErrMissingLoginValues
+			if !response.Success {
+				return nil, jwt.ErrMissingLoginValues
+			}
 		}
 
 		user_result := models.User{}
@@ -123,6 +125,26 @@ func Register(c *gin.Context) {
 			"message": "Invalid request payload",
 		})
 		return
+	}
+
+	if ClientConfig.TurnstileEnabled {
+		turnstile := turnstile.New(ClientConfig.TurnstileSecretKey)
+		response, err := turnstile.Verify(payload.Captcha, c.ClientIP())
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    400,
+				"message": "Invalid request payload",
+			})
+			return
+		}
+
+		if !response.Success {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    400,
+				"message": "Invalid request payload",
+			})
+			return
+		}
 	}
 
 	var existingUsers []models.User

@@ -15,12 +15,15 @@ import (
 	"a1ctf/src/jobs"
 	"a1ctf/src/utils"
 	dbtool "a1ctf/src/utils/db_tool"
+	"a1ctf/src/utils/monitoring"
 	"a1ctf/src/utils/redis_tool"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-contrib/gzip"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron/v2"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	cache "github.com/chenyahui/gin-cache"
 	"github.com/chenyahui/gin-cache/persist"
@@ -315,6 +318,11 @@ func main() {
 	// 加载配置文件
 	controllers.LoadSystemSettings()
 
+	// 初始化系统监控
+	systemMonitor := monitoring.NewSystemMonitor(1 * time.Second)
+	systemMonitor.Start()
+	defer systemMonitor.Stop()
+
 	// db_init.InitMyDB()
 
 	memoryStore := persist.NewMemoryStore(1 * time.Minute)
@@ -335,10 +343,18 @@ func main() {
 	// 	}),
 	// )
 
-	// r := gin.Default()
-
 	// 关闭日志输出
 	r := gin.New()
+
+	pprof.Register(r)
+
+	// r := gin.Default()
+
+	r.Use(monitoring.GinPrometheusMiddleware())
+
+	// 启动性能监控
+	http.Handle("/metrics", promhttp.Handler())
+	go http.ListenAndServe(":8081", nil)
 
 	r.Use(gzip.Gzip(gzip.DefaultCompression))
 

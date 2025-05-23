@@ -19,11 +19,12 @@ import { useState } from "react";
 
 import { useTheme } from "next-themes";
 import { useTransitionContext } from 'contexts/TransitionContext';
-import { api, ErrorMessage } from 'utils/GZApi';
 import { AxiosError } from 'axios';
 import { toast } from 'sonner';
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
+import { api } from "utils/ApiHelper";
+import Turnstile, { useTurnstile } from "react-turnstile";
 
 export function RegisterForm({
     className,
@@ -32,10 +33,11 @@ export function RegisterForm({
     const { t } = useTranslation("register_form");
 
     const [loading, setLoading] = useState(false)
+    const [token, setToken] = useState("")
 
-    const { theme } = useTheme();
+    const { theme, systemTheme } = useTheme();
 
-    const { updateProfile } = useGlobalVariableContext()
+    const { updateProfile, clientConfig } = useGlobalVariableContext()
 
     const { startTransition } = useTransitionContext()
     const router = useNavigate()
@@ -66,12 +68,15 @@ export function RegisterForm({
     })
 
     const [submitDisabled, setSubmitDisabled] = useState(false)
+    const turnstile = useTurnstile();
 
     function onSubmit(values: z.infer<typeof formSchema>) {
-        api.account.accountRegister({
+        setLoading(true)
+        api.auth.userRegister({
             email: values.email,
-            userName: values.userName,
-            password: values.password
+            username: values.userName,
+            password: values.password,
+            captcha: token
         }).then((res) => {
             updateProfile(() => {
                 startTransition(() => {
@@ -83,12 +88,15 @@ export function RegisterForm({
                 }, 300)
             })
         }).catch((error: AxiosError) => {
+            turnstile.reset()
+            setToken("")
             if (error.response?.status == 400) {
-                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.title)
+                toast.error((error.response.data as any).message)
             } else {
                 toast.error(t("unknow_error"))
             }
+        }).finally(() => {
+            setLoading(false)
         })
     }
 
@@ -163,8 +171,20 @@ export function RegisterForm({
                             </FormItem>
                         )}
                     />
+                    { clientConfig.turnstileEnabled ? (
+                        <div className="w-full items-center justify-center flex">
+                            <Turnstile
+                                theme={(theme == "system" ? systemTheme : theme) as "dark" | "light" | "auto"}
+                                refreshExpired="auto"
+                                sitekey={clientConfig.turnstileSiteKey}
+                                onVerify={(token) => {
+                                    setToken(token)
+                                }}
+                            />
+                        </div>
+                    ) : <></> } 
                     <div className='h-0' />
-                    <Button type="submit" className="transition-all duration-300 w-full">{ t("signup") }</Button>
+                    <Button type="submit" className="transition-all duration-300 w-full" disabled={loading || (clientConfig.turnstileEnabled && token == "")}>{ t("signup") }</Button>
                     <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border transition-[border-color] duration-300">
                         <span className="relative z-10 bg-background px-2 text-muted-foreground transition-all duration-300">
                             {t("or_continue_with")}

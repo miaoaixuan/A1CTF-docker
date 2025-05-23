@@ -3,7 +3,6 @@ package models
 import (
 	"database/sql/driver"
 	"errors"
-	"time"
 
 	"github.com/bytedance/sonic"
 	"github.com/lib/pq"
@@ -48,8 +47,6 @@ type Team struct {
 	TeamHash        string              `gorm:"column:team_hash;not null" json:"team_hash"`
 	InviteCode      *string             `gorm:"column:invite_code" json:"invite_code"`
 	TeamStatus      ParticipationStatus `gorm:"column:team_status;not null" json:"team_status"`
-	CreateTime      time.Time           `gorm:"column:create_time;not null" json:"create_time"`
-	UpdateTime      *time.Time          `gorm:"column:update_time" json:"update_time"`
 }
 
 // TableName 获取Team的表名

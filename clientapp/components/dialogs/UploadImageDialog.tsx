@@ -62,10 +62,9 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number,
                 avatar: file
             }).then((res) => {
                 toast.success(t("set_avatar_success"))
-
-                if (updateTeam) updateTeam()
                 setTimeout(() => {
                     setIsOpen(false)
+                    if (updateTeam) updateTeam()
                 }, 200)
             }).catch((error: AxiosError) => {
                 if (error.response?.status) {

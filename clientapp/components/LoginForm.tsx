@@ -58,7 +58,7 @@ export function LoginForm({
 
     const [loading, setLoading] = useState(false)
 
-    const { theme } = useTheme();
+    const { theme, systemTheme } = useTheme();
 
     const formSchema = z.object({
         userName: z.string().nonempty(t("username_not_null")),
@@ -157,7 +157,7 @@ export function LoginForm({
                 { clientConfig.turnstileEnabled ? (
                     <div className="w-full items-center justify-center flex">
                         <Turnstile
-                            theme={theme as "dark" | "light" | "auto"}
+                            theme={(theme == "system" ? systemTheme : theme) as "dark" | "light" | "auto"}
                             refreshExpired="auto"
                             sitekey={clientConfig.turnstileSiteKey}
                             onVerify={(token) => {
@@ -167,7 +167,7 @@ export function LoginForm({
                     </div>
                 ) : <></> } 
                 <div className='h-0' />
-                <Button type="submit" className="transition-all duration-300 w-full" disabled={loading || token == ""}>{t("login")}</Button>
+                <Button type="submit" className="transition-all duration-300 w-full" disabled={loading || (clientConfig.turnstileEnabled && token == "")}>{t("login")}</Button>
                 <div className="text-center text-sm">
                     {t("dont_have_account")}{" "}
                     <a className="underline underline-offset-4" onClick={() => startTransition(() => {

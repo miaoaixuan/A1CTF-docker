@@ -370,26 +370,38 @@ func UserGetGameChallenges(c *gin.Context) {
 	var team = c.MustGet("team").(models.Team)
 
 	// Cache all solves to redis
-	var totalSolves []models.Solve
-	if err := redis_tool.GetOrCache(fmt.Sprintf("solved_challenges_for_game_%d", game.GameID), &totalSolves, func() (interface{}, error) {
+
+	var solveMap map[int64][]models.Solve
+
+	if err := redis_tool.GetOrCache(fmt.Sprintf("solved_challenges_for_game_%d", game.GameID), &solveMap, func() (interface{}, error) {
+		var totalSolves []models.Solve
+
 		if err := dbtool.DB().Where("game_id = ? AND solve_status = ?", game.GameID, models.SolveCorrect).Preload("Challenge").Find(&totalSolves).Error; err != nil {
 			return nil, err
 		}
 
-		return totalSolves, nil
+		for _, solve := range totalSolves {
+			lastSolves, ok := solveMap[solve.TeamID]
+			if !ok {
+				lastSolves = make([]models.Solve, 0)
+			}
+
+			lastSolves = append(lastSolves, solve)
+			solveMap[solve.TeamID] = lastSolves
+		}
+
+		return solveMap, nil
 	}, 1*time.Second, true); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorMessage{
 			Code:    500,
-			Message: "System error",
+			Message: err.Error(),
 		})
 		return
 	}
 
-	var solves []models.Solve
-	for _, solve := range totalSolves {
-		if team.TeamID == solve.TeamID {
-			solves = append(solves, solve)
-		}
+	solves, ok := solveMap[team.TeamID]
+	if !ok {
+		solves = make([]models.Solve, 0)
 	}
 
 	var solved_challenges []UserSimpleGameSolvedChallenge = make([]UserSimpleGameSolvedChallenge, 0, len(solves))

@@ -16,6 +16,7 @@ import (
 
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
+	"a1ctf/src/utils/redis_tool"
 )
 
 func UploadFile(c *gin.Context) {
@@ -120,19 +121,29 @@ func DownloadFile(c *gin.Context) {
 		return
 	}
 
-	var uploadRecord models.Upload
-	if err := dbtool.DB().Where("file_id = ?", fileID).First(&uploadRecord).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{
-				"code":    404,
-				"message": "File not found",
-			})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    500,
-				"message": "Database query failed",
-			})
+	var filesMap map[string]models.Upload
+	if err := redis_tool.GetOrCache("file_list", &filesMap, func() (interface{}, error) {
+		filesMap := make(map[string]models.Upload)
+		var files []models.Upload
+		dbtool.DB().Find(&files)
+		for _, file := range files {
+			filesMap[file.FileID] = file
 		}
+		return filesMap, nil
+	}, 1*time.Second, true); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load files map",
+		})
+		return
+	}
+
+	uploadRecord, ok := filesMap[fileID.String()]
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":    404,
+			"message": "File not found",
+		})
 		return
 	}
 
@@ -156,6 +167,8 @@ func DownloadFile(c *gin.Context) {
 
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", uploadRecord.FileName))
 	c.Header("Content-Type", uploadRecord.FileType)
+
+	c.Header("Cache-Control", "public, max-age=36000")
 
 	if _, err := io.Copy(c.Writer, file); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -296,6 +309,8 @@ func UploadUserAvatar(c *gin.Context) {
 		})
 		return
 	}
+
+	redis_tool.DeleteCache("user_list")
 
 	// 返回成功响应
 	c.JSON(http.StatusOK, gin.H{
@@ -510,6 +525,8 @@ func UploadTeamAvatar(c *gin.Context) {
 		})
 		return
 	}
+
+	redis_tool.DeleteCache(fmt.Sprintf("all_teams_for_game_%d", team.GameID))
 
 	// 返回成功响应
 	c.JSON(http.StatusOK, gin.H{

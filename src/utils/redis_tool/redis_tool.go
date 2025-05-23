@@ -70,7 +70,7 @@ func GetOrCache(key string, model interface{}, callback func() (interface{}, err
 		// 未获取到锁，说明有其他请求正在重建缓存
 		// 短暂等待后重试几次
 		for i := 0; i < 3; i++ {
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(20 * time.Millisecond)
 			value, err := dbtool.Redis().Get(key).Result()
 			if err == nil {
 				// 缓存已被重建
@@ -88,4 +88,8 @@ func GetOrCache(key string, model interface{}, callback func() (interface{}, err
 		resultBytes, _ := sonic.Marshal(result)
 		return sonic.Unmarshal(resultBytes, model)
 	}
+}
+
+func DeleteCache(key string) error {
+	return dbtool.Redis().Del(key).Err()
 }

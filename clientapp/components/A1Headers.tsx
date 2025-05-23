@@ -37,7 +37,7 @@ const PageHeader = () => {
 
     const curPath = useLocation().pathname;
 
-    const [cookies, setCookie, removeCookie] = useCookies(["uid"])
+    const [cookies, setCookie, removeCookie] = useCookies(["uid", "a1token"])
     const { curProfile, updateProfile } = useGlobalVariableContext()
 
     let path = useLocation().pathname.split("/")[1];
@@ -143,11 +143,11 @@ const PageHeader = () => {
                                                 <span>{ t("change_password_header") }</span>
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => {
-                                                api.account.accountLogOut().then(() => {
-                                                    updateProfile(() => {
-                                                        navigate(`/`)
-                                                        toast.success(t("login_out_success"))
-                                                    })
+                                                removeCookie("uid")
+                                                removeCookie("a1token")
+                                                updateProfile(() => {
+                                                    navigate(`/`)
+                                                    toast.success(t("login_out_success"))
                                                 })
                                             }}>
                                                 <UserRoundMinus />

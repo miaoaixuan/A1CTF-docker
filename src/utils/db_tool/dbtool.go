@@ -1,6 +1,7 @@
 package dbtool
 
 import (
+	"a1ctf/src/utils/monitoring"
 	"context"
 	"log"
 	"os"
@@ -57,6 +58,14 @@ func Init() {
 		// Logger: newLogger, // 设置自定义 Logger
 	})
 	if err != nil {
+		panic(err)
+	}
+
+	prometheusPlugin := &monitoring.PrometheusPlugin{
+		SlowThreshold: 100 * time.Millisecond, // 慢查询阈值
+	}
+
+	if err := db_local.Use(prometheusPlugin); err != nil {
 		panic(err)
 	}
 

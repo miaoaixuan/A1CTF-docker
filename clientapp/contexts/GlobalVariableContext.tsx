@@ -117,7 +117,7 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
     }
     
     useEffect(() => {
-        if (!curProfile.user_id) {
+        if (!curProfile.user_id && cookies.uid) {
             api.user.getUserProfile().then((res) => {
                 setCurProfile(res.data.data)
                 setCookie("uid", res.data.data.user_id, { path: "/" })
@@ -128,16 +128,10 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
 
         if (cookies.clientConfig) {
             setClientConfig(cookies.clientConfig)
-        } else {
-            refreshClientConfig()
         }
-    }, [])
 
-    useEffect(() => {
-        if (curProfile.client_config_version && curProfile.client_config_version !== clientConfig.updateVersion) {
-            fetchClientConfig()
-        }
-    }, [curProfile])
+        refreshClientConfig()
+    }, [])
 
     // 获取客户端配置
     const fetchClientConfig = async () => {
@@ -145,13 +139,15 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
             const response = await axios.get('/api/client-config');
             if (response.data && response.data.code === 200) {
 
+                if (response.data.data.updateVersion && response.data.data.updateVersion == cookies.clientConfig.updateVersion) {
+                    return
+                }
+
                 if (browserName.includes("Chrome")) {
                     response.data.data.BGAnimation = true
                 }
 
-                if (clientConfig.updateVersion) {
-                    response.data.data.BGAnimation = clientConfig.BGAnimation
-                }
+                response.data.data.BGAnimation = cookies.clientConfig.BGAnimation
 
                 setClientConfig(response.data.data);
                 setCookie("clientConfig", response.data.data, { path: "/" })

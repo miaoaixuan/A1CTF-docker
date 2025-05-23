@@ -60,14 +60,14 @@ type TeamScoreItem struct {
 type LoginPayload struct {
 	Username string `form:"username" json:"username" binding:"required"`
 	Password string `form:"password" json:"password" binding:"required"`
-	CaptCha  string `form:"captcha" json:"captcha" binding:"required"`
+	CaptCha  string `form:"captcha" json:"captcha"`
 }
 
 type RegisterPayload struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
 	Email    string `json:"email" binding:"required"`
-	Captcha  string `json:"captcha" binding:"required"`
+	Captcha  string `json:"captcha"`
 }
 
 // Admin payloads
