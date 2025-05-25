@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"log"
 	"net/http"
 	"time"
 
@@ -68,52 +67,42 @@ func GetProfile(c *gin.Context) {
 	claims := jwt.ExtractClaims(c)
 	userID := claims["UserID"].(string)
 
-	var all_users []models.User
-
-	if err := redis_tool.GetOrCache("user_list", &all_users, func() (interface{}, error) {
-		if err := dbtool.DB().Find(&all_users).Error; err != nil {
-			return nil, err
-		}
-
-		return all_users, nil
-	}, 1*time.Second, true); err != nil {
-		log.Printf("+%v", err)
-		c.JSON(http.StatusForbidden, ErrorMessage{
-			Code:    403,
-			Message: "Error",
+	userMap, err := redis_tool.CachedMemberMap()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "System error",
 		})
 		return
 	}
 
-	for _, user := range all_users {
-		if user.UserID == userID {
-			c.JSON(http.StatusOK, gin.H{
-				"code": 200,
-				"data": gin.H{
-					"user_id":               user.UserID,
-					"username":              user.Username,
-					"role":                  user.Role,
-					"phone":                 user.Phone,
-					"student_number":        user.StudentNumber,
-					"realname":              user.Realname,
-					"slogan":                user.Slogan,
-					"avatar":                user.Avatar,
-					"email":                 user.Email,
-					"email_verified":        user.EmailVerified,
-					"register_time":         user.RegisterTime,
-					"last_login_time":       user.LastLoginTime,
-					"last_login_ip":         user.LastLoginIP,
-					"client_config_version": ClientConfig.UpdatedTime,
-				},
-			})
-
-			return
-		}
+	user, ok := userMap[userID]
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":    404,
+			"message": "User not found",
+		})
+		return
 	}
 
-	c.JSON(http.StatusNotFound, gin.H{
-		"code":    404,
-		"message": "User not found",
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": gin.H{
+			"user_id":               user.UserID,
+			"username":              user.Username,
+			"role":                  user.Role,
+			"phone":                 user.Phone,
+			"student_number":        user.StudentNumber,
+			"realname":              user.Realname,
+			"slogan":                user.Slogan,
+			"avatar":                user.Avatar,
+			"email":                 user.Email,
+			"email_verified":        user.EmailVerified,
+			"register_time":         user.RegisterTime,
+			"last_login_time":       user.LastLoginTime,
+			"last_login_ip":         user.LastLoginIP,
+			"client_config_version": ClientConfig.UpdatedTime,
+		},
 	})
 }
 

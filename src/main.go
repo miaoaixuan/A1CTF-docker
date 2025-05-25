@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"regexp"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -111,132 +110,163 @@ type PermissionSetting struct {
 }
 
 var PermissionMap = map[string]PermissionSetting{
-	`^/api/Login$`:           {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/account/profile$`: {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
-	`^/api/file/upload$`:     {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
-	`^/api/file/download/[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$`: {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
-	`^/api/user/avatar/upload$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
-	`^/api/team/avatar/upload$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	"/api/account/profile":        {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	"/api/file/upload":            {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	"/api/file/download/:file_id": {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	"/api/user/avatar/upload":     {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	"/api/team/avatar/upload":     {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
 
-	`^/api/admin/challenge/list$`:   {RequestMethod: []string{"GET", "POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/admin/challenge/create$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/admin/challenge/\d+$`:    {RequestMethod: []string{"GET", "PUT", "DELETE"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/admin/challenge/search$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/challenge/list":          {RequestMethod: []string{"GET", "POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/challenge/create":        {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/challenge/:challenge_id": {RequestMethod: []string{"GET", "PUT", "DELETE"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/challenge/search":        {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 
-	`^/api/admin/user/list$`:           {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/admin/user/update$`:         {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/admin/user/reset-password$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/admin/user/delete$`:         {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/user/list":           {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/user/update":         {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/user/reset-password": {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/user/delete":         {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 
-	`^/api/admin/team/list$`:    {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/admin/team/approve$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/admin/team/ban$`:     {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/admin/team/unban$`:   {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/admin/team/delete$`:  {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/team/list":    {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/team/approve": {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/team/ban":     {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/team/unban":   {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/team/delete":  {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 
-	`^/api/admin/game/list$`:              {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/admin/game/create$`:            {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/admin/game/\d+$`:               {RequestMethod: []string{"GET", "POST", "PUT"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/admin/game/\d+/challenge/\d+$`: {RequestMethod: []string{"PUT"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/game/list":                             {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/game/create":                           {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/game/:game_id":                         {RequestMethod: []string{"GET", "POST", "PUT"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/game/:game_id/challenge/:challenge_id": {RequestMethod: []string{"PUT"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 
-	`^/api/game/list$`:              {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
-	`^/api/game/\d+$`:               {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
-	`^/api/game/\d+/challenges$`:    {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
-	`^/api/game/\d+/challenge/\d+$`: {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
-	`^/api/game/\d+/notices$`:       {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
-	`^/api/game/\d+/createTeam$`:    {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
-	`^/api/game/\d+/scoreboard$`:    {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
-	`^/api/game/\d+/container/\d+$`: {RequestMethod: []string{"POST", "DELETE", "PATCH", "GET"}, Permissions: []models.UserRole{}},
-	`^/api/game/\d+/flag/\d+$`:      {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
-	`^/api/hub$`:                    {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
-	`^/api/game/\d+/flag/[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$`: {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	"/api/game/list":                             {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	"/api/game/:game_id":                         {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	"/api/game/:game_id/challenges":              {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	"/api/game/:game_id/challenge/:challenge_id": {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	"/api/game/:game_id/notices":                 {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	"/api/game/:game_id/createTeam":              {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	"/api/game/:game_id/scoreboard":              {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	"/api/game/:game_id/container/:challenge_id": {RequestMethod: []string{"POST", "DELETE", "PATCH", "GET"}, Permissions: []models.UserRole{}},
+	"/api/game/:game_id/flag/:challenge_id":      {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	"/api/hub":                                   {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	"/api/game/:game_id/flag/:judge_id":          {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
 
-	`^/api/admin/container/list$`:   {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/admin/container/delete$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/admin/container/extend$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/admin/container/flag$`:   {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/container/list":   {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/container/delete": {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/container/extend": {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/container/flag":   {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 
 	// 系统设置相关API权限
-	`^/api/admin/system/settings$`:  {RequestMethod: []string{"GET", "POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/admin/system/upload$`:    {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/admin/system/test-smtp$`: {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	`^/api/client-config$`:          {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	"/api/admin/system/settings":  {RequestMethod: []string{"GET", "POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/system/upload":    {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/system/test-smtp": {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/client-config":          {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
 }
 
-// Helper function to check if a slice contains a value
-func contains_role(slice []models.UserRole, value models.UserRole) bool {
-	for _, item := range slice {
-		if item == value {
-			return true
-		}
-	}
-	return false
+var RequestMethodMaskMap = map[string]uint64{
+	"GET":     0b1,
+	"POST":    0b10,
+	"PUT":     0b100,
+	"DELETE":  0b1000,
+	"PATCH":   0b10000,
+	"HEAD":    0b100000,
+	"OPTIONS": 0b1000000,
+	"CONNECT": 0b10000000,
+	"TRACE":   0b100000000,
+	"ANY":     0b111111111,
 }
 
-func contains_str(slice []string, value string) bool {
-	for _, item := range slice {
-		if item == value {
-			return true
+var UserRoleMaskMap = map[models.UserRole]uint64{
+	models.UserRoleAdmin:   0b1,
+	models.UserRoleUser:    0b10,
+	models.UserRoleMonitor: 0b100,
+}
+
+type OptimitedPermissionSetting struct {
+	RequestMethodMask uint64
+	PermissionMask    uint64
+}
+
+// 掩码优化后的权限映射表
+var OptimitedPermissionMap = map[string]OptimitedPermissionSetting{}
+
+// 利用掩码优化权限映射表
+func optimitePermissionMap() {
+	for path, rules := range PermissionMap {
+		requestMethodMask := uint64(0)
+		for _, method := range rules.RequestMethod {
+			requestMethodMask |= RequestMethodMaskMap[method]
+		}
+
+		permissionMask := uint64(0)
+		for _, role := range rules.Permissions {
+			permissionMask |= UserRoleMaskMap[role]
+		}
+
+		OptimitedPermissionMap[path] = OptimitedPermissionSetting{
+			RequestMethodMask: requestMethodMask,
+			PermissionMask:    permissionMask,
 		}
 	}
-	return false
 }
 
 func authorizator() func(data interface{}, c *gin.Context) bool {
 	return func(data interface{}, c *gin.Context) bool {
 		if v, ok := data.(*models.JWTUser); ok {
 
-			for k, rules := range PermissionMap {
-				match, _ := regexp.MatchString(k, c.Request.URL.Path)
-				if match {
-					// println(k, c.Request.URL.Path)
+			pathURL := c.FullPath()
 
-					// if len(rules.Permissions) ==  {
-					// 	return false
-					// }
+			rules, ok := OptimitedPermissionMap[pathURL]
+			if ok {
 
-					if !contains_str(rules.RequestMethod, c.Request.Method) {
-						return false
-					}
-
-					if len(rules.Permissions) != 0 && !contains_role(rules.Permissions, v.Role) {
-						return false
-					}
-
-					var all_users []models.User
-
-					if err := redis_tool.GetOrCache("user_list", &all_users, func() (interface{}, error) {
-						if err := dbtool.DB().Find(&all_users).Error; err != nil {
-							return nil, err
-						}
-
-						return all_users, nil
-					}, 1*time.Second, true); err != nil {
-						return false
-					}
-
-					var valid = false
-					var finalUser models.User
-
-					for _, user := range all_users {
-						if user.UserID == v.UserID && user.JWTVersion == v.JWTVersion {
-							valid = true
-							finalUser = user
-							break
-						}
-					}
-
-					if !valid {
-						return false
-					}
-
-					if finalUser.JWTVersion != v.JWTVersion {
-						c.SetCookie("a1token", "", -1, "/", "", false, false)
-						return false
-					}
-
-					return true
+				requestMethodMask, ok := RequestMethodMaskMap[c.Request.Method]
+				if !ok {
+					return false
 				}
+
+				permissionMask, ok := UserRoleMaskMap[v.Role]
+				if !ok {
+					return false
+				}
+
+				// 检查请求方法
+				if requestMethodMask&rules.RequestMethodMask == 0 {
+					return false
+				}
+
+				// 检查权限
+				if rules.PermissionMask != 0 && permissionMask&rules.PermissionMask == 0 {
+					return false
+				}
+
+				var all_users map[string]models.User = make(map[string]models.User)
+
+				if err := redis_tool.GetOrCache("jwt_version_map", &all_users, func() (interface{}, error) {
+
+					var tmpAllUsers map[string]models.User = make(map[string]models.User)
+					var tmpUser []models.User
+					if err := dbtool.DB().Find(&tmpUser).Error; err != nil {
+						return nil, err
+					}
+
+					for _, user := range tmpUser {
+						tmpAllUsers[user.UserID] = user
+					}
+
+					return tmpAllUsers, nil
+				}, 1*time.Second, true); err != nil {
+					return false
+				}
+
+				finalUser, ok := all_users[v.UserID]
+				if !ok {
+					return false
+				}
+
+				if finalUser.JWTVersion != v.JWTVersion {
+					c.SetCookie("a1token", "", -1, "/", "", false, false)
+					return false
+				}
+
+				return true
 			}
 		}
 		return false
@@ -306,6 +336,9 @@ func StartLoopEvent() {
 }
 
 func main() {
+	// 掩码优化健全映射表
+	optimitePermissionMap()
+
 	// 加载配置文件
 	utils.LoadConfig()
 
@@ -345,10 +378,9 @@ func main() {
 
 	// 关闭日志输出
 	r := gin.New()
+	// r := gin.Default()
 
 	pprof.Register(r)
-
-	// r := gin.Default()
 
 	r.Use(monitoring.GinPrometheusMiddleware())
 

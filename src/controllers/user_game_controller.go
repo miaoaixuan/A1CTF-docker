@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"slices"
 	"sort"
 	"strconv"
 	"time"
@@ -36,23 +35,11 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool) gin.Handle
 			return
 		}
 
-		var game models.Game
-
-		if err := redis_tool.GetOrCache(fmt.Sprintf("game_info_%d", gameID), &game, func() (interface{}, error) {
-			if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
-				if err == gorm.ErrRecordNotFound {
-					return nil, errors.New("game not found")
-				} else {
-					return nil, err
-				}
-			}
-
-			return game, nil
-		}, 1*time.Second, true); err != nil {
-			log.Printf("+%v", err)
+		game, err := redis_tool.CachedGameInfo(gameID)
+		if err != nil {
 			c.JSON(http.StatusNotFound, ErrorMessage{
 				Code:    404,
-				Message: err.Error(),
+				Message: "Game not found",
 			})
 			c.Abort()
 			return
@@ -94,7 +81,7 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool) gin.Handle
 		}
 
 		// 将比赛信息存入上下文
-		c.Set("game", game)
+		c.Set("game", *game)
 		c.Next()
 	}
 }
@@ -102,20 +89,23 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool) gin.Handle
 func TeamStatusMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		claims := jwt.ExtractClaims(c)
+		game := c.MustGet("game").(models.Game)
 		user_id := claims["UserID"].(string)
 
 		c.Set("user_id", user_id)
 
-		var team models.Team
+		memberBelongSearchMap, err := redis_tool.CachedMemberSearchTeamMap(game.GameID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorMessage{
+				Code:    500,
+				Message: "Failed to load teams",
+			})
+			c.Abort()
+			return
+		}
 
-		if err := redis_tool.GetOrCache(fmt.Sprintf("team_info_for_user_%s", user_id), &team, func() (interface{}, error) {
-			if err := dbtool.DB().Where("? = ANY(team_members)", user_id).First(&team).Error; err != nil {
-				return nil, err
-			}
-
-			return team, nil
-		}, 1*time.Second, true); err != nil {
-			log.Printf("+%v", err)
+		team, ok := memberBelongSearchMap[user_id]
+		if !ok {
 			c.JSON(http.StatusForbidden, ErrorMessage{
 				Code:    403,
 				Message: "You must join a team in this game",
@@ -193,35 +183,20 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 
 	team_status := models.ParticipateUnRegistered
 
-	var allTeams []models.Team
-	if err := redis_tool.GetOrCache(fmt.Sprintf("all_teams_for_game_%d", game.GameID), &allTeams, func() (interface{}, error) {
-		if err := dbtool.DB().Find(&allTeams).Where("game_id = ?", game.GameID).Error; err != nil {
-			return nil, err
-		}
-
-		return allTeams, nil
-	}, 1*time.Second, true); err != nil {
+	memberBelongSearchMap, err := redis_tool.CachedMemberSearchTeamMap(game.GameID)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorMessage{
 			Code:    500,
 			Message: "Failed to load teams",
 		})
-		c.Abort()
-		return
 	}
 
 	// 查找队伍
-	var team models.Team
-
-	for _, curTeam := range allTeams {
-		if curTeam.TeamMembers != nil && slices.Contains(curTeam.TeamMembers, user_id) {
-			team = curTeam
-			team_status = team.TeamStatus
-			break
-		}
-	}
-
-	if team.TeamID == 0 {
+	team, ok := memberBelongSearchMap[user_id]
+	if !ok {
 		team_status = models.ParticipateUnRegistered
+	} else {
+		team_status = team.TeamStatus
 	}
 
 	// 基本游戏信息
@@ -248,20 +223,22 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 	if team_status != models.ParticipateUnRegistered && team.TeamID != 0 {
 		// 获取团队成员信息
 		var members []TeamMemberInfo
-		if team.TeamMembers != nil && len(team.TeamMembers) > 0 {
-			var users []models.User
-			// 将pq.StringArray转换为普通的[]string类型
-			memberIDs := []string(team.TeamMembers)
-			if err := dbtool.DB().Where("user_id IN (?)", memberIDs).Find(&users).Error; err != nil {
+		if len(team.TeamMembers) > 0 {
+			userMap, err := redis_tool.CachedMemberMap()
+			if err != nil {
 				c.JSON(http.StatusInternalServerError, ErrorMessage{
 					Code:    500,
 					Message: "Failed to load team members",
 				})
-				return
 			}
 
 			// 构建成员详细信息
-			for _, user := range users {
+			for _, userID := range team.TeamMembers {
+				user, ok := userMap[userID]
+				if !ok {
+					continue
+				}
+
 				members = append(members, TeamMemberInfo{
 					Avatar:   user.Avatar,
 					UserName: user.Username,
@@ -371,32 +348,12 @@ func UserGetGameChallenges(c *gin.Context) {
 
 	// Cache all solves to redis
 
-	var solveMap map[int64][]models.Solve
-
-	if err := redis_tool.GetOrCache(fmt.Sprintf("solved_challenges_for_game_%d", game.GameID), &solveMap, func() (interface{}, error) {
-		var totalSolves []models.Solve
-
-		if err := dbtool.DB().Where("game_id = ? AND solve_status = ?", game.GameID, models.SolveCorrect).Preload("Challenge").Find(&totalSolves).Error; err != nil {
-			return nil, err
-		}
-
-		for _, solve := range totalSolves {
-			lastSolves, ok := solveMap[solve.TeamID]
-			if !ok {
-				lastSolves = make([]models.Solve, 0)
-			}
-
-			lastSolves = append(lastSolves, solve)
-			solveMap[solve.TeamID] = lastSolves
-		}
-
-		return solveMap, nil
-	}, 1*time.Second, true); err != nil {
+	solveMap, err := redis_tool.CachedSolvedChallengesForGame(game.GameID)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorMessage{
 			Code:    500,
-			Message: err.Error(),
+			Message: "Failed to load solves",
 		})
-		return
 	}
 
 	solves, ok := solveMap[team.TeamID]

@@ -121,21 +121,12 @@ func DownloadFile(c *gin.Context) {
 		return
 	}
 
-	var filesMap map[string]models.Upload
-	if err := redis_tool.GetOrCache("file_list", &filesMap, func() (interface{}, error) {
-		filesMap := make(map[string]models.Upload)
-		var files []models.Upload
-		dbtool.DB().Find(&files)
-		for _, file := range files {
-			filesMap[file.FileID] = file
-		}
-		return filesMap, nil
-	}, 1*time.Second, true); err != nil {
+	filesMap, err := redis_tool.CachedFileMap()
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"message": "Failed to load files map",
 		})
-		return
 	}
 
 	uploadRecord, ok := filesMap[fileID.String()]
