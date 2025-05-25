@@ -180,16 +180,16 @@ var UserRoleMaskMap = map[models.UserRole]uint64{
 	models.UserRoleMonitor: 0b100,
 }
 
-type OptimitedPermissionSetting struct {
+type OptimizedPermissionSetting struct {
 	RequestMethodMask uint64
 	PermissionMask    uint64
 }
 
 // 掩码优化后的权限映射表
-var OptimitedPermissionMap = map[string]OptimitedPermissionSetting{}
+var OptimizedPermissionMap = map[string]OptimizedPermissionSetting{}
 
 // 利用掩码优化权限映射表
-func optimitePermissionMap() {
+func optimizePermissionMap() {
 	for path, rules := range PermissionMap {
 		requestMethodMask := uint64(0)
 		for _, method := range rules.RequestMethod {
@@ -201,7 +201,7 @@ func optimitePermissionMap() {
 			permissionMask |= UserRoleMaskMap[role]
 		}
 
-		OptimitedPermissionMap[path] = OptimitedPermissionSetting{
+		OptimizedPermissionMap[path] = OptimizedPermissionSetting{
 			RequestMethodMask: requestMethodMask,
 			PermissionMask:    permissionMask,
 		}
@@ -214,7 +214,7 @@ func authorizator() func(data interface{}, c *gin.Context) bool {
 
 			pathURL := c.FullPath()
 
-			rules, ok := OptimitedPermissionMap[pathURL]
+			rules, ok := OptimizedPermissionMap[pathURL]
 			if ok {
 
 				requestMethodMask, ok := RequestMethodMaskMap[c.Request.Method]
@@ -282,14 +282,6 @@ func unauthorized() func(c *gin.Context, code int, message string) {
 	}
 }
 
-func handleNoRoute() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		claims := jwt.ExtractClaims(c)
-		log.Printf("NoRoute claims: %#v\n", claims)
-		c.JSON(404, gin.H{"code": "404", "message": "Page not found"})
-	}
-}
-
 func StartLoopEvent() {
 	s, _ := gocron.NewScheduler()
 	s.NewJob(
@@ -337,7 +329,7 @@ func StartLoopEvent() {
 
 func main() {
 	// 掩码优化健全映射表
-	optimitePermissionMap()
+	optimizePermissionMap()
 
 	// 加载配置文件
 	utils.LoadConfig()
