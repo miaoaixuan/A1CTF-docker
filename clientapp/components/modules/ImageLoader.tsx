@@ -1,88 +1,85 @@
 import React, { useState, useEffect, useRef } from 'react';
-import './ImageLoader.css'; // 需要创建对应的CSS文件
+import { LoaderPinwheel } from 'lucide-react';
+import { cn } from 'lib/utils';
+import { useSpring, animated } from '@react-spring/web';
 
 const ImageLoader = ({
-  src, // 高清图URL
-  placeholderSrc, // 低分辨率图URL（可以是同一张图的缩略版本）
-  alt = '',
-  width = '100%',
-  height = 'auto',
-  className = '',
-  style = {},
-} : {
+    src, // 高清图URL
+    alt = '',
+    className = '',
+    width = 1920,
+    height = 1080,
+    style = {},
+}: {
     src: string;
-    placeholderSrc: string;
     alt: string;
-    width: string;
-    height: string;
     className: string;
-    style: React.CSSProperties;
+    width?: number;
+    height?: number;
+    style?: React.CSSProperties;
 }) => {
-  const [loaded, setLoaded] = useState(false);
-  const imgRef = useRef(null);
-  const placeholderRef = useRef(null);
+    const [loaded, setLoaded] = useState(false);
+    const imgRef = useRef(null);
+    const placeholderRef = useRef(null);
 
-  useEffect(() => {
-    const img = new Image();
-    img.src = src;
+    // Spring 动画配置
+    const fadeSpring = useSpring({
+        opacity: loaded ? 0 : 1,
+        display: loaded ? 'none' : 'flex',
+        config: {
+            tension: 120,
+            friction: 14,
+        },
+    });
 
-    img.onload = () => {
-      setLoaded(true);
-    };
+    useEffect(() => {
+        const img = new Image();
+        img.src = src;
 
-    // 清理函数
-    return () => {
-      img.onload = null;
-    };
-  }, [src]);
+        img.onload = () => {
+            setTimeout(() => {
+                setLoaded(true);
+            }, 200)
+        };
 
-  return (
-    <div 
-      className={`image-container ${className}`}
-      style={{ 
-        width,
-        height,
-        position: 'relative',
-        overflow: 'hidden',
-        ...style 
-      }}
-    >
-      {/* 低分辨率模糊背景 */}
-      <img
-        ref={placeholderRef}
-        src={placeholderSrc}
-        alt={alt}
-        className="placeholder-image"
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          filter: 'blur(10px)',
-          transform: 'scale(1.1)', // 防止模糊边缘出现白边
-          transition: 'opacity 0.5s ease',
-          opacity: loaded ? 0 : 1,
-        }}
-      />
-      
-      {/* 高清图 */}
-      <img
-        ref={imgRef}
-        src={src}
-        alt={alt}
-        className="full-image"
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          opacity: loaded ? 1 : 0,
-          transition: 'opacity 0.5s ease',
-        }}
-      />
-    </div>
-  );
+        // 清理函数
+        return () => {
+            img.onload = null;
+        };
+    }, [src]);
+
+    return (
+        <div
+            className={"relative overflow-hidden"}
+            style={{
+                ...style
+            }}
+        >
+            {/* 低分辨率模糊背景 */}
+            <animated.div 
+                className='w-full h-full top-0 left-0 absolute bg-background flex items-center justify-center'
+                style={{
+                    opacity: fadeSpring.opacity,
+                    pointerEvents: loaded ? 'none' : 'auto',
+                }}
+            >
+                <div className='flex items-center gap-3'>
+                    <LoaderPinwheel className="animate-spin" />
+                    <span className="font-bold">Loading...</span>
+                </div>
+            </animated.div>
+
+            {/* 高清图 */}
+            <img
+                ref={imgRef}
+                src={src}
+                width={width}
+                height={height}
+                alt={alt}
+                className={cn(className, "full-image w-fit h-full object-cover")}
+            />
+        </div>
+    );
 };
 
 export default ImageLoader;

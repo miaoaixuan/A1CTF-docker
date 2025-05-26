@@ -9,57 +9,12 @@ import (
 	"github.com/google/uuid"
 
 	"a1ctf/src/db/models"
+	clientconfig "a1ctf/src/modules/client_config"
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
 	"a1ctf/src/utils/redis_tool"
 	"a1ctf/src/utils/turnstile"
 )
-
-func Login() func(c *gin.Context) (interface{}, error) {
-	return func(c *gin.Context) (interface{}, error) {
-		var loginVals LoginPayload
-		if err := c.ShouldBind(&loginVals); err != nil {
-			return "", jwt.ErrMissingLoginValues
-		}
-
-		if ClientConfig.TurnstileEnabled {
-			turnstile := turnstile.New(ClientConfig.TurnstileSecretKey)
-			response, err := turnstile.Verify(loginVals.CaptCha, c.ClientIP())
-			if err != nil {
-				return nil, jwt.ErrMissingLoginValues
-			}
-
-			if !response.Success {
-				return nil, jwt.ErrMissingLoginValues
-			}
-		}
-
-		user_result := models.User{}
-		if dbtool.DB().First(&user_result, "username = ? OR email = ? ", loginVals.Username, loginVals.Username).Error != nil {
-			return nil, jwt.ErrFailedAuthentication
-		} else {
-			if user_result.Password == general.SaltPassword(loginVals.Password, user_result.Salt) {
-
-				// Update last login time
-				if err := dbtool.DB().Model(&user_result).Updates(map[string]interface{}{
-					"last_login_time": time.Now().UTC(),
-					"last_login_ip":   c.ClientIP(),
-				}).Error; err != nil {
-					return nil, jwt.ErrFailedAuthentication
-				}
-
-				return &models.JWTUser{
-					UserName:   user_result.Username,
-					Role:       user_result.Role,
-					UserID:     user_result.UserID,
-					JWTVersion: user_result.JWTVersion,
-				}, nil
-			} else {
-				return nil, jwt.ErrFailedAuthentication
-			}
-		}
-	}
-}
 
 // GetProfile 获取用户的基本资料信息
 func GetProfile(c *gin.Context) {
@@ -101,7 +56,7 @@ func GetProfile(c *gin.Context) {
 			"register_time":         user.RegisterTime,
 			"last_login_time":       user.LastLoginTime,
 			"last_login_ip":         user.LastLoginIP,
-			"client_config_version": ClientConfig.UpdatedTime,
+			"client_config_version": clientconfig.ClientConfig.UpdatedTime,
 		},
 	})
 }
@@ -116,8 +71,8 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	if ClientConfig.TurnstileEnabled {
-		turnstile := turnstile.New(ClientConfig.TurnstileSecretKey)
+	if clientconfig.ClientConfig.TurnstileEnabled {
+		turnstile := turnstile.New(clientconfig.ClientConfig.TurnstileSecretKey)
 		response, err := turnstile.Verify(payload.Captcha, c.ClientIP())
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -185,5 +140,61 @@ func Register(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
+	})
+}
+
+// GetClientConfig 获取客户端配置
+func GetClientConfig(c *gin.Context) {
+
+	ClientConfig := clientconfig.ClientConfig
+
+	if ClientConfig.SystemName == "" {
+		settings, err := clientconfig.LoadSystemSettings()
+		if err != nil {
+			settings = clientconfig.DefaultSettings
+		}
+		settings.UpdatedTime = time.Now().UTC()
+		ClientConfig = settings
+	}
+
+	// 创建客户端配置
+	clientConfig := map[string]interface{}{
+		"systemName":    ClientConfig.SystemName,
+		"systemLogo":    ClientConfig.SystemLogo,
+		"systemFavicon": ClientConfig.SystemFavicon,
+		"systemSlogan":  ClientConfig.SystemSlogan,
+		"systemFooter":  ClientConfig.SystemFooter,
+
+		"systemICP":             ClientConfig.SystemICP,
+		"systemOrganization":    ClientConfig.SystemOrganization,
+		"systemOrganizationURL": ClientConfig.SystemOrganizationURL,
+
+		"themeColor":       ClientConfig.ThemeColor,
+		"darkModeDefault":  ClientConfig.DarkModeDefault,
+		"allowUserTheme":   ClientConfig.AllowUserTheme,
+		"defaultLanguage":  ClientConfig.DefaultLanguage,
+		"turnstileEnabled": ClientConfig.TurnstileEnabled,
+		"turnstileSiteKey": ClientConfig.TurnstileSiteKey,
+
+		// 品牌资源
+		"FancyBackGroundIconWhite": ClientConfig.FancyBackGroundIconWhite,
+		"FancyBackGroundIconBlack": ClientConfig.FancyBackGroundIconBlack,
+		"DefaultBGImage":           ClientConfig.DefaultBGImage,
+		"SVGIcon":                  ClientConfig.SVGIcon,
+		"SVGAltData":               ClientConfig.SVGAltData,
+		"TrophysGold":              ClientConfig.TrophysGold,
+		"TrophysSilver":            ClientConfig.TrophysSilver,
+		"TrophysBronze":            ClientConfig.TrophysBronze,
+		"SchoolLogo":               ClientConfig.SchoolLogo,
+		"SchoolSmallIcon":          ClientConfig.SchoolSmallIcon,
+		"SchoolUnionAuthText":      ClientConfig.SchoolUnionAuthText,
+		"BGAnimation":              ClientConfig.BGAnimation,
+
+		"updateVersion": ClientConfig.UpdatedTime,
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": clientConfig,
 	})
 }

@@ -11,10 +11,13 @@ import { Button } from "./ui/button";
 import { useTheme } from 'next-themes';
 
 import xss from 'xss';
+import ImageLoader from './modules/ImageLoader';
+import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
 
 export function Mdx({ source }: { source: string }) {
 
     const { theme, resolvedTheme } = useTheme();
+    const { clientConfig } = useGlobalVariableContext()
 
     // 延迟渲染，直到 theme 确定
     if (!theme && !resolvedTheme) {
@@ -110,6 +113,13 @@ export function Mdx({ source }: { source: string }) {
                         {props.children}
                     </td>
                 ),
+                img: ({ node, ...props }) => (
+                    <ImageLoader
+                        src={props.src || clientConfig.DefaultBGImage}
+                        alt={props.alt || ""}
+                        className="w-full h-full object-cover"
+                    />
+                )
             }}
             skipHtml={false}
         >{ source.replace(/<br\s*\/?>/g, "\n") }</ReactMarkdown>

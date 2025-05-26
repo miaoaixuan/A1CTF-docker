@@ -1,10 +1,12 @@
 package jwtauth
 
 import (
-	"a1ctf/src/controllers"
 	"a1ctf/src/db/models"
+	clientconfig "a1ctf/src/modules/client_config"
 	dbtool "a1ctf/src/utils/db_tool"
+	"a1ctf/src/utils/general"
 	"a1ctf/src/utils/redis_tool"
+	"a1ctf/src/utils/turnstile"
 	"time"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
@@ -219,6 +221,58 @@ func unauthorized() func(c *gin.Context, code int, message string) {
 	}
 }
 
+type LoginPayload struct {
+	Username string `form:"username" json:"username" binding:"required"`
+	Password string `form:"password" json:"password" binding:"required"`
+	CaptCha  string `form:"captcha" json:"captcha"`
+}
+
+func Login() func(c *gin.Context) (interface{}, error) {
+	return func(c *gin.Context) (interface{}, error) {
+		var loginVals LoginPayload
+		if err := c.ShouldBind(&loginVals); err != nil {
+			return "", jwt.ErrMissingLoginValues
+		}
+
+		if clientconfig.ClientConfig.TurnstileEnabled {
+			turnstile := turnstile.New(clientconfig.ClientConfig.TurnstileSecretKey)
+			response, err := turnstile.Verify(loginVals.CaptCha, c.ClientIP())
+			if err != nil {
+				return nil, jwt.ErrMissingLoginValues
+			}
+
+			if !response.Success {
+				return nil, jwt.ErrMissingLoginValues
+			}
+		}
+
+		user_result := models.User{}
+		if dbtool.DB().First(&user_result, "username = ? OR email = ? ", loginVals.Username, loginVals.Username).Error != nil {
+			return nil, jwt.ErrFailedAuthentication
+		} else {
+			if user_result.Password == general.SaltPassword(loginVals.Password, user_result.Salt) {
+
+				// Update last login time
+				if err := dbtool.DB().Model(&user_result).Updates(map[string]interface{}{
+					"last_login_time": time.Now().UTC(),
+					"last_login_ip":   c.ClientIP(),
+				}).Error; err != nil {
+					return nil, jwt.ErrFailedAuthentication
+				}
+
+				return &models.JWTUser{
+					UserName:   user_result.Username,
+					Role:       user_result.Role,
+					UserID:     user_result.UserID,
+					JWTVersion: user_result.JWTVersion,
+				}, nil
+			} else {
+				return nil, jwt.ErrFailedAuthentication
+			}
+		}
+	}
+}
+
 func initParams() *jwt.GinJWTMiddleware {
 
 	return &jwt.GinJWTMiddleware{
@@ -233,7 +287,7 @@ func initParams() *jwt.GinJWTMiddleware {
 		CookieName: "a1token",
 
 		IdentityHandler: identityHandler(),
-		Authenticator:   controllers.Login(),
+		Authenticator:   Login(),
 		Authorizator:    authorizator(),
 		Unauthorized:    unauthorized(),
 		TokenLookup:     "cookie:a1token",
@@ -244,11 +298,18 @@ func initParams() *jwt.GinJWTMiddleware {
 	}
 }
 
-func GetJwtMiddleware() *jwt.GinJWTMiddleware {
+var authMiddleware *jwt.GinJWTMiddleware
+
+func InitJwtMiddleWare() *jwt.GinJWTMiddleware {
 	optimizePermissionMap()
-	authMiddleware, err := jwt.New(initParams())
+	tmpMiddleware, err := jwt.New(initParams())
 	if err != nil {
 		panic(err)
 	}
+	authMiddleware = tmpMiddleware
+	return authMiddleware
+}
+
+func GetJwtMiddleWare() *jwt.GinJWTMiddleware {
 	return authMiddleware
 }

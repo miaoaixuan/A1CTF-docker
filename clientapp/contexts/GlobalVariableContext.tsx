@@ -5,6 +5,7 @@ import { browserName } from "react-device-detect";
 import { UserProfile } from "utils/A1API";
 import { api } from "utils/ApiHelper";
 import axios from 'axios';
+import { useTheme } from "next-themes";
 
 interface ClientConfig {
     FancyBackGroundIconWhite: string;
@@ -61,6 +62,8 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
 
     const [cookies, setCookie, removeCookie] = useCookies(["uid", "clientConfig"])
     const [curProfile, setCurProfile] = useState<UserProfile>({} as UserProfile)
+
+    const { theme, systemTheme, setTheme } = useTheme()
 
     const defaultClientConfig: ClientConfig = {
         FancyBackGroundIconWhite: "/images/ctf_white.png",
@@ -202,6 +205,10 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
         const savedTheme = localStorage.getItem('theme-preference');
         if (savedTheme) {
             setIsDarkMode(savedTheme === 'dark');
+        }
+
+        if (theme == "system") {
+            setTheme(systemTheme as "dark" | "light")
         }
         
     }, []);

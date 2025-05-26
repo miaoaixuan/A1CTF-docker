@@ -22,7 +22,7 @@ import { ContainerStatus, ErrorMessage, ExposePortInfo, GameNotice, NoticeCatego
 import dayjs from "dayjs";
 import { LoadingPage } from "./LoadingPage";
 import { Button } from "./ui/button";
-import { AlarmClock, CheckCheck, CirclePower, CircleX, ClockArrowUp, Flag, Loader2, LoaderPinwheel, Network, Package, Paperclip } from "lucide-react";
+import { AlarmClock, AudioWaveform, CheckCheck, CirclePower, CircleX, ClockArrowUp, Flag, Loader2, LoaderPinwheel, Network, Package, Paperclip } from "lucide-react";
 import { AxiosError } from "axios";
 
 import { AnimatePresence, motion } from "framer-motion";
@@ -262,7 +262,10 @@ export function ChallengesView({ id }: { id: string }) {
             if (dayjs() > dayjs(res.data.data.end_time) && !res.data.data.practice_mode) {
                 setGameStatus("ended")
             } else {
-                if (res.data.data.team_status == ParticipationStatus.UnRegistered) {
+                if (res.data.data.team_status == ParticipationStatus.UnLogin) {
+                    // 未登录
+                    setGameStatus("unLogin")
+                } else if (res.data.data.team_status == ParticipationStatus.UnRegistered) {
                     // 未报名
                     setGameStatus("unRegistered")
                 } else if (res.data.data.team_status == ParticipationStatus.Pending) {
@@ -515,6 +518,15 @@ export function ChallengesView({ id }: { id: string }) {
         );
     }, [curChallenge?.description]); // 只依赖description
 
+    // 为游戏描述创建 memo 化的 Mdx 组件
+    const memoizedGameDescription = useMemo(() => {
+        return gameInfo?.description ? (
+            <div className="p-10">
+                <Mdx source={gameInfo.description || ""} />
+            </div>
+        ) : null;
+    }, [gameInfo?.description]); // 只依赖游戏描述
+
     const fade = useSpring({
         opacity: pageSwitch ? 0 : 1,
         config: { tension: 320, friction: 50 },
@@ -605,9 +617,7 @@ export function ChallengesView({ id }: { id: string }) {
                                                     className="w-full flex flex-col"
                                                     skin={theme === "dark" ? "dark" : "light"}
                                                 >
-                                                    <div className="p-10">
-                                                        <Mdx source={gameInfo.description || ""}></Mdx>
-                                                    </div>
+                                                    {memoizedGameDescription}
                                                 </MacScrollbar>
 
                                             ) : (
@@ -619,27 +629,39 @@ export function ChallengesView({ id }: { id: string }) {
                                     ) : <></>}
                                     <div className="flex h-full">
                                         <SafeComponent>
-                                            {curChallenge && challengeSolveStatusList && (
-                                                <div className="absolute bottom-5 right-7 z-10">
-                                                    {challengeSolveStatusList[curChallenge?.challenge_id ?? 0].solved ? (
-                                                        <Button
-                                                            className="h-[57px] px-5 rounded-3xl backdrop-blur-sm bg-green-600/70 hover:bg-green-800/70 [&_svg]:size-9 gap-2 flex items-center justify-center text-white disabled:opacity-100"
-                                                            onClick={() => { }}
-                                                        >
-                                                            <CheckCheck />
-                                                            <span className="font-bold text-xl">Solved!</span>
-                                                        </Button>
-                                                    ) : (
-                                                        <Button
-                                                            className="h-[57px] px-6 rounded-3xl backdrop-blur-sm bg-red-600/70 hover:bg-red-800/70 [&_svg]:size-8 gap-2 flex items-center justify-center text-white"
-                                                            onClick={() => setSubmitFlagWindowVisible(true)}
-                                                        >
-                                                            <Flag className="rotate-12" />
-                                                            <span className="font-bold text-xl">Submit!</span>
-                                                        </Button>
-                                                    )}
+                                            <div className="absolute bottom-5 right-7 z-10 flex justify-end flex-col gap-2">
+                                                <div className="flex">
+                                                    <div className="flex-1" />
+                                                    {curChallenge && challengeSolveStatusList ? challengeSolveStatusList[curChallenge?.challenge_id ?? 0].solved ? (
+                                                            <Button
+                                                                className="h-[57px] px-5 rounded-3xl backdrop-blur-sm bg-green-600/70 hover:bg-green-800/70 [&_svg]:size-9 gap-2 flex items-center justify-center text-white disabled:opacity-100"
+                                                                onClick={() => { }}
+                                                            >
+                                                                <CheckCheck />
+                                                                <span className="font-bold text-xl">Solved!</span>
+                                                            </Button>
+                                                        ) : (
+                                                            <Button
+                                                                className="h-[57px] px-6 rounded-3xl backdrop-blur-sm bg-red-600/70 hover:bg-red-800/70 [&_svg]:size-8 gap-2 flex items-center justify-center text-white"
+                                                                onClick={() => setSubmitFlagWindowVisible(true)}
+                                                            >
+                                                                <Flag className="rotate-12" />
+                                                                <span className="font-bold text-xl">Submit!</span>
+                                                            </Button>
+                                                        ) : (<></>)
+                                                    }
                                                 </div>
-                                            )}
+                                                <div className="flex px-5 py-2 flex-col gap-2 backdrop-blur-lg rounded-2xl border-2">
+                                                    <div className="flex gap-2 items-center">
+                                                        <AudioWaveform className="size-5" />
+                                                        <span>{ gameInfo?.team_info?.team_name }</span>
+                                                    </div>
+                                                    <div className="flex gap-2 items-center">
+                                                        <Flag className="size-5" />
+                                                        <span>{ gameInfo?.team_info?.team_score } pts</span>
+                                                    </div>
+                                                </div>
+                                            </div> 
                                             <MacScrollbar
                                                 className="p-5 lg:p-10 w-full flex flex-col"
                                                 skin={theme === "dark" ? "dark" : "light"}

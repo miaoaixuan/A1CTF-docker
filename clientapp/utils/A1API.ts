@@ -68,6 +68,7 @@ export enum ParticipationStatus {
   Rejected = "Rejected",
   Participated = "Participated",
   Banned = "Banned",
+  UnLogin = "UnLogin",
 }
 
 export enum ChallengeContainerType {

@@ -37,6 +37,7 @@ import FancyBackground from "./modules/FancyBackground";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
+import ImageLoader from "./modules/ImageLoader";
 export function ChangeGames() {
 
     const [curIndex, setCurIndex] = useState(0)
@@ -349,11 +350,10 @@ export function ChangeGames() {
                                                             <span className="font-bold text-green-400" >{ dayjs(game.start_time).format("YYYY/MM/DD HH:mm:ss") }</span>
                                                             <span className="font-bold text-red-400" >{ dayjs(game.end_time).format("YYYY/MM/DD HH:mm:ss") }</span>
                                                         </div>
-                                                        <img
+                                                        <ImageLoader
                                                             className="select-none object-cover aspect-[9/5]"
                                                             src={game.poster || clientConfig.DefaultBGImage}
                                                             alt="Image"
-                                                            loading="lazy"
                                                         />
                                                     </div>
                                                 )}
@@ -416,7 +416,7 @@ export function ChangeGames() {
                                         <span className="text-2xl font-bold transition-colors duration-300">{ t("game_join") }</span>
                                     </div>
                                 </div>
-                                <img
+                                <ImageLoader
                                     src={curGames[curIndex].poster || clientConfig.DefaultBGImage}
                                     className="object-contain"
                                     alt="Image"
@@ -424,7 +424,6 @@ export function ChangeGames() {
                                     width={1920}
                                     height={1080}
                                     // objectFit="contain"
-                                    loading="lazy"
                                 />
                             </div>
                             <div className="w-full border-2 rounded-xl relative overflow-hidden shadow-lg transition-[border-color] duration-300 p-4 pl-7 pr-7">

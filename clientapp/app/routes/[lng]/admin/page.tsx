@@ -11,7 +11,7 @@ export default function Home () {
     const [shouldError, setShouldError] = useState(false);
 
     if (shouldError) {
-        throw new Error("这个错误会被 ErrorBoundary 捕获！");
+        throw new Error("Error！");
     }
 
     return (
@@ -20,12 +20,12 @@ export default function Home () {
                 <div className="w-full">
                     <SafeComponent animation={false}>
                         <AdminHeader />
-                        <Button className="bg-red-500 text-white" onClick={() => {setShouldError(true) }}>
-                            <FileWarning className="w-4 h-4" />
-                            Throw Error
-                        </Button>
-                        <div className="w-full h-full p-8 flex items-center justify-center">
-                            <span className="text-3xl font-bold">Admin</span>
+                        <div className="w-full h-full p-8 flex flex-col items-center justify-center gap-2">
+                            <span className="text-5xl font-bold">Welcome admin!</span>
+                            {/* <Button className="bg-red-500 text-white" onClick={() => {setShouldError(true) }}>
+                                <FileWarning className="w-4 h-4" />
+                                Throw Error
+                            </Button> */}
                         </div>
                     </SafeComponent>
                 </div>

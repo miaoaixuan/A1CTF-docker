@@ -162,23 +162,17 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, gameSta
                 rootMargin: "200px 0px",
             });
 
-
         }).catch((error: AxiosError) => {
             if (error.response?.status == 400) {
-                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                if (errorMessage.message == "您的参赛申请尚未通过或被禁赛") {
-                    // 停止更新
-                    clearInterval(updateChallengeInter)
+                clearInterval(updateChallengeInter)
 
-                    // FIXME 作弊判断需要修复
-                    // api.game.gameGame(gameID).then((res) => {
-                    //     if (res.data.status == ParticipationStatus.Banned) {
-                    //         setGameStatus("banned")
-                    //     } else {
-                    //         toast.error("Unknow error!")
-                    //     }
-                    // })
-                }
+                api.user.userGetGameInfoWithTeamInfo(gameID).then((res) => {
+                    if (res.data.data.team_status == ParticipationStatus.Banned) {
+                        setGameStatus("banned")
+                    } else {
+                        toast.error("Unknow error!")
+                    }
+                })
             }
         })
     }

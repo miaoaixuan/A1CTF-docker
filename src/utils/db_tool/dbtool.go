@@ -119,6 +119,16 @@ func Init() {
 	if err != nil {
 		log.Fatalf("Connect to redis failed: %v", err)
 	}
+
+	keys, err := redis_instance.Keys("*").Result()
+	if err != nil {
+		log.Fatalf("Get redis keys failed: %v", err)
+	}
+
+	// 删除所有缓存 防止意外关闭后缓存未删除
+	for _, key := range keys {
+		redis_instance.Del(key)
+	}
 }
 
 func GameSessions() map[*melody.Session]int64 {

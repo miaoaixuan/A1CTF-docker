@@ -57,12 +57,6 @@ type TeamScoreItem struct {
 
 // Authorization payloads
 
-type LoginPayload struct {
-	Username string `form:"username" json:"username" binding:"required"`
-	Password string `form:"password" json:"password" binding:"required"`
-	CaptCha  string `form:"captcha" json:"captcha"`
-}
-
 type RegisterPayload struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`

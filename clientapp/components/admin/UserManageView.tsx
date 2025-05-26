@@ -166,7 +166,6 @@ export function UserManageView() {
                 toast.promise(
                     resetPasswordApi.adminResetUserPassword({ user_id: userId }),
                     {
-                        position: "top-center",
                         loading: '正在重置密码...',
                         success: (response: any) => {
                             setConfirmDialog(prev => ({ ...prev, isOpen: false }));

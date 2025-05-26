@@ -9,6 +9,7 @@ import (
 	"a1ctf/src/controllers"
 	"a1ctf/src/db"
 	"a1ctf/src/jobs"
+	clientconfig "a1ctf/src/modules/client_config"
 	jwtauth "a1ctf/src/modules/jwt_auth"
 	"a1ctf/src/modules/monitoring"
 	"a1ctf/src/utils"
@@ -84,7 +85,7 @@ func main() {
 	db.InitDB()
 
 	// 加载配置文件
-	controllers.LoadSystemSettings()
+	clientconfig.LoadSystemSettings()
 
 	// 初始化系统监控
 	if viper.GetBool("monitoring.enabled") {
@@ -129,7 +130,7 @@ func main() {
 	}
 
 	// JWT 鉴权中间件
-	authMiddleware := jwtauth.GetJwtMiddleware()
+	authMiddleware := jwtauth.InitJwtMiddleWare()
 
 	// 公共接口
 	public := r.Group("/api")
@@ -139,6 +140,8 @@ func main() {
 
 		public.GET("/game/list", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.UserListGames)
 		public.GET("/game/:game_id/scoreboard", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(true, false), controllers.UserGameGetScoreBoard)
+
+		public.GET("/game/:game_id", controllers.GameStatusMiddleware(true, false), controllers.UserGetGameDetailWithTeamInfo)
 
 		fileGroup := public.Group("/file")
 		{
@@ -216,9 +219,6 @@ func main() {
 		// 用户相关接口
 		userGameGroup := auth.Group("/game")
 		{
-			// 中间件检查比赛状态
-			userGameGroup.GET("/:game_id", controllers.GameStatusMiddleware(true, true), controllers.UserGetGameDetailWithTeamInfo)
-
 			userGameGroup.GET("/:game_id/challenges", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenges)
 
 			// 查询比赛中的某道题

@@ -20,6 +20,7 @@ const (
 	ParticipateRejected     ParticipationStatus = "Rejected"     // 已报名，审核不通过
 	ParticipateParticipated ParticipationStatus = "Participated" // 已报名，已参加
 	ParticipateBanned       ParticipationStatus = "Banned"       // 已被禁赛
+	ParticipateUnLogin      ParticipationStatus = "UnLogin"      // 未登录
 )
 
 func (e ParticipationStatus) Value() (driver.Value, error) {

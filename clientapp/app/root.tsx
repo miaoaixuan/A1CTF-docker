@@ -117,15 +117,13 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     let details = "An unexpected error occurred.";
     let stack: string | undefined;
 
-    console.log("error: ", error)
-
     if (isRouteErrorResponse(error)) {
         message = error.status === 404 ? "404" : "Error";
         details =
             error.status === 404
                 ? "The requested page could not be found."
                 : error.statusText || details;
-    } else if (import.meta.env.DEV && error && error instanceof Error) {
+    } else if (error && error instanceof Error) {
         details = error.message;
         stack = error.stack;
     }
@@ -136,6 +134,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
                 <title>0ops, we encounter an fatal errr0r.</title>
                 <style dangerouslySetInnerHTML={{
                     __html: `
+                    
                     .container {
                         width: 100%;
                         @media (width >= 40rem /* 640px */) {
@@ -154,47 +153,134 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
                             max-width: 96rem /* 1536px */;
                         }
                     }
+
+                    .my-button {
+                        padding: 10px;
+                        background-color: white;
+                        border-radius: 8px;
+                        border: 0;
+                        padding-left: 20px;
+                        padding-right: 20px;
+                        font-size: 16px;
+                        font-weight: 600;
+                        color: black;
+                        cursor: pointer;
+                        transition: background-color 0.3s ease;
+                    }
+
+                    .my-button2 {
+                        padding: 10px;
+                        background-color: black;
+                        border: 1.5px solid white;
+                        color: white;
+                        border-radius: 8px;
+                        padding-left: 20px;
+                        padding-right: 20px;
+                        font-size: 16px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: background-color 0.3s ease;
+                    }
+
+                    .my-button:hover {
+                        background-color: rgba(255, 255, 255, 0.8);
+                    }
+
+                    .my-button2:hover {
+                        background-color: rgba(255, 255, 255, 0.2);
+                    }
                     `
                 }} />
             </head>
-            <body
-                style={{
-                    width: "100vw",
-                    height: "100vh",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: "black",
-                    color: "white",
-                }}
-            >
-                <div className="container"
+            <body style={{
+                backgroundColor: "black",
+                userSelect: "none",
+                fontFamily: "Consolas, monospace"
+            }}>
+                <div
                     style={{
+                        width: "100vw",
+                        height: "100vh",
+                        position: "absolute",
                         display: "flex",
-                        flexDirection: "column",
                         alignItems: "center",
                         justifyContent: "center",
+                        left: 0,
+                        top: 0,
+                        backgroundColor: "black",
+                        color: "white",
                     }}
                 >
-                    <span
+                    <div className="container"
                         style={{
-                            fontSize: "44px",
-                            fontWeight: "bold",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
                         }}
-                    >{message}</span>
-                    <p>{details}</p>
-                    {stack && (
-                        <pre style={{
-                            overflowX: "auto",
-                            padding: "16px",
-                            border: "4px dashed white",
-                            borderRadius: "6px",
-                            backgroundColor: "rgba(255, 255, 255, 0.3)",
+                    >
+                        <div style={{
+                            display: "flex",
+                            flexDirection: "column"
                         }}>
-                            <code>{stack}</code>
-                        </pre>
-                    )}
-                    <button>Refresh</button>
+                            <span
+                                style={{
+                                    fontSize: "54px",
+                                    fontWeight: "bold",
+                                    fontFamily: "Consolas, monospace"
+                                }}
+                            >{message}</span>
+                            <span
+                                style={{
+                                    fontSize: "24px",
+                                    fontWeight: "bold",
+                                    marginBottom: "20px",
+                                    fontFamily: "Consolas, monospace"
+                                }}
+                            >We're sorry, but something went wrong.</span>
+                            {stack && (
+                                <pre style={{
+                                    overflowX: "auto",
+                                    padding: "22px",
+                                    boxShadow: "5px 5px 10px rgba(255, 255, 255, 0.4)",
+                                    border: "2px solid white",
+                                    borderRadius: "8px",
+                                    backgroundColor: "#121212",
+                                }}>
+                                    <code
+                                        style={{
+                                            fontFamily: "Consolas, monospace"
+                                        }}
+                                    >{stack}</code>
+                                </pre>
+                            )}
+                        </div>
+                        <div style={{
+                            display: "flex",
+                            gap: "20px"
+                        }}>
+                            <button className="my-button"
+                                style={{
+                                    marginTop: "16px",
+                                    fontSize: "16px",
+                                    fontFamily: "Consolas, monospace"
+                                }}
+                                onClick={() => {
+                                    window.location.reload();
+                                }}
+                            >Refresh</button>
+                            <button className="my-button2"
+                                style={{
+                                    marginTop: "16px",
+                                    fontSize: "16px",
+                                    fontFamily: "Consolas, monospace"
+                                }}
+                                onClick={() => {
+                                    navigator.clipboard.writeText(stack || details || "No error message");
+                                }}
+                            >Copy the error message</button>
+                        </div>
+                    </div>
                 </div>
             </body>
         </html>

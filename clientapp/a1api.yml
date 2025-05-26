@@ -2390,6 +2390,7 @@ components:
         - "Rejected"
         - "Participated"
         - "Banned"
+        - "UnLogin"
       description: |
         Team participation status:
         - UnRegistered: 未报名

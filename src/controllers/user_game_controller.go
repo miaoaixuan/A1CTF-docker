@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"a1ctf/src/db/models"
+	jwtauth "a1ctf/src/modules/jwt_auth"
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
 	"a1ctf/src/utils/redis_tool"
@@ -124,8 +125,8 @@ func TeamStatusMiddleware() gin.HandlerFunc {
 		}
 
 		if team.TeamStatus == models.ParticipateBanned {
-			c.JSON(http.StatusForbidden, ErrorMessage{
-				Code:    403,
+			c.JSON(http.StatusBadRequest, ErrorMessage{
+				Code:    400,
 				Message: "You are banned from this game",
 			})
 			c.Abort()
@@ -177,26 +178,41 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 
 	game := c.MustGet("game").(models.Game)
 
-	// 从 JWT 中获取 user_id
-	claims := jwt.ExtractClaims(c)
-	user_id := claims["UserID"].(string)
+	claims, err := jwtauth.GetJwtMiddleWare().GetClaimsFromJWT(c)
 
-	team_status := models.ParticipateUnRegistered
+	var user_id string
+	var logined bool = false
 
-	memberBelongSearchMap, err := redis_tool.CachedMemberSearchTeamMap(game.GameID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
-			Code:    500,
-			Message: "Failed to load teams",
-		})
+	if err == nil {
+		tmpUserID, ok := claims["UserID"]
+		if ok {
+			user_id = tmpUserID.(string)
+			logined = true
+		}
 	}
 
-	// 查找队伍
-	team, ok := memberBelongSearchMap[user_id]
-	if !ok {
-		team_status = models.ParticipateUnRegistered
+	var team_status models.ParticipationStatus = models.ParticipateUnRegistered
+	var team models.Team
+
+	if logined {
+		memberBelongSearchMap, err := redis_tool.CachedMemberSearchTeamMap(game.GameID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorMessage{
+				Code:    500,
+				Message: "Failed to load teams",
+			})
+		}
+
+		// 查找队伍
+		tmpTeam, ok := memberBelongSearchMap[user_id]
+		if !ok {
+			team_status = models.ParticipateUnRegistered
+		} else {
+			team_status = tmpTeam.TeamStatus
+			team = tmpTeam
+		}
 	} else {
-		team_status = team.TeamStatus
+		team_status = models.ParticipateUnLogin
 	}
 
 	// 基本游戏信息
