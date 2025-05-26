@@ -13,6 +13,7 @@ import (
 	"a1ctf/src/modules/monitoring"
 	"a1ctf/src/utils"
 	dbtool "a1ctf/src/utils/db_tool"
+	k8stool "a1ctf/src/utils/k8s_tool"
 
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/pprof"
@@ -74,6 +75,7 @@ func main() {
 
 	// 加载配置文件
 	utils.LoadConfig()
+	k8stool.InitNodeAddressMap()
 
 	// 初始化数据库连接
 	dbtool.Init()

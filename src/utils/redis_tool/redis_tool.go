@@ -8,9 +8,10 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/bytedance/sonic"
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
+
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 // 使用分布式锁防止缓存击穿
@@ -19,7 +20,7 @@ func GetOrCache(key string, model interface{}, callback func() (interface{}, err
 	value, err := dbtool.Redis().Get(key).Result()
 	if err == nil {
 		// 缓存命中，直接返回
-		if err := sonic.Unmarshal([]byte(value), model); err != nil {
+		if err := msgpack.Unmarshal([]byte(value), model); err != nil {
 			return err
 		}
 		return nil
@@ -41,7 +42,7 @@ func GetOrCache(key string, model interface{}, callback func() (interface{}, err
 		value, err := dbtool.Redis().Get(key).Result()
 		if err == nil {
 			// 另一个进程已经重建了缓存
-			if err := sonic.Unmarshal([]byte(value), model); err != nil {
+			if err := msgpack.Unmarshal([]byte(value), model); err != nil {
 				return err
 			}
 			return nil
@@ -61,15 +62,19 @@ func GetOrCache(key string, model interface{}, callback func() (interface{}, err
 		}
 
 		// 序列化并存入Redis
-		dataJSON, _ := sonic.Marshal(result)
-		if err := dbtool.Redis().Set(key, dataJSON, expireTime).Err(); err != nil {
+		b, err := msgpack.Marshal(&result)
+		if err != nil {
+			panic(err)
+		}
+
+		if err := dbtool.Redis().Set(key, b, expireTime).Err(); err != nil {
 			return err
 		}
 
 		// 为调用者提供返回数据
 		// 因为model是指针，直接将result赋值给它
-		resultBytes, _ := sonic.Marshal(result)
-		return sonic.Unmarshal(resultBytes, model)
+		resultBytes, _ := msgpack.Marshal(result)
+		return msgpack.Unmarshal(resultBytes, model)
 	} else {
 		// 未获取到锁，说明有其他请求正在重建缓存
 		// 短暂等待后重试几次
@@ -78,7 +83,7 @@ func GetOrCache(key string, model interface{}, callback func() (interface{}, err
 			value, err := dbtool.Redis().Get(key).Result()
 			if err == nil {
 				// 缓存已被重建
-				return sonic.Unmarshal([]byte(value), model)
+				return msgpack.Unmarshal([]byte(value), model)
 			}
 		}
 
@@ -89,8 +94,8 @@ func GetOrCache(key string, model interface{}, callback func() (interface{}, err
 		}
 
 		// 为调用者提供返回数据
-		resultBytes, _ := sonic.Marshal(result)
-		return sonic.Unmarshal(resultBytes, model)
+		resultBytes, _ := msgpack.Marshal(result)
+		return msgpack.Unmarshal(resultBytes, model)
 	}
 }
 

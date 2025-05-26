@@ -23,6 +23,19 @@ import (
 )
 
 var clientset *kubernetes.Clientset
+var NodeAddressMap map[string]string = make(map[string]string)
+
+func InitNodeAddressMap() {
+
+	var nodeIPMaps []map[string]interface{}
+	if err := viper.UnmarshalKey("k8s.node-ip-map", &nodeIPMaps); err != nil {
+		panic(fmt.Errorf("failed to unmarshal node-ip-map: %v", err))
+	}
+
+	for _, nodeIPMap := range nodeIPMaps {
+		NodeAddressMap[nodeIPMap["name"].(string)] = nodeIPMap["address"].(string)
+	}
+}
 
 type PortName struct {
 	Name string `json:"name" validate:"required,portname" label:"PortName" message:"Port name must be a DNS_LABEL"`
@@ -60,13 +73,11 @@ func ValidContainerConfig(containers []A1Container) error {
 	_ = validate.RegisterValidation("portname", validatePortName)
 
 	for _, container := range containers {
-		log.Printf("Validating container: %+v\n", container)
 		err := validate.Struct(container)
 		if err != nil {
 			// 处理验证错误
 			if validationErrors, ok := err.(validator.ValidationErrors); ok {
 				for _, fieldErr := range validationErrors {
-					log.Printf("Validation error: field %s failed validation with tag %s\n", fieldErr.Field(), fieldErr.Tag())
 					return fmt.Errorf("field %s failed validation with tag %s value %s",
 						fieldErr.Field(),
 						fieldErr.Tag(),
@@ -74,7 +85,6 @@ func ValidContainerConfig(containers []A1Container) error {
 					)
 				}
 			} else {
-				log.Printf("Error validating container: %v\n", err)
 				return fmt.Errorf("validation error: %v", err)
 			}
 		}
@@ -286,7 +296,6 @@ func GetPodPorts(podInfo *PodInfo) (*PodPorts, error) {
 
 	result := make(PodPorts, 0)
 	for _, port := range service.Spec.Ports {
-		fmt.Printf("Service port: %s: %d -> %s:%d\n", service.Name, port.Port, nodeName, port.NodePort)
 		result = append(result, PodPort{
 			Name:     port.Name,
 			Port:     port.Port,

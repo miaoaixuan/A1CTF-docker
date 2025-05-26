@@ -281,15 +281,16 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 func UserGetGameChallenges(c *gin.Context) {
 	game := c.MustGet("game").(models.Game)
 
-	var result map[string]interface{} = make(map[string]interface{})
+	var simpleGameChallenges []UserSimpleGameChallenge = make([]UserSimpleGameChallenge, 0)
 
 	// Cache challenge list to redis
-	if err := redis_tool.GetOrCache(fmt.Sprintf("challenges_for_game_%d", game.GameID), &result, func() (interface{}, error) {
+	if err := redis_tool.GetOrCache(fmt.Sprintf("challenges_for_game_%d", game.GameID), &simpleGameChallenges, func() (interface{}, error) {
 		// 查找队伍
+		var tmpSimpleGameChallenges []UserSimpleGameChallenge = make([]UserSimpleGameChallenge, 0)
 		var gameChallenges []models.GameChallenge
 
 		// 使用 Preload 进行关联查询
-		if err := dbtool.DB().Preload("Challenge").Find(&gameChallenges).Error; err != nil {
+		if err := dbtool.DB().Preload("Challenge").Where("game_id = ?", game.GameID).Find(&gameChallenges).Error; err != nil {
 			errJSON, _ := sonic.Marshal(ErrorMessage{
 				Code:    500,
 				Message: "Failed to load game challenges",
@@ -314,8 +315,6 @@ func UserGetGameChallenges(c *gin.Context) {
 			}
 		}
 
-		result["challenges"] = make([]UserSimpleGameChallenge, 0, len(gameChallenges))
-
 		for _, gc := range gameChallenges {
 
 			if gc.BelongStage != nil && *gc.BelongStage != curStage {
@@ -326,7 +325,7 @@ func UserGetGameChallenges(c *gin.Context) {
 				continue
 			}
 
-			result["challenges"] = append(result["challenges"].([]UserSimpleGameChallenge), UserSimpleGameChallenge{
+			tmpSimpleGameChallenges = append(tmpSimpleGameChallenges, UserSimpleGameChallenge{
 				ChallengeID:   *gc.Challenge.ChallengeID,
 				ChallengeName: gc.Challenge.Name,
 				TotalScore:    gc.TotalScore,
@@ -336,7 +335,7 @@ func UserGetGameChallenges(c *gin.Context) {
 			})
 		}
 
-		return result, nil
+		return tmpSimpleGameChallenges, nil
 	}, 1*time.Second, true); err != nil {
 		var errMsg ErrorMessage
 		sonic.Unmarshal([]byte(err.Error()), &errMsg)
@@ -372,11 +371,12 @@ func UserGetGameChallenges(c *gin.Context) {
 		})
 	}
 
-	result["solved_challenges"] = solved_challenges
-
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
-		"data": result,
+		"data": gin.H{
+			"challenges":        simpleGameChallenges,
+			"solved_challenges": solved_challenges,
+		},
 	})
 }
 
@@ -1082,8 +1082,9 @@ func UserGameGetJudgeResult(c *gin.Context) {
 		return
 	}
 
+	team := c.MustGet("team").(models.Team)
 	var judge models.Judge
-	if err := dbtool.DB().Where("judge_id = ?", judgeIDStr).First(&judge).Error; err != nil {
+	if err := dbtool.DB().Where("judge_id = ? AND team_id = ?", judgeIDStr, team.TeamID).First(&judge).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, ErrorMessage{
 				Code:    404,

@@ -146,7 +146,7 @@ export function MainPageAnimation() {
                         fontSize={80}
                         enableHover={true}
                     >
-                        A1CTF
+                        { clientConfig.systemName }
                     </FuzzyText>
                 </div>
 

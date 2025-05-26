@@ -1,20 +1,27 @@
 configVersion: v1
 
 system:
-  gin-port: 8080
+  gin-port: 7777
   gin-host: 0.0.0.0
   gin-gzip-enabled: true
   prometheus-port: 8081
   prometheus-host: 0.0.0.0
+
+  # if you are using a reverse proxy like nginx, enable it to get the real client ip
   forwarded-by-client-ip: true
+  # real client ip request headers added by your reverse proxy server
   remote-ip-headers:
     - X-Forwarded-For
     - X-Real-IP
+  # make sure that you include your reverse proxy server's ip in this list
+  # don't use 0.0.0.0/0, it's dangerous
   trusted-proxies:
     - 0.0.0.0/0
 
 k8s:
   k8s-config-file: "k8sconfig.yaml"
+  node-ip-map:
+    - { name: "vm-4-3-ubuntu", "address": "example.com/1.1.1.1" }
 
 postgres:
   host: localhost
@@ -30,13 +37,15 @@ redis:
   password: example
   db: 0
 
+# time format like 1s 500ms etc..
 redis-cache-time:
-  user-list: 1s
-  upload-list: 1s
-  solved-challenges-for-game: 1s
-  game-info: 1s
-  all-teams-for-game: 1s
+  user-list: 500ms
+  upload-list: 500ms
+  solved-challenges-for-game: 500ms
+  game-info: 500ms
+  all-teams-for-game: 500ms
 
+# if you need garafana, enable it
 monitoring:
   enabled: true
   system-monitor-interval: 1s

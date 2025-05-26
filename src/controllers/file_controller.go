@@ -110,6 +110,7 @@ func UploadFile(c *gin.Context) {
 	})
 }
 
+// Public file download
 func DownloadFile(c *gin.Context) {
 	fileIDStr := c.Param("file_id")
 	fileID, err := uuid.Parse(fileIDStr)

@@ -139,6 +139,16 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
             const response = await axios.get('/api/client-config');
             if (response.data && response.data.code === 200) {
 
+                // 初始化没有客户端配置的情况
+                if (!cookies.clientConfig) {
+                    if (browserName.includes("Chrome")) {
+                        response.data.data.BGAnimation = true
+                    }
+                    setClientConfig(response.data.data);
+                    setCookie("clientConfig", response.data.data, { path: "/" })
+                    return
+                }
+
                 if (response.data.data.updateVersion && response.data.data.updateVersion == cookies.clientConfig.updateVersion) {
                     return
                 }
