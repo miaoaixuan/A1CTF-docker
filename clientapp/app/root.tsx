@@ -117,6 +117,8 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     let details = "An unexpected error occurred.";
     let stack: string | undefined;
 
+    console.log("error: ", error)
+
     if (isRouteErrorResponse(error)) {
         message = error.status === 404 ? "404" : "Error";
         details =
@@ -129,14 +131,72 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     }
 
     return (
-        <main className="pt-16 p-4 container mx-auto">
-            <h1>{message}</h1>
-            <p>{details}</p>
-            {stack && (
-                <pre className="w-full p-4 overflow-x-auto">
-                    <code>{stack}</code>
-                </pre>
-            )}
-        </main>
+        <html>
+            <head>
+                <title>0ops, we encounter an fatal errr0r.</title>
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                    .container {
+                        width: 100%;
+                        @media (width >= 40rem /* 640px */) {
+                            max-width: 40rem /* 640px */;
+                        }
+                        @media (width >= 48rem /* 768px */) {
+                            max-width: 48rem /* 768px */;
+                        }
+                        @media (width >= 64rem /* 1024px */) {
+                            max-width: 64rem /* 1024px */;
+                        }
+                        @media (width >= 80rem /* 1280px */) {
+                            max-width: 80rem /* 1280px */;
+                        }
+                        @media (width >= 96rem /* 1536px */) {
+                            max-width: 96rem /* 1536px */;
+                        }
+                    }
+                    `
+                }} />
+            </head>
+            <body
+                style={{
+                    width: "100vw",
+                    height: "100vh",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "black",
+                    color: "white",
+                }}
+            >
+                <div className="container"
+                    style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                >
+                    <span
+                        style={{
+                            fontSize: "44px",
+                            fontWeight: "bold",
+                        }}
+                    >{message}</span>
+                    <p>{details}</p>
+                    {stack && (
+                        <pre style={{
+                            overflowX: "auto",
+                            padding: "16px",
+                            border: "4px dashed white",
+                            borderRadius: "6px",
+                            backgroundColor: "rgba(255, 255, 255, 0.3)",
+                        }}>
+                            <code>{stack}</code>
+                        </pre>
+                    )}
+                    <button>Refresh</button>
+                </div>
+            </body>
+        </html>
     );
 }
