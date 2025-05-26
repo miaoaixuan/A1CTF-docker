@@ -109,7 +109,7 @@ func GetClient() (*kubernetes.Clientset, error) {
 		return clientset, nil
 	}
 
-	kubeconfig := flag.String("kubeconfig", viper.GetString("system.k8s-config-file"), "absolute path to the kubeconfig file")
+	kubeconfig := flag.String("kubeconfig", viper.GetString("k8s.k8s-config-file"), "absolute path to the kubeconfig file")
 	flag.Parse()
 
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)

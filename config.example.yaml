@@ -1,5 +1,49 @@
 configVersion: v1
 
 system:
-  sql-dsn: "host=localhost user=postgres password=postgres dbname=a1ctf port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+  gin-port: 8080
+  gin-host: 0.0.0.0
+  gin-gzip-enabled: true
+  prometheus-port: 8081
+  prometheus-host: 0.0.0.0
+  forwarded-by-client-ip: true
+  remote-ip-headers:
+    - X-Forwarded-For
+    - X-Real-IP
+  trusted-proxies:
+    - 0.0.0.0/0
+
+k8s:
   k8s-config-file: "k8sconfig.yaml"
+
+postgres:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: example
+  dbname: a1ctf
+  sslmode: disable
+
+redis:
+  host: localhost
+  port: 6379
+  password: example
+  db: 0
+
+redis-cache-time:
+  user-list: 1s
+  upload-list: 1s
+  solved-challenges-for-game: 1s
+  game-info: 1s
+  all-teams-for-game: 1s
+
+monitoring:
+  enabled: true
+  system-monitor-interval: 1s
+  gorm-slow-query-threshold: 100ms
+
+job-intervals:
+  update-activate-game-score: 2s
+  update-active-game-score-board: 5s
+  container-operations: 2s
+  flag-judge: 1s

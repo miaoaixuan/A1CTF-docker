@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
+	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
 
@@ -98,7 +99,11 @@ func DeleteCache(key string) error {
 }
 
 // 这里设置 redis 的缓存时间
-var cacheTime = 1 * time.Second
+var userListCacheTime = viper.GetDuration("redis-cache-time.user-list")
+var fileListCacheTime = viper.GetDuration("redis-cache-time.upload-list")
+var solvedChallengesForGameCacheTime = viper.GetDuration("redis-cache-time.solved-challenges-for-game")
+var gameInfoCacheTime = viper.GetDuration("redis-cache-time.game-info")
+var allTeamsForGameCacheTime = viper.GetDuration("redis-cache-time.all-teams-for-game")
 
 func CachedMemberSearchTeamMap(gameID int64) (map[string]models.Team, error) {
 	var memberBelongSearchMap map[string]models.Team = make(map[string]models.Team)
@@ -116,7 +121,7 @@ func CachedMemberSearchTeamMap(gameID int64) (map[string]models.Team, error) {
 		}
 
 		return memberBelongSearchMap, nil
-	}, cacheTime, true); err != nil {
+	}, allTeamsForGameCacheTime, true); err != nil {
 		return nil, err
 	}
 
@@ -138,7 +143,7 @@ func CachedMemberMap() (map[string]models.User, error) {
 		}
 
 		return allUserMap, nil
-	}, cacheTime, true); err != nil {
+	}, userListCacheTime, true); err != nil {
 		return nil, err
 	}
 
@@ -157,7 +162,7 @@ func CachedFileMap() (map[string]models.Upload, error) {
 		}
 
 		return filesMap, nil
-	}, 1*time.Second, true); err != nil {
+	}, fileListCacheTime, true); err != nil {
 		return nil, err
 	}
 
@@ -185,7 +190,7 @@ func CachedSolvedChallengesForGame(gameID int64) (map[int64][]models.Solve, erro
 		}
 
 		return solveMap, nil
-	}, cacheTime, true); err != nil {
+	}, solvedChallengesForGameCacheTime, true); err != nil {
 		return nil, err
 	}
 
@@ -205,7 +210,7 @@ func CachedGameInfo(gameID int64) (*models.Game, error) {
 		}
 
 		return game, nil
-	}, cacheTime, true); err != nil {
+	}, gameInfoCacheTime, true); err != nil {
 		return nil, err
 	}
 

@@ -1,8 +1,9 @@
 package dbtool
 
 import (
-	"a1ctf/src/utils/monitoring"
+	"a1ctf/src/modules/monitoring"
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -53,7 +54,13 @@ func Init() {
 		},
 	)
 
-	dsn := viper.GetString("system.sql-dsn")
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
+		viper.GetString("postgres.host"),
+		viper.GetString("postgres.user"),
+		viper.GetString("postgres.password"),
+		viper.GetString("postgres.dbname"),
+		viper.GetString("postgres.port"),
+		viper.GetString("postgres.sslmode"))
 	db_local, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		// Logger: newLogger, // 设置自定义 Logger
 	})
@@ -61,12 +68,14 @@ func Init() {
 		panic(err)
 	}
 
-	prometheusPlugin := &monitoring.PrometheusPlugin{
-		SlowThreshold: 100 * time.Millisecond, // 慢查询阈值
-	}
+	if viper.GetBool("monitoring.enabled") {
+		prometheusPlugin := &monitoring.PrometheusPlugin{
+			SlowThreshold: viper.GetDuration("monitoring.gorm-slow-query-threshold"), // 慢查询阈值
+		}
 
-	if err := db_local.Use(prometheusPlugin); err != nil {
-		panic(err)
+		if err := db_local.Use(prometheusPlugin); err != nil {
+			panic(err)
+		}
 	}
 
 	db = db_local
@@ -101,9 +110,9 @@ func Init() {
 	})
 
 	redis_instance = redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
+		Addr:     fmt.Sprintf("%s:%s", viper.GetString("redis.host"), viper.GetString("redis.port")),
+		Password: viper.GetString("redis.password"),
+		DB:       viper.GetInt("redis.db"),
 	})
 
 	_, err = redis_instance.Ping().Result()
