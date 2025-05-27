@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"sort"
 	"time"
 
 	"github.com/spf13/viper"
@@ -109,6 +110,7 @@ var fileListCacheTime = viper.GetDuration("redis-cache-time.upload-list")
 var solvedChallengesForGameCacheTime = viper.GetDuration("redis-cache-time.solved-challenges-for-game")
 var gameInfoCacheTime = viper.GetDuration("redis-cache-time.game-info")
 var allTeamsForGameCacheTime = viper.GetDuration("redis-cache-time.all-teams-for-game")
+var gameScoreBoardCacheTime = viper.GetDuration("redis-cache-time.game-scoreboard")
 
 func CachedMemberSearchTeamMap(gameID int64) (map[string]models.Team, error) {
 	var memberBelongSearchMap map[string]models.Team = make(map[string]models.Team)
@@ -175,7 +177,7 @@ func CachedFileMap() (map[string]models.Upload, error) {
 }
 
 func CachedSolvedChallengesForGame(gameID int64) (map[int64][]models.Solve, error) {
-	var solveMap map[int64][]models.Solve
+	var solveMap map[int64][]models.Solve = make(map[int64][]models.Solve)
 
 	if err := GetOrCache(fmt.Sprintf("solved_challenges_for_game_%d", gameID), &solveMap, func() (interface{}, error) {
 		var totalSolves []models.Solve
@@ -220,4 +222,241 @@ func CachedGameInfo(gameID int64) (*models.Game, error) {
 	}
 
 	return &game, nil
+}
+
+type TimeLineScoreItem struct {
+	RecordTime int64   `json:"record_time"`
+	Score      float64 `json:"score"`
+}
+
+type TimeLineItem struct {
+	TeamID   int64               `json:"team_id"`
+	TeamName string              `json:"team_name"`
+	Scores   []TimeLineScoreItem `json:"scores"`
+}
+
+type TeamSolveItem struct {
+	ChallengeID int64     `json:"challenge_id"`
+	Score       float64   `json:"score"`
+	Solver      string    `json:"solver"`
+	Rank        int64     `json:"rank"`
+	SolveTime   time.Time `json:"solve_time"`
+}
+
+type TeamScoreItem struct {
+	TeamID           int64           `json:"team_id"`
+	TeamName         string          `json:"team_name"`
+	TeamAvatar       *string         `json:"team_avatar"`
+	TeamSlogan       *string         `json:"team_slogan"`
+	TeamDescription  *string         `json:"team_description"`
+	Rank             int64           `json:"rank"`
+	Score            float64         `json:"score"`
+	Penalty          int64           `json:"penalty"` // 罚时（秒）
+	SolvedChallenges []TeamSolveItem `json:"solved_challenges"`
+}
+
+type CachedGameScoreBoardData struct {
+	FinalScoreBoardMap map[int64]TeamScoreItem
+	Top10TimeLines     []TimeLineItem
+	Top10Teams         []TeamScoreItem
+}
+
+func CachedGameScoreBoard(gameID int64) (*CachedGameScoreBoardData, error) {
+	var cachedData CachedGameScoreBoardData
+
+	if err := GetOrCache(fmt.Sprintf("game_scoreboard_%d", gameID), &cachedData, func() (interface{}, error) {
+		var finalScoreBoardMap map[int64]TeamScoreItem = make(map[int64]TeamScoreItem)
+		var timeLines []TimeLineItem = make([]TimeLineItem, 0)
+
+		// 获取所有队伍
+		var teams []models.Team
+		if err := dbtool.DB().Where("game_id = ? AND team_status = ?", gameID, models.ParticipateApproved).Find(&teams).Error; err != nil {
+			return nil, errors.New("failed to load teams")
+		}
+
+		// 获取所有解题记录
+		var solves []models.Solve
+		if err := dbtool.DB().Where("game_id = ?", gameID).
+			Preload("GameChallenge").
+			Preload("Solver").
+			Order("solve_time ASC").
+			Find(&solves).Error; err != nil {
+			return nil, errors.New("failed to load solves")
+		}
+
+		// 计算每道题的首杀时间
+		firstSolveTime := make(map[int64]time.Time) // challengeID -> 首杀时间
+		for _, solve := range solves {
+			if _, exists := firstSolveTime[solve.ChallengeID]; !exists {
+				firstSolveTime[solve.ChallengeID] = solve.SolveTime
+			}
+		}
+
+		// 计算每个队伍的总分和罚时
+		teamDataMap := make(map[int64]*TeamScoreItem)
+
+		// 初始化队伍数据
+		for _, team := range teams {
+			teamDataMap[team.TeamID] = &TeamScoreItem{
+				TeamID:           team.TeamID,
+				TeamName:         team.TeamName,
+				TeamAvatar:       team.TeamAvatar,
+				TeamSlogan:       team.TeamSlogan,
+				TeamDescription:  team.TeamDescription,
+				Score:            0,
+				Penalty:          0,
+				SolvedChallenges: make([]TeamSolveItem, 0),
+			}
+		}
+
+		// 计算每个队伍的分数和罚时
+		for _, solve := range solves {
+			if teamData, exists := teamDataMap[solve.TeamID]; exists {
+				// 计算罚时（解题时间 - 首杀时间，单位：秒）
+				penalty := int64(0)
+				if firstTime, ok := firstSolveTime[solve.ChallengeID]; ok {
+					penalty = int64(solve.SolveTime.Sub(firstTime).Seconds())
+				}
+
+				teamData.Score += solve.GameChallenge.CurScore
+				teamData.Penalty += penalty
+				teamData.SolvedChallenges = append(teamData.SolvedChallenges, TeamSolveItem{
+					ChallengeID: solve.ChallengeID,
+					Score:       solve.GameChallenge.CurScore,
+					Solver:      solve.Solver.Username,
+					Rank:        int64(solve.Rank),
+					SolveTime:   solve.SolveTime,
+				})
+			}
+		}
+
+		// 转换为切片并排序
+		teamRankings := make([]*TeamScoreItem, 0, len(teamDataMap))
+		for _, teamData := range teamDataMap {
+			teamRankings = append(teamRankings, teamData)
+		}
+
+		// 使用 sort.Slice 进行多条件排序：
+		// 1. 总分降序（分数高的排前面）
+		// 2. 总分相同时，罚时升序（罚时少的排前面）
+		sort.Slice(teamRankings, func(i, j int) bool {
+			teamI, teamJ := teamRankings[i], teamRankings[j]
+
+			// 先比较总分（降序）
+			if teamI.Score != teamJ.Score {
+				return teamI.Score > teamJ.Score
+			}
+
+			// 总分相同时比较罚时（升序，罚时少的排前面）
+			return teamI.Penalty < teamJ.Penalty
+		})
+
+		// 设置排名
+		for i, teamData := range teamRankings {
+			teamData.Rank = int64(i + 1)
+			finalScoreBoardMap[teamData.TeamID] = TeamScoreItem{
+				TeamID:           teamData.TeamID,
+				TeamName:         teamData.TeamName,
+				TeamAvatar:       teamData.TeamAvatar,
+				TeamSlogan:       teamData.TeamSlogan,
+				TeamDescription:  teamData.TeamDescription,
+				Rank:             teamData.Rank,
+				Score:            teamData.Score,
+				Penalty:          teamData.Penalty,
+				SolvedChallenges: teamData.SolvedChallenges,
+			}
+		}
+
+		// 获取 TOP10
+		idx := 0
+		top10Teams := make([]TeamScoreItem, 0, len(finalScoreBoardMap))
+		for _, teamData := range finalScoreBoardMap {
+			top10Teams = append(top10Teams, teamData)
+			idx += 1
+			if idx == 10 {
+				break
+			}
+		}
+
+		// 构建时间线数据（基于原有的 scoreboard 数据）
+		var scoreboardItems []models.ScoreBoard
+		if err := dbtool.DB().Where("game_id = ?", gameID).Find(&scoreboardItems).Error; err != nil {
+			return nil, errors.New("failed to load scoreboards")
+		}
+
+		var scoreboardRecords []models.ScoreBoardDataWithTime
+		for _, item := range scoreboardItems {
+			scoreboardRecords = append(scoreboardRecords, item.Data...)
+		}
+
+		// 如果没有历史记录，创建空的时间线
+		if len(scoreboardRecords) == 0 {
+			timeLines = make([]TimeLineItem, 0)
+		} else {
+			sort.Slice(scoreboardRecords, func(i, j int) bool {
+				return scoreboardRecords[i].RecordTime.Before(scoreboardRecords[j].RecordTime)
+			})
+
+			// 构建 TOP10 的时间线
+			timeLineMap := make(map[int64]TimeLineItem)
+			prevScoreMap := make(map[int64]float64)
+
+			for _, team := range top10Teams {
+				timeLineMap[team.TeamID] = TimeLineItem{
+					TeamID:   team.TeamID,
+					TeamName: team.TeamName,
+					Scores:   make([]TimeLineScoreItem, 0),
+				}
+			}
+
+			// 统计时间线数据
+			for _, item := range scoreboardRecords {
+				recordTime := item.RecordTime
+				for teamID, scoreValue := range item.Data {
+					if timeline, ok := timeLineMap[teamID]; ok {
+						lastScore, valid := prevScoreMap[teamID]
+						if !valid || lastScore != scoreValue.Score {
+							timeline.Scores = append(timeline.Scores, TimeLineScoreItem{
+								RecordTime: recordTime.UnixMilli(),
+								Score:      scoreValue.Score,
+							})
+							timeLineMap[teamID] = timeline
+							prevScoreMap[teamID] = scoreValue.Score
+						}
+					}
+				}
+			}
+
+			// 转换时间线数据
+			timeLines = make([]TimeLineItem, 0, len(timeLineMap))
+			for _, item := range timeLineMap {
+				timeLines = append(timeLines, item)
+			}
+
+			// 按照最终排名排序时间线
+			sort.Slice(timeLines, func(i, j int) bool {
+				// 找到对应队伍的排名
+				rankI, rankJ := int64(999999), int64(999999)
+				for _, team := range top10Teams {
+					if team.TeamID == timeLines[i].TeamID {
+						rankI = team.Rank
+					}
+					if team.TeamID == timeLines[j].TeamID {
+						rankJ = team.Rank
+					}
+				}
+				return rankI < rankJ
+			})
+		}
+
+		cachedData.FinalScoreBoardMap = finalScoreBoardMap
+		cachedData.Top10TimeLines = timeLines
+		cachedData.Top10Teams = top10Teams
+
+		return cachedData, nil
+	}, gameScoreBoardCacheTime, true); err != nil {
+		return nil, err
+	}
+
+	return &cachedData, nil
 }

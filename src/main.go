@@ -139,7 +139,7 @@ func main() {
 		public.POST("/auth/register", controllers.Register)
 
 		public.GET("/game/list", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.UserListGames)
-		public.GET("/game/:game_id/scoreboard", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(true, false), controllers.UserGameGetScoreBoard)
+		public.GET("/game/:game_id/scoreboard", controllers.GameStatusMiddleware(true, false), controllers.UserGameGetScoreBoard)
 
 		public.GET("/game/:game_id", controllers.GameStatusMiddleware(true, false), controllers.UserGetGameDetailWithTeamInfo)
 

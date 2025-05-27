@@ -1127,177 +1127,65 @@ func UserGameGetJudgeResult(c *gin.Context) {
 func UserGameGetScoreBoard(c *gin.Context) {
 	game := c.MustGet("game").(models.Game)
 
-	var gameChallenges []models.GameChallenge
-	if err := dbtool.DB().Preload("Challenge").Where("game_id = ?", game.GameID).Find(&gameChallenges).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
-			Code:    500,
-			Message: "Failed to load game challenges",
-		})
-		return
-	}
+	// 获取当前用户的队伍信息（如果已登录）
+	claims, err := jwtauth.GetJwtMiddleWare().GetClaimsFromJWT(c)
 
-	var scoreboardItems []models.ScoreBoard
-	if err := dbtool.DB().Where("game_id = ?", game.GameID).Find(&scoreboardItems).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
-			Code:    500,
-			Message: "Failed to load scoreboards",
-		})
-		return
-	}
+	var user_id string
+	var logined bool = false
+	var curTeamScoreItem *redis_tool.TeamScoreItem = nil
+	var curTeam models.Team
 
-	var scoreboardRecords []models.ScoreBoardDataWithTime
+	if err == nil {
+		tmpUserID, ok := claims["UserID"]
+		if ok {
+			user_id = tmpUserID.(string)
 
-	// 把所有分块的 ScoreboardItem 合并到一起
-	for _, item := range scoreboardItems {
-		scoreboardRecords = append(scoreboardRecords, item.Data...)
-	}
-
-	// 按照时间升序
-	sort.Slice(scoreboardRecords, func(i, j int) bool {
-		return scoreboardRecords[i].RecordTime.Before(scoreboardRecords[j].RecordTime)
-	})
-
-	// 最新一条记录
-	var lastestRecord = scoreboardRecords[len(scoreboardRecords)-1]
-
-	type kv struct {
-		TeamID int64
-		Value  models.ScoreBoardData
-	}
-
-	var lastRecordItems = make([]kv, 0, len(lastestRecord.Data))
-
-	for k, v := range lastestRecord.Data {
-		lastRecordItems = append(lastRecordItems, kv{
-			TeamID: k,
-			Value:  v,
-		})
-	}
-
-	// 按照分数降序
-	sort.Slice(lastRecordItems, func(i, j int) bool {
-		return lastRecordItems[i].Value.Score > lastRecordItems[j].Value.Score
-	})
-
-	top10 := lastRecordItems[:min(10, len(lastRecordItems))]
-
-	// 统计 TOP10 的分数线
-	timeLineMap := make(map[int64]TimeLineItem)
-	prevScoreMap := make(map[int64]float64)
-
-	for _, item := range top10 {
-		timeLineMap[item.TeamID] = TimeLineItem{
-			TeamID:   item.TeamID,
-			TeamName: item.Value.TeamName,
-			Scores:   make([]TimeLineScoreItem, 0),
-		}
-	}
-
-	// 统计所有时间的分数线
-	for _, item := range scoreboardRecords {
-		recordTime := item.RecordTime
-
-		for teamID, scoreValue := range item.Data {
-			if timeline, ok := timeLineMap[teamID]; ok {
-				lastScore, valid := prevScoreMap[teamID]
-				if !valid || lastScore != scoreValue.Score {
-					timeline.Scores = append(timeline.Scores, TimeLineScoreItem{
-						RecordTime: recordTime.UnixMilli(),
-						Score:      scoreValue.Score,
-					})
-					timeLineMap[teamID] = timeline
-					prevScoreMap[teamID] = scoreValue.Score
+			teamDataMap, err := redis_tool.CachedMemberSearchTeamMap(game.GameID)
+			if err == nil {
+				curTeam, ok = teamDataMap[user_id]
+				if ok {
+					logined = true
 				}
 			}
 		}
 	}
 
-	// 转换为 []TimeLineItem
-	var timeLines []TimeLineItem
-
-	for _, item := range timeLineMap {
-		timeLines = append(timeLines, item)
-	}
-
-	// 按照分数降序
-	sort.Slice(timeLines, func(i, j int) bool {
-		return timeLines[i].Scores[len(timeLines[i].Scores)-1].Score > timeLines[j].Scores[len(timeLines[j].Scores)-1].Score
-	})
-
-	// 统计剩下的人的解题状态
-	var teams []models.Team
-	if err := dbtool.DB().Where("game_id = ? AND team_status = ?", game.GameID, models.ParticipateApproved).Find(&teams).Error; err != nil {
+	cachedData, err := redis_tool.CachedGameScoreBoard(game.GameID)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorMessage{
 			Code:    500,
-			Message: "Failed to load teams",
+			Message: err.Error(),
 		})
 		return
 	}
 
-	var teamMap = make(map[int64]models.Team)
-	for _, team := range teams {
-		teamMap[team.TeamID] = team
-	}
+	teamDataMap := cachedData.FinalScoreBoardMap
+	timeLines := cachedData.Top10TimeLines
+	top10Teams := cachedData.Top10Teams
 
-	// 先生成一张 solveID 和 Solve model 的哈希表
-	var solves []models.Solve
-	if err := dbtool.DB().Where("game_id = ?", game.GameID).Preload("GameChallenge").Preload("Solver").Find(&solves).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
-			Code:    500,
-			Message: "Failed to load solves",
-		})
-		return
-	}
-
-	var solveMap = make(map[string]models.Solve)
-	for _, solve := range solves {
-		solveMap[solve.SolveID] = solve
-	}
-
-	var teamSolveMap = make([]TeamScoreItem, 0, len(teams))
-
-	// 遍历最后一次的时间线
-	for teamRank, item := range lastRecordItems {
-		team, ok := teamMap[item.TeamID]
-		if !ok {
-			continue
+	if logined {
+		myTeam, ok := teamDataMap[curTeam.TeamID]
+		if ok {
+			curTeamScoreItem = &myTeam
 		}
-
-		teamSolvedChallenges := make([]TeamSolveItem, 0)
-		for _, solveID := range item.Value.SolvedChallenges {
-			if solve, ok := solveMap[solveID]; ok {
-				teamSolvedChallenges = append(teamSolvedChallenges, TeamSolveItem{
-					ChallengeID: solve.ChallengeID,
-					Score:       solve.GameChallenge.CurScore,
-					Solver:      solve.Solver.Username,
-					Rank:        int64(solve.Rank),
-					SolveTime:   solve.SolveTime,
-				})
-			}
-		}
-
-		teamSolveMap = append(teamSolveMap, TeamScoreItem{
-			TeamID:           team.TeamID,
-			TeamName:         team.TeamName,
-			TeamAvatar:       team.TeamAvatar,
-			TeamSlogan:       team.TeamSlogan,
-			TeamDescription:  team.TeamDescription,
-			Rank:             int64(teamRank + 1),
-			Score:            item.Value.Score,
-			SolvedChallenges: teamSolvedChallenges,
-		})
 	}
 
-	var result = GameScoreboardData{
+	result := GameScoreboardData{
 		GameID:     game.GameID,
 		Name:       game.Name,
 		TimeLines:  timeLines,
-		TeamScores: teamSolveMap,
+		TeamScores: top10Teams,
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	// 如果用户已登录且有队伍，返回其排名
+	responseData := gin.H{
 		"code": 200,
 		"data": result,
-	})
+	}
 
+	if logined {
+		result.YourTeam = curTeamScoreItem
+	}
+
+	c.JSON(http.StatusOK, responseData)
 }

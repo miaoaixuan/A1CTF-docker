@@ -25,36 +25,6 @@ type UserSubmitFlagPayload struct {
 	FlagContent string `json:"flag" binding:"required"`
 }
 
-type TimeLineScoreItem struct {
-	RecordTime int64   `json:"record_time"`
-	Score      float64 `json:"score"`
-}
-
-type TimeLineItem struct {
-	TeamID   int64               `json:"team_id"`
-	TeamName string              `json:"team_name"`
-	Scores   []TimeLineScoreItem `json:"scores"`
-}
-
-type TeamSolveItem struct {
-	ChallengeID int64     `json:"challenge_id"`
-	Score       float64   `json:"score"`
-	Solver      string    `json:"solver"`
-	Rank        int64     `json:"rank"`
-	SolveTime   time.Time `json:"solve_time"`
-}
-
-type TeamScoreItem struct {
-	TeamID           int64           `json:"team_id"`
-	TeamName         string          `json:"team_name"`
-	TeamAvatar       *string         `json:"team_avatar"`
-	TeamSlogan       *string         `json:"team_slogan"`
-	TeamDescription  *string         `json:"team_description"`
-	Rank             int64           `json:"rank"`
-	Score            float64         `json:"score"`
-	SolvedChallenges []TeamSolveItem `json:"solved_challenges"`
-}
-
 // Authorization payloads
 
 type RegisterPayload struct {

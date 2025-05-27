@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"a1ctf/src/db/models"
+	"a1ctf/src/utils/redis_tool"
 	"time"
 )
 
@@ -89,10 +90,11 @@ type GameNotice struct {
 }
 
 type GameScoreboardData struct {
-	GameID     int64           `json:"game_id"`
-	Name       string          `json:"name"`
-	TimeLines  []TimeLineItem  `json:"time_lines"`
-	TeamScores []TeamScoreItem `json:"teams"`
+	GameID     int64                      `json:"game_id"`
+	Name       string                     `json:"name"`
+	TimeLines  []redis_tool.TimeLineItem  `json:"time_lines"`
+	TeamScores []redis_tool.TeamScoreItem `json:"teams"`
+	YourTeam   *redis_tool.TeamScoreItem  `json:"your_team"`
 }
 
 // Admin User Controller
