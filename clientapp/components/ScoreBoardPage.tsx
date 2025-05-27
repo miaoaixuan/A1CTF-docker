@@ -24,15 +24,22 @@ import { api } from 'utils/ApiHelper';
 import { GameScoreboardData, TeamScore, TeamTimeline, UserFullGameInfo, UserSimpleGameChallenge } from 'utils/A1API';
 
 export default function ScoreBoardPage(
-    { gmid, visible, setVisible, gameStatus, gameInfo, challenges } 
+    { gmid, visible, setVisible, gameStatus, gameInfo, challenges, scoreBoardModel, setScoreBoardModel } 
     : 
-    { gmid: number, visible: boolean, setVisible: Dispatch<SetStateAction<boolean>>, gameStatus: string, gameInfo: UserFullGameInfo | undefined, challenges: Record<string, UserSimpleGameChallenge[]> }
+    { 
+        gmid: number, visible: boolean, 
+        setVisible: Dispatch<SetStateAction<boolean>>, 
+        gameStatus: string, gameInfo: UserFullGameInfo | undefined, 
+        challenges: Record<string, UserSimpleGameChallenge[]>,
+        scoreBoardModel: GameScoreboardData | undefined,
+        setScoreBoardModel: Dispatch<SetStateAction<GameScoreboardData | undefined>>
+    }
 ) {
 
     const [ chartData, setChartData ] = useState<any>([])
 
     const { theme, resolvedTheme } = useTheme();
-    const [scoreBoardModel, setScoreBoardModel] = useState<GameScoreboardData>()
+    
 
     const lastTimeLine = useRef<string>()
     const [ showGraphy, setShowGraphy ] = useState(false)
@@ -185,7 +192,8 @@ export default function ScoreBoardPage(
 
         setTimeout(() => updateScoreBoard(), 1000)
         const scoreBoardInter = setInterval(() => {
-            if (visibleRef.current) updateScoreBoard()
+            // if (visibleRef.current) updateScoreBoard()
+            updateScoreBoard()
         }, randomInt(4000, 5000))
         
         return () => {

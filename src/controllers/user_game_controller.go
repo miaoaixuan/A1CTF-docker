@@ -270,6 +270,25 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 			}
 		}
 
+		cachedData, err := redis_tool.CachedGameScoreBoard(game.GameID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorMessage{
+				Code:    500,
+				Message: err.Error(),
+			})
+			return
+		}
+
+		teamSatus, ok := cachedData.FinalScoreBoardMap[team.TeamID]
+
+		if !ok {
+			c.JSON(http.StatusInternalServerError, ErrorMessage{
+				Code:    500,
+				Message: "Failed to load team rank",
+			})
+			return
+		}
+
 		// 构建团队信息
 		teamInfo := gin.H{
 			"team_id":          team.TeamID,
@@ -283,6 +302,8 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 			"team_hash":        team.TeamHash,
 			"invite_code":      team.InviteCode,
 			"team_status":      team.TeamStatus,
+			"rank":             teamSatus.Rank,
+			"penalty":          teamSatus.Penalty,
 		}
 
 		gameInfo["team_info"] = teamInfo
@@ -1177,14 +1198,14 @@ func UserGameGetScoreBoard(c *gin.Context) {
 		TeamScores: top10Teams,
 	}
 
+	if logined {
+		result.YourTeam = curTeamScoreItem
+	}
+
 	// 如果用户已登录且有队伍，返回其排名
 	responseData := gin.H{
 		"code": 200,
 		"data": result,
-	}
-
-	if logined {
-		result.YourTeam = curTeamScoreItem
 	}
 
 	c.JSON(http.StatusOK, responseData)

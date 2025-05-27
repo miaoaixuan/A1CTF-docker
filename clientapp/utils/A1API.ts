@@ -366,6 +366,8 @@ export interface UserTeamInfo {
   team_avatar?: string | null;
   team_slogan?: string | null;
   team_description?: string | null;
+  rank?: number | null;
+  penalty?: number | null;
   team_members?: {
     captain?: boolean;
     /** 用户头像URL */
@@ -459,6 +461,7 @@ export interface GameScoreboardData {
   /** @example "测试比赛1" */
   name?: string;
   teams?: TeamScore[];
+  your_team?: TeamScore;
   time_lines?: TeamTimeline[];
 }
 
@@ -475,6 +478,8 @@ export interface TeamScore {
   team_description?: string;
   /** @example 1 */
   rank?: number;
+  /** @example 100 */
+  penalty?: number;
   /**
    * @format float
    * @example 500

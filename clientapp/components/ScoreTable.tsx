@@ -6,7 +6,6 @@ import { Button } from "./ui/button";
 import dayjs from "dayjs";
 
 import ReactDOMServer from 'react-dom/server';
-import Link from "next/link";
 import { GameScoreboardData, TeamScore, UserSimpleGameChallenge } from "utils/A1API";
 
 export function ScoreTable ({ scoreBoardModel, setShowUserDetail, challenges }: { scoreBoardModel: GameScoreboardData, setShowUserDetail: Dispatch<SetStateAction<TeamScore>>, challenges: Record<string, UserSimpleGameChallenge[]> }) {

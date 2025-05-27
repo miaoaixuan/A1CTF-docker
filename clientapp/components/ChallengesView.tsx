@@ -15,14 +15,14 @@ import { Mdx } from "./MdxCompoents";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { api } from "utils/ApiHelper"
-import { ContainerStatus, ErrorMessage, ExposePortInfo, GameNotice, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "utils/A1API"
+import { ContainerStatus, ErrorMessage, ExposePortInfo, GameNotice, GameScoreboardData, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "utils/A1API"
 
 
 
 import dayjs from "dayjs";
 import { LoadingPage } from "./LoadingPage";
 import { Button } from "./ui/button";
-import { AlarmClock, AudioWaveform, CheckCheck, CirclePower, CircleX, ClockArrowUp, Flag, Loader2, LoaderPinwheel, Network, Package, Paperclip } from "lucide-react";
+import { AlarmClock, AudioWaveform, ChartNoAxesColumn, ChartNoAxesCombined, CheckCheck, CirclePower, CircleX, ClockArrowUp, Flag, Loader2, LoaderPinwheel, Network, Package, Paperclip } from "lucide-react";
 import { AxiosError } from "axios";
 
 import { AnimatePresence, motion } from "framer-motion";
@@ -39,7 +39,7 @@ import GameSwitchHover from "./GameSwitchHover";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import ScoreBoardPage from "./ScoreBoardPage";
 
-import { randomInt } from "mathjs";
+import { randomInt, re } from "mathjs";
 
 import { toast } from "sonner";
 import copy from "copy-to-clipboard";
@@ -144,6 +144,8 @@ export function ChallengesView({ id }: { id: string }) {
     const [showHintsWindowVisible, setShowHintsWindowVisible] = useState(false)
 
     const wsRef = useRef<WebSocket | null>(null)
+
+    const [scoreBoardModel, setScoreBoardModel] = useState<GameScoreboardData | undefined>(undefined)
 
 
     // 更新当前选中题目信息, 根据 Websocket 接收到的信息被动调用
@@ -533,6 +535,13 @@ export function ChallengesView({ id }: { id: string }) {
         immediate: pageSwitch
     });
 
+    const rankColor = (rank: number) => {
+        if (rank == 1) return "text-red-400 font-bold"
+        else if (rank == 2) return "text-green-400 font-bold"
+        else if (rank == 3) return "text-blue-400 font-bold"
+        else return ""
+    }
+
     return (
         <>
             <GameSwitchHover animation={false} />
@@ -556,7 +565,15 @@ export function ChallengesView({ id }: { id: string }) {
             />
 
             {/* 记分板 */}
-            <ScoreBoardPage gmid={gameID} visible={scoreBoardVisible} setVisible={setScoreBoardVisible} gameStatus={gameStatus} gameInfo={gameInfo} challenges={challenges} />
+            <ScoreBoardPage 
+                gmid={gameID} 
+                visible={scoreBoardVisible} 
+                setVisible={setScoreBoardVisible} 
+                gameStatus={gameStatus} 
+                gameInfo={gameInfo} 
+                challenges={challenges} 
+                scoreBoardModel={scoreBoardModel} setScoreBoardModel={setScoreBoardModel}
+            />
             {/* 重定向警告页 */}
             <RedirectNotice redirectURL={redirectURL} setRedirectURL={setRedirectURL} />
             {/* 公告页 */}
@@ -629,7 +646,7 @@ export function ChallengesView({ id }: { id: string }) {
                                     ) : <></>}
                                     <div className="flex h-full">
                                         <SafeComponent>
-                                            <div className="absolute bottom-5 right-7 z-10 flex justify-end flex-col gap-2">
+                                            <div className="absolute bottom-5 right-7 z-10 flex justify-end flex-col gap-[8px]">
                                                 <div className="flex">
                                                     <div className="flex-1" />
                                                     {curChallenge && challengeSolveStatusList ? challengeSolveStatusList[curChallenge?.challenge_id ?? 0].solved ? (
@@ -651,14 +668,20 @@ export function ChallengesView({ id }: { id: string }) {
                                                         ) : (<></>)
                                                     }
                                                 </div>
-                                                <div className="flex px-5 py-2 flex-col gap-2 backdrop-blur-lg rounded-2xl border-2">
+                                                <div className="flex px-5 py-2 flex-col gap-2 backdrop-blur-md rounded-2xl select-none border-2 shadow-xl shadow-foreground/5">
                                                     <div className="flex gap-2 items-center">
                                                         <AudioWaveform className="size-5" />
                                                         <span>{ gameInfo?.team_info?.team_name }</span>
                                                     </div>
-                                                    <div className="flex gap-2 items-center">
-                                                        <Flag className="size-5" />
-                                                        <span>{ gameInfo?.team_info?.team_score } pts</span>
+                                                    <div className="flex gap-4">
+                                                        <div className="flex gap-2 items-center">
+                                                            <Flag className="size-5" />
+                                                            <span>{ scoreBoardModel != undefined ? (scoreBoardModel?.your_team?.score) : (gameInfo?.team_info?.team_score ?? 0) } pts</span>
+                                                        </div>
+                                                        <div className={`flex gap-2 items-center transition-colors duration-300 ${rankColor(scoreBoardModel != undefined ? (scoreBoardModel?.your_team?.rank ?? 0) : (gameInfo?.team_info?.rank ?? 0))}`}>
+                                                            <ChartNoAxesCombined className="size-5" />
+                                                            <span>Rank { scoreBoardModel != undefined ? (scoreBoardModel?.your_team?.rank ?? 0) : (gameInfo?.team_info?.rank ?? 0) }</span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div> 
