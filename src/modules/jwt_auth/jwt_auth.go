@@ -178,7 +178,7 @@ func authorizator() func(data interface{}, c *gin.Context) bool {
 
 				var all_users map[string]models.User = make(map[string]models.User)
 
-				if err := redis_tool.GetOrCache("jwt_version_map", &all_users, func() (interface{}, error) {
+				if err := redis_tool.GetOrCacheSingleFlight("jwt_version_map", &all_users, func() (interface{}, error) {
 
 					var tmpAllUsers map[string]models.User = make(map[string]models.User)
 					var tmpUser []models.User

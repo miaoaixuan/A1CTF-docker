@@ -321,7 +321,7 @@ func UserGetGameChallenges(c *gin.Context) {
 	var simpleGameChallenges []UserSimpleGameChallenge = make([]UserSimpleGameChallenge, 0)
 
 	// Cache challenge list to redis
-	if err := redis_tool.GetOrCache(fmt.Sprintf("challenges_for_game_%d", game.GameID), &simpleGameChallenges, func() (interface{}, error) {
+	if err := redis_tool.GetOrCacheSingleFlight(fmt.Sprintf("challenges_for_game_%d", game.GameID), &simpleGameChallenges, func() (interface{}, error) {
 		// 查找队伍
 		var tmpSimpleGameChallenges []UserSimpleGameChallenge = make([]UserSimpleGameChallenge, 0)
 		var gameChallenges []models.GameChallenge

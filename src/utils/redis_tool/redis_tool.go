@@ -10,13 +10,17 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
 
 	"github.com/vmihailenco/msgpack/v5"
 )
 
-// 使用分布式锁防止缓存击穿
-func GetOrCache(key string, model interface{}, callback func() (interface{}, error), cacheTime time.Duration, enableRandomTime bool) error {
+// 全局singleflight组，用于防止缓存击穿
+var sfGroup singleflight.Group
+
+// 使用singleflight防止缓存击穿
+func GetOrCacheSingleFlight(key string, model interface{}, callback func() (interface{}, error), cacheTime time.Duration, enableRandomTime bool) error {
 	// 1. 尝试从缓存获取数据
 	value, err := dbtool.Redis().Get(key).Result()
 	if err == nil {
@@ -27,77 +31,52 @@ func GetOrCache(key string, model interface{}, callback func() (interface{}, err
 		return nil
 	}
 
-	// 2. 缓存未命中，使用分布式锁防止缓存击穿
-	lockKey := fmt.Sprintf("lock:%s", key)
-	// 尝试获取锁，过期时间10秒，防止死锁
-	acquired, err := dbtool.Redis().SetNX(lockKey, "1", 10*time.Second).Result()
-	if err != nil {
-		return err
-	}
-
-	if acquired {
-		// 获取到锁，执行回调函数重建缓存
-		defer dbtool.Redis().Del(lockKey) // 确保锁被释放
-
-		// 双重检查，避免多个进程同时重建
+	// 2. 缓存未命中，使用singleflight防止缓存击穿
+	// singleflight确保同一个key只有一个goroutine执行回调函数
+	result, err, _ := sfGroup.Do(key, func() (interface{}, error) {
+		// 双重检查，避免在等待期间其他goroutine已经设置了缓存
 		value, err := dbtool.Redis().Get(key).Result()
 		if err == nil {
-			// 另一个进程已经重建了缓存
-			if err := msgpack.Unmarshal([]byte(value), model); err != nil {
-				return err
-			}
-			return nil
+			// 缓存已存在，直接返回序列化的字节数据
+			return []byte(value), nil
 		}
 
 		// 执行回调获取数据
-		result, err := callback()
+		data, err := callback()
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		// 设置随机过期时间，避免同时大量过期
 		expireTime := cacheTime
-
 		if enableRandomTime {
 			expireTime += time.Duration(rand.Intn(500)) * time.Millisecond
 		}
 
 		// 序列化并存入Redis
-		b, err := msgpack.Marshal(&result)
+		b, err := msgpack.Marshal(data)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 
 		if err := dbtool.Redis().Set(key, b, expireTime).Err(); err != nil {
-			return err
+			return nil, err
 		}
 
-		// 为调用者提供返回数据
-		// 因为model是指针，直接将result赋值给它
-		resultBytes, _ := msgpack.Marshal(result)
-		return msgpack.Unmarshal(resultBytes, model)
-	} else {
-		// 未获取到锁，说明有其他请求正在重建缓存
-		// 短暂等待后重试几次
-		for i := 0; i < 3; i++ {
-			time.Sleep(20 * time.Millisecond)
-			value, err := dbtool.Redis().Get(key).Result()
-			if err == nil {
-				// 缓存已被重建
-				return msgpack.Unmarshal([]byte(value), model)
-			}
-		}
+		// 返回序列化的字节数据，避免并发问题
+		return b, nil
+	})
 
-		// 最后一次尝试调用回调
-		result, err := callback()
-		if err != nil {
-			return err
-		}
-
-		// 为调用者提供返回数据
-		resultBytes, _ := msgpack.Marshal(result)
-		return msgpack.Unmarshal(resultBytes, model)
+	if err != nil {
+		return err
 	}
+
+	// 将结果反序列化到model中
+	if bytes, ok := result.([]byte); ok {
+		return msgpack.Unmarshal(bytes, model)
+	}
+
+	return errors.New("unexpected result type from singleflight")
 }
 
 func DeleteCache(key string) error {
@@ -115,7 +94,7 @@ var gameScoreBoardCacheTime = viper.GetDuration("redis-cache-time.game-scoreboar
 func CachedMemberSearchTeamMap(gameID int64) (map[string]models.Team, error) {
 	var memberBelongSearchMap map[string]models.Team = make(map[string]models.Team)
 
-	if err := GetOrCache(fmt.Sprintf("all_teams_for_game_%d", gameID), &memberBelongSearchMap, func() (interface{}, error) {
+	if err := GetOrCacheSingleFlight(fmt.Sprintf("all_teams_for_game_%d", gameID), &memberBelongSearchMap, func() (interface{}, error) {
 		var allTeams []models.Team
 		if err := dbtool.DB().Find(&allTeams).Where("game_id = ?", gameID).Error; err != nil {
 			return nil, err
@@ -138,7 +117,7 @@ func CachedMemberSearchTeamMap(gameID int64) (map[string]models.Team, error) {
 func CachedMemberMap() (map[string]models.User, error) {
 	var allUserMap map[string]models.User = make(map[string]models.User)
 
-	if err := GetOrCache("user_list", &allUserMap, func() (interface{}, error) {
+	if err := GetOrCacheSingleFlight("user_list", &allUserMap, func() (interface{}, error) {
 		var allUsers []models.User
 
 		if err := dbtool.DB().Find(&allUsers).Error; err != nil {
@@ -160,7 +139,7 @@ func CachedMemberMap() (map[string]models.User, error) {
 func CachedFileMap() (map[string]models.Upload, error) {
 	var filesMap map[string]models.Upload = make(map[string]models.Upload)
 
-	if err := GetOrCache("file_list", &filesMap, func() (interface{}, error) {
+	if err := GetOrCacheSingleFlight("file_list", &filesMap, func() (interface{}, error) {
 		var files []models.Upload
 		dbtool.DB().Find(&files)
 
@@ -179,7 +158,7 @@ func CachedFileMap() (map[string]models.Upload, error) {
 func CachedSolvedChallengesForGame(gameID int64) (map[int64][]models.Solve, error) {
 	var solveMap map[int64][]models.Solve = make(map[int64][]models.Solve)
 
-	if err := GetOrCache(fmt.Sprintf("solved_challenges_for_game_%d", gameID), &solveMap, func() (interface{}, error) {
+	if err := GetOrCacheSingleFlight(fmt.Sprintf("solved_challenges_for_game_%d", gameID), &solveMap, func() (interface{}, error) {
 		var totalSolves []models.Solve
 
 		if err := dbtool.DB().Where("game_id = ? AND solve_status = ?", gameID, models.SolveCorrect).Preload("Challenge").Find(&totalSolves).Error; err != nil {
@@ -207,7 +186,7 @@ func CachedSolvedChallengesForGame(gameID int64) (map[int64][]models.Solve, erro
 func CachedGameInfo(gameID int64) (*models.Game, error) {
 	var game models.Game
 
-	if err := GetOrCache(fmt.Sprintf("game_info_%d", gameID), &game, func() (interface{}, error) {
+	if err := GetOrCacheSingleFlight(fmt.Sprintf("game_info_%d", gameID), &game, func() (interface{}, error) {
 		if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
 				return nil, errors.New("game not found")
@@ -253,6 +232,7 @@ type TeamScoreItem struct {
 	Score            float64         `json:"score"`
 	Penalty          int64           `json:"penalty"` // 罚时（秒）
 	SolvedChallenges []TeamSolveItem `json:"solved_challenges"`
+	LastSolveTime    int64           `json:"last_solve_time"`
 }
 
 type CachedGameScoreBoardData struct {
@@ -264,7 +244,7 @@ type CachedGameScoreBoardData struct {
 func CachedGameScoreBoard(gameID int64) (*CachedGameScoreBoardData, error) {
 	var cachedData CachedGameScoreBoardData
 
-	if err := GetOrCache(fmt.Sprintf("game_scoreboard_%d", gameID), &cachedData, func() (interface{}, error) {
+	if err := GetOrCacheSingleFlight(fmt.Sprintf("game_scoreboard_%d", gameID), &cachedData, func() (interface{}, error) {
 		var finalScoreBoardMap map[int64]TeamScoreItem = make(map[int64]TeamScoreItem)
 		var timeLines []TimeLineItem = make([]TimeLineItem, 0)
 
@@ -306,6 +286,7 @@ func CachedGameScoreBoard(gameID int64) (*CachedGameScoreBoardData, error) {
 				Score:            0,
 				Penalty:          0,
 				SolvedChallenges: make([]TeamSolveItem, 0),
+				LastSolveTime:    0,
 			}
 		}
 
@@ -327,6 +308,10 @@ func CachedGameScoreBoard(gameID int64) (*CachedGameScoreBoardData, error) {
 					Rank:        int64(solve.Rank),
 					SolveTime:   solve.SolveTime,
 				})
+
+				if teamData.LastSolveTime < solve.SolveTime.UnixMilli() {
+					teamData.LastSolveTime = solve.SolveTime.UnixMilli()
+				}
 			}
 		}
 
@@ -339,6 +324,8 @@ func CachedGameScoreBoard(gameID int64) (*CachedGameScoreBoardData, error) {
 		// 使用 sort.Slice 进行多条件排序：
 		// 1. 总分降序（分数高的排前面）
 		// 2. 总分相同时，罚时升序（罚时少的排前面）
+		// 3. 罚时相同时，最后解题时间降序（解题时间晚的排前面）
+		// 4. 最后比较队伍名称（升序，字典序小的排前面）... 这个应该不会出现
 		sort.Slice(teamRankings, func(i, j int) bool {
 			teamI, teamJ := teamRankings[i], teamRankings[j]
 
@@ -348,7 +335,17 @@ func CachedGameScoreBoard(gameID int64) (*CachedGameScoreBoardData, error) {
 			}
 
 			// 总分相同时比较罚时（升序，罚时少的排前面）
-			return teamI.Penalty < teamJ.Penalty
+			if teamI.Penalty != teamJ.Penalty {
+				return teamI.Penalty < teamJ.Penalty
+			}
+
+			// 罚时相同时比较最后解题时间（降序，解题时间晚的排前面）
+			if teamI.LastSolveTime != teamJ.LastSolveTime {
+				return teamI.LastSolveTime > teamJ.LastSolveTime
+			}
+
+			// 最后比较队伍名称（升序，字典序小的排前面）... 这个应该不会出现
+			return teamI.TeamName < teamJ.TeamName
 		})
 
 		// 设置排名
@@ -369,9 +366,19 @@ func CachedGameScoreBoard(gameID int64) (*CachedGameScoreBoardData, error) {
 
 		// 获取 TOP10
 		idx := 0
-		top10Teams := make([]TeamScoreItem, 0, len(finalScoreBoardMap))
-		for _, teamData := range finalScoreBoardMap {
-			top10Teams = append(top10Teams, teamData)
+		top10Teams := make([]TeamScoreItem, 0, min(10, len(teamRankings)))
+		for _, teamData := range teamRankings {
+			top10Teams = append(top10Teams, TeamScoreItem{
+				TeamID:           teamData.TeamID,
+				TeamName:         teamData.TeamName,
+				TeamAvatar:       teamData.TeamAvatar,
+				TeamSlogan:       teamData.TeamSlogan,
+				TeamDescription:  teamData.TeamDescription,
+				Rank:             teamData.Rank,
+				Score:            teamData.Score,
+				Penalty:          teamData.Penalty,
+				SolvedChallenges: teamData.SolvedChallenges,
+			})
 			idx += 1
 			if idx == 10 {
 				break
@@ -436,14 +443,14 @@ func CachedGameScoreBoard(gameID int64) (*CachedGameScoreBoardData, error) {
 			// 按照最终排名排序时间线
 			sort.Slice(timeLines, func(i, j int) bool {
 				// 找到对应队伍的排名
-				rankI, rankJ := int64(999999), int64(999999)
-				for _, team := range top10Teams {
-					if team.TeamID == timeLines[i].TeamID {
-						rankI = team.Rank
-					}
-					if team.TeamID == timeLines[j].TeamID {
-						rankJ = team.Rank
-					}
+				rankI, rankJ := 999999, 999999
+				teamI, ok := finalScoreBoardMap[timeLines[i].TeamID]
+				if ok {
+					rankI = int(teamI.Rank)
+				}
+				teamJ, ok := finalScoreBoardMap[timeLines[j].TeamID]
+				if ok {
+					rankJ = int(teamJ.Rank)
 				}
 				return rankI < rankJ
 			})

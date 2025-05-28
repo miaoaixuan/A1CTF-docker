@@ -668,7 +668,7 @@ export function ChallengesView({ id }: { id: string }) {
                                                         ) : (<></>)
                                                     }
                                                 </div>
-                                                <div className="flex px-5 py-2 flex-col gap-2 backdrop-blur-md rounded-2xl select-none border-2 shadow-xl shadow-foreground/5">
+                                                <div className="flex px-5 py-2 flex-col gap-2 backdrop-blur-sm rounded-2xl select-none border-2 shadow-xl shadow-foreground/5">
                                                     <div className="flex gap-2 items-center">
                                                         <AudioWaveform className="size-5" />
                                                         <span>{ gameInfo?.team_info?.team_name }</span>
