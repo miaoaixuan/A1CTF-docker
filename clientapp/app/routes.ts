@@ -5,6 +5,7 @@ export default [
     route("", "routes/[lng]/page.tsx"),
     route("games/", "routes/[lng]/games/page.tsx"),
     route("games/:id/", "routes/[lng]/games/[id]/page.tsx"),
+    route("games/:id/scoreboard/", "routes/[lng]/games/[id]/scoreboard/page.tsx"),
 
     route("about/", "routes/[lng]/about/page.tsx"),
     route("version/", "routes/[lng]/version/page.tsx"),

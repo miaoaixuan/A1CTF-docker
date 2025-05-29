@@ -3,6 +3,7 @@ package controllers
 import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
+	"a1ctf/src/webmodels"
 	"net/http"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 
 // AdminListContainers 获取容器列表
 func AdminListContainers(c *gin.Context) {
-	var payload AdminListContainersPayload
+	var payload webmodels.AdminListContainersPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -79,7 +80,7 @@ func AdminListContainers(c *gin.Context) {
 	}
 
 	// 构建返回数据
-	var containerItems []AdminContainerItem = make([]AdminContainerItem, 0)
+	var containerItems []webmodels.AdminContainerItem = make([]webmodels.AdminContainerItem, 0)
 	for _, container := range containers {
 		team, teamExists := teamMap[container.TeamID]
 		game, gameExists := gameMap[container.GameID]
@@ -98,7 +99,7 @@ func AdminListContainers(c *gin.Context) {
 			containerPorts = append(containerPorts, exposeInfo.ExposePorts...)
 		}
 
-		containerItems = append(containerItems, AdminContainerItem{
+		containerItems = append(containerItems, webmodels.AdminContainerItem{
 			ContainerID:         container.ContainerID,
 			ContainerName:       container.ChallengeName,
 			ContainerStatus:     container.ContainerStatus,
@@ -120,7 +121,7 @@ func AdminListContainers(c *gin.Context) {
 
 // AdminDeleteContainer 删除容器
 func AdminDeleteContainer(c *gin.Context) {
-	var payload AdminContainerOperationPayload
+	var payload webmodels.AdminContainerOperationPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -185,7 +186,7 @@ func AdminDeleteContainer(c *gin.Context) {
 
 // AdminExtendContainer 延长容器生命周期
 func AdminExtendContainer(c *gin.Context) {
-	var payload AdminExtendContainerPayload
+	var payload webmodels.AdminExtendContainerPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,

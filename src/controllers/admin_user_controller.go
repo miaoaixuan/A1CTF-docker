@@ -4,6 +4,7 @@ import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
+	"a1ctf/src/webmodels"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,7 +13,7 @@ import (
 
 func AdminListUsers(c *gin.Context) {
 
-	var payload AdminListUsersPayload
+	var payload webmodels.AdminListUsersPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 		return
@@ -30,10 +31,10 @@ func AdminListUsers(c *gin.Context) {
 		return
 	}
 
-	userItems := make([]AdminListUserItem, 0, len(users))
+	userItems := make([]webmodels.AdminListUserItem, 0, len(users))
 
 	for _, user := range users {
-		userItems = append(userItems, AdminListUserItem{
+		userItems = append(userItems, webmodels.AdminListUserItem{
 			UserID:        user.UserID,
 			UserName:      user.Username,
 			RealName:      user.Realname,
@@ -59,7 +60,7 @@ func AdminListUsers(c *gin.Context) {
 
 // AdminUpdateUser 更新用户信息
 func AdminUpdateUser(c *gin.Context) {
-	var payload AdminUpdateUserPayload
+	var payload webmodels.AdminUpdateUserPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -111,7 +112,7 @@ func AdminUpdateUser(c *gin.Context) {
 
 // AdminResetUserPassword 重置用户密码
 func AdminResetUserPassword(c *gin.Context) {
-	var payload AdminUserOperationPayload
+	var payload webmodels.AdminUserOperationPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -165,7 +166,7 @@ func AdminResetUserPassword(c *gin.Context) {
 
 // AdminDeleteUser 删除用户
 func AdminDeleteUser(c *gin.Context) {
-	var payload AdminUserOperationPayload
+	var payload webmodels.AdminUserOperationPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,

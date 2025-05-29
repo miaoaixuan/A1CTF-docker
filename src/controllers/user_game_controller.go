@@ -6,16 +6,14 @@ import (
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
 	"a1ctf/src/utils/redis_tool"
-	"errors"
+	"a1ctf/src/webmodels"
 	"fmt"
 	"log"
 	"net/http"
-	"sort"
 	"strconv"
 	"time"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
-	"github.com/bytedance/sonic"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -28,7 +26,7 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool) gin.Handle
 		gameIDStr := c.Param("game_id")
 		gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, ErrorMessage{
+			c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 				Code:    400,
 				Message: "Invalid game ID",
 			})
@@ -38,7 +36,7 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool) gin.Handle
 
 		game, err := redis_tool.CachedGameInfo(gameID)
 		if err != nil {
-			c.JSON(http.StatusNotFound, ErrorMessage{
+			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 				Code:    404,
 				Message: "Game not found",
 			})
@@ -47,7 +45,7 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool) gin.Handle
 		}
 
 		if !game.Visible {
-			c.JSON(http.StatusNotFound, ErrorMessage{
+			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 				Code:    404,
 				Message: "Game not found",
 			})
@@ -57,7 +55,7 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool) gin.Handle
 
 		now := time.Now().UTC()
 		if game.StartTime.After(now) {
-			c.JSON(http.StatusForbidden, ErrorMessage{
+			c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
 				Code:    403,
 				Message: "Game not started yet",
 			})
@@ -66,7 +64,7 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool) gin.Handle
 		}
 
 		if !visibleAfterEnded && game.EndTime.Before(now) && !game.PracticeMode {
-			c.JSON(http.StatusForbidden, ErrorMessage{
+			c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
 				Code:    403,
 				Message: "Game has ended",
 			})
@@ -97,7 +95,7 @@ func TeamStatusMiddleware() gin.HandlerFunc {
 
 		memberBelongSearchMap, err := redis_tool.CachedMemberSearchTeamMap(game.GameID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorMessage{
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
 				Message: "Failed to load teams",
 			})
@@ -107,7 +105,7 @@ func TeamStatusMiddleware() gin.HandlerFunc {
 
 		team, ok := memberBelongSearchMap[user_id]
 		if !ok {
-			c.JSON(http.StatusForbidden, ErrorMessage{
+			c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
 				Code:    403,
 				Message: "You must join a team in this game",
 			})
@@ -116,7 +114,7 @@ func TeamStatusMiddleware() gin.HandlerFunc {
 		}
 
 		if team.TeamStatus == models.ParticipateParticipated || team.TeamStatus == models.ParticipatePending || team.TeamStatus == models.ParticipateRejected {
-			c.JSON(http.StatusForbidden, ErrorMessage{
+			c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
 				Code:    403,
 				Message: "You must join a team in this game",
 			})
@@ -125,7 +123,7 @@ func TeamStatusMiddleware() gin.HandlerFunc {
 		}
 
 		if team.TeamStatus == models.ParticipateBanned {
-			c.JSON(http.StatusBadRequest, ErrorMessage{
+			c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 				Code:    400,
 				Message: "You are banned from this game",
 			})
@@ -144,20 +142,20 @@ func UserListGames(c *gin.Context) {
 	query := dbtool.DB()
 
 	if err := query.Find(&games).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
 			Message: "Failed to load games",
 		})
 		return
 	}
 
-	data := make([]UserGameSimpleInfo, 0, len(games))
+	data := make([]webmodels.UserGameSimpleInfo, 0, len(games))
 	for _, game := range games {
 		if !game.Visible {
 			continue
 		}
 
-		data = append(data, UserGameSimpleInfo{
+		data = append(data, webmodels.UserGameSimpleInfo{
 			GameID:    game.GameID,
 			Name:      game.Name,
 			Summary:   game.Summary,
@@ -197,7 +195,7 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 	if logined {
 		memberBelongSearchMap, err := redis_tool.CachedMemberSearchTeamMap(game.GameID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorMessage{
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
 				Message: "Failed to load teams",
 			})
@@ -238,11 +236,11 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 	// 如果用户已加入队伍，添加队伍信息
 	if team_status != models.ParticipateUnRegistered && team.TeamID != 0 {
 		// 获取团队成员信息
-		var members []TeamMemberInfo
+		var members []webmodels.TeamMemberInfo
 		if len(team.TeamMembers) > 0 {
 			userMap, err := redis_tool.CachedMemberMap()
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, ErrorMessage{
+				c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 					Code:    500,
 					Message: "Failed to load team members",
 				})
@@ -255,7 +253,7 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 					continue
 				}
 
-				members = append(members, TeamMemberInfo{
+				members = append(members, webmodels.TeamMemberInfo{
 					Avatar:   user.Avatar,
 					UserName: user.Username,
 					UserID:   user.UserID,
@@ -268,25 +266,6 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 				// 假设第一个成员是队长/创建者
 				members[0].Captain = true
 			}
-		}
-
-		cachedData, err := redis_tool.CachedGameScoreBoard(game.GameID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorMessage{
-				Code:    500,
-				Message: err.Error(),
-			})
-			return
-		}
-
-		teamSatus, ok := cachedData.FinalScoreBoardMap[team.TeamID]
-
-		if !ok {
-			c.JSON(http.StatusInternalServerError, ErrorMessage{
-				Code:    500,
-				Message: "Failed to load team rank",
-			})
-			return
 		}
 
 		// 构建团队信息
@@ -302,8 +281,32 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 			"team_hash":        team.TeamHash,
 			"invite_code":      team.InviteCode,
 			"team_status":      team.TeamStatus,
-			"rank":             teamSatus.Rank,
-			"penalty":          teamSatus.Penalty,
+			"rank":             0,
+			"penalty":          0,
+		}
+
+		if team.TeamStatus == models.ParticipateApproved {
+			cachedData, err := redis_tool.CachedGameScoreBoard(game.GameID)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+					Code:    500,
+					Message: err.Error(),
+				})
+				return
+			}
+
+			teamSatus, ok := cachedData.FinalScoreBoardMap[team.TeamID]
+
+			if !ok {
+				c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+					Code:    500,
+					Message: "Failed to load team rank",
+				})
+				return
+			}
+
+			teamInfo["rank"] = teamSatus.Rank
+			teamInfo["penalty"] = teamSatus.Penalty
 		}
 
 		gameInfo["team_info"] = teamInfo
@@ -318,65 +321,12 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 func UserGetGameChallenges(c *gin.Context) {
 	game := c.MustGet("game").(models.Game)
 
-	var simpleGameChallenges []UserSimpleGameChallenge = make([]UserSimpleGameChallenge, 0)
-
-	// Cache challenge list to redis
-	if err := redis_tool.GetOrCacheSingleFlight(fmt.Sprintf("challenges_for_game_%d", game.GameID), &simpleGameChallenges, func() (interface{}, error) {
-		// 查找队伍
-		var tmpSimpleGameChallenges []UserSimpleGameChallenge = make([]UserSimpleGameChallenge, 0)
-		var gameChallenges []models.GameChallenge
-
-		// 使用 Preload 进行关联查询
-		if err := dbtool.DB().Preload("Challenge").Where("game_id = ?", game.GameID).Find(&gameChallenges).Error; err != nil {
-			errJSON, _ := sonic.Marshal(ErrorMessage{
-				Code:    500,
-				Message: "Failed to load game challenges",
-			})
-			return nil, errors.New(string(errJSON))
-		}
-
-		sort.Slice(gameChallenges, func(i, j int) bool {
-			return gameChallenges[i].Challenge.Name < gameChallenges[j].Challenge.Name
+	simpleGameChallenges, err := redis_tool.CachedGameSimpleChallenges(game.GameID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: "Failed to load game challenges",
 		})
-
-		// 游戏阶段判断
-		gameStages := game.Stages
-		var curStage = ""
-
-		if gameStages != nil {
-			for _, stage := range *gameStages {
-				if stage.StartTime.Before(time.Now().UTC()) && stage.EndTime.After(time.Now().UTC()) {
-					curStage = stage.StageName
-					break
-				}
-			}
-		}
-
-		for _, gc := range gameChallenges {
-
-			if gc.BelongStage != nil && *gc.BelongStage != curStage {
-				continue
-			}
-
-			if !gc.Visible {
-				continue
-			}
-
-			tmpSimpleGameChallenges = append(tmpSimpleGameChallenges, UserSimpleGameChallenge{
-				ChallengeID:   *gc.Challenge.ChallengeID,
-				ChallengeName: gc.Challenge.Name,
-				TotalScore:    gc.TotalScore,
-				CurScore:      gc.CurScore,
-				SolveCount:    gc.SolveCount,
-				Category:      gc.Challenge.Category,
-			})
-		}
-
-		return tmpSimpleGameChallenges, nil
-	}, 1*time.Second, true); err != nil {
-		var errMsg ErrorMessage
-		sonic.Unmarshal([]byte(err.Error()), &errMsg)
-		c.JSON(http.StatusInternalServerError, errMsg)
 		return
 	}
 
@@ -386,7 +336,7 @@ func UserGetGameChallenges(c *gin.Context) {
 
 	solveMap, err := redis_tool.CachedSolvedChallengesForGame(game.GameID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
 			Message: "Failed to load solves",
 		})
@@ -397,10 +347,10 @@ func UserGetGameChallenges(c *gin.Context) {
 		solves = make([]models.Solve, 0)
 	}
 
-	var solved_challenges []UserSimpleGameSolvedChallenge = make([]UserSimpleGameSolvedChallenge, 0, len(solves))
+	var solved_challenges []webmodels.UserSimpleGameSolvedChallenge = make([]webmodels.UserSimpleGameSolvedChallenge, 0, len(solves))
 
 	for _, solve := range solves {
-		solved_challenges = append(solved_challenges, UserSimpleGameSolvedChallenge{
+		solved_challenges = append(solved_challenges, webmodels.UserSimpleGameSolvedChallenge{
 			ChallengeID:   solve.ChallengeID,
 			ChallengeName: solve.Challenge.Name,
 			SolveTime:     solve.SolveTime,
@@ -424,7 +374,7 @@ func UserGetGameChallenge(c *gin.Context) {
 	challengeIDStr := c.Param("challenge_id")
 	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
 			Message: "Invalid challenge ID",
 		})
@@ -438,7 +388,7 @@ func UserGetGameChallenge(c *gin.Context) {
 		Where("game_id = ? and game_challenges.challenge_id = ?", game.GameID, challengeID).
 		Find(&gameChallenges).Error; err != nil {
 
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
 			Message: "Failed to load game challenges",
 		})
@@ -446,7 +396,7 @@ func UserGetGameChallenge(c *gin.Context) {
 	}
 
 	if len(gameChallenges) == 0 {
-		c.JSON(http.StatusNotFound, ErrorMessage{
+		c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 			Code:    404,
 			Message: "Challenge not found",
 		})
@@ -469,14 +419,14 @@ func UserGetGameChallenge(c *gin.Context) {
 			}
 
 			if err := dbtool.DB().Create(&flag).Error; err != nil {
-				c.JSON(http.StatusInternalServerError, ErrorMessage{
+				c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 					Code:    500,
 					Message: "System error",
 				})
 				return
 			}
 		} else {
-			c.JSON(http.StatusInternalServerError, ErrorMessage{
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
 				Message: "System error.",
 			})
@@ -484,10 +434,10 @@ func UserGetGameChallenge(c *gin.Context) {
 		}
 	}
 
-	userAttachments := make([]UserAttachmentConfig, 0, len(gameChallenge.Challenge.Attachments))
+	userAttachments := make([]webmodels.UserAttachmentConfig, 0, len(gameChallenge.Challenge.Attachments))
 
 	for _, attachment := range gameChallenge.Challenge.Attachments {
-		userAttachments = append(userAttachments, UserAttachmentConfig{
+		userAttachments = append(userAttachments, webmodels.UserAttachmentConfig{
 			AttachName:   attachment.AttachName,
 			AttachType:   attachment.AttachType,
 			AttachURL:    attachment.AttachURL,
@@ -504,7 +454,7 @@ func UserGetGameChallenge(c *gin.Context) {
 		}
 	}
 
-	result := UserDetailGameChallenge{
+	result := webmodels.UserDetailGameChallenge{
 		ChallengeID:         *gameChallenge.Challenge.ChallengeID,
 		ChallengeName:       gameChallenge.Challenge.Name,
 		Description:         gameChallenge.Challenge.Description,
@@ -523,7 +473,7 @@ func UserGetGameChallenge(c *gin.Context) {
 	// 存活靶机处理
 	var containers []models.Container
 	if err := dbtool.DB().Where("game_id = ? AND challenge_id = ? AND team_id = ? AND (container_status = ? OR container_status = ?)", game.GameID, gameChallenge.Challenge.ChallengeID, team.TeamID, models.ContainerRunning, models.ContainerQueueing).Find(&containers).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
 			Message: "Failed to load containers",
 		})
@@ -531,16 +481,16 @@ func UserGetGameChallenge(c *gin.Context) {
 	}
 
 	if len(containers) > 1 {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
 			Message: "Failed to load containers",
 		})
 		return
 	}
 
-	result.Containers = make([]ExposePortInfo, 0, len(*gameChallenge.Challenge.ContainerConfig))
+	result.Containers = make([]webmodels.ExposePortInfo, 0, len(*gameChallenge.Challenge.ContainerConfig))
 	for _, container := range *gameChallenge.Challenge.ContainerConfig {
-		tempConfig := ExposePortInfo{
+		tempConfig := webmodels.ExposePortInfo{
 			ContainerName:  container.Name,
 			ContainerPorts: make(models.ExposePorts, 0),
 		}
@@ -590,16 +540,16 @@ func UserGetGameNotices(c *gin.Context) {
 	var notices []models.Notice
 
 	if err := dbtool.DB().Where("game_id = ?", game.GameID).Find(&notices).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
 			Message: "Failed to load notices",
 		})
 		return
 	}
 
-	result := make([]GameNotice, 0, len(notices))
+	result := make([]webmodels.GameNotice, 0, len(notices))
 	for _, notice := range notices {
-		result = append(result, GameNotice{
+		result = append(result, webmodels.GameNotice{
 			NoticeID:       notice.NoticeID,
 			NoticeCategory: notice.NoticeCategory,
 			Data:           notice.Data,
@@ -617,9 +567,9 @@ func UserCreateGameTeam(c *gin.Context) {
 
 	game := c.MustGet("game").(models.Game)
 
-	var payload UserCreateTeamPayload
+	var payload webmodels.UserCreateTeamPayload = webmodels.UserCreateTeamPayload{}
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
 			Message: "Invalid request payload",
 		})
@@ -644,7 +594,7 @@ func UserCreateGameTeam(c *gin.Context) {
 	}
 
 	if err := dbtool.DB().Create(&newTeam).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    501,
 			Message: "System error",
 		})
@@ -664,7 +614,7 @@ func UserCreateGameContainer(c *gin.Context) {
 	challengeIDStr := c.Param("challenge_id")
 	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
 			Message: "Invalid challenge ID",
 		})
@@ -678,7 +628,7 @@ func UserCreateGameContainer(c *gin.Context) {
 		Where("game_id = ? and game_challenges.challenge_id = ?", game.GameID, challengeID).
 		Find(&gameChallenges).Error; err != nil {
 
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
 			Message: "Failed to load game challenges",
 		})
@@ -686,7 +636,7 @@ func UserCreateGameContainer(c *gin.Context) {
 	}
 
 	if len(gameChallenges) == 0 {
-		c.JSON(http.StatusNotFound, ErrorMessage{
+		c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 			Code:    404,
 			Message: "Challenge not found",
 		})
@@ -697,7 +647,7 @@ func UserCreateGameContainer(c *gin.Context) {
 
 	var containers []models.Container
 	if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND (container_status = ? or container_status = ?)", game.GameID, team.TeamID, models.ContainerRunning, models.ContainerQueueing).Find(&containers).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
 			Message: "Failed to load containers",
 		})
@@ -707,7 +657,7 @@ func UserCreateGameContainer(c *gin.Context) {
 	for _, container := range containers {
 		log.Printf("container: %+v\n", container)
 		if container.ChallengeID == *gameChallenge.Challenge.ChallengeID && container.ContainerStatus == models.ContainerRunning {
-			c.JSON(http.StatusBadRequest, ErrorMessage{
+			c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 				Code:    400,
 				Message: "You have created a container for this challenge",
 			})
@@ -715,7 +665,7 @@ func UserCreateGameContainer(c *gin.Context) {
 		}
 
 		if container.ChallengeID == *gameChallenge.Challenge.ChallengeID && container.ContainerStatus == models.ContainerQueueing {
-			c.JSON(http.StatusBadRequest, ErrorMessage{
+			c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 				Code:    400,
 				Message: "Your container is queueing",
 			})
@@ -724,7 +674,7 @@ func UserCreateGameContainer(c *gin.Context) {
 	}
 
 	if len(containers) > int(game.ContainerNumberLimit) {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
 			Message: "You have created too many containers",
 		})
@@ -744,14 +694,14 @@ func UserCreateGameContainer(c *gin.Context) {
 			}
 
 			if err := dbtool.DB().Create(&flag).Error; err != nil {
-				c.JSON(http.StatusInternalServerError, ErrorMessage{
+				c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 					Code:    500,
 					Message: "System error",
 				})
 				return
 			}
 		} else {
-			c.JSON(http.StatusInternalServerError, ErrorMessage{
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
 				Message: "System error.",
 			})
@@ -777,7 +727,7 @@ func UserCreateGameContainer(c *gin.Context) {
 	}
 
 	if err := dbtool.DB().Create(&newContainer).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    501,
 			Message: "System error",
 		})
@@ -797,7 +747,7 @@ func UserCloseGameContainer(c *gin.Context) {
 	challengeIDStr := c.Param("challenge_id")
 	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
 			Message: "Invalid challenge ID",
 		})
@@ -807,7 +757,7 @@ func UserCloseGameContainer(c *gin.Context) {
 
 	var containers []models.Container
 	if err := dbtool.DB().Where("challenge_id = ? AND team_id = ? AND container_status = ?", challengeID, team.TeamID, models.ContainerRunning).Find(&containers).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
 			Message: "Failed to load containers",
 		})
@@ -815,7 +765,7 @@ func UserCloseGameContainer(c *gin.Context) {
 	}
 
 	if len(containers) == 0 {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
 			Message: "Launch a container first.",
 		})
@@ -823,7 +773,7 @@ func UserCloseGameContainer(c *gin.Context) {
 	}
 
 	if len(containers) != 1 {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
 			Message: "System error.",
 		})
@@ -835,7 +785,7 @@ func UserCloseGameContainer(c *gin.Context) {
 	if err := dbtool.DB().Model(&curContainer).Updates(map[string]interface{}{
 		"container_status": models.ContainerStopping,
 	}).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    501,
 			Message: "System error",
 		})
@@ -855,7 +805,7 @@ func UserExtendGameContainer(c *gin.Context) {
 	challengeIDStr := c.Param("challenge_id")
 	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
 			Message: "Invalid challenge ID",
 		})
@@ -865,7 +815,7 @@ func UserExtendGameContainer(c *gin.Context) {
 
 	var containers []models.Container
 	if err := dbtool.DB().Where("challenge_id = ? AND team_id = ? AND container_status = ?", challengeID, team.TeamID, models.ContainerRunning).Find(&containers).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
 			Message: "Failed to load containers",
 		})
@@ -873,7 +823,7 @@ func UserExtendGameContainer(c *gin.Context) {
 	}
 
 	if len(containers) == 0 {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
 			Message: "Launch a container first.",
 		})
@@ -881,7 +831,7 @@ func UserExtendGameContainer(c *gin.Context) {
 	}
 
 	if len(containers) != 1 {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
 			Message: "System error.",
 		})
@@ -891,7 +841,7 @@ func UserExtendGameContainer(c *gin.Context) {
 	curContainer := containers[0]
 
 	if curContainer.ExpireTime.Sub(time.Now().UTC()).Minutes() > 30 {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
 			Message: "You cannot extend the container now.",
 		})
@@ -901,7 +851,7 @@ func UserExtendGameContainer(c *gin.Context) {
 	if err := dbtool.DB().Model(&curContainer).Updates(map[string]interface{}{
 		"expire_time": curContainer.ExpireTime.Add(time.Duration(2) * time.Hour),
 	}).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    501,
 			Message: "System error",
 		})
@@ -921,7 +871,7 @@ func UserGetGameChallengeContainerInfo(c *gin.Context) {
 	challengeIDStr := c.Param("challenge_id")
 	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
 			Message: "Invalid challenge ID",
 		})
@@ -931,7 +881,7 @@ func UserGetGameChallengeContainerInfo(c *gin.Context) {
 
 	var containers []models.Container
 	if err := dbtool.DB().Where("challenge_id = ? AND team_id = ? AND (container_status = ? OR container_status = ? OR container_status = ?)", challengeID, team.TeamID, models.ContainerRunning, models.ContainerQueueing, models.ContainerStarting).Find(&containers).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
 			Message: "Failed to load containers",
 		})
@@ -939,7 +889,7 @@ func UserGetGameChallengeContainerInfo(c *gin.Context) {
 	}
 
 	if len(containers) == 0 {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
 			Message: "Launch a container first.",
 		})
@@ -947,7 +897,7 @@ func UserGetGameChallengeContainerInfo(c *gin.Context) {
 	}
 
 	if len(containers) != 1 {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
 			Message: "System error.",
 		})
@@ -961,7 +911,7 @@ func UserGetGameChallengeContainerInfo(c *gin.Context) {
 		Where("game_id = ? and game_challenges.challenge_id = ?", game.GameID, challengeID).
 		Find(&gameChallenges).Error; err != nil {
 
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
 			Message: "Failed to load game challenges",
 		})
@@ -969,7 +919,7 @@ func UserGetGameChallengeContainerInfo(c *gin.Context) {
 	}
 
 	if len(gameChallenges) == 0 {
-		c.JSON(http.StatusNotFound, ErrorMessage{
+		c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 			Code:    404,
 			Message: "Challenge not found",
 		})
@@ -1012,9 +962,9 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	game := c.MustGet("game").(models.Game)
 	team := c.MustGet("team").(models.Team)
 
-	var payload UserSubmitFlagPayload
+	var payload webmodels.UserSubmitFlagPayload = webmodels.UserSubmitFlagPayload{}
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
 			Message: "Invalid request payload",
 		})
@@ -1024,7 +974,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	challengeIDStr := c.Param("challenge_id")
 	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
 			Message: "Invalid challenge ID",
 		})
@@ -1035,12 +985,12 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	var gameChallenge models.GameChallenge
 	if err := dbtool.DB().Preload("Challenge").Where("game_id = ? AND game_challenges.challenge_id = ?", game.GameID, challengeID).First(&gameChallenge).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, ErrorMessage{
+			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 				Code:    404,
 				Message: "Challenge not found",
 			})
 		} else {
-			c.JSON(http.StatusInternalServerError, ErrorMessage{
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
 				Message: "Failed to load game challenges",
 			})
@@ -1051,12 +1001,12 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	var teamFlag models.TeamFlag
 	if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND challenge_id = ?", game.GameID, team.TeamID, challengeID).First(&teamFlag).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, ErrorMessage{
+			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 				Code:    404,
 				Message: "Please click the challenge first.",
 			})
 		} else {
-			c.JSON(http.StatusInternalServerError, ErrorMessage{
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
 				Message: "System error",
 			})
@@ -1066,7 +1016,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 
 	var solve models.Solve
 	if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND challenge_id = ?", game.GameID, team.TeamID, challengeID).First(&solve).Error; err == nil {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
 			Message: "You have already solved this challenge",
 		})
@@ -1089,7 +1039,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	}
 
 	if err := dbtool.DB().Create(&newJudge).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
 			Message: "System error",
 		})
@@ -1111,7 +1061,7 @@ func UserGameGetJudgeResult(c *gin.Context) {
 	judgeIDStr := c.Param("judge_id")
 
 	if _, err := uuid.Parse(judgeIDStr); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorMessage{
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
 			Message: "Invalid judge ID",
 		})
@@ -1123,12 +1073,12 @@ func UserGameGetJudgeResult(c *gin.Context) {
 	var judge models.Judge
 	if err := dbtool.DB().Where("judge_id = ? AND team_id = ?", judgeIDStr, team.TeamID).First(&judge).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, ErrorMessage{
+			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 				Code:    404,
 				Message: "Judge not found",
 			})
 		} else {
-			c.JSON(http.StatusInternalServerError, ErrorMessage{
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
 				Message: "Failed to load judge",
 			})
@@ -1153,7 +1103,7 @@ func UserGameGetScoreBoard(c *gin.Context) {
 
 	var user_id string
 	var logined bool = false
-	var curTeamScoreItem *redis_tool.TeamScoreItem = nil
+	var curTeamScoreItem *webmodels.TeamScoreItem = nil
 	var curTeam models.Team
 
 	if err == nil {
@@ -1173,7 +1123,7 @@ func UserGameGetScoreBoard(c *gin.Context) {
 
 	cachedData, err := redis_tool.CachedGameScoreBoard(game.GameID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorMessage{
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
 			Message: err.Error(),
 		})
@@ -1191,11 +1141,21 @@ func UserGameGetScoreBoard(c *gin.Context) {
 		}
 	}
 
-	result := GameScoreboardData{
-		GameID:     game.GameID,
-		Name:       game.Name,
-		TimeLines:  timeLines,
-		TeamScores: top10Teams,
+	simpleGameChallenges, err := redis_tool.CachedGameSimpleChallenges(game.GameID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: "Failed to load game challenges",
+		})
+		return
+	}
+
+	result := webmodels.GameScoreboardData{
+		GameID:               game.GameID,
+		Name:                 game.Name,
+		TimeLines:            timeLines,
+		TeamScores:           top10Teams,
+		SimpleGameChallenges: simpleGameChallenges,
 	}
 
 	if logined {

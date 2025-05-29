@@ -1,4 +1,4 @@
-package controllers
+package webmodels
 
 import (
 	"a1ctf/src/db/models"

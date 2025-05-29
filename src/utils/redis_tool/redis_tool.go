@@ -3,6 +3,7 @@ package redis_tool
 import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
+	"a1ctf/src/webmodels"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -203,50 +204,12 @@ func CachedGameInfo(gameID int64) (*models.Game, error) {
 	return &game, nil
 }
 
-type TimeLineScoreItem struct {
-	RecordTime int64   `json:"record_time"`
-	Score      float64 `json:"score"`
-}
-
-type TimeLineItem struct {
-	TeamID   int64               `json:"team_id"`
-	TeamName string              `json:"team_name"`
-	Scores   []TimeLineScoreItem `json:"scores"`
-}
-
-type TeamSolveItem struct {
-	ChallengeID int64     `json:"challenge_id"`
-	Score       float64   `json:"score"`
-	Solver      string    `json:"solver"`
-	Rank        int64     `json:"rank"`
-	SolveTime   time.Time `json:"solve_time"`
-}
-
-type TeamScoreItem struct {
-	TeamID           int64           `json:"team_id"`
-	TeamName         string          `json:"team_name"`
-	TeamAvatar       *string         `json:"team_avatar"`
-	TeamSlogan       *string         `json:"team_slogan"`
-	TeamDescription  *string         `json:"team_description"`
-	Rank             int64           `json:"rank"`
-	Score            float64         `json:"score"`
-	Penalty          int64           `json:"penalty"` // 罚时（秒）
-	SolvedChallenges []TeamSolveItem `json:"solved_challenges"`
-	LastSolveTime    int64           `json:"last_solve_time"`
-}
-
-type CachedGameScoreBoardData struct {
-	FinalScoreBoardMap map[int64]TeamScoreItem
-	Top10TimeLines     []TimeLineItem
-	Top10Teams         []TeamScoreItem
-}
-
-func CachedGameScoreBoard(gameID int64) (*CachedGameScoreBoardData, error) {
-	var cachedData CachedGameScoreBoardData
+func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, error) {
+	var cachedData webmodels.CachedGameScoreBoardData
 
 	if err := GetOrCacheSingleFlight(fmt.Sprintf("game_scoreboard_%d", gameID), &cachedData, func() (interface{}, error) {
-		var finalScoreBoardMap map[int64]TeamScoreItem = make(map[int64]TeamScoreItem)
-		var timeLines []TimeLineItem = make([]TimeLineItem, 0)
+		var finalScoreBoardMap map[int64]webmodels.TeamScoreItem = make(map[int64]webmodels.TeamScoreItem)
+		var timeLines []webmodels.TimeLineItem = make([]webmodels.TimeLineItem, 0)
 
 		// 获取所有队伍
 		var teams []models.Team
@@ -273,11 +236,11 @@ func CachedGameScoreBoard(gameID int64) (*CachedGameScoreBoardData, error) {
 		}
 
 		// 计算每个队伍的总分和罚时
-		teamDataMap := make(map[int64]*TeamScoreItem)
+		teamDataMap := make(map[int64]*webmodels.TeamScoreItem)
 
 		// 初始化队伍数据
 		for _, team := range teams {
-			teamDataMap[team.TeamID] = &TeamScoreItem{
+			teamDataMap[team.TeamID] = &webmodels.TeamScoreItem{
 				TeamID:           team.TeamID,
 				TeamName:         team.TeamName,
 				TeamAvatar:       team.TeamAvatar,
@@ -285,7 +248,7 @@ func CachedGameScoreBoard(gameID int64) (*CachedGameScoreBoardData, error) {
 				TeamDescription:  team.TeamDescription,
 				Score:            0,
 				Penalty:          0,
-				SolvedChallenges: make([]TeamSolveItem, 0),
+				SolvedChallenges: make([]webmodels.TeamSolveItem, 0),
 				LastSolveTime:    0,
 			}
 		}
@@ -301,7 +264,7 @@ func CachedGameScoreBoard(gameID int64) (*CachedGameScoreBoardData, error) {
 
 				teamData.Score += solve.GameChallenge.CurScore
 				teamData.Penalty += penalty
-				teamData.SolvedChallenges = append(teamData.SolvedChallenges, TeamSolveItem{
+				teamData.SolvedChallenges = append(teamData.SolvedChallenges, webmodels.TeamSolveItem{
 					ChallengeID: solve.ChallengeID,
 					Score:       solve.GameChallenge.CurScore,
 					Solver:      solve.Solver.Username,
@@ -316,7 +279,7 @@ func CachedGameScoreBoard(gameID int64) (*CachedGameScoreBoardData, error) {
 		}
 
 		// 转换为切片并排序
-		teamRankings := make([]*TeamScoreItem, 0, len(teamDataMap))
+		teamRankings := make([]*webmodels.TeamScoreItem, 0, len(teamDataMap))
 		for _, teamData := range teamDataMap {
 			teamRankings = append(teamRankings, teamData)
 		}
@@ -351,7 +314,7 @@ func CachedGameScoreBoard(gameID int64) (*CachedGameScoreBoardData, error) {
 		// 设置排名
 		for i, teamData := range teamRankings {
 			teamData.Rank = int64(i + 1)
-			finalScoreBoardMap[teamData.TeamID] = TeamScoreItem{
+			finalScoreBoardMap[teamData.TeamID] = webmodels.TeamScoreItem{
 				TeamID:           teamData.TeamID,
 				TeamName:         teamData.TeamName,
 				TeamAvatar:       teamData.TeamAvatar,
@@ -366,9 +329,9 @@ func CachedGameScoreBoard(gameID int64) (*CachedGameScoreBoardData, error) {
 
 		// 获取 TOP10
 		idx := 0
-		top10Teams := make([]TeamScoreItem, 0, min(10, len(teamRankings)))
+		top10Teams := make([]webmodels.TeamScoreItem, 0, min(10, len(teamRankings)))
 		for _, teamData := range teamRankings {
-			top10Teams = append(top10Teams, TeamScoreItem{
+			top10Teams = append(top10Teams, webmodels.TeamScoreItem{
 				TeamID:           teamData.TeamID,
 				TeamName:         teamData.TeamName,
 				TeamAvatar:       teamData.TeamAvatar,
@@ -398,21 +361,21 @@ func CachedGameScoreBoard(gameID int64) (*CachedGameScoreBoardData, error) {
 
 		// 如果没有历史记录，创建空的时间线
 		if len(scoreboardRecords) == 0 {
-			timeLines = make([]TimeLineItem, 0)
+			timeLines = make([]webmodels.TimeLineItem, 0)
 		} else {
 			sort.Slice(scoreboardRecords, func(i, j int) bool {
 				return scoreboardRecords[i].RecordTime.Before(scoreboardRecords[j].RecordTime)
 			})
 
 			// 构建 TOP10 的时间线
-			timeLineMap := make(map[int64]TimeLineItem)
+			timeLineMap := make(map[int64]webmodels.TimeLineItem)
 			prevScoreMap := make(map[int64]float64)
 
 			for _, team := range top10Teams {
-				timeLineMap[team.TeamID] = TimeLineItem{
+				timeLineMap[team.TeamID] = webmodels.TimeLineItem{
 					TeamID:   team.TeamID,
 					TeamName: team.TeamName,
-					Scores:   make([]TimeLineScoreItem, 0),
+					Scores:   make([]webmodels.TimeLineScoreItem, 0),
 				}
 			}
 
@@ -423,7 +386,7 @@ func CachedGameScoreBoard(gameID int64) (*CachedGameScoreBoardData, error) {
 					if timeline, ok := timeLineMap[teamID]; ok {
 						lastScore, valid := prevScoreMap[teamID]
 						if !valid || lastScore != scoreValue.Score {
-							timeline.Scores = append(timeline.Scores, TimeLineScoreItem{
+							timeline.Scores = append(timeline.Scores, webmodels.TimeLineScoreItem{
 								RecordTime: recordTime.UnixMilli(),
 								Score:      scoreValue.Score,
 							})
@@ -435,7 +398,7 @@ func CachedGameScoreBoard(gameID int64) (*CachedGameScoreBoardData, error) {
 			}
 
 			// 转换时间线数据
-			timeLines = make([]TimeLineItem, 0, len(timeLineMap))
+			timeLines = make([]webmodels.TimeLineItem, 0, len(timeLineMap))
 			for _, item := range timeLineMap {
 				timeLines = append(timeLines, item)
 			}
@@ -466,4 +429,69 @@ func CachedGameScoreBoard(gameID int64) (*CachedGameScoreBoardData, error) {
 	}
 
 	return &cachedData, nil
+}
+
+func CachedGameSimpleChallenges(gameID int64) ([]webmodels.UserSimpleGameChallenge, error) {
+
+	var simpleGameChallenges []webmodels.UserSimpleGameChallenge = make([]webmodels.UserSimpleGameChallenge, 0)
+
+	game, err := CachedGameInfo(gameID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Cache challenge list to redis
+	if err := GetOrCacheSingleFlight(fmt.Sprintf("challenges_for_game_%d", game.GameID), &simpleGameChallenges, func() (interface{}, error) {
+		// 查找队伍
+		var tmpSimpleGameChallenges []webmodels.UserSimpleGameChallenge = make([]webmodels.UserSimpleGameChallenge, 0)
+		var gameChallenges []models.GameChallenge
+
+		// 使用 Preload 进行关联查询
+		if err := dbtool.DB().Preload("Challenge").Where("game_id = ?", game.GameID).Find(&gameChallenges).Error; err != nil {
+			return nil, errors.New("Failed to load game challenges")
+		}
+
+		sort.Slice(gameChallenges, func(i, j int) bool {
+			return gameChallenges[i].Challenge.Name < gameChallenges[j].Challenge.Name
+		})
+
+		// 游戏阶段判断
+		gameStages := game.Stages
+		var curStage = ""
+
+		if gameStages != nil {
+			for _, stage := range *gameStages {
+				if stage.StartTime.Before(time.Now().UTC()) && stage.EndTime.After(time.Now().UTC()) {
+					curStage = stage.StageName
+					break
+				}
+			}
+		}
+
+		for _, gc := range gameChallenges {
+
+			if gc.BelongStage != nil && *gc.BelongStage != curStage {
+				continue
+			}
+
+			if !gc.Visible {
+				continue
+			}
+
+			tmpSimpleGameChallenges = append(tmpSimpleGameChallenges, webmodels.UserSimpleGameChallenge{
+				ChallengeID:   *gc.Challenge.ChallengeID,
+				ChallengeName: gc.Challenge.Name,
+				TotalScore:    gc.TotalScore,
+				CurScore:      gc.CurScore,
+				SolveCount:    gc.SolveCount,
+				Category:      gc.Challenge.Category,
+			})
+		}
+
+		return tmpSimpleGameChallenges, nil
+	}, 1*time.Second, true); err != nil {
+		return nil, err
+	}
+
+	return simpleGameChallenges, nil
 }

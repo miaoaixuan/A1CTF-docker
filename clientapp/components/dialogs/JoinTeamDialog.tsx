@@ -36,7 +36,7 @@ interface ErrorMessage {
     title: string;
 }
 
-export const JoinTeamDialog: React.FC<{ updateTeam: () => void, children: React.ReactNode }> = ({ updateTeam, children }) => {
+export const JoinTeamDialog: React.FC<{ callback: () => void, children: React.ReactNode }> = ({ callback: updateTeam, children }) => {
 
     const { t } = useTranslation("teams")
 

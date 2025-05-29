@@ -1,4 +1,4 @@
-import { ChartArea, LogOut, X } from 'lucide-react'
+import { ChartArea, CircleArrowLeft, LogOut, X } from 'lucide-react'
 
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
 
@@ -22,24 +22,23 @@ import BetterChart from './BetterChart';
 import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
 import { api } from 'utils/ApiHelper';
 import { GameScoreboardData, TeamScore, TeamTimeline, UserFullGameInfo, UserSimpleGameChallenge } from 'utils/A1API';
+import { LoadingPage } from './LoadingPage';
+import { useLocation, useNavigate } from 'react-router';
 
 export default function ScoreBoardPage(
-    { gmid, visible, setVisible, gameStatus, gameInfo, challenges, scoreBoardModel, setScoreBoardModel } 
+    { gmid } 
     : 
-    { 
-        gmid: number, visible: boolean, 
-        setVisible: Dispatch<SetStateAction<boolean>>, 
-        gameStatus: string, gameInfo: UserFullGameInfo | undefined, 
-        challenges: Record<string, UserSimpleGameChallenge[]>,
-        scoreBoardModel: GameScoreboardData | undefined,
-        setScoreBoardModel: Dispatch<SetStateAction<GameScoreboardData | undefined>>
-    }
+    { gmid: number}
 ) {
 
     const [ chartData, setChartData ] = useState<any>([])
 
     const { theme, resolvedTheme } = useTheme();
-    
+
+    const [gameInfo, setGameInfo] = useState<UserFullGameInfo>()
+    const [gameStatus, setGameStatus] = useState<string>("")
+    const [challenges, setChallenges] = useState<Record<string, UserSimpleGameChallenge[]>>({})
+    const [scoreBoardModel, setScoreBoardModel] = useState<GameScoreboardData>()
 
     const lastTimeLine = useRef<string>()
     const [ showGraphy, setShowGraphy ] = useState(false)
@@ -49,11 +48,19 @@ export default function ScoreBoardPage(
     const [ personalChartOption, setPersonalChartOption ] = useState<echarts.EChartsOption>() 
     const lastPersonalTimeLine = useRef<string>()
 
+    // 加载动画
+    const [loadingVisiblity, setLoadingVisibility] = useState(true)
+
     // const serialOptions = useRef<echarts.SeriesOption[]>([])
 
     const { serialOptions } = useGlobalVariableContext()
 
-    const visibleRef = useRef(false)
+    // 获取 gameInfo
+    useEffect(() => {
+        api.user.userGetGameInfoWithTeamInfo(gmid).then((res) => {
+            setGameInfo(res.data.data)
+        })
+    }, [gmid])
 
     useEffect(() => {
 
@@ -64,6 +71,16 @@ export default function ScoreBoardPage(
             api.user.userGetGameScoreboard(gmid).then((res) => {
 
                 setScoreBoardModel(res.data.data)
+
+                const groupedChallenges: Record<string, UserSimpleGameChallenge[]> = {};
+                res.data.data?.challenges?.forEach((challenge: UserSimpleGameChallenge) => {
+                    const category = challenge.category?.toLowerCase() || "misc";
+                    if (!groupedChallenges[category]) {
+                        groupedChallenges[category] = [];
+                    }
+                    groupedChallenges[category].push(challenge);
+                });
+                setChallenges(groupedChallenges)
 
                 const current = dayjs()
                 const end = dayjs(gameInfo.end_time).diff(current) > 0 ? current : dayjs(gameInfo.end_time)
@@ -114,7 +131,7 @@ export default function ScoreBoardPage(
                             },
                             endLabel: {
                                 show: true,
-                                formatter: `${team.team_name} - ${team.scores![team.scores!.length - 1]?.score} pts`, // {a} 表示系列名称
+                                formatter: `${team.team_name} - ${team.scores![team.scores!.length - 1]?.score ?? 0} pts`, // {a} 表示系列名称
                                 color: '#333',
                                 fontWeight: 'bold',
                                 fontSize: 14,
@@ -187,10 +204,11 @@ export default function ScoreBoardPage(
                     // })
                 }
                 
+                setLoadingVisibility(false)
             })
         }
 
-        setTimeout(() => updateScoreBoard(), 1000)
+        updateScoreBoard()
         const scoreBoardInter = setInterval(() => {
             // if (visibleRef.current) updateScoreBoard()
             updateScoreBoard()
@@ -200,14 +218,6 @@ export default function ScoreBoardPage(
             clearInterval(scoreBoardInter)
         }
     }, [gameInfo])
-
-    useEffect(() => {
-        visibleRef.current = visible
-    }, [visible])
-
-    useEffect(() => {
-        console.log(gameStatus)
-    }, [gameStatus])
 
     useEffect(() => {
 
@@ -336,8 +346,13 @@ export default function ScoreBoardPage(
         return target
     }
 
+    const navigator = useNavigate()
+
+    const gamePath = useLocation().pathname.split("/").slice(0, -1).join("/")
+
     return (
         <>
+            <LoadingPage visible={loadingVisiblity} />
             <AnimatePresence>
                 { showGraphy && (
                     <motion.div className='absolute top-0 left-0 w-screen h-screen z-[300] flex items-center justify-center overflow-hidden'
@@ -544,45 +559,31 @@ export default function ScoreBoardPage(
                     </motion.div>
                 ) }
             </AnimatePresence>
-            <AnimatePresence>
-                { visible && (
-                    <motion.div className='absolute top-0 left-0 h-screen w-screen bg-background z-40 transition-colors duration-300'
-                        initial={{
-                            opacity: 0
-                        }}
-                        animate={{
-                            opacity: 1
-                        }}
-                        exit={{
-                            opacity: 0
-                        }}
-                    >
-                        <Tooltip id="challengeTooltip" opacity={0.9} className='z-[200]'/>
-                        <div className='w-full h-full flex flex-col relative p-10  gap-2'>
-                            <div id='scoreHeader' className='w-full h-[60px] flex items-center'>
-                                <span className='text-3xl font-bold [text-shadow:_hsl(var(--foreground))_1px_1px_20px] select-none'>ScoreBoard</span>
-                                <div className='flex-1' />
-                                {/* <ThemeSwitcher lng='zh' /> */}
-                                <ChartArea size={32} className=' ml-4 hover:scale-110 transition-all duration-300 ease-linear' onClick={() => {
-                                    setShowGraphy(true)
-                                }} />
-                                <LogOut size={32} className=' ml-4 hover:scale-110 transition-all duration-300 ease-linear' onClick={() => {
-                                    setVisible(false)
-                                }} />
-                            </div>
-                            <div className='flex flex-1 overflow-y-auto overflow-x-hidden h-full justify-center'>
-                                <div className='flex overflow-hidden'>
-                                    <div className='flex flex-1 overflow-hidden'>
-                                        { scoreBoardModel && (
-                                            <ScoreTable scoreBoardModel={scoreBoardModel} setShowUserDetail={setShowUserDetail} challenges={challenges} />
-                                        ) }
-                                    </div>
-                                </div>
+            <div className='absolute top-0 left-0 h-screen w-screen bg-background transition-colors duration-300'>
+                <Tooltip id="challengeTooltip" opacity={0.9} className='z-[200]'/>
+                <div className='w-full h-full flex flex-col relative p-10  gap-2'>
+                    <div id='scoreHeader' className='w-full h-[60px] flex items-center'>
+                        <span className='text-3xl font-bold [text-shadow:_hsl(var(--foreground))_1px_1px_20px] select-none'>ScoreBoard</span>
+                        <div className='flex-1' />
+                        {/* <ThemeSwitcher lng='zh' /> */}
+                        <ChartArea size={32} className=' ml-4 hover:scale-110 transition-all duration-300 ease-linear' onClick={() => {
+                            setShowGraphy(true)
+                        }} />
+                        <CircleArrowLeft size={32} className=' ml-4 hover:scale-110 transition-all duration-300 ease-linear' onClick={() => {
+                            navigator(gamePath)
+                        }} />
+                    </div>
+                    <div className='flex flex-1 overflow-y-auto overflow-x-hidden h-full justify-center'>
+                        <div className='flex overflow-hidden'>
+                            <div className='flex flex-1 overflow-hidden'>
+                                { scoreBoardModel && (
+                                    <ScoreTable scoreBoardModel={scoreBoardModel} setShowUserDetail={setShowUserDetail} challenges={challenges} />
+                                ) }
                             </div>
                         </div>
-                    </motion.div>
-                ) }
-            </AnimatePresence>
+                    </div>
+                </div>
+            </div>
         </>
     )
 }

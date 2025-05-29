@@ -254,9 +254,7 @@ export function ChallengesView({ id }: { id: string }) {
         }
     }, [curChallenge]);
 
-    useEffect(() => {
-
-        // 获取比赛信息以及剩余时间
+    const fetchGameInfoWithTeamInfo = () => {
         api.user.userGetGameInfoWithTeamInfo(gameID).then((res) => {
             setGameInfo(res.data.data)
 
@@ -303,6 +301,11 @@ export function ChallengesView({ id }: { id: string }) {
                 }
             }
         })
+    }
+
+    useEffect(() => {
+        // 获取比赛信息以及剩余时间
+        fetchGameInfoWithTeamInfo()
     }, [id])
 
     useEffect(() => {
@@ -399,10 +402,22 @@ export function ChallengesView({ id }: { id: string }) {
                 console.log('WebSocket disconnected')
             }
 
+            const updateScoreBoard = () => {
+                api.user.userGetGameScoreboard(gameID).then((res) => {
+                    setScoreBoardModel(res.data.data)
+                })
+            }
+
+            updateScoreBoard()
+
+            const updateScoreBoardInter = setInterval(updateScoreBoard, randomInt(2000, 4000))
+
             return () => {
                 if (wsRef.current) {
                     wsRef.current.close()
                 }
+
+                if (updateScoreBoardInter) clearInterval(updateScoreBoardInter)
             }
 
         } else if (gameStatus == "unRegistered") {
@@ -562,18 +577,9 @@ export function ChallengesView({ id }: { id: string }) {
                 gameInfo={gameInfo}
                 setScoreBoardVisible={setScoreBoardVisible}
                 startCheckForGameStart={startCheckForGameStart}
+                fetchGameInfoWithTeamInfo={fetchGameInfoWithTeamInfo}
             />
-
-            {/* 记分板 */}
-            <ScoreBoardPage 
-                gmid={gameID} 
-                visible={scoreBoardVisible} 
-                setVisible={setScoreBoardVisible} 
-                gameStatus={gameStatus} 
-                gameInfo={gameInfo} 
-                challenges={challenges} 
-                scoreBoardModel={scoreBoardModel} setScoreBoardModel={setScoreBoardModel}
-            />
+            
             {/* 重定向警告页 */}
             <RedirectNotice redirectURL={redirectURL} setRedirectURL={setRedirectURL} />
             {/* 公告页 */}

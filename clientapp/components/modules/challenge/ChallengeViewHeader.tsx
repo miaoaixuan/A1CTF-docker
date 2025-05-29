@@ -25,6 +25,7 @@ import { Skeleton } from "components/ui/skeleton";
 import { ProfileUserInfoModel } from "utils/GZApi";
 import AvatarUsername from "../AvatarUsername"
 import { EditTeamDialog } from "components/dialogs/EditTeamDialog"
+import { useNavigate } from "react-router"
 
 const ChallengesViewHeader = (
     { 
@@ -47,6 +48,8 @@ const ChallengesViewHeader = (
     // 剩余时间 & 剩余时间百分比
     const [remainTime, setRemainTime] = useState("00s")
     const [remainTimePercent, setRemainTimePercent] = useState(100)
+
+    const navigator = useNavigate()
 
     const { t } = useTranslation('challenge_view');
 
@@ -130,7 +133,7 @@ const ChallengesViewHeader = (
                                 <span>{t("open_notices")}</span>
                                 {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{notices.filter((e) => e.notice_category == NoticeCategory.NewAnnouncement).length}</Badge> : <></>}
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setScoreBoardVisible(true)}>
+                            <DropdownMenuItem onClick={() => navigator("scoreboard")}>
                                 <Presentation />
                                 <span>{t("rank")}</span>
                             </DropdownMenuItem>
@@ -145,7 +148,7 @@ const ChallengesViewHeader = (
                         {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1 text-white">{notices.filter((e) => e.notice_category == NoticeCategory.NewAnnouncement).length}</Badge> : <></>}
                     </div>
                 </Button>
-                <Button variant="outline" className="select-none hidden lg:flex" onClick={() => setScoreBoardVisible(true)}>
+                <Button variant="outline" className="select-none hidden lg:flex" onClick={() => navigator("scoreboard")}>
                     <div className="flex items-center gap-1">
                         <Presentation />
                         <span>{t("rank")}</span>

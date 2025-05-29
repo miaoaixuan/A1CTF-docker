@@ -2632,6 +2632,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TeamTimeline'
+        challenges:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserSimpleGameChallenge'
 
     TeamScore:
       type: object

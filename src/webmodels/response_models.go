@@ -1,8 +1,7 @@
-package controllers
+package webmodels
 
 import (
 	"a1ctf/src/db/models"
-	"a1ctf/src/utils/redis_tool"
 	"time"
 )
 
@@ -90,11 +89,12 @@ type GameNotice struct {
 }
 
 type GameScoreboardData struct {
-	GameID     int64                      `json:"game_id"`
-	Name       string                     `json:"name"`
-	TimeLines  []redis_tool.TimeLineItem  `json:"time_lines"`
-	TeamScores []redis_tool.TeamScoreItem `json:"teams"`
-	YourTeam   *redis_tool.TeamScoreItem  `json:"your_team"`
+	GameID               int64                     `json:"game_id"`
+	Name                 string                    `json:"name"`
+	TimeLines            []TimeLineItem            `json:"time_lines"`
+	TeamScores           []TeamScoreItem           `json:"teams"`
+	YourTeam             *TeamScoreItem            `json:"your_team"`
+	SimpleGameChallenges []UserSimpleGameChallenge `json:"challenges"`
 }
 
 // Admin User Controller
@@ -137,4 +137,42 @@ type AdminListTeamItem struct {
 	Members    []AdminSimpleTeamMemberInfo `json:"members"`
 	Status     models.ParticipationStatus  `json:"status"`
 	Score      float64                     `json:"score"`
+}
+
+type TimeLineScoreItem struct {
+	RecordTime int64   `json:"record_time"`
+	Score      float64 `json:"score"`
+}
+
+type TimeLineItem struct {
+	TeamID   int64               `json:"team_id"`
+	TeamName string              `json:"team_name"`
+	Scores   []TimeLineScoreItem `json:"scores"`
+}
+
+type TeamSolveItem struct {
+	ChallengeID int64     `json:"challenge_id"`
+	Score       float64   `json:"score"`
+	Solver      string    `json:"solver"`
+	Rank        int64     `json:"rank"`
+	SolveTime   time.Time `json:"solve_time"`
+}
+
+type TeamScoreItem struct {
+	TeamID           int64           `json:"team_id"`
+	TeamName         string          `json:"team_name"`
+	TeamAvatar       *string         `json:"team_avatar"`
+	TeamSlogan       *string         `json:"team_slogan"`
+	TeamDescription  *string         `json:"team_description"`
+	Rank             int64           `json:"rank"`
+	Score            float64         `json:"score"`
+	Penalty          int64           `json:"penalty"` // 罚时（秒）
+	SolvedChallenges []TeamSolveItem `json:"solved_challenges"`
+	LastSolveTime    int64           `json:"last_solve_time"`
+}
+
+type CachedGameScoreBoardData struct {
+	FinalScoreBoardMap map[int64]TeamScoreItem
+	Top10TimeLines     []TimeLineItem
+	Top10Teams         []TeamScoreItem
 }

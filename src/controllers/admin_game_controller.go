@@ -10,10 +10,11 @@ import (
 
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
+	"a1ctf/src/webmodels"
 )
 
 func AdminListGames(c *gin.Context) {
-	var payload AdminListGamePayload
+	var payload webmodels.AdminListGamePayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -196,7 +197,7 @@ func AdminUpdateGame(c *gin.Context) {
 		return
 	}
 
-	var payload AdminUpdateGamePayload
+	var payload webmodels.AdminUpdateGamePayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,

@@ -14,6 +14,7 @@ import (
 	general "a1ctf/src/utils/general"
 	"a1ctf/src/utils/redis_tool"
 	"a1ctf/src/utils/turnstile"
+	"a1ctf/src/webmodels"
 )
 
 // GetProfile 获取用户的基本资料信息
@@ -62,7 +63,7 @@ func GetProfile(c *gin.Context) {
 }
 
 func Register(c *gin.Context) {
-	var payload RegisterPayload
+	var payload webmodels.RegisterPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,

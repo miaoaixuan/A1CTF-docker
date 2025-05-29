@@ -35,7 +35,7 @@ interface ErrorMessage {
     title: string;
 }
 
-export const CreateTeamDialog: React.FC<{ updateTeam: () => void, gameID: number, children: React.ReactNode }> = ({ updateTeam, gameID , children }) => {
+export const CreateTeamDialog: React.FC<{ callback: () => void, gameID: number, children: React.ReactNode }> = ({ callback: updateTeam, gameID , children }) => {
 
     const { t } = useTranslation("teams")
 

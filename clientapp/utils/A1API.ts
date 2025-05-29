@@ -463,6 +463,7 @@ export interface GameScoreboardData {
   teams?: TeamScore[];
   your_team?: TeamScore;
   time_lines?: TeamTimeline[];
+  challenges?: UserSimpleGameChallenge[];
 }
 
 export interface TeamScore {
