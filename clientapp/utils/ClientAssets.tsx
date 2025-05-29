@@ -1,6 +1,7 @@
-import { BadgeCent, Binary, Bot, Bug, FileSearch, Github, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
+import { BadgeCent, Binary, Bot, Bug, FileSearch, Github, GlobeLock, HardDrive, MessageSquareLock, Rabbit, Radar, Smartphone, SquareCode } from "lucide-react"
 
 export const challengeCategoryColorMap : { [key: string]: string } = {
+    "all": "rgb(32, 201, 151)",
     "misc": "rgb(32, 201, 151)",
     "crypto": "rgb(132, 94, 247)",
     "pwn": "rgb(255, 107, 107)",
@@ -16,6 +17,7 @@ export const challengeCategoryColorMap : { [key: string]: string } = {
 };
 
 export const challengeCategoryIcons : { [key: string]: any } = {
+    "all": <Rabbit size={23} />,
     "misc": <Radar size={23} />,
     "crypto": <MessageSquareLock size={23} />,
     "pwn": <Bug size={23} />,
