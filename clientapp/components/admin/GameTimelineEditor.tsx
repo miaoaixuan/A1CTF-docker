@@ -57,13 +57,29 @@ export function GameTimelineEditor({
     const [isCreatingTimePoint, setIsCreatingTimePoint] = useState(false);
     const [newTimePoint, setNewTimePoint] = useState({
         name: '',
-        startTime: new Date(),
-        endTime: new Date(),
+        startTime: (() => {
+            const now = new Date();
+            now.setHours(9, 0, 0, 0); // 默认上午9点
+            return now;
+        })(),
+        endTime: (() => {
+            const now = new Date();
+            now.setHours(17, 0, 0, 0); // 默认下午5点
+            return now;
+        })(),
     });
     const [editingTimePoint, setEditingTimePoint] = useState({
         name: '',
-        startTime: new Date(),
-        endTime: new Date(),
+        startTime: (() => {
+            const now = new Date();
+            now.setHours(9, 0, 0, 0);
+            return now;
+        })(),
+        endTime: (() => {
+            const now = new Date();
+            now.setHours(17, 0, 0, 0);
+            return now;
+        })(),
     });
 
     const timelineRef = useRef<HTMLDivElement>(null);
@@ -141,7 +157,21 @@ export function GameTimelineEditor({
             endTime: newTimePoint.endTime,
         };
         onTimePointsChange([...timePoints, newPoint]);
-        setNewTimePoint({ name: '', startTime: new Date(), endTime: new Date() });
+        
+        // 重置表单
+        setNewTimePoint({ 
+            name: '', 
+            startTime: (() => {
+                const now = new Date();
+                now.setHours(9, 0, 0, 0);
+                return now;
+            })(),
+            endTime: (() => {
+                const now = new Date();
+                now.setHours(17, 0, 0, 0);
+                return now;
+            })(),
+        });
         setIsCreatingTimePoint(false);
     };
 
@@ -244,15 +274,85 @@ export function GameTimelineEditor({
                                                 <PopoverTrigger asChild>
                                                     <Button variant="outline" className="w-full">
                                                         <CalendarIcon className="mr-2 h-4 w-4" />
-                                                        {format(newTimePoint.startTime, "MM/dd HH:mm")}
+                                                        {format(newTimePoint.startTime, "MM/dd/yyyy HH:mm")}
                                                     </Button>
                                                 </PopoverTrigger>
-                                                <PopoverContent>
-                                                    <Calendar
-                                                        mode="single"
-                                                        selected={newTimePoint.startTime}
-                                                        onSelect={(date) => date && setNewTimePoint(prev => ({ ...prev, startTime: date }))}
-                                                    />
+                                                <PopoverContent className="w-auto p-0">
+                                                    <div className="sm:flex">
+                                                        <Calendar
+                                                            mode="single"
+                                                            selected={newTimePoint.startTime}
+                                                            onSelect={(date) => {
+                                                                if (date) {
+                                                                    const newDate = new Date(date);
+                                                                    newDate.setHours(newTimePoint.startTime.getHours());
+                                                                    newDate.setMinutes(newTimePoint.startTime.getMinutes());
+                                                                    setNewTimePoint(prev => ({ ...prev, startTime: newDate }));
+                                                                }
+                                                            }}
+                                                            initialFocus
+                                                        />
+                                                        <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
+                                                            <ScrollArea className="w-64 sm:w-auto">
+                                                                <div className="flex sm:flex-col p-2">
+                                                                    {Array.from({ length: 24 }, (_, i) => i)
+                                                                        .reverse()
+                                                                        .map((hour) => (
+                                                                            <Button
+                                                                                key={hour}
+                                                                                size="icon"
+                                                                                variant={
+                                                                                    newTimePoint.startTime.getHours() === hour
+                                                                                        ? "default"
+                                                                                        : "ghost"
+                                                                                }
+                                                                                className="sm:w-full shrink-0 aspect-square"
+                                                                                onClick={() => {
+                                                                                    const newDate = new Date(newTimePoint.startTime);
+                                                                                    newDate.setHours(hour);
+                                                                                    setNewTimePoint(prev => ({ ...prev, startTime: newDate }));
+                                                                                }}
+                                                                            >
+                                                                                {hour}
+                                                                            </Button>
+                                                                        ))}
+                                                                </div>
+                                                                <ScrollBar
+                                                                    orientation="horizontal"
+                                                                    className="sm:hidden"
+                                                                />
+                                                            </ScrollArea>
+                                                            <ScrollArea className="w-64 sm:w-auto">
+                                                                <div className="flex sm:flex-col p-2">
+                                                                    {Array.from({ length: 60 }, (_, i) => i).map(
+                                                                        (minute) => (
+                                                                            <Button
+                                                                                key={minute}
+                                                                                size="icon"
+                                                                                variant={
+                                                                                    newTimePoint.startTime.getMinutes() === minute
+                                                                                        ? "default"
+                                                                                        : "ghost"
+                                                                                }
+                                                                                className="sm:w-full shrink-0 aspect-square"
+                                                                                onClick={() => {
+                                                                                    const newDate = new Date(newTimePoint.startTime);
+                                                                                    newDate.setMinutes(minute);
+                                                                                    setNewTimePoint(prev => ({ ...prev, startTime: newDate }));
+                                                                                }}
+                                                                            >
+                                                                                {minute.toString().padStart(2, "0")}
+                                                                            </Button>
+                                                                        )
+                                                                    )}
+                                                                </div>
+                                                                <ScrollBar
+                                                                    orientation="horizontal"
+                                                                    className="sm:hidden"
+                                                                />
+                                                            </ScrollArea>
+                                                        </div>
+                                                    </div>
                                                 </PopoverContent>
                                             </Popover>
                                         </div>
@@ -262,15 +362,85 @@ export function GameTimelineEditor({
                                                 <PopoverTrigger asChild>
                                                     <Button variant="outline" className="w-full">
                                                         <CalendarIcon className="mr-2 h-4 w-4" />
-                                                        {format(newTimePoint.endTime, "MM/dd HH:mm")}
+                                                        {format(newTimePoint.endTime, "MM/dd/yyyy HH:mm")}
                                                     </Button>
                                                 </PopoverTrigger>
-                                                <PopoverContent>
-                                                    <Calendar
-                                                        mode="single"
-                                                        selected={newTimePoint.endTime}
-                                                        onSelect={(date) => date && setNewTimePoint(prev => ({ ...prev, endTime: date }))}
-                                                    />
+                                                <PopoverContent className="w-auto p-0">
+                                                    <div className="sm:flex">
+                                                        <Calendar
+                                                            mode="single"
+                                                            selected={newTimePoint.endTime}
+                                                            onSelect={(date) => {
+                                                                if (date) {
+                                                                    const newDate = new Date(date);
+                                                                    newDate.setHours(newTimePoint.endTime.getHours());
+                                                                    newDate.setMinutes(newTimePoint.endTime.getMinutes());
+                                                                    setNewTimePoint(prev => ({ ...prev, endTime: newDate }));
+                                                                }
+                                                            }}
+                                                            initialFocus
+                                                        />
+                                                        <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
+                                                            <ScrollArea className="w-64 sm:w-auto">
+                                                                <div className="flex sm:flex-col p-2">
+                                                                    {Array.from({ length: 24 }, (_, i) => i)
+                                                                        .reverse()
+                                                                        .map((hour) => (
+                                                                            <Button
+                                                                                key={hour}
+                                                                                size="icon"
+                                                                                variant={
+                                                                                    newTimePoint.endTime.getHours() === hour
+                                                                                        ? "default"
+                                                                                        : "ghost"
+                                                                                }
+                                                                                className="sm:w-full shrink-0 aspect-square"
+                                                                                onClick={() => {
+                                                                                    const newDate = new Date(newTimePoint.endTime);
+                                                                                    newDate.setHours(hour);
+                                                                                    setNewTimePoint(prev => ({ ...prev, endTime: newDate }));
+                                                                                }}
+                                                                            >
+                                                                                {hour}
+                                                                            </Button>
+                                                                        ))}
+                                                                </div>
+                                                                <ScrollBar
+                                                                    orientation="horizontal"
+                                                                    className="sm:hidden"
+                                                                />
+                                                            </ScrollArea>
+                                                            <ScrollArea className="w-64 sm:w-auto">
+                                                                <div className="flex sm:flex-col p-2">
+                                                                    {Array.from({ length: 60 }, (_, i) => i).map(
+                                                                        (minute) => (
+                                                                            <Button
+                                                                                key={minute}
+                                                                                size="icon"
+                                                                                variant={
+                                                                                    newTimePoint.endTime.getMinutes() === minute
+                                                                                        ? "default"
+                                                                                        : "ghost"
+                                                                                }
+                                                                                className="sm:w-full shrink-0 aspect-square"
+                                                                                onClick={() => {
+                                                                                    const newDate = new Date(newTimePoint.endTime);
+                                                                                    newDate.setMinutes(minute);
+                                                                                    setNewTimePoint(prev => ({ ...prev, endTime: newDate }));
+                                                                                }}
+                                                                            >
+                                                                                {minute.toString().padStart(2, "0")}
+                                                                            </Button>
+                                                                        )
+                                                                    )}
+                                                                </div>
+                                                                <ScrollBar
+                                                                    orientation="horizontal"
+                                                                    className="sm:hidden"
+                                                                />
+                                                            </ScrollArea>
+                                                        </div>
+                                                    </div>
                                                 </PopoverContent>
                                             </Popover>
                                         </div>
@@ -381,15 +551,85 @@ export function GameTimelineEditor({
                                     <PopoverTrigger asChild>
                                         <Button variant="outline" className="w-full">
                                             <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {format(editingTimePoint.startTime, "MM/dd HH:mm")}
+                                            {format(editingTimePoint.startTime, "MM/dd/yyyy HH:mm")}
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent>
-                                        <Calendar
-                                            mode="single"
-                                            selected={editingTimePoint.startTime}
-                                            onSelect={(date) => date && setEditingTimePoint(prev => ({ ...prev, startTime: date }))}
-                                        />
+                                    <PopoverContent className="w-auto p-0">
+                                        <div className="sm:flex">
+                                            <Calendar
+                                                mode="single"
+                                                selected={editingTimePoint.startTime}
+                                                onSelect={(date) => {
+                                                    if (date) {
+                                                        const newDate = new Date(date);
+                                                        newDate.setHours(editingTimePoint.startTime.getHours());
+                                                        newDate.setMinutes(editingTimePoint.startTime.getMinutes());
+                                                        setEditingTimePoint(prev => ({ ...prev, startTime: newDate }));
+                                                    }
+                                                }}
+                                                initialFocus
+                                            />
+                                            <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
+                                                <ScrollArea className="w-64 sm:w-auto">
+                                                    <div className="flex sm:flex-col p-2">
+                                                        {Array.from({ length: 24 }, (_, i) => i)
+                                                            .reverse()
+                                                            .map((hour) => (
+                                                                <Button
+                                                                    key={hour}
+                                                                    size="icon"
+                                                                    variant={
+                                                                        editingTimePoint.startTime.getHours() === hour
+                                                                            ? "default"
+                                                                            : "ghost"
+                                                                    }
+                                                                    className="sm:w-full shrink-0 aspect-square"
+                                                                    onClick={() => {
+                                                                        const newDate = new Date(editingTimePoint.startTime);
+                                                                        newDate.setHours(hour);
+                                                                        setEditingTimePoint(prev => ({ ...prev, startTime: newDate }));
+                                                                    }}
+                                                                >
+                                                                    {hour}
+                                                                </Button>
+                                                            ))}
+                                                    </div>
+                                                    <ScrollBar
+                                                        orientation="horizontal"
+                                                        className="sm:hidden"
+                                                    />
+                                                </ScrollArea>
+                                                <ScrollArea className="w-64 sm:w-auto">
+                                                    <div className="flex sm:flex-col p-2">
+                                                        {Array.from({ length: 60 }, (_, i) => i).map(
+                                                            (minute) => (
+                                                                <Button
+                                                                    key={minute}
+                                                                    size="icon"
+                                                                    variant={
+                                                                        editingTimePoint.startTime.getMinutes() === minute
+                                                                            ? "default"
+                                                                            : "ghost"
+                                                                    }
+                                                                    className="sm:w-full shrink-0 aspect-square"
+                                                                    onClick={() => {
+                                                                        const newDate = new Date(editingTimePoint.startTime);
+                                                                        newDate.setMinutes(minute);
+                                                                        setEditingTimePoint(prev => ({ ...prev, startTime: newDate }));
+                                                                    }}
+                                                                >
+                                                                    {minute.toString().padStart(2, "0")}
+                                                                </Button>
+                                                            )
+                                                        )}
+                                                    </div>
+                                                    <ScrollBar
+                                                        orientation="horizontal"
+                                                        className="sm:hidden"
+                                                    />
+                                                </ScrollArea>
+                                            </div>
+                                        </div>
                                     </PopoverContent>
                                 </Popover>
                             </div>
@@ -399,15 +639,85 @@ export function GameTimelineEditor({
                                     <PopoverTrigger asChild>
                                         <Button variant="outline" className="w-full">
                                             <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {format(editingTimePoint.endTime, "MM/dd HH:mm")}
+                                            {format(editingTimePoint.endTime, "MM/dd/yyyy HH:mm")}
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent>
-                                        <Calendar
-                                            mode="single"
-                                            selected={editingTimePoint.endTime}
-                                            onSelect={(date) => date && setEditingTimePoint(prev => ({ ...prev, endTime: date }))}
-                                        />
+                                    <PopoverContent className="w-auto p-0">
+                                        <div className="sm:flex">
+                                            <Calendar
+                                                mode="single"
+                                                selected={editingTimePoint.endTime}
+                                                onSelect={(date) => {
+                                                    if (date) {
+                                                        const newDate = new Date(date);
+                                                        newDate.setHours(editingTimePoint.endTime.getHours());
+                                                        newDate.setMinutes(editingTimePoint.endTime.getMinutes());
+                                                        setEditingTimePoint(prev => ({ ...prev, endTime: newDate }));
+                                                    }
+                                                }}
+                                                initialFocus
+                                            />
+                                            <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
+                                                <ScrollArea className="w-64 sm:w-auto">
+                                                    <div className="flex sm:flex-col p-2">
+                                                        {Array.from({ length: 24 }, (_, i) => i)
+                                                            .reverse()
+                                                            .map((hour) => (
+                                                                <Button
+                                                                    key={hour}
+                                                                    size="icon"
+                                                                    variant={
+                                                                        editingTimePoint.endTime.getHours() === hour
+                                                                            ? "default"
+                                                                            : "ghost"
+                                                                    }
+                                                                    className="sm:w-full shrink-0 aspect-square"
+                                                                    onClick={() => {
+                                                                        const newDate = new Date(editingTimePoint.endTime);
+                                                                        newDate.setHours(hour);
+                                                                        setEditingTimePoint(prev => ({ ...prev, endTime: newDate }));
+                                                                    }}
+                                                                >
+                                                                    {hour}
+                                                                </Button>
+                                                            ))}
+                                                    </div>
+                                                    <ScrollBar
+                                                        orientation="horizontal"
+                                                        className="sm:hidden"
+                                                    />
+                                                </ScrollArea>
+                                                <ScrollArea className="w-64 sm:w-auto">
+                                                    <div className="flex sm:flex-col p-2">
+                                                        {Array.from({ length: 60 }, (_, i) => i).map(
+                                                            (minute) => (
+                                                                <Button
+                                                                    key={minute}
+                                                                    size="icon"
+                                                                    variant={
+                                                                        editingTimePoint.endTime.getMinutes() === minute
+                                                                            ? "default"
+                                                                            : "ghost"
+                                                                    }
+                                                                    className="sm:w-full shrink-0 aspect-square"
+                                                                    onClick={() => {
+                                                                        const newDate = new Date(editingTimePoint.endTime);
+                                                                        newDate.setMinutes(minute);
+                                                                        setEditingTimePoint(prev => ({ ...prev, endTime: newDate }));
+                                                                    }}
+                                                                >
+                                                                    {minute.toString().padStart(2, "0")}
+                                                                </Button>
+                                                            )
+                                                        )}
+                                                    </div>
+                                                    <ScrollBar
+                                                        orientation="horizontal"
+                                                        className="sm:hidden"
+                                                    />
+                                                </ScrollArea>
+                                            </div>
+                                        </div>
                                     </PopoverContent>
                                 </Popover>
                             </div>
@@ -508,7 +818,7 @@ export function GameTimelineEditor({
                                                     ))}
                                                     {(!groupedChallenges.staged[timePoint.id] || groupedChallenges.staged[timePoint.id].length === 0) && (
                                                         <p className="text-center text-muted-foreground text-sm py-4">
-                                                            拖拽题目到此处
+                                                            拖拽题目到上方的时间线
                                                         </p>
                                                     )}
                                                 </div>

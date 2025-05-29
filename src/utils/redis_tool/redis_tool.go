@@ -449,7 +449,7 @@ func CachedGameSimpleChallenges(gameID int64) ([]webmodels.UserSimpleGameChallen
 
 		// 使用 Preload 进行关联查询
 		if err := dbtool.DB().Preload("Challenge").Where("game_id = ?", game.GameID).Find(&gameChallenges).Error; err != nil {
-			return nil, errors.New("Failed to load game challenges")
+			return nil, errors.New("failed to load game challenges")
 		}
 
 		sort.Slice(gameChallenges, func(i, j int) bool {
