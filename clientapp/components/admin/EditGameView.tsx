@@ -91,268 +91,7 @@ import { useTheme } from "next-themes";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { challengeCategoryColorMap, challengeCategoryIcons } from "utils/ClientAssets";
 import { useNavigate } from "react-router";
-
-interface GameStageFormProps {
-    control: any;
-    index: number;
-    form: any,
-    removeStage: (index: number) => void;
-}
-
-function GameStageForm({ control, index, removeStage, form }: GameStageFormProps) {
-
-    function handleDateSelect(date: Date | undefined, tm_type: "start_time" | "end_time") {
-        if (date) {
-            form.setValue(`stages.${index}.${tm_type}`, date);
-        }
-    }
-
-    function handleTimeChange(type: "hour" | "minute", value: string, tm_type: "start_time" | "end_time") {
-        const field_name = `stages.${index}.${tm_type}`;
-        console.log(field_name)
-        const currentDate = form.getValues(field_name) || new Date();
-        const newDate = new Date(currentDate);
-
-        if (type === "hour") {
-            const hour = parseInt(value, 10);
-            newDate.setHours(hour);
-        } else if (type === "minute") {
-            newDate.setMinutes(parseInt(value, 10));
-        }
-
-        console.log(newDate)
-        form.setValue(field_name, newDate);
-    }
-
-    return (
-        <div className="border p-6 mb-4 rounded-lg hover:shadow-lg transition-shadow duration-300 space-y-4">
-            <div className="flex justify-between items-center mb-2">
-                <span className="font-md font-semibold">阶段 {index + 1}</span>
-                <Button variant="destructive" type="button" onClick={() => removeStage(index)}>
-                    删除阶段
-                </Button>
-            </div>
-            <FormField
-                control={control}
-                name={`stages.${index}.stage_name`}
-                render={({ field }) => (
-                    <FormItem>
-                        <div className="flex items-center h-[20px]">
-                            <FormLabel>阶段名称</FormLabel>
-                            <div className="flex-1" />
-                            <FormMessage className="text-[14px]" />
-                        </div>
-                        <FormControl>
-                            <Input {...field} value={field.value ?? ""} />
-                        </FormControl>
-                    </FormItem>
-                )}
-            />
-            <div className="grid grid-cols-2 gap-4">
-                <FormField
-                    control={form.control}
-                    name={`stages.${index}.start_time`}
-                    render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                            <FormLabel>开始时间</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <FormControl>
-                                        <Button
-                                            variant={"outline"}
-                                            className={cn(
-                                                "w-full pl-3 text-left font-normal",
-                                                !field.value && "text-muted-foreground"
-                                            )}
-                                        >
-                                            {field.value ? (
-                                                format(field.value, "MM/dd/yyyy HH:mm")
-                                            ) : (
-                                                <span>MM/DD/YYYY HH:mm</span>
-                                            )}
-                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                        </Button>
-                                    </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <div className="sm:flex">
-                                        <Calendar
-                                            mode="single"
-                                            selected={field.value}
-                                            onSelect={(date) => handleDateSelect(date, "start_time")}
-                                            initialFocus
-                                        />
-                                        <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
-                                            <ScrollArea className="w-64 sm:w-auto">
-                                                <div className="flex sm:flex-col p-2">
-                                                    {Array.from({ length: 24 }, (_, i) => i)
-                                                        .reverse()
-                                                        .map((hour) => (
-                                                            <Button
-                                                                key={hour}
-                                                                size="icon"
-                                                                variant={
-                                                                    field.value && field.value.getHours() === hour
-                                                                        ? "default"
-                                                                        : "ghost"
-                                                                }
-                                                                className="sm:w-full shrink-0 aspect-square"
-                                                                onClick={() =>
-                                                                    handleTimeChange("hour", hour.toString(), "start_time")
-                                                                }
-                                                            >
-                                                                {hour}
-                                                            </Button>
-                                                        ))}
-                                                </div>
-                                                <ScrollBar
-                                                    orientation="horizontal"
-                                                    className="sm:hidden"
-                                                />
-                                            </ScrollArea>
-                                            <ScrollArea className="w-64 sm:w-auto">
-                                                <div className="flex sm:flex-col p-2">
-                                                    {Array.from({ length: 60 }, (_, i) => i).map(
-                                                        (minute) => (
-                                                            <Button
-                                                                key={minute}
-                                                                size="icon"
-                                                                variant={
-                                                                    field.value &&
-                                                                        field.value.getMinutes() === minute
-                                                                        ? "default"
-                                                                        : "ghost"
-                                                                }
-                                                                className="sm:w-full shrink-0 aspect-square"
-                                                                onClick={() =>
-                                                                    handleTimeChange("minute", minute.toString(), "start_time")
-                                                                }
-                                                            >
-                                                                {minute.toString().padStart(2, "0")}
-                                                            </Button>
-                                                        )
-                                                    )}
-                                                </div>
-                                                <ScrollBar
-                                                    orientation="horizontal"
-                                                    className="sm:hidden"
-                                                />
-                                            </ScrollArea>
-                                        </div>
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
-                            <FormDescription>
-                                请选择这个阶段的开始时间
-                            </FormDescription>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name={`stages.${index}.end_time`}
-                    render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                            <FormLabel>结束时间</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <FormControl>
-                                        <Button
-                                            variant={"outline"}
-                                            className={cn(
-                                                "w-full pl-3 text-left font-normal",
-                                                !field.value && "text-muted-foreground"
-                                            )}
-                                        >
-                                            {field.value ? (
-                                                format(field.value, "MM/dd/yyyy HH:mm")
-                                            ) : (
-                                                <span>MM/DD/YYYY HH:mm</span>
-                                            )}
-                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                        </Button>
-                                    </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <div className="sm:flex">
-                                        <Calendar
-                                            mode="single"
-                                            selected={field.value}
-                                            onSelect={(date) => handleDateSelect(date, "end_time")}
-                                            initialFocus
-                                        />
-                                        <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
-                                            <ScrollArea className="w-64 sm:w-auto">
-                                                <div className="flex sm:flex-col p-2">
-                                                    {Array.from({ length: 24 }, (_, i) => i)
-                                                        .reverse()
-                                                        .map((hour) => (
-                                                            <Button
-                                                                key={hour}
-                                                                size="icon"
-                                                                variant={
-                                                                    field.value && field.value.getHours() === hour
-                                                                        ? "default"
-                                                                        : "ghost"
-                                                                }
-                                                                className="sm:w-full shrink-0 aspect-square"
-                                                                onClick={() =>
-                                                                    handleTimeChange("hour", hour.toString(), "end_time")
-                                                                }
-                                                            >
-                                                                {hour}
-                                                            </Button>
-                                                        ))}
-                                                </div>
-                                                <ScrollBar
-                                                    orientation="horizontal"
-                                                    className="sm:hidden"
-                                                />
-                                            </ScrollArea>
-                                            <ScrollArea className="w-64 sm:w-auto">
-                                                <div className="flex sm:flex-col p-2">
-                                                    {Array.from({ length: 60 }, (_, i) => i).map(
-                                                        (minute) => (
-                                                            <Button
-                                                                key={minute}
-                                                                size="icon"
-                                                                variant={
-                                                                    field.value &&
-                                                                        field.value.getMinutes() === minute
-                                                                        ? "default"
-                                                                        : "ghost"
-                                                                }
-                                                                className="sm:w-full shrink-0 aspect-square"
-                                                                onClick={() =>
-                                                                    handleTimeChange("minute", minute.toString(), "end_time")
-                                                                }
-                                                            >
-                                                                {minute.toString().padStart(2, "0")}
-                                                            </Button>
-                                                        )
-                                                    )}
-                                                </div>
-                                                <ScrollBar
-                                                    orientation="horizontal"
-                                                    className="sm:hidden"
-                                                />
-                                            </ScrollArea>
-                                        </div>
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
-                            <FormDescription>
-                                请选择这个阶段的结束时间
-                            </FormDescription>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            </div>
-        </div>
-    );
-}
+import { GameTimelineEditor } from "./GameTimelineEditor";
 
 interface JudgeConfigFormProps {
     control: any;
@@ -760,6 +499,8 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
         return env
     }
 
+    console.log(game_info)
+
     const { clientConfig } = useGlobalVariableContext()
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -806,6 +547,9 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
         }
     })
 
+    console.log('表单初始化后的 stages:', form.getValues("stages"));
+    console.log('game_info.stages:', game_info.stages);
+
     const {
         fields: challengeFields,
         append: appendChallenge,
@@ -813,15 +557,6 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
     } = useFieldArray({
         control: form.control,
         name: "challenges",
-    });
-
-    const {
-        fields: stageFields,
-        append: appendStage,
-        remove: removeStage,
-    } = useFieldArray({
-        control: form.control,
-        name: "stages",
     });
 
     const GameChallengeForm = ({ control, index, form, removeGameChallenge, gameData, onEditChallenge }: GameChallengeFormProps) => {
@@ -974,7 +709,6 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                                     toast.error(errorMessage.message)
                                 }
                             })
-                            // console.log(data)
                         }}
                     >Select</Button>
                 )
@@ -1105,6 +839,101 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
 
         form.setValue(field_name, newDate);
     }
+
+    // 时间线编辑器相关函数
+    const handleTimePointsChange = (timePoints: any[]) => {
+        // 检查是否有时间段被删除
+        const currentStages = form.getValues("stages") || [];
+        const deletedStageNames = currentStages
+            .filter(oldStage => !timePoints.find(newStage => newStage.name === oldStage.stage_name))
+            .map(stage => stage.stage_name);
+        
+        // 将删除时间段的题目移回全局
+        if (deletedStageNames.length > 0) {
+            const currentChallenges = form.getValues("challenges") || [];
+            currentChallenges.forEach((challenge, index) => {
+                if (challenge.belong_stage && deletedStageNames.includes(challenge.belong_stage)) {
+                    form.setValue(`challenges.${index}.belong_stage`, null);
+                }
+            });
+        }
+        
+        const stages = timePoints.map(tp => ({
+            stage_name: tp.name,
+            start_time: tp.startTime,
+            end_time: tp.endTime,
+        }));
+        console.log(stages)
+        form.setValue("stages", stages);
+    };
+
+    const handleChallengeAssignmentChange = (challengeId: number, stageId: string | null) => {
+        
+        // 使用实时的 challenges 数据而不是静态的 challengeFields
+        const currentChallenges = form.getValues("challenges") || [];
+        const challengeIndex = currentChallenges.findIndex(c => c.challenge_id === challengeId);
+        
+        if (challengeIndex !== -1) {
+            // 如果 stageId 是 null，则设置为全局
+            if (stageId === null) {
+                form.setValue(`challenges.${challengeIndex}.belong_stage`, null);
+                return;
+            }
+            
+            // 从当前的时间点数据中找到对应的stage_name
+            const currentStages = form.getValues("stages") || [];
+            const stageIndex = parseInt(stageId.replace('stage_', ''));
+            
+            if (stageIndex >= 0 && stageIndex < currentStages.length) {
+                const stageName = currentStages[stageIndex].stage_name;
+                form.setValue(`challenges.${challengeIndex}.belong_stage`, stageName);
+            } else {
+                console.error(`无效的时间段索引: ${stageIndex}`);
+            }
+        } else {
+            console.error(`找不到题目 ID: ${challengeId}`);
+        }
+    };
+
+    // 使用 useWatch 监听 stages 字段的变化，确保 timePoints 实时更新
+    const watchedStages = useWatch({
+        control: form.control,
+        name: "stages"
+    });
+
+    // 使用 useWatch 监听 challenges 字段的变化，确保 challengeBlocks 实时更新
+    const watchedChallenges = useWatch({
+        control: form.control,
+        name: "challenges"
+    });
+
+    // 转换数据格式给时间线编辑器
+    const timePoints = (watchedStages || []).map((stage, index) => ({
+        id: `stage_${index}`,
+        name: stage.stage_name,
+        startTime: stage.start_time,
+        endTime: stage.end_time,
+    }));
+
+    const challengeBlocks = (watchedChallenges || []).map(challenge => {
+        // 将belong_stage转换为对应的ID
+        let belongStageId = null;
+        if (challenge.belong_stage) {
+            const stages = watchedStages || [];
+            const stageIndex = stages.findIndex(stage => stage.stage_name === challenge.belong_stage);
+            if (stageIndex !== -1) {
+                belongStageId = `stage_${stageIndex}`;
+            }
+        }
+        
+        return {
+            id: challenge.challenge_id || 0,
+            name: challenge.challenge_name || "",
+            category: challenge.category || "misc",
+            score: challenge.total_score || 0,
+            belongStage: belongStageId,
+        };
+    });
 
     return (
         <div className="absolute w-screen h-screen bg-background items-center justify-center flex select-none overflow-x-hidden overflow-hidden">
@@ -1638,41 +1467,22 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                             </div>
                         </div>
 
-                        {/* 比赛阶段列表 */}
+                        {/* 比赛时间线和题目分配 */}
                         <div className="mt-6">
                             <div className="flex items-center mb-4">
-                                <span className="text-lg font-semibold">比赛阶段</span>
-                                <div className="flex-1" />
-                                <Button
-                                    type="button"
-                                    variant={"outline"}
-                                    className="[&_svg]:size-5"
-                                    onClick={() =>
-                                        appendStage({
-                                            stage_name: "",
-                                            start_time: new Date(),
-                                            end_time: new Date(),
-                                        })
-                                    }
-                                >
-                                    <PlusCircle />
-                                    添加阶段
-                                </Button>
+                                <span className="text-lg font-semibold">时间线与题目分配</span>
                             </div>
-                            {stageFields.length > 0 ? stageFields.map((stage, index) => (
-                                <GameStageForm
-                                    key={index}
-                                    control={form.control}
-                                    form={form}
-                                    index={index}
-                                    removeStage={removeStage}
-                                />
-                            )) : (
-                                <span className="text-sm text-foreground/70">还没有比赛阶段哦</span>
-                            )}
+                            <GameTimelineEditor
+                                gameStartTime={form.getValues("start_time") || new Date()}
+                                gameEndTime={form.getValues("end_time") || new Date()}
+                                timePoints={timePoints}
+                                challenges={challengeBlocks}
+                                onTimePointsChange={handleTimePointsChange}
+                                onChallengeAssignmentChange={handleChallengeAssignmentChange}
+                            />
                         </div>
 
-                        {/* 题目列表 */}
+                        {/* 题目设置 */}
                         <div className="mt-6">
                             <div className="flex items-center mb-4">
                                 <span className="text-lg font-semibold">题目设置</span>
@@ -1685,8 +1495,8 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                                             setSearchResult(res.data.data.map((c) => ({
                                                 "Category": c.category,
                                                 "ChallengeID": c.challenge_id || 0,
-                                                "GameID": game_info.game_id,
                                                 "Name": c.name,
+                                                "GameID": game_info.game_id,
                                                 "CreateTime": c.create_time
                                             })))
                                             setTotalCount(res.data.data.length)

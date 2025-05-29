@@ -91,6 +91,7 @@ var solvedChallengesForGameCacheTime = viper.GetDuration("redis-cache-time.solve
 var gameInfoCacheTime = viper.GetDuration("redis-cache-time.game-info")
 var allTeamsForGameCacheTime = viper.GetDuration("redis-cache-time.all-teams-for-game")
 var gameScoreBoardCacheTime = viper.GetDuration("redis-cache-time.game-scoreboard")
+var challengesForGameCacheTime = viper.GetDuration("redis-cache-time.challenges-for-game")
 
 func CachedMemberSearchTeamMap(gameID int64) (map[string]models.Team, error) {
 	var memberBelongSearchMap map[string]models.Team = make(map[string]models.Team)
@@ -461,7 +462,7 @@ func CachedGameSimpleChallenges(gameID int64) ([]webmodels.UserSimpleGameChallen
 
 		if gameStages != nil {
 			for _, stage := range *gameStages {
-				if stage.StartTime.Before(time.Now().UTC()) && stage.EndTime.After(time.Now().UTC()) {
+				if stage.StartTime.Before(time.Now()) && stage.EndTime.After(time.Now()) {
 					curStage = stage.StageName
 					break
 				}
@@ -489,7 +490,7 @@ func CachedGameSimpleChallenges(gameID int64) ([]webmodels.UserSimpleGameChallen
 		}
 
 		return tmpSimpleGameChallenges, nil
-	}, 1*time.Second, true); err != nil {
+	}, challengesForGameCacheTime, true); err != nil {
 		return nil, err
 	}
 

@@ -44,6 +44,8 @@ redis-cache-time:
   solved-challenges-for-game: 500ms
   game-info: 500ms
   all-teams-for-game: 500ms
+  game-scoreboard: 500ms
+  challenges-for-game: 1s
 
 # if you need garafana, enable it
 monitoring:
