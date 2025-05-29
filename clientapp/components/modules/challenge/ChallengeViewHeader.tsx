@@ -156,16 +156,17 @@ const ChallengesViewHeader = (
                 </Button>
                 {/* <Button size="icon" variant="outline" onClick={testFunction}><FlaskConical /></Button> */}
                 <ToggleTheme />
-                <DropdownMenu>
+                <DropdownMenu modal={false}>
                     <DropdownMenuTrigger>
                         <div className="w-[35px] h-[35px] flex-shrink-0">
                             <AvatarUsername avatar_url={gameInfo?.team_info?.team_avatar} username={gameInfo?.team_info?.team_name || "loading..."} />
                         </div>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="mr-4 mt-4">
-                        <EditTeamDialog updateTeam={() => {}} teamModel={gameInfo?.team_info} >
-                            <Button variant="ghost"><Settings />队伍设置</Button>
-                        </EditTeamDialog>
+                        <DropdownMenuItem onClick={() => navigator("team")}>
+                            <Settings />
+                            <span>队伍管理</span>
+                        </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>

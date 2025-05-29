@@ -1612,7 +1612,7 @@ func RemoveTeamMember(c *gin.Context) {
 
 	// 检查目标用户是否为队伍解出过题目
 	var solveCount int64
-	if err := dbtool.DB().Model(&models.Solve{}).Where("team_id = ? AND submiter_id = ?", teamID, targetUserID).Count(&solveCount).Error; err != nil {
+	if err := dbtool.DB().Model(&models.Solve{}).Where("team_id = ? AND solver_id = ?", teamID, targetUserID).Count(&solveCount).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
 			Message: "Failed to check solve records",
