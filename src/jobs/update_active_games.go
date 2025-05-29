@@ -11,6 +11,8 @@ import (
 
 func updateActiveGameScores(game_ids []int64) {
 	if len(game_ids) > 0 {
+
+		// 更新每道题的解题人数
 		if err := dbtool.DB().Exec(`
 			UPDATE game_challenges gc
 			SET solve_count = (
@@ -24,6 +26,7 @@ func updateActiveGameScores(game_ids []int64) {
 			return
 		}
 
+		// 更新每道题的分数
 		if err := dbtool.DB().Exec(`
 			UPDATE game_challenges gc
 			SET cur_score = CASE
@@ -39,6 +42,27 @@ func updateActiveGameScores(game_ids []int64) {
 			WHERE gc.game_id IN ?;
 		`, game_ids).Error; err != nil {
 			println("Failed to update cur_score")
+			return
+		}
+
+		// 更新每支队伍的分数
+		if err := dbtool.DB().Exec(`
+			UPDATE teams t
+			SET team_score = COALESCE(team_scores.total_score, 0)
+			FROM (
+				SELECT 
+					s.team_id,
+					SUM(gc.cur_score) as total_score
+				FROM solves s
+				LEFT JOIN game_challenges gc ON s.ingame_id = gc.ingame_id
+				WHERE s.game_id IN ? 
+					AND s.solve_status = '"SolveCorrect"'::jsonb
+				GROUP BY s.team_id
+			) team_scores
+			WHERE t.team_id = team_scores.team_id
+				AND t.game_id IN ?;
+		`, game_ids, game_ids).Error; err != nil {
+			println("Failed to update team_score")
 			return
 		}
 	}

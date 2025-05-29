@@ -5,7 +5,7 @@ CREATE TABLE "users" (
     "username" text NOT NULL,
     "password" text NOT NULL,
     "salt" text NOT NULL,
-    "role" int4 DEFAULT 0 NOT NULL,
+    "role" jsonb NOT NULL,
     "cur_token" text,
     "phone" text,
     "student_number" text,
@@ -15,6 +15,10 @@ CREATE TABLE "users" (
     "sso_data" text,
     "email" text,
     "email_verified" bool DEFAULT false,
+    "register_time" timestamp NOT NULL,
+    "last_login_time" timestamp,
+    "jwt_version" text NOT NULL,
+    "last_login_ip" text,
     PRIMARY KEY (user_id)
 );
 

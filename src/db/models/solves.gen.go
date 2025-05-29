@@ -2,9 +2,10 @@ package models
 
 import (
 	"database/sql/driver"
-	"encoding/json"
 	"errors"
 	"time"
+
+	"github.com/bytedance/sonic"
 )
 
 const TableNameSolve = "solves"
@@ -16,7 +17,7 @@ const (
 )
 
 func (e SolveStatus) Value() (driver.Value, error) {
-	return json.Marshal(e)
+	return sonic.Marshal(e)
 }
 
 func (e *SolveStatus) Scan(value interface{}) error {
@@ -24,7 +25,7 @@ func (e *SolveStatus) Scan(value interface{}) error {
 	if !ok {
 		return errors.New("type assertion to []byte failed")
 	}
-	return json.Unmarshal(b, e)
+	return sonic.Unmarshal(b, e)
 }
 
 // Judge mapped from table <judges>

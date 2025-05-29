@@ -2,38 +2,63 @@ package controllers
 
 import (
 	"net/http"
+	"time"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
 	"a1ctf/src/db/models"
+	clientconfig "a1ctf/src/modules/client_config"
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
+	"a1ctf/src/utils/redis_tool"
+	"a1ctf/src/utils/turnstile"
 )
 
-func Login() func(c *gin.Context) (interface{}, error) {
-	return func(c *gin.Context) (interface{}, error) {
-		var loginVals LoginPayload
-		if err := c.ShouldBind(&loginVals); err != nil {
-			return "", jwt.ErrMissingLoginValues
-		}
+// GetProfile 获取用户的基本资料信息
+func GetProfile(c *gin.Context) {
+	// 从JWT中提取用户信息
+	claims := jwt.ExtractClaims(c)
+	userID := claims["UserID"].(string)
 
-		user_result := models.User{}
-		if dbtool.DB().First(&user_result, "username = ? OR email = ? ", loginVals.Username, loginVals.Username).Error != nil {
-			return nil, jwt.ErrFailedAuthentication
-		} else {
-			if user_result.Password == general.SaltPassword(loginVals.Password, user_result.Salt) {
-				return &models.JWTUser{
-					UserName: user_result.Username,
-					Role:     "ADMIN",
-					UserID:   user_result.UserID,
-				}, nil
-			} else {
-				return nil, jwt.ErrFailedAuthentication
-			}
-		}
+	userMap, err := redis_tool.CachedMemberMap()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "System error",
+		})
+		return
 	}
+
+	user, ok := userMap[userID]
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":    404,
+			"message": "User not found",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": gin.H{
+			"user_id":               user.UserID,
+			"username":              user.Username,
+			"role":                  user.Role,
+			"phone":                 user.Phone,
+			"student_number":        user.StudentNumber,
+			"realname":              user.Realname,
+			"slogan":                user.Slogan,
+			"avatar":                user.Avatar,
+			"email":                 user.Email,
+			"email_verified":        user.EmailVerified,
+			"register_time":         user.RegisterTime,
+			"last_login_time":       user.LastLoginTime,
+			"last_login_ip":         user.LastLoginIP,
+			"client_config_version": clientconfig.ClientConfig.UpdatedTime,
+		},
+	})
 }
 
 func Register(c *gin.Context) {
@@ -44,6 +69,26 @@ func Register(c *gin.Context) {
 			"message": "Invalid request payload",
 		})
 		return
+	}
+
+	if clientconfig.ClientConfig.TurnstileEnabled {
+		turnstile := turnstile.New(clientconfig.ClientConfig.TurnstileSecretKey)
+		response, err := turnstile.Verify(payload.Captcha, c.ClientIP())
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    400,
+				"message": "Invalid request payload",
+			})
+			return
+		}
+
+		if !response.Success {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    400,
+				"message": "Invalid request payload",
+			})
+			return
+		}
 	}
 
 	var existingUsers []models.User
@@ -71,7 +116,7 @@ func Register(c *gin.Context) {
 		Username:      payload.Username,
 		Password:      saltedPassword,
 		Salt:          newSalt,
-		Role:          0,
+		Role:          models.UserRoleAdmin,
 		CurToken:      nil,
 		Phone:         nil,
 		StudentNumber: nil,
@@ -81,6 +126,8 @@ func Register(c *gin.Context) {
 		SsoData:       nil,
 		Email:         &payload.Email,
 		EmailVerified: false,
+		JWTVersion:    general.RandomString(16),
+		RegisterTime:  time.Now().UTC(),
 	}
 
 	if err := dbtool.DB().Create(&newUser).Error; err != nil {
@@ -93,5 +140,61 @@ func Register(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
+	})
+}
+
+// GetClientConfig 获取客户端配置
+func GetClientConfig(c *gin.Context) {
+
+	ClientConfig := clientconfig.ClientConfig
+
+	if ClientConfig.SystemName == "" {
+		settings, err := clientconfig.LoadSystemSettings()
+		if err != nil {
+			settings = clientconfig.DefaultSettings
+		}
+		settings.UpdatedTime = time.Now().UTC()
+		ClientConfig = settings
+	}
+
+	// 创建客户端配置
+	clientConfig := map[string]interface{}{
+		"systemName":    ClientConfig.SystemName,
+		"systemLogo":    ClientConfig.SystemLogo,
+		"systemFavicon": ClientConfig.SystemFavicon,
+		"systemSlogan":  ClientConfig.SystemSlogan,
+		"systemFooter":  ClientConfig.SystemFooter,
+
+		"systemICP":             ClientConfig.SystemICP,
+		"systemOrganization":    ClientConfig.SystemOrganization,
+		"systemOrganizationURL": ClientConfig.SystemOrganizationURL,
+
+		"themeColor":       ClientConfig.ThemeColor,
+		"darkModeDefault":  ClientConfig.DarkModeDefault,
+		"allowUserTheme":   ClientConfig.AllowUserTheme,
+		"defaultLanguage":  ClientConfig.DefaultLanguage,
+		"turnstileEnabled": ClientConfig.TurnstileEnabled,
+		"turnstileSiteKey": ClientConfig.TurnstileSiteKey,
+
+		// 品牌资源
+		"FancyBackGroundIconWhite": ClientConfig.FancyBackGroundIconWhite,
+		"FancyBackGroundIconBlack": ClientConfig.FancyBackGroundIconBlack,
+		"DefaultBGImage":           ClientConfig.DefaultBGImage,
+		"SVGIcon":                  ClientConfig.SVGIcon,
+		"SVGAltData":               ClientConfig.SVGAltData,
+		"TrophysGold":              ClientConfig.TrophysGold,
+		"TrophysSilver":            ClientConfig.TrophysSilver,
+		"TrophysBronze":            ClientConfig.TrophysBronze,
+		"SchoolLogo":               ClientConfig.SchoolLogo,
+		"SchoolSmallIcon":          ClientConfig.SchoolSmallIcon,
+		"SchoolUnionAuthText":      ClientConfig.SchoolUnionAuthText,
+		"BGAnimation":              ClientConfig.BGAnimation,
+
+		"updateVersion": ClientConfig.UpdatedTime,
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": clientConfig,
 	})
 }

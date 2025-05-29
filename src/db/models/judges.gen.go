@@ -2,9 +2,10 @@ package models
 
 import (
 	"database/sql/driver"
-	"encoding/json"
 	"errors"
 	"time"
+
+	"github.com/bytedance/sonic"
 )
 
 type JudgeStatus string
@@ -19,7 +20,7 @@ const (
 )
 
 func (e JudgeStatus) Value() (driver.Value, error) {
-	return json.Marshal(e)
+	return sonic.Marshal(e)
 }
 
 func (e *JudgeStatus) Scan(value interface{}) error {
@@ -27,7 +28,7 @@ func (e *JudgeStatus) Scan(value interface{}) error {
 	if !ok {
 		return errors.New("type assertion to []byte failed")
 	}
-	return json.Unmarshal(b, e)
+	return sonic.Unmarshal(b, e)
 }
 
 const TableNameJudge = "judges"

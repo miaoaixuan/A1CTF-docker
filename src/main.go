@@ -1,197 +1,37 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
-	"regexp"
 	"time"
-
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 
 	"a1ctf/src/controllers"
 	"a1ctf/src/db"
-	"a1ctf/src/db/models"
 	"a1ctf/src/jobs"
+	clientconfig "a1ctf/src/modules/client_config"
+	jwtauth "a1ctf/src/modules/jwt_auth"
+	"a1ctf/src/modules/monitoring"
 	"a1ctf/src/utils"
 	dbtool "a1ctf/src/utils/db_tool"
+	k8stool "a1ctf/src/utils/k8s_tool"
 
-	jwt "github.com/appleboy/gin-jwt/v2"
+	"github.com/gin-contrib/gzip"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron/v2"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/spf13/viper"
 
 	cache "github.com/chenyahui/gin-cache"
 	"github.com/chenyahui/gin-cache/persist"
 )
 
-func Index(c *gin.Context) {
-
-	dsn := "host=localhost user=postgres password=root dbname=a1ctf port=5000 sslmode=disable TimeZone=Asia/Shanghai"
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		panic(err)
-	}
-
-	result := models.Challenge{}
-	if db.First(&result).Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"message": "Not Found",
-		})
-		return
-	} else {
-		c.JSON(http.StatusOK, gin.H{
-			"message": result,
-		})
-	}
-}
-
-var (
-	identityKey = "UserID"
-)
-
-func initParams() *jwt.GinJWTMiddleware {
-
-	return &jwt.GinJWTMiddleware{
-		Realm:       "test zone",
-		Key:         []byte("secret key"),
-		Timeout:     time.Hour * 48,
-		MaxRefresh:  time.Hour,
-		IdentityKey: identityKey,
-		PayloadFunc: payloadFunc(),
-
-		SendCookie: true,
-		CookieName: "a1token",
-
-		IdentityHandler: identityHandler(),
-		Authenticator:   controllers.Login(),
-		Authorizator:    authorizator(),
-		Unauthorized:    unauthorized(),
-		TokenLookup:     "cookie:a1token",
-		// TokenLookup: "query:token",
-		// TokenLookup: "cookie:token",
-		TokenHeadName: "Bearer",
-		TimeFunc:      time.Now,
-	}
-}
-
-func identityHandler() func(c *gin.Context) interface{} {
-	return func(c *gin.Context) interface{} {
-		claims := jwt.ExtractClaims(c)
-		return &models.JWTUser{
-			UserID:   claims[identityKey].(string),
-			UserName: claims["UserName"].(string),
-			Role:     claims["Role"].(string),
-		}
-	}
-}
-
-func payloadFunc() func(data interface{}) jwt.MapClaims {
-	return func(data interface{}) jwt.MapClaims {
-		if v, ok := data.(*models.JWTUser); ok {
-			return jwt.MapClaims{
-				identityKey: v.UserID,
-				"UserName":  v.UserName,
-				"Role":      v.Role,
-			}
-		}
-		return jwt.MapClaims{}
-	}
-}
-
-type PermissionSetting struct {
-	RequestMethod []string
-	Permissions   []string
-}
-
-var PermissionMap = map[string]PermissionSetting{
-	`^/api/Login$`:                        {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	`^/api/file/upload$`:                  {RequestMethod: []string{"POST"}, Permissions: []string{}},
-	`^/api/admin/challenge/list$`:         {RequestMethod: []string{"GET", "POST"}, Permissions: []string{"ADMIN"}},
-	`^/api/admin/challenge/create$`:       {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	`^/api/admin/challenge/\d+$`:          {RequestMethod: []string{"GET", "PUT", "DELETE"}, Permissions: []string{"ADMIN"}},
-	`^/api/admin/challenge/search$`:       {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	`^/api/admin/game/list$`:              {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	`^/api/admin/game/create$`:            {RequestMethod: []string{"POST"}, Permissions: []string{"ADMIN"}},
-	`^/api/admin/game/\d+$`:               {RequestMethod: []string{"GET", "POST", "PUT"}, Permissions: []string{"ADMIN"}},
-	`^/api/admin/game/\d+/challenge/\d+$`: {RequestMethod: []string{"PUT"}, Permissions: []string{"ADMIN"}},
-	`^/api/game/list$`:                    {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	`^/api/game/\d+$`:                     {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	`^/api/game/\d+/challenges$`:          {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	`^/api/game/\d+/challenge/\d+$`:       {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	`^/api/game/\d+/notices$`:             {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	`^/api/game/\d+/createTeam$`:          {RequestMethod: []string{"POST"}, Permissions: []string{}},
-	`^/api/game/\d+/scoreboard$`:          {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	`^/api/game/\d+/container/\d+$`:       {RequestMethod: []string{"POST", "DELETE", "PATCH", "GET"}, Permissions: []string{}},
-	`^/api/game/\d+/flag/\d+$`:            {RequestMethod: []string{"POST"}, Permissions: []string{}},
-	`^/api/hub$`:                          {RequestMethod: []string{"GET"}, Permissions: []string{}},
-	`^/api/game/\d+/flag/[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$`: {RequestMethod: []string{"GET"}, Permissions: []string{}},
-}
-
-// Helper function to check if a slice contains a value
-func contains(slice []string, value string) bool {
-	for _, item := range slice {
-		if item == value {
-			return true
-		}
-	}
-	return false
-}
-
-func authorizator() func(data interface{}, c *gin.Context) bool {
-	return func(data interface{}, c *gin.Context) bool {
-		if v, ok := data.(*models.JWTUser); ok {
-
-			for k, rules := range PermissionMap {
-				match, _ := regexp.MatchString(k, c.Request.URL.Path)
-				if match {
-					// println(k, c.Request.URL.Path)
-
-					// if len(rules.Permissions) ==  {
-					// 	return false
-					// }
-
-					if !contains(rules.RequestMethod, c.Request.Method) {
-						return false
-					}
-
-					if len(rules.Permissions) == 0 {
-						return true
-					}
-
-					if contains(rules.Permissions, v.Role) {
-						return true
-					} else {
-						return false
-					}
-				}
-			}
-		}
-		return false
-	}
-}
-
-func unauthorized() func(c *gin.Context, code int, message string) {
-	return func(c *gin.Context, code int, message string) {
-		c.JSON(code, gin.H{
-			"code":    code,
-			"message": message,
-		})
-	}
-}
-
-func handleNoRoute() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		claims := jwt.ExtractClaims(c)
-		log.Printf("NoRoute claims: %#v\n", claims)
-		c.JSON(404, gin.H{"code": "404", "message": "Page not found"})
-	}
-}
-
 func StartLoopEvent() {
 	s, _ := gocron.NewScheduler()
 	s.NewJob(
 		gocron.DurationJob(
-			2*time.Second,
+			viper.GetDuration("job-intervals.update-activate-game-score"),
 		),
 		gocron.NewTask(
 			jobs.UpdateActivateGameScore,
@@ -201,7 +41,7 @@ func StartLoopEvent() {
 
 	s.NewJob(
 		gocron.DurationJob(
-			5*time.Second,
+			viper.GetDuration("job-intervals.update-active-game-score-board"),
 		),
 		gocron.NewTask(
 			jobs.UpdateActiveGameScoreBoard,
@@ -211,7 +51,7 @@ func StartLoopEvent() {
 
 	s.NewJob(
 		gocron.DurationJob(
-			2*time.Second,
+			viper.GetDuration("job-intervals.container-operations"),
 		),
 		gocron.NewTask(
 			jobs.ContainerOperationsJob,
@@ -221,7 +61,7 @@ func StartLoopEvent() {
 
 	s.NewJob(
 		gocron.DurationJob(
-			1*time.Second,
+			viper.GetDuration("job-intervals.flag-judge"),
 		),
 		gocron.NewTask(
 			jobs.FlagJudgeJob,
@@ -233,8 +73,10 @@ func StartLoopEvent() {
 }
 
 func main() {
+
 	// 加载配置文件
 	utils.LoadConfig()
+	k8stool.InitNodeAddressMap()
 
 	// 初始化数据库连接
 	dbtool.Init()
@@ -242,50 +84,98 @@ func main() {
 	// 初始化 db
 	db.InitDB()
 
-	// db_init.InitMyDB()
+	// 加载配置文件
+	clientconfig.LoadSystemSettings()
 
-	memoryStore := persist.NewMemoryStore(1 * time.Minute)
-	r := gin.Default()
-
-	// 关闭日志输出
-	// r := gin.New()
-
-	cacheByCookie := cache.WithCacheStrategyByRequest(func(c *gin.Context) (bool, cache.Strategy) {
-		cookie, err := c.Cookie("a1token")
-		if err != nil {
-			return false, cache.Strategy{}
-		} else {
-			return true, cache.Strategy{
-				CacheKey: cookie,
-			}
-		}
-	})
-
-	authMiddleware, err := jwt.New(initParams())
-	if err != nil {
-		log.Fatal("JWT Error:" + err.Error())
+	// 初始化系统监控
+	if viper.GetBool("monitoring.enabled") {
+		systemMonitor := monitoring.NewSystemMonitor(viper.GetDuration("monitoring.system-monitor-interval"))
+		systemMonitor.Start()
+		defer systemMonitor.Stop()
 	}
 
+	memoryStore := persist.NewMemoryStore(1 * time.Minute)
+
+	// 关闭日志输出
+	r := gin.New()
+	// r := gin.Default()
+
+	// 设置 Trusted Proxies
+	if len(viper.GetStringSlice("system.trusted-proxies")) > 0 {
+		if viper.GetBool("system.forwarded-by-client-ip") && len(viper.GetStringSlice("system.remote-ip-headers")) > 0 {
+			r.ForwardedByClientIP = viper.GetBool("system.forwarded-by-client-ip")
+			r.RemoteIPHeaders = viper.GetStringSlice("system.remote-ip-headers")
+		} else {
+			log.Fatalf("No remote ip headers set, using default. If you are using a reverse proxy, please set the remote ip headers in the config file.")
+		}
+		r.SetTrustedProxies(viper.GetStringSlice("system.trusted-proxies"))
+	} else {
+		log.Printf("No trusted proxies set, using default. If you are using a reverse proxy, please set the trusted proxies in the config file.")
+	}
+
+	pprof.Register(r)
+
+	// 启动 Gin 框架性能监控
+	if viper.GetBool("monitoring.enabled") {
+		r.Use(monitoring.GinPrometheusMiddleware())
+	}
+
+	// 启动性能监控
+	http.Handle("/metrics", promhttp.Handler())
+	go http.ListenAndServe(fmt.Sprintf("%s:%s", viper.GetString("system.prometheus-host"), viper.GetString("system.prometheus-port")), nil)
+
+	// 启动 Gzip 压缩
+	if viper.GetBool("system.gin-gzip-enabled") {
+		r.Use(gzip.Gzip(gzip.DefaultCompression))
+	}
+
+	// JWT 鉴权中间件
+	authMiddleware := jwtauth.InitJwtMiddleWare()
+
+	// 公共接口
 	public := r.Group("/api")
 	{
 		public.POST("/auth/login", authMiddleware.LoginHandler)
 		public.POST("/auth/register", controllers.Register)
 
 		public.GET("/game/list", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.UserListGames)
-		public.GET("/game/:game_id/scoreboard", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(true, false), controllers.UserGameGetScoreBoard)
+		public.GET("/game/:game_id/scoreboard", controllers.GameStatusMiddleware(true, false), controllers.UserGameGetScoreBoard)
+
+		public.GET("/game/:game_id", controllers.GameStatusMiddleware(true, false), controllers.UserGetGameDetailWithTeamInfo)
 
 		fileGroup := public.Group("/file")
 		{
 			fileGroup.GET("/download/:file_id", controllers.DownloadFile)
 		}
+
+		public.GET("/client-config", controllers.GetClientConfig)
 	}
 
+	// 鉴权接口
 	auth := r.Group("/api")
 	auth.Use(authMiddleware.MiddlewareFunc())
 	{
 		fileGroup := auth.Group("/file")
 		{
 			fileGroup.POST("/upload", controllers.UploadFile)
+		}
+
+		// 添加账户相关接口
+		accountGroup := auth.Group("/account")
+		{
+			accountGroup.GET("/profile", controllers.GetProfile)
+		}
+
+		// 用户头像上传接口
+		userAvatarGroup := auth.Group("/user")
+		{
+			userAvatarGroup.POST("/avatar/upload", controllers.UploadUserAvatar)
+		}
+
+		// 团队头像上传接口
+		teamAvatarGroup := auth.Group("/team")
+		{
+			teamAvatarGroup.POST("/avatar/upload", controllers.UploadTeamAvatar)
 		}
 
 		challengeGroup := auth.Group("/admin/challenge")
@@ -300,6 +190,23 @@ func main() {
 			challengeGroup.POST("/search", controllers.AdminSearchChallenges)
 		}
 
+		userGroup := auth.Group("/admin/user")
+		{
+			userGroup.POST("/list", controllers.AdminListUsers)
+			userGroup.POST("/update", controllers.AdminUpdateUser)
+			userGroup.POST("/reset-password", controllers.AdminResetUserPassword)
+			userGroup.POST("/delete", controllers.AdminDeleteUser)
+		}
+
+		teamGroup := auth.Group("/admin/team")
+		{
+			teamGroup.POST("/list", controllers.AdminListTeams)
+			teamGroup.POST("/approve", controllers.AdminApproveTeam)
+			teamGroup.POST("/ban", controllers.AdminBanTeam)
+			teamGroup.POST("/unban", controllers.AdminUnbanTeam)
+			teamGroup.POST("/delete", controllers.AdminDeleteTeam)
+		}
+
 		gameGroup := auth.Group("/admin/game")
 		{
 			gameGroup.POST("/list", controllers.AdminListGames)
@@ -312,13 +219,6 @@ func main() {
 		// 用户相关接口
 		userGameGroup := auth.Group("/game")
 		{
-			// 中间件检查比赛状态
-			userGameGroup.GET("/:game_id", cache.Cache(
-				memoryStore,
-				1*time.Second,
-				cacheByCookie,
-			), controllers.GameStatusMiddleware(true, true), controllers.UserGetGameDetailWithTeamInfo)
-
 			userGameGroup.GET("/:game_id/challenges", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenges)
 
 			// 查询比赛中的某道题
@@ -354,15 +254,40 @@ func main() {
 				"gameID": gameID,
 			})
 		})
+
+		containerGroup := auth.Group("/admin/container")
+		{
+			containerGroup.POST("/list", controllers.AdminListContainers)
+			containerGroup.POST("/delete", controllers.AdminDeleteContainer)
+			containerGroup.POST("/extend", controllers.AdminExtendContainer)
+			containerGroup.GET("/flag", controllers.AdminGetContainerFlag)
+		}
+
+		// 系统设置相关API
+		systemGroup := auth.Group("/admin/system")
+		{
+			systemGroup.GET("/settings", controllers.GetSystemSettings)
+			systemGroup.POST("/settings", controllers.UpdateSystemSettings)
+			systemGroup.POST("/upload", controllers.UploadSystemFile)
+			systemGroup.POST("/test-smtp", controllers.TestSMTPSettings)
+		}
 	}
 
 	// 未知接口
-	r.NoRoute(authMiddleware.MiddlewareFunc(), handleNoRoute())
+	// r.NoRoute(authMiddleware.MiddlewareFunc(), handleNoRoute())
+
+	r.Static("/assets", "./clientapp/build/client/assets")
+	r.Static("/favicon.ico", "./clientapp/build/client/favicon.ico")
+	r.Static("/images", "./clientapp/build/client/images")
+	r.Static("/locales", "./clientapp/build/client/locales")
+	r.NoRoute(func(c *gin.Context) {
+		c.File("./clientapp/build/client/index.html")
+	})
 
 	// 任务线程
 	StartLoopEvent()
 
-	log.Fatal(r.Run(":7777"))
+	log.Fatal(r.Run(fmt.Sprintf("%s:%s", viper.GetString("system.gin-host"), viper.GetString("system.gin-port"))))
 
 	// k8stool.TestCreate()
 }

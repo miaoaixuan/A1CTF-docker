@@ -1,6 +1,9 @@
 package dbtool
 
 import (
+	"a1ctf/src/modules/monitoring"
+	"context"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -10,22 +13,31 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	"github.com/go-redis/redis"
 	"github.com/olahol/melody"
 	"github.com/spf13/viper"
 )
 
 var db *gorm.DB
+var redis_instance *redis.Client
+var ml *melody.Melody
+var gameSessions map[*melody.Session]int64 = make(map[*melody.Session]int64)
+var ctx = context.Background()
 
 func DB() *gorm.DB {
 	return db
 }
 
-var ml *melody.Melody
-
-var gameSessions map[*melody.Session]int64 = make(map[*melody.Session]int64)
-
 func Melody() *melody.Melody {
 	return ml
+}
+
+func Redis() *redis.Client {
+	return redis_instance
+}
+
+func Context() context.Context {
+	return ctx
 }
 
 func Init() {
@@ -42,12 +54,28 @@ func Init() {
 		},
 	)
 
-	dsn := viper.GetString("system.sql-dsn")
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
+		viper.GetString("postgres.host"),
+		viper.GetString("postgres.user"),
+		viper.GetString("postgres.password"),
+		viper.GetString("postgres.dbname"),
+		viper.GetString("postgres.port"),
+		viper.GetString("postgres.sslmode"))
 	db_local, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		// Logger: newLogger, // 设置自定义 Logger
 	})
 	if err != nil {
 		panic(err)
+	}
+
+	if viper.GetBool("monitoring.enabled") {
+		prometheusPlugin := &monitoring.PrometheusPlugin{
+			SlowThreshold: viper.GetDuration("monitoring.gorm-slow-query-threshold"), // 慢查询阈值
+		}
+
+		if err := db_local.Use(prometheusPlugin); err != nil {
+			panic(err)
+		}
 	}
 
 	db = db_local
@@ -80,6 +108,27 @@ func Init() {
 		delete(gameSessions, s)
 		return nil
 	})
+
+	redis_instance = redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", viper.GetString("redis.host"), viper.GetString("redis.port")),
+		Password: viper.GetString("redis.password"),
+		DB:       viper.GetInt("redis.db"),
+	})
+
+	_, err = redis_instance.Ping().Result()
+	if err != nil {
+		log.Fatalf("Connect to redis failed: %v", err)
+	}
+
+	keys, err := redis_instance.Keys("*").Result()
+	if err != nil {
+		log.Fatalf("Get redis keys failed: %v", err)
+	}
+
+	// 删除所有缓存 防止意外关闭后缓存未删除
+	for _, key := range keys {
+		redis_instance.Del(key)
+	}
 }
 
 func GameSessions() map[*melody.Session]int64 {

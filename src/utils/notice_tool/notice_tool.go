@@ -3,10 +3,10 @@ package noticetool
 import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
-	"encoding/json"
 	"log"
 	"time"
 
+	"github.com/bytedance/sonic"
 	"github.com/lib/pq"
 )
 
@@ -29,7 +29,7 @@ func InsertNotice(gameID int64, category models.NoticeCategory, values []string)
 func AnnounceNotice(notice models.Notice) {
 	for session, gid := range dbtool.GameSessions() {
 		if gid == notice.GameID {
-			msg, _ := json.Marshal(map[string]interface{}{
+			msg, _ := sonic.Marshal(map[string]interface{}{
 				"type": "Notice",
 				"message": map[string]interface{}{
 					"notice_id":       notice.NoticeID,

@@ -56,10 +56,16 @@ func processStartingContainer(task models.Container) error {
 
 				for _, port := range *ports {
 					if port.Name == port_name {
+
+						address, ok := k8stool.NodeAddressMap[port.NodeName]
+						if !ok {
+							address = port.NodeName
+						}
+
 						expose_ports = append(expose_ports, models.ExposePort{
 							PortName: expose_port.Name,
 							Port:     port.NodePort,
-							IP:       port.NodeName,
+							IP:       address,
 						})
 					}
 				}

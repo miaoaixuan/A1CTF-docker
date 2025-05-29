@@ -1,0 +1,85 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { LoaderPinwheel } from 'lucide-react';
+import { cn } from 'lib/utils';
+import { useSpring, animated } from '@react-spring/web';
+
+const ImageLoader = ({
+    src, // 高清图URL
+    alt = '',
+    className = '',
+    width = 1920,
+    height = 1080,
+    style = {},
+}: {
+    src: string;
+    alt: string;
+    className: string;
+    width?: number;
+    height?: number;
+    style?: React.CSSProperties;
+}) => {
+    const [loaded, setLoaded] = useState(false);
+    const imgRef = useRef(null);
+    const placeholderRef = useRef(null);
+
+    // Spring 动画配置
+    const fadeSpring = useSpring({
+        opacity: loaded ? 0 : 1,
+        display: loaded ? 'none' : 'flex',
+        config: {
+            tension: 120,
+            friction: 14,
+        },
+    });
+
+    useEffect(() => {
+        const img = new Image();
+        img.src = src;
+
+        img.onload = () => {
+            setTimeout(() => {
+                setLoaded(true);
+            }, 200)
+        };
+
+        // 清理函数
+        return () => {
+            img.onload = null;
+        };
+    }, [src]);
+
+    return (
+        <div
+            className={"relative overflow-hidden"}
+            style={{
+                ...style
+            }}
+        >
+            {/* 低分辨率模糊背景 */}
+            <animated.div 
+                className='w-full h-full top-0 left-0 absolute bg-background flex items-center justify-center'
+                style={{
+                    opacity: fadeSpring.opacity,
+                    pointerEvents: loaded ? 'none' : 'auto',
+                }}
+            >
+                <div className='flex items-center gap-3'>
+                    <LoaderPinwheel className="animate-spin" />
+                    <span className="font-bold">Loading...</span>
+                </div>
+            </animated.div>
+
+            {/* 高清图 */}
+            <img
+                ref={imgRef}
+                src={src}
+                width={width}
+                height={height}
+                alt={alt}
+                className={cn(className, "full-image w-fit h-full object-cover")}
+            />
+        </div>
+    );
+};
+
+export default ImageLoader;

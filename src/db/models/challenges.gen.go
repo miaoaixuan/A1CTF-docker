@@ -3,9 +3,10 @@ package models
 import (
 	k8stool "a1ctf/src/utils/k8s_tool"
 	"database/sql/driver"
-	"encoding/json"
 	"errors"
 	"time"
+
+	"github.com/bytedance/sonic"
 )
 
 const TableNameChallenge = "challenges"
@@ -30,7 +31,7 @@ type AttachmentConfig struct {
 type AttachmentConfigs []AttachmentConfig
 
 func (e AttachmentConfigs) Value() (driver.Value, error) {
-	return json.Marshal(e)
+	return sonic.Marshal(e)
 }
 
 func (e *AttachmentConfigs) Scan(value interface{}) error {
@@ -38,7 +39,7 @@ func (e *AttachmentConfigs) Scan(value interface{}) error {
 	if !ok {
 		return errors.New("type assertion to []byte failed")
 	}
-	return json.Unmarshal(b, e)
+	return sonic.Unmarshal(b, e)
 }
 
 type JudgeType string
@@ -49,7 +50,7 @@ const (
 )
 
 func (e JudgeType) Value() (driver.Value, error) {
-	return json.Marshal(e)
+	return sonic.Marshal(e)
 }
 
 func (e *JudgeType) Scan(value interface{}) error {
@@ -57,7 +58,7 @@ func (e *JudgeType) Scan(value interface{}) error {
 	if !ok {
 		return errors.New("type assertion to []byte failed")
 	}
-	return json.Unmarshal(b, e)
+	return sonic.Unmarshal(b, e)
 }
 
 type JudgeConfig struct {
@@ -67,7 +68,7 @@ type JudgeConfig struct {
 }
 
 func (e JudgeConfig) Value() (driver.Value, error) {
-	return json.Marshal(e)
+	return sonic.Marshal(e)
 }
 
 func (e *JudgeConfig) Scan(value interface{}) error {
@@ -75,7 +76,7 @@ func (e *JudgeConfig) Scan(value interface{}) error {
 	if !ok {
 		return errors.New("type assertion to []byte failed")
 	}
-	return json.Unmarshal(b, e)
+	return sonic.Unmarshal(b, e)
 }
 
 type ChallengeCategory string
@@ -97,7 +98,7 @@ const (
 )
 
 func (e ChallengeCategory) Value() (driver.Value, error) {
-	return json.Marshal(e)
+	return sonic.Marshal(e)
 }
 
 func (e *ChallengeCategory) Scan(value interface{}) error {
@@ -105,7 +106,7 @@ func (e *ChallengeCategory) Scan(value interface{}) error {
 	if !ok {
 		return errors.New("type assertion to []byte failed")
 	}
-	return json.Unmarshal(b, e)
+	return sonic.Unmarshal(b, e)
 }
 
 type ChallengeContainerType string
@@ -117,7 +118,7 @@ const (
 )
 
 func (e ChallengeContainerType) Value() (driver.Value, error) {
-	return json.Marshal(e)
+	return sonic.Marshal(e)
 }
 
 func (e *ChallengeContainerType) Scan(value interface{}) error {
@@ -125,7 +126,7 @@ func (e *ChallengeContainerType) Scan(value interface{}) error {
 	if !ok {
 		return errors.New("type assertion to []byte failed")
 	}
-	return json.Unmarshal(b, e)
+	return sonic.Unmarshal(b, e)
 }
 
 // Challenge mapped from table <challenges>

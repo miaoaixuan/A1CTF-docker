@@ -19,7 +19,7 @@ print(res.text)
 print("登录账号")
 res = session.post(
     url="http://localhost:7777/api/auth/login",
-    json={"username": "root", "password": "root"},
+    json={"username": "root", "password": "root", "captcha": ""},
 )
 
 print(res.text)

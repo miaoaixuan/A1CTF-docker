@@ -2,9 +2,10 @@ package models
 
 import (
 	"database/sql/driver"
-	"encoding/json"
 	"errors"
 	"time"
+
+	"github.com/bytedance/sonic"
 )
 
 const TableNameGame = "games"
@@ -18,7 +19,7 @@ type GameStage struct {
 type GameStages []GameStage
 
 func (e GameStages) Value() (driver.Value, error) {
-	return json.Marshal(e)
+	return sonic.Marshal(e)
 }
 
 func (e *GameStages) Scan(value interface{}) error {
@@ -26,7 +27,7 @@ func (e *GameStages) Scan(value interface{}) error {
 	if !ok {
 		return errors.New("type assertion to []byte failed")
 	}
-	return json.Unmarshal(b, e)
+	return sonic.Unmarshal(b, e)
 }
 
 // Game mapped from table <games>
