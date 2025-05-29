@@ -6,6 +6,7 @@ export default [
     route("games/", "routes/[lng]/games/page.tsx"),
     route("games/:id/", "routes/[lng]/games/[id]/page.tsx"),
     route("games/:id/scoreboard/", "routes/[lng]/games/[id]/scoreboard/page.tsx"),
+    route("games/:id/team/", "routes/[lng]/games/[id]/team/page.tsx"),
 
     route("about/", "routes/[lng]/about/page.tsx"),
     route("version/", "routes/[lng]/version/page.tsx"),

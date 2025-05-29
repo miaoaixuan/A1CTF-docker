@@ -178,6 +178,18 @@ func main() {
 			teamAvatarGroup.POST("/avatar/upload", controllers.UploadTeamAvatar)
 		}
 
+		// 团队管理接口
+		teamManageGroup := auth.Group("/team")
+		{
+			teamManageGroup.POST("/join", controllers.TeamJoinRequest)
+			teamManageGroup.GET("/:team_id/requests", controllers.GetTeamJoinRequests)
+			teamManageGroup.POST("/request/:request_id/handle", controllers.HandleTeamJoinRequest)
+			teamManageGroup.POST("/:team_id/transfer-captain", controllers.TransferTeamCaptain)
+			teamManageGroup.DELETE("/:team_id/member/:user_id", controllers.RemoveTeamMember)
+			teamManageGroup.DELETE("/:team_id", controllers.DeleteTeam)
+			teamManageGroup.PUT("/:team_id", controllers.UpdateTeamInfo)
+		}
+
 		challengeGroup := auth.Group("/admin/challenge")
 		{
 			challengeGroup.POST("/list", controllers.AdminListChallenges)

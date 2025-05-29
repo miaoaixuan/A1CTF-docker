@@ -688,6 +688,38 @@ export interface UserProfile {
   client_config_version?: string;
 }
 
+export interface TeamJoinPayload {
+  /** 战队邀请码 */
+  invite_code: string;
+}
+
+export interface TeamJoinRequestInfo {
+  /** @format int64 */
+  request_id: number;
+  user_id: string;
+  username: string;
+  user_avatar?: string | null;
+  status: "Pending" | "Approved" | "Rejected";
+  /** @format date-time */
+  create_time: string;
+  message?: string | null;
+}
+
+export interface HandleJoinRequestPayload {
+  /** 处理动作：approve批准，reject拒绝 */
+  action: "approve" | "reject";
+}
+
+export interface TransferCaptainPayload {
+  /** 新队长的用户ID */
+  new_captain_id: string;
+}
+
+export interface UpdateTeamInfoPayload {
+  /** 战队口号 */
+  team_slogan: string | null;
+}
+
 import type {
   AxiosInstance,
   AxiosRequestConfig,
@@ -2079,6 +2111,211 @@ export class Api<
         body: data,
         secure: true,
         type: ContentType.FormData,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 使用邀请码申请加入战队
+     *
+     * @tags team
+     * @name TeamAccept
+     * @summary 申请加入战队
+     * @request POST:/api/team/join
+     * @secure
+     */
+    teamAccept: (data: TeamJoinPayload, params: RequestParams = {}) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "申请已提交，等待队长审核" */
+          message: string;
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/team/join`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 队长获取战队的加入申请列表
+     *
+     * @tags team
+     * @name GetTeamJoinRequests
+     * @summary 获取战队加入申请列表
+     * @request GET:/api/team/{team_id}/requests
+     * @secure
+     */
+    getTeamJoinRequests: (teamId: number, params: RequestParams = {}) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          data: TeamJoinRequestInfo[];
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/team/${teamId}/requests`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 队长批准或拒绝加入申请
+     *
+     * @tags team
+     * @name HandleTeamJoinRequest
+     * @summary 处理加入申请
+     * @request POST:/api/team/request/{request_id}/handle
+     * @secure
+     */
+    handleTeamJoinRequest: (
+      requestId: number,
+      data: HandleJoinRequestPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "申请已处理" */
+          message: string;
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/team/request/${requestId}/handle`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 队长将队长权限转移给其他成员
+     *
+     * @tags team
+     * @name TransferTeamCaptain
+     * @summary 转移队长
+     * @request POST:/api/team/{team_id}/transfer-captain
+     * @secure
+     */
+    transferTeamCaptain: (
+      teamId: number,
+      data: TransferCaptainPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "队长已转移" */
+          message: string;
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/team/${teamId}/transfer-captain`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 队长踢出战队成员
+     *
+     * @tags team
+     * @name RemoveTeamMember
+     * @summary 踢出队员
+     * @request DELETE:/api/team/{team_id}/member/{user_id}
+     * @secure
+     */
+    removeTeamMember: (
+      teamId: number,
+      userId: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "队员已移除" */
+          message: string;
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/team/${teamId}/member/${userId}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 队长解散战队
+     *
+     * @tags team
+     * @name DeleteTeam
+     * @summary 解散战队
+     * @request DELETE:/api/team/{team_id}
+     * @secure
+     */
+    deleteTeam: (teamId: number, params: RequestParams = {}) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "战队已解散" */
+          message: string;
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/team/${teamId}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 队长更新战队信息（只能修改口号）
+     *
+     * @tags team
+     * @name UpdateTeamInfo
+     * @summary 更新战队信息
+     * @request PUT:/api/team/{team_id}
+     * @secure
+     */
+    updateTeamInfo: (
+      teamId: number,
+      data: UpdateTeamInfoPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "战队信息已更新" */
+          message: string;
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/team/${teamId}`,
+        method: "PUT",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),

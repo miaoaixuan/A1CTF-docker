@@ -176,3 +176,15 @@ type CachedGameScoreBoardData struct {
 	Top10TimeLines     []TimeLineItem
 	Top10Teams         []TeamScoreItem
 }
+
+// Team management responses
+
+type TeamJoinRequestInfo struct {
+	RequestID  int64                    `json:"request_id"`
+	UserID     string                   `json:"user_id"`
+	Username   string                   `json:"username"`
+	UserAvatar *string                  `json:"user_avatar"`
+	Status     models.JoinRequestStatus `json:"status"`
+	CreateTime time.Time                `json:"create_time"`
+	Message    *string                  `json:"message"`
+}

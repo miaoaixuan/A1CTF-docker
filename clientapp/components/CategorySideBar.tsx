@@ -258,7 +258,7 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, gameSta
                                 </div>
                                 <div className="flex-1" />
                                 <div className="justify-end">
-                                    <Button className="rounded-3xl p-4 pointer-events-auto w-[100px] mt-[5px] ml-[5px] mb-[10px]" asChild>
+                                    <Button className="rounded-3xl p-4 pointer-events-auto w-[100px] mt-[5px] ml-[5px] mb-[10px] [&_svg]:size-5" asChild>
                                         <TransitionLink className="transition-colors" href={`/games`}>
                                             <CircleArrowLeft/>
                                             <span>Back</span>

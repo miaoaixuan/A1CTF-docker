@@ -116,3 +116,21 @@ type AdminContainerItem struct {
 	GameName            string                 `json:"game_name"`
 	ChallengeName       string                 `json:"challenge_name"`
 }
+
+// Team management payloads
+
+type TeamJoinPayload struct {
+	InviteCode string `json:"invite_code" binding:"required"`
+}
+
+type HandleJoinRequestPayload struct {
+	Action string `json:"action" binding:"required"` // "approve" or "reject"
+}
+
+type TransferCaptainPayload struct {
+	NewCaptainID string `json:"new_captain_id" binding:"required"`
+}
+
+type UpdateTeamInfoPayload struct {
+	TeamSlogan *string `json:"team_slogan"`
+}
