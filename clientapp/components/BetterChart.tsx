@@ -62,7 +62,6 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
     const [resizeType, setResizeType] = useState('');
     const [resizeStart, setResizeStart] = useState({ size: { width: 0, height: 0 }, position: { x: 0, y: 0 }, mouse: { x: 0, y: 0 } });
     const [isMinimized, setIsMinimized] = useState(false);
-    const [hasFocus, setHasFocus] = useState(true);
     const floatingRef = useRef<HTMLDivElement>(null);
 
     const { serialOptions } = useGlobalVariableContext()
@@ -218,19 +217,13 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
         });
     };
 
-    // 焦点处理
-    const handleFocus = () => setHasFocus(true);
-    const handleBlur = () => setHasFocus(false);
-
     // 最小化处理
     const handleMinimize = () => {
         setIsMinimized(true);
-        setHasFocus(false);
     };
 
     const handleRestore = () => {
         setIsMinimized(false);
-        setHasFocus(true);
     };
 
     useEffect(() => {
@@ -243,24 +236,6 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
             document.removeEventListener('mouseup', handleMouseUp);
         };
     }, [isDragging, isResizing, dragStart, size]);
-
-    // 焦点监听
-    useEffect(() => {
-        const element = floatingRef.current;
-        if (element && isFloating) {
-            element.addEventListener('mouseenter', handleFocus);
-            element.addEventListener('mouseleave', handleBlur);
-            element.addEventListener('focus', handleFocus);
-            element.addEventListener('blur', handleBlur);
-            
-            return () => {
-                element.removeEventListener('mouseenter', handleFocus);
-                element.removeEventListener('mouseleave', handleBlur);
-                element.removeEventListener('focus', handleFocus);
-                element.removeEventListener('blur', handleBlur);
-            };
-        }
-    }, [isFloating]);
 
     // 窗口大小变化监听
     useEffect(() => {
@@ -275,7 +250,6 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
     }, [isFloating, size]);
 
     useEffect(() => {
-        console.log("ReDrawing.....")
 
     }, [serData]);
 
@@ -421,6 +395,9 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
             lastSerData.current = JSON.stringify(serialOptions.current[1].data)
         }
 
+        // 仅在游戏信息可用时启动定时器
+        if (!gameInfo) return;
+
         updateChartMethod()
         const updateIns = setInterval(() => {
             if (JSON.stringify(serialOptions.current[1].data) == lastSerData.current) return
@@ -430,7 +407,7 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
         return () => {
             clearInterval(updateIns)
         }
-    })
+    }, [currentTheme]) // 只依赖主题，移除gameInfo和serialOptions依赖
 
     const end = dayjs(gameInfo?.end_time);
     const isGameEnded = end.diff(dayjs(), 's') < 0;
@@ -713,13 +690,13 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
             ref={floatingRef}
             className={`w-full h-full ${isFullscreen ? '' : 'pr-[2%]'} ${
                 isFloating ? 'cursor-move select-none' : ''
+            } ${
+                isFloating ? 'floating-chart opacity-40 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300' : ''
             }`}
             style={isFloating ? {
                 transform: `translate(${position.x}px, ${position.y}px)`,
                 width: `${size.width}px`,
-                height: `${size.height}px`,
-                opacity: hasFocus ? 1 : 0.5,
-                transition: 'opacity 0.3s ease'
+                height: `${size.height}px`
             } : undefined}
             tabIndex={isFloating ? 0 : undefined}
         >
@@ -876,4 +853,19 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
     );
 };
 
-export default React.memo(BetterChart);
+// 优化memo比较函数，只比较关键props
+export default React.memo(BetterChart, (prevProps, nextProps) => {
+    // 比较关键props
+    return (
+        prevProps.theme === nextProps.theme &&
+        prevProps.isFullscreen === nextProps.isFullscreen &&
+        prevProps.isFloating === nextProps.isFloating &&
+        prevProps.gameInfo?.game_id === nextProps.gameInfo?.game_id &&
+        prevProps.gameInfo?.name === nextProps.gameInfo?.name &&
+        prevProps.gameInfo?.start_time === nextProps.gameInfo?.start_time &&
+        prevProps.gameInfo?.end_time === nextProps.gameInfo?.end_time &&
+        prevProps.onToggleFullscreen === nextProps.onToggleFullscreen &&
+        prevProps.onToggleFloating === nextProps.onToggleFloating &&
+        prevProps.onMinimize === nextProps.onMinimize
+    );
+});

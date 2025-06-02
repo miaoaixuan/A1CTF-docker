@@ -1,9 +1,9 @@
-import { ChartArea, CircleArrowLeft, LogOut, X } from 'lucide-react'
+import { ChartArea, CircleArrowLeft, LogOut, X, Download } from 'lucide-react'
 
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
 
 import ReactECharts from 'echarts-for-react';
-import React, { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
+import React, { Dispatch, SetStateAction, useEffect, useRef, useState, useCallback } from 'react';
 import dayjs from 'dayjs';
 import ThemeSwitcher from './ToggleTheme';
 import { useTheme } from 'next-themes';
@@ -26,6 +26,7 @@ import { LoadingPage } from './LoadingPage';
 import { useLocation, useNavigate } from 'react-router';
 import { useIsMobile } from 'hooks/use-mobile';
 import { ScoreTableMobile } from './ScoreTableMobile';
+import { toast } from 'sonner';
 
 export default function ScoreBoardPage(
     { gmid }
@@ -48,6 +49,7 @@ export default function ScoreBoardPage(
     const [isChartFloating, setIsChartFloating] = useState(false)
     const [isChartMinimized, setIsChartMinimized] = useState(false)
     const [isNormalChartMinimized, setIsNormalChartMinimized] = useState(false)
+    const [isDownloading, setIsDownloading] = useState(false)
 
     const [chartOption, setChartOpton] = useState<echarts.EChartsOption>()
     const [showUserDetail, setShowUserDetail] = useState<TeamScore>({})
@@ -62,6 +64,152 @@ export default function ScoreBoardPage(
     // const serialOptions = useRef<echarts.SeriesOption[]>([])
 
     const { serialOptions } = useGlobalVariableContext()
+
+    // 使用useMemo稳定gameInfo引用，避免BetterChart不必要的重新渲染
+    const stableGameInfo = React.useMemo(() => gameInfo, [
+        gameInfo?.game_id,
+        gameInfo?.name, 
+        gameInfo?.start_time,
+        gameInfo?.end_time
+    ]);
+
+    // 使用useCallback优化函数props，避免BetterChart不必要的重新渲染
+    const handleToggleFullscreen = useCallback(() => {
+        setIsChartFullscreen(!isChartFullscreen);
+    }, [isChartFullscreen]);
+
+    const handleToggleFloating = useCallback(() => {
+        setIsChartFloating(!isChartFloating);
+        // 切换到悬浮窗模式时重置正常模式最小化状态
+        if (!isChartFloating) {
+            setIsNormalChartMinimized(false);
+        }
+    }, [isChartFloating]);
+
+    const handleFloatingToggleFloating = useCallback(() => {
+        setIsChartFloating(!isChartFloating);
+        // 退出悬浮窗模式时重置悬浮窗最小化状态
+        if (isChartFloating) {
+            setIsChartMinimized(false);
+        }
+    }, [isChartFloating]);
+
+    const handleNormalMinimize = useCallback(() => {
+        setIsNormalChartMinimized(true);
+    }, []);
+
+    const handleFloatingMinimize = useCallback(() => {
+        setIsChartMinimized(true);
+    }, []);
+
+    const handleNormalRestore = useCallback(() => {
+        setIsNormalChartMinimized(false);
+    }, []);
+
+    const handleFloatingRestore = useCallback(() => {
+        setIsChartMinimized(false);
+    }, []);
+
+    // 下载积分榜CSV功能
+    const downloadScoreboardCSV = useCallback(async () => {
+        if (!gameInfo || isDownloading) return;
+        
+        setIsDownloading(true);
+        try {
+            // 获取完整的积分榜数据
+            const response = await api.user.userGetGameScoreboard(gmid);
+            const data = response.data.data as GameScoreboardData;
+            
+            if (!data?.teams || !data?.challenges) {
+                throw new Error('积分榜数据不完整');
+            }
+
+            // 创建CSV内容
+            const csvContent = generateScoreboardCSV(data);
+            
+            // 创建并下载文件
+            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            const filename = `${gameInfo.name}_积分榜_${dayjs().format('YYYY-MM-DD_HH-mm-ss')}.csv`;
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            // 成功提示
+            toast.success('积分榜下载成功！', {
+                description: `文件已保存为: ${filename}`,
+                duration: 4000,
+            });
+            
+        } catch (error) {
+            console.error('下载积分榜失败:', error);
+            toast.error('下载积分榜失败', {
+                description: error instanceof Error ? error.message : '请稍后重试',
+                duration: 4000,
+            });
+        } finally {
+            setIsDownloading(false);
+        }
+    }, [gameInfo, gmid, isDownloading]);
+
+    // 生成CSV内容
+    const generateScoreboardCSV = (data: GameScoreboardData): string => {
+        const teams = data.teams || [];
+        const challenges = data.challenges || [];
+        
+        // 按类别分组题目
+        const challengesByCategory: Record<string, UserSimpleGameChallenge[]> = {};
+        challenges.forEach(challenge => {
+            const category = challenge.category?.toLowerCase() || 'misc';
+            if (!challengesByCategory[category]) {
+                challengesByCategory[category] = [];
+            }
+            challengesByCategory[category].push(challenge);
+        });
+
+        // 创建CSV头部
+        const headers = ['排名', '队伍名称', '总分'];
+        
+        // 添加题目列（按类别分组）
+        Object.keys(challengesByCategory).sort().forEach(category => {
+            challengesByCategory[category].forEach(challenge => {
+                headers.push(`${category.toUpperCase()}-${challenge.challenge_name}`);
+            });
+        });
+
+        // 创建CSV行
+        const rows: string[][] = [headers];
+        
+        teams.forEach(team => {
+            const row = [
+                team.rank?.toString() || '',
+                `"${team.team_name || ''}"`, // 队伍名用双引号包围，防止逗号问题
+                team.score?.toString() || '0'
+            ];
+            
+            // 为每个题目添加分数
+            Object.keys(challengesByCategory).sort().forEach(category => {
+                challengesByCategory[category].forEach(challenge => {
+                    const solvedChallenge = team.solved_challenges?.find(
+                        solved => solved.challenge_id === challenge.challenge_id
+                    );
+                    row.push(solvedChallenge ? solvedChallenge.score?.toString() || '0' : '0');
+                });
+            });
+            
+            rows.push(row);
+        });
+
+        // 转换为CSV字符串
+        return rows.map(row => row.join(',')).join('\n');
+    };
 
     // 获取 gameInfo
     useEffect(() => {
@@ -535,6 +683,21 @@ export default function ScoreBoardPage(
                         <div id='scoreHeader' className='w-full h-[60px] flex items-center px-10 '>
                             <span className='text-3xl font-bold [text-shadow:_hsl(var(--foreground))_1px_1px_20px] select-none'>ScoreBoard</span>
                             <div className='flex-1' />
+                            {/* 下载积分榜按钮 */}
+                            {gameInfo && (
+                                <Button
+                                    onClick={downloadScoreboardCSV}
+                                    disabled={isDownloading}
+                                    className={`mr-4 transition-all duration-300 hover:scale-110 ${
+                                        isDownloading ? 'opacity-50 cursor-not-allowed' : ''
+                                    }`}
+                                    variant="outline"
+                                    size="sm"
+                                >
+                                    <Download size={18} className={`mr-2 ${isDownloading ? 'animate-spin' : ''}`} />
+                                    {isDownloading ? '下载中...' : '下载积分榜'}
+                                </Button>
+                            )}
                             {/* <ThemeSwitcher lng='zh' /> */}
                             {/* <ChartArea size={32} className=' ml-4 hover:scale-110 transition-all duration-300 ease-linear' onClick={() => {
                                 setShowGraphy(true)
@@ -554,17 +717,12 @@ export default function ScoreBoardPage(
                                     }`}>
                                         <BetterChart
                                             theme={theme == "dark" ? "dark" : "light"}
-                                            gameInfo={gameInfo!}
+                                            gameInfo={stableGameInfo!}
                                             isFullscreen={isChartFullscreen}
                                             isFloating={isChartFloating}
-                                            onToggleFullscreen={() => setIsChartFullscreen(!isChartFullscreen)}
-                                            onToggleFloating={() => {
-                                                setIsChartFloating(!isChartFloating);
-                                                if (!isChartFloating) {
-                                                    setIsNormalChartMinimized(false);
-                                                }
-                                            }}
-                                            onMinimize={() => setIsNormalChartMinimized(true)}
+                                            onToggleFullscreen={handleToggleFullscreen}
+                                            onToggleFloating={handleToggleFloating}
+                                            onMinimize={handleNormalMinimize}
                                         />
                                     </div>
                                 )}
@@ -575,17 +733,12 @@ export default function ScoreBoardPage(
                                         <div className="pointer-events-auto">
                                             <BetterChart
                                                 theme={theme == "dark" ? "dark" : "light"}
-                                                gameInfo={gameInfo!}
+                                                gameInfo={stableGameInfo!}
                                                 isFullscreen={isChartFullscreen}
                                                 isFloating={isChartFloating}
-                                                onToggleFullscreen={() => setIsChartFullscreen(!isChartFullscreen)}
-                                                onToggleFloating={() => {
-                                                    setIsChartFloating(!isChartFloating);
-                                                    if (isChartFloating) {
-                                                        setIsChartMinimized(false);
-                                                    }
-                                                }}
-                                                onMinimize={() => setIsChartMinimized(true)}
+                                                onToggleFullscreen={handleToggleFullscreen}
+                                                onToggleFloating={handleFloatingToggleFloating}
+                                                onMinimize={handleFloatingMinimize}
                                             />
                                         </div>
                                     </div>
@@ -595,7 +748,7 @@ export default function ScoreBoardPage(
                                 {!isChartFloating && isNormalChartMinimized && (
                                     <div className="fixed bottom-4 right-4 z-50">
                                         <Button
-                                            onClick={() => setIsNormalChartMinimized(false)}
+                                            onClick={handleNormalRestore}
                                             className={`p-3 rounded-full shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-110 ${
                                                 theme === 'dark'
                                                     ? 'bg-slate-800/90 border border-slate-600/50 text-slate-200 hover:bg-slate-700/90'
@@ -613,7 +766,7 @@ export default function ScoreBoardPage(
                                 {isChartFloating && isChartMinimized && (
                                     <div className="fixed bottom-4 right-4 z-50">
                                         <Button
-                                            onClick={() => setIsChartMinimized(false)}
+                                            onClick={handleFloatingRestore}
                                             className={`p-3 rounded-full shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-110 ${
                                                 theme === 'dark'
                                                     ? 'bg-slate-800/90 border border-slate-600/50 text-slate-200 hover:bg-slate-700/90'
