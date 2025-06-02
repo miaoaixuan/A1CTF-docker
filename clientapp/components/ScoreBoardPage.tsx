@@ -26,26 +26,26 @@ import { LoadingPage } from './LoadingPage';
 import { useLocation, useNavigate } from 'react-router';
 
 export default function ScoreBoardPage(
-    { gmid } 
-    : 
-    { gmid: number}
+    { gmid }
+        :
+        { gmid: number }
 ) {
 
-    const [ chartData, setChartData ] = useState<any>([])
+    const [chartData, setChartData] = useState<any>([])
 
     const { theme, resolvedTheme } = useTheme();
 
-    const [gameInfo, setGameInfo] = useState<UserFullGameInfo>()
+    const [gameInfo, setGameInfo] = useState<UserFullGameInfo | undefined>(undefined)
     const [gameStatus, setGameStatus] = useState<string>("")
     const [challenges, setChallenges] = useState<Record<string, UserSimpleGameChallenge[]>>({})
     const [scoreBoardModel, setScoreBoardModel] = useState<GameScoreboardData>()
 
     const lastTimeLine = useRef<string>()
-    const [ showGraphy, setShowGraphy ] = useState(false)
+    const [showGraphy, setShowGraphy] = useState(false)
 
-    const [ chartOption, setChartOpton ] = useState<echarts.EChartsOption>() 
-    const [ showUserDetail, setShowUserDetail ] = useState<TeamScore>({})
-    const [ personalChartOption, setPersonalChartOption ] = useState<echarts.EChartsOption>() 
+    const [chartOption, setChartOpton] = useState<echarts.EChartsOption>()
+    const [showUserDetail, setShowUserDetail] = useState<TeamScore>({})
+    const [personalChartOption, setPersonalChartOption] = useState<echarts.EChartsOption>()
     const lastPersonalTimeLine = useRef<string>()
 
     // 加载动画
@@ -84,7 +84,7 @@ export default function ScoreBoardPage(
 
                 const current = dayjs()
                 const end = dayjs(gameInfo.end_time).diff(current) > 0 ? current : dayjs(gameInfo.end_time)
-                
+
                 const curTimeLine = JSON.stringify(res.data.data?.time_lines)
 
                 if (curTimeLine != lastTimeLine.current || true) {
@@ -203,7 +203,7 @@ export default function ScoreBoardPage(
                     //     series: 
                     // })
                 }
-                
+
                 setLoadingVisibility(false)
             })
         }
@@ -213,7 +213,7 @@ export default function ScoreBoardPage(
             // if (visibleRef.current) updateScoreBoard()
             updateScoreBoard()
         }, randomInt(4000, 5000))
-        
+
         return () => {
             clearInterval(scoreBoardInter)
         }
@@ -224,7 +224,7 @@ export default function ScoreBoardPage(
         if (!gameInfo) return
         const current = dayjs()
         const end = dayjs(gameInfo.end_time).diff(current) > 0 ? current : dayjs(gameInfo.end_time)
-        
+
         const curTimeLine = JSON.stringify(scoreBoardModel?.time_lines?.find((e) => e.team_id == showUserDetail.team_id))
 
         if (curTimeLine != lastPersonalTimeLine.current) {
@@ -350,62 +350,17 @@ export default function ScoreBoardPage(
 
     const gamePath = useLocation().pathname.split("/").slice(0, -1).join("/")
 
+    useEffect(() => {
+        if (gameInfo) {
+            console.log(scoreBoardModel)
+        }
+    }, [scoreBoardModel])
+
     return (
         <>
             <LoadingPage visible={loadingVisiblity} />
             <AnimatePresence>
-                { showGraphy && (
-                    <motion.div className='absolute top-0 left-0 w-screen h-screen z-[300] flex items-center justify-center overflow-hidden'
-                        initial={{
-                            backdropFilter: "blur(0px)"
-                        }}
-                        animate={{
-                            backdropFilter: "blur(12px)"
-                        }}
-                        exit={{
-                            backdropFilter: "blur(0px)"
-                        }}
-                    >
-                        <motion.div className='absolute top-10 right-10 lg:top-20 lg:right-20'
-                            initial={{
-                                opacity: 0
-                            }}
-                            animate={{
-                                opacity: 1
-                            }}
-                            exit={{
-                                opacity: 0
-                            }}
-                        >
-                            <Button className='w-[50px] h-[50px] [&_svg]:size-8 rounded-lg' variant="default"
-                                onClick={() => {
-                                    setShowGraphy(false)
-                                }}
-                            >
-                                <X />
-                            </Button>
-                        </motion.div>
-                        <motion.div className='w-[90%] lg:w-[90%] h-[75%]'
-                            initial={{
-                                opacity: 0
-                            }}
-                            animate={{
-                                opacity: 1
-                            }}
-                            exit={{
-                                opacity: 0
-                            }}
-                        >
-                            <BetterChart
-                                theme={"light"}
-                                gameInfo={gameInfo!}
-                            />
-                        </motion.div>
-                    </motion.div>
-                ) }
-            </AnimatePresence>
-            <AnimatePresence>
-                { showUserDetail.team_id && (
+                {showUserDetail.team_id && (
                     <motion.div className='absolute top-0 left-0 w-screen h-screen z-[300] flex items-center justify-center overflow-hidden'
                         initial={{
                             backdropFilter: "blur(0px)"
@@ -447,31 +402,31 @@ export default function ScoreBoardPage(
                                 opacity: 0
                             }}
                         >
-                            <Tooltip id="challengeTooltip2" opacity={0.9} className='z-[200]'/>
+                            <Tooltip id="challengeTooltip2" opacity={0.9} className='z-[200]' />
                             <MacScrollbar className='w-full h-full overflow-y-auto pr-3 lg:pr-0 lg:overflow-hidden' skin={theme == "light" ? "light" : "dark"} suppressScrollX>
                                 <div className='flex flex-row h-full w-full gap-4'>
                                     <div className='flex flex-col w-full h-full gap-1 lg:basis-1/2 lg:overflow-hidden'>
                                         <div className='flex items-center gap-4 mb-3'>
                                             <Avatar className="select-none w-12 h-12">
-                                                { showUserDetail.team_avatar ? (
+                                                {showUserDetail.team_avatar ? (
                                                     <>
                                                         <AvatarImage src={showUserDetail.team_avatar || "#"} alt="@shadcn" />
                                                         <AvatarFallback><Skeleton className="h-12 w-12 rounded-full" /></AvatarFallback>
                                                     </>
-                                                ) : ( 
+                                                ) : (
                                                     <div className='w-full h-full bg-foreground/80 flex items-center justify-center'>
-                                                        <span className='text-background text-lg'> { showUserDetail.team_name?.substring(0, 2) } </span>
+                                                        <span className='text-background text-lg'> {showUserDetail.team_name?.substring(0, 2)} </span>
                                                     </div>
-                                                ) }
+                                                )}
                                             </Avatar>
-                                            <span className='text-3xl font-bold'>{ showUserDetail.team_name }</span>
+                                            <span className='text-3xl font-bold'>{showUserDetail.team_name}</span>
                                         </div>
-                                        <span className='text-2xl'>Rank: { showUserDetail.rank } </span>
-                                        <span className='text-2xl'>Solved { showUserDetail?.solved_challenges?.length ?? 0 } problems</span>
-                                        <span className='text-2xl'>Score: { showUserDetail.score } pts</span>
-                                        <span className='text-2xl'>Slogan: { showUserDetail.team_slogan || "He didn't say anything." } </span>
+                                        <span className='text-2xl'>Rank: {showUserDetail.rank} </span>
+                                        <span className='text-2xl'>Solved {showUserDetail?.solved_challenges?.length ?? 0} problems</span>
+                                        <span className='text-2xl'>Score: {showUserDetail.score} pts</span>
+                                        <span className='text-2xl'>Slogan: {showUserDetail.team_slogan || "He didn't say anything."} </span>
                                         <div className='lg:pr-14 pt-5 h-[400px] flex-shrink-0 lg:h-auto lg:flex-1'>
-                                            { personalChartOption && (
+                                            {personalChartOption && (
                                                 <ReactECharts
                                                     option={personalChartOption}
                                                     notMerge={false}
@@ -483,11 +438,11 @@ export default function ScoreBoardPage(
                                                         renderer: 'svg'
                                                     }}
                                                     theme={"theme_name"}
-                                                    // onChartReady={this.onChartReadyCallback}
-                                                    // onEvents={EventsDict}
-                                                    // opts={}
+                                                // onChartReady={this.onChartReadyCallback}
+                                                // onEvents={EventsDict}
+                                                // opts={}
                                                 />
-                                            ) }
+                                            )}
                                         </div>
                                         <div className='flex flex-col w-full lg:hidden p-2'>
                                             <div className={`flex h-9 flex-none items-center border-b-2`}>
@@ -501,22 +456,22 @@ export default function ScoreBoardPage(
                                                     <span className=''>Score</span>
                                                 </div>
                                             </div>
-                                            { showUserDetail.solved_challenges?.map((e, index) => (
+                                            {showUserDetail.solved_challenges?.map((e, index) => (
                                                 <div key={`solved-problem-${index}`} className={`flex h-9 flex-none items-center border-b-2 gap-2`}>
                                                     <div className='w-[150px] flex-shrink-0 justify-center hidden lg:flex'>
-                                                        <span>{ dayjs(e.solve_time).format("MM-DD HH:mm:ss") }</span>
+                                                        <span>{dayjs(e.solve_time).format("MM-DD HH:mm:ss")}</span>
                                                     </div>
                                                     <div className='flex-1 overflow-hidden'>
                                                         <span className='text-nowrap overflow-hidden text-ellipsis'
                                                             data-tooltip-id="challengeTooltip2"
-                                                            data-tooltip-html={ `<div class='text-sm flex flex-col'><span>${dayjs(e.solve_time).format("MM-DD HH:mm:ss")}</span><span>${e.solver}</span><span>${getChallenge(e.challenge_id || 0)?.challenge_name}</span></div>` }
-                                                        >{ getChallenge(e.challenge_id || 0)?.challenge_name }</span>
+                                                            data-tooltip-html={`<div class='text-sm flex flex-col'><span>${dayjs(e.solve_time).format("MM-DD HH:mm:ss")}</span><span>${e.solver}</span><span>${getChallenge(e.challenge_id || 0)?.challenge_name}</span></div>`}
+                                                        >{getChallenge(e.challenge_id || 0)?.challenge_name}</span>
                                                     </div>
                                                     <div className='w-[100px] flex-shrink-0 flex overflow-hidden'>
-                                                        <span className='text-green-500'> + { e.score } pts</span>
+                                                        <span className='text-green-500'> + {e.score} pts</span>
                                                     </div>
                                                 </div>
-                                            )) }
+                                            ))}
                                         </div>
                                     </div>
                                     <div className='h-full basis-1/2 overflow-hidden hidden lg:flex'>
@@ -535,54 +490,71 @@ export default function ScoreBoardPage(
                                                     <span className=''>Score</span>
                                                 </div>
                                             </div>
-                                            { showUserDetail.solved_challenges?.map((e, index) => (
+                                            {showUserDetail.solved_challenges?.map((e, index) => (
                                                 <div key={`solved-problem-${index}`} className={`flex h-9 flex-none items-center border-b-2`}>
                                                     <div className='w-[150px] flex-shrink-0 flex justify-center'>
-                                                        <span>{ dayjs(e.solve_time).format("MM-DD HH:mm:ss") }</span>
+                                                        <span>{dayjs(e.solve_time).format("MM-DD HH:mm:ss")}</span>
                                                     </div>
                                                     <div className='w-[100px] flex-shrink-0 flex justify-center overflow-hidden'>
-                                                        <span className='text-nowrap overflow-hidden text-ellipsis'>{ e.solver }</span>
+                                                        <span className='text-nowrap overflow-hidden text-ellipsis'>{e.solver}</span>
                                                     </div>
                                                     <div className='flex-1 overflow-hidden pl-2 pr-2'>
-                                                        <span className='text-nowrap overflow-hidden text-ellipsis'>{ getChallenge(e.challenge_id || 0)?.challenge_name }</span>
+                                                        <span className='text-nowrap overflow-hidden text-ellipsis'>{getChallenge(e.challenge_id || 0)?.challenge_name}</span>
                                                     </div>
                                                     <div className='w-[120px] flex-none flex overflow-hidden justify-center'>
-                                                        <span className='text-green-500'> + { e.score } pts</span>
+                                                        <span className='text-green-500'> + {e.score} pts</span>
                                                     </div>
                                                 </div>
-                                            )) }
+                                            ))}
                                         </MacScrollbar>
                                     </div>
                                 </div>
                             </MacScrollbar>
                         </motion.div>
                     </motion.div>
-                ) }
+                )}
             </AnimatePresence>
-            <div className='absolute top-0 left-0 h-screen w-screen bg-background transition-colors duration-300'>
-                <Tooltip id="challengeTooltip" opacity={0.9} className='z-[200]'/>
-                <div className='w-full h-full flex flex-col relative p-10  gap-2'>
-                    <div id='scoreHeader' className='w-full h-[60px] flex items-center'>
-                        <span className='text-3xl font-bold [text-shadow:_hsl(var(--foreground))_1px_1px_20px] select-none'>ScoreBoard</span>
-                        <div className='flex-1' />
-                        {/* <ThemeSwitcher lng='zh' /> */}
-                        <ChartArea size={32} className=' ml-4 hover:scale-110 transition-all duration-300 ease-linear' onClick={() => {
-                            setShowGraphy(true)
-                        }} />
-                        <CircleArrowLeft size={32} className=' ml-4 hover:scale-110 transition-all duration-300 ease-linear' onClick={() => {
-                            navigator(gamePath)
-                        }} />
-                    </div>
-                    <div className='flex flex-1 overflow-y-auto overflow-x-hidden h-full justify-center'>
-                        <div className='flex overflow-hidden'>
-                            <div className='flex flex-1 overflow-hidden'>
-                                { scoreBoardModel && (
-                                    <ScoreTable scoreBoardModel={scoreBoardModel} setShowUserDetail={setShowUserDetail} challenges={challenges} />
-                                ) }
-                            </div>
+            <div className='absolute top-0 left-0 h-screen w-screen bg-transparent backdrop-blur-md transition-colors duration-300'>
+                <Tooltip id="challengeTooltip" opacity={0.9} className='z-[200]' />
+                <MacScrollbar
+                    className="w-full h-full overflow-y-auto"
+                    skin={theme == "light" ? "light" : "dark"}
+                    suppressScrollX
+                >
+                    <div className='w-full h-full flex flex-col relative p-10  gap-2'>
+                        <div id='scoreHeader' className='w-full h-[60px] flex items-center'>
+                            <span className='text-3xl font-bold [text-shadow:_hsl(var(--foreground))_1px_1px_20px] select-none'>ScoreBoard</span>
+                            <div className='flex-1' />
+                            {/* <ThemeSwitcher lng='zh' /> */}
+                            <ChartArea size={32} className=' ml-4 hover:scale-110 transition-all duration-300 ease-linear' onClick={() => {
+                                setShowGraphy(true)
+                            }} />
+                            <CircleArrowLeft size={32} className=' ml-4 hover:scale-110 transition-all duration-300 ease-linear' onClick={() => {
+                                navigator(gamePath)
+                            }} />
                         </div>
+                        {gameInfo ? (
+                            <>
+                                <div className='w-full h-[500px]'>
+                                    <BetterChart
+                                        theme={"light"}
+                                        gameInfo={gameInfo!}
+                                    />
+                                </div>
+                                <div className='flex flex-1 overflow-y-auto overflow-x-hidden h-full justify-center'>
+                                    <div className='flex overflow-hidden'>
+                                        <div className='flex flex-1 overflow-hidden'>
+                                            {scoreBoardModel && (
+                                                <ScoreTable scoreBoardModel={scoreBoardModel} setShowUserDetail={setShowUserDetail} challenges={challenges} />
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (<></>)}
                     </div>
-                </div>
+                </MacScrollbar>
+
             </div>
         </>
     )

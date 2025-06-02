@@ -31,10 +31,13 @@ export function ScoreTable ({ scoreBoardModel, setShowUserDetail, challenges }: 
 
     useEffect(() => {
 
-        if (tableRef.current) {
-            const pageLines = Math.floor((tableRef.current!.clientHeight - 8) / 48) - 2;
-            setPageLines(pageLines)
-        }
+        // if (tableRef.current) {
+        //     const pageLines = Math.floor((tableRef.current!.clientHeight - 8) / 48) - 2;
+        //     setPageLines(pageLines)
+        // }
+
+        const pageLines = 40
+        setPageLines(pageLines)
 
         setScoreBoardItems(scoreBoardModel.teams || [])
         setTotalPage(Math.ceil(scoreBoardModel.teams!.length / pageLines))
@@ -50,10 +53,10 @@ export function ScoreTable ({ scoreBoardModel, setShowUserDetail, challenges }: 
 
         setPageDataLoaded(true)
 
-        window.addEventListener("resize", handleChangeView)
+        // window.addEventListener("resize", handleChangeView)
 
         return () => {
-            window.removeEventListener("resize", handleChangeView)
+            // window.removeEventListener("resize", handleChangeView)
         }
     }, [scoreBoardModel])
 

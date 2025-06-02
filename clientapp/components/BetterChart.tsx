@@ -8,7 +8,7 @@ import { UserFullGameInfo } from 'utils/A1API';
 
 interface SmartUpdateChartProps {
     theme?: 'light' | 'dark';
-    gameInfo: UserFullGameInfo;
+    gameInfo: UserFullGameInfo | undefined;
 }
 
 interface ViewState {
@@ -53,6 +53,10 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
     useEffect(() => {
 
         const updateChartMethod = () => {
+            if (!gameInfo) return;
+            console.log(serialOptions.current)
+            if (!serialOptions.current.length) return;
+
             const chartInstance: ECharts | undefined = chartRef.current?.getEchartsInstance();
             if (!chartInstance) return;
 
@@ -148,7 +152,7 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
         }
     })
 
-    const end = dayjs(gameInfo.end_time);
+    const end = dayjs(gameInfo?.end_time);
     const isGameEnded = end.diff(dayjs(), 's') < 0;
 
     const chartOption: EChartsOption = {
@@ -165,7 +169,7 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
         },
         title: {
             left: 'center',
-            text: `${gameInfo.name} - TOP10`,
+            text: `${gameInfo?.name} - TOP10`,
             textStyle: {
                 color: theme === "dark" ? "#FFFFFF" : "#121212",
             }
@@ -182,8 +186,8 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
         },
         xAxis: {
             type: 'time',
-            min: dayjs(gameInfo.start_time).toDate(),
-            max: dayjs(gameInfo.end_time).toDate(),
+            min: dayjs(gameInfo?.start_time).toDate(),
+            max: dayjs(gameInfo?.end_time).toDate(),
             splitLine: {
                 show: false,
             },
