@@ -6,7 +6,7 @@ import { Label } from "components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "components/ui/card";
 import { Badge } from "components/ui/badge";
 import { Separator } from "components/ui/separator";
-import { Users, Trophy, Hash, Copy, Crown, UserCheck, UserMinus, UserPlus, Settings, Trash2, CircleArrowLeft } from "lucide-react";
+import { Users, Trophy, Hash, Copy, Crown, UserCheck, UserMinus, UserPlus, Settings, Trash2, CircleArrowLeft, Upload } from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -48,6 +48,7 @@ import type {
 } from 'utils/A1API';
 import { LoadingPage } from './LoadingPage';
 import { useLocation, useNavigate } from 'react-router';
+import { UploadImageDialog } from './dialogs/UploadImageDialog';
 
 interface MyTeamInfomationViewProps {
     gameid: number;
@@ -330,10 +331,16 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
                                 </div>
                                 {isTeamCaptain && (
                                     <div className="flex space-x-2">
+                                        <UploadImageDialog type="team" updateTeam={() => {}} id={gameInfo?.team_info?.team_id}>
+                                            <Button variant="outline" size="sm">
+                                                <Upload className="w-4 h-4" />
+                                                上传头像
+                                            </Button>
+                                        </UploadImageDialog>
                                         <Dialog open={sloganDialogOpen} onOpenChange={setSloganDialogOpen}>
                                             <DialogTrigger asChild>
                                                 <Button variant="outline" size="sm">
-                                                    <Settings className="w-4 h-4 mr-2" />
+                                                    <Settings className="w-4 h-4" />
                                                     编辑口号
                                                 </Button>
                                             </DialogTrigger>

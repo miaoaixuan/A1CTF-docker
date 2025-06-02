@@ -24,6 +24,8 @@ import { api } from 'utils/ApiHelper';
 import { GameScoreboardData, TeamScore, TeamTimeline, UserFullGameInfo, UserSimpleGameChallenge } from 'utils/A1API';
 import { LoadingPage } from './LoadingPage';
 import { useLocation, useNavigate } from 'react-router';
+import { useIsMobile } from 'hooks/use-mobile';
+import { ScoreTableMobile } from './ScoreTableMobile';
 
 export default function ScoreBoardPage(
     { gmid }
@@ -42,11 +44,17 @@ export default function ScoreBoardPage(
 
     const lastTimeLine = useRef<string>()
     const [showGraphy, setShowGraphy] = useState(false)
+    const [isChartFullscreen, setIsChartFullscreen] = useState(false)
+    const [isChartFloating, setIsChartFloating] = useState(false)
+    const [isChartMinimized, setIsChartMinimized] = useState(false)
+    const [isNormalChartMinimized, setIsNormalChartMinimized] = useState(false)
 
     const [chartOption, setChartOpton] = useState<echarts.EChartsOption>()
     const [showUserDetail, setShowUserDetail] = useState<TeamScore>({})
     const [personalChartOption, setPersonalChartOption] = useState<echarts.EChartsOption>()
     const lastPersonalTimeLine = useRef<string>()
+
+    const isMobile = useIsMobile()
 
     // 加载动画
     const [loadingVisiblity, setLoadingVisibility] = useState(true)
@@ -110,6 +118,7 @@ export default function ScoreBoardPage(
                                                 label: {
                                                     textBorderWidth: 0,
                                                     fontWeight: 500,
+                                                    color: theme === 'dark' ? '#94a3b8' : '#64748b',
                                                     formatter: (time: any) => dayjs(time.value).format('YYYY-MM-DD HH:mm'),
                                                 },
                                             },
@@ -132,7 +141,7 @@ export default function ScoreBoardPage(
                             endLabel: {
                                 show: true,
                                 formatter: `${team.team_name} - ${team.scores![team.scores!.length - 1]?.score ?? 0} pts`, // {a} 表示系列名称
-                                color: '#333',
+                                color: theme === 'dark' ? '#e2e8f0' : '#1e293b',
                                 fontWeight: 'bold',
                                 fontSize: 14,
                                 distance: 10 // 调整标签与端点的距离
@@ -309,6 +318,7 @@ export default function ScoreBoardPage(
                                             label: {
                                                 textBorderWidth: 0,
                                                 fontWeight: 500,
+                                                color: theme === 'dark' ? '#94a3b8' : '#64748b',
                                                 formatter: (time: any) => dayjs(time.value).format('YYYY-MM-DD HH:mm'),
                                             },
                                         },
@@ -521,35 +531,120 @@ export default function ScoreBoardPage(
                     skin={theme == "light" ? "light" : "dark"}
                     suppressScrollX
                 >
-                    <div className='w-full h-full flex flex-col relative p-10  gap-2'>
-                        <div id='scoreHeader' className='w-full h-[60px] flex items-center'>
+                    <div className='w-full flex flex-col relative gap-2 py-10'>
+                        <div id='scoreHeader' className='w-full h-[60px] flex items-center px-10 '>
                             <span className='text-3xl font-bold [text-shadow:_hsl(var(--foreground))_1px_1px_20px] select-none'>ScoreBoard</span>
                             <div className='flex-1' />
                             {/* <ThemeSwitcher lng='zh' /> */}
-                            <ChartArea size={32} className=' ml-4 hover:scale-110 transition-all duration-300 ease-linear' onClick={() => {
+                            {/* <ChartArea size={32} className=' ml-4 hover:scale-110 transition-all duration-300 ease-linear' onClick={() => {
                                 setShowGraphy(true)
-                            }} />
+                            }} /> */}
                             <CircleArrowLeft size={32} className=' ml-4 hover:scale-110 transition-all duration-300 ease-linear' onClick={() => {
                                 navigator(gamePath)
                             }} />
                         </div>
                         {gameInfo ? (
                             <>
-                                <div className='w-full h-[500px]'>
-                                    <BetterChart
-                                        theme={"light"}
-                                        gameInfo={gameInfo!}
-                                    />
-                                </div>
-                                <div className='flex flex-1 overflow-y-auto overflow-x-hidden h-full justify-center'>
-                                    <div className='flex overflow-hidden'>
-                                        <div className='flex flex-1 overflow-hidden'>
-                                            {scoreBoardModel && (
-                                                <ScoreTable scoreBoardModel={scoreBoardModel} setShowUserDetail={setShowUserDetail} challenges={challenges} />
-                                            )}
+                                {/* 图表区域 - 根据模式显示 */}
+                                {!isChartFloating && !isNormalChartMinimized && (
+                                    <div className={`mx-auto transition-all duration-300 ${
+                                        isChartFullscreen 
+                                            ? 'absolute top-0 left-0 w-full h-screen z-50 px-4 py-4' 
+                                            : 'container px-10 h-[50vh] min-h-[450px]'
+                                    }`}>
+                                        <BetterChart
+                                            theme={theme == "dark" ? "dark" : "light"}
+                                            gameInfo={gameInfo!}
+                                            isFullscreen={isChartFullscreen}
+                                            isFloating={isChartFloating}
+                                            onToggleFullscreen={() => setIsChartFullscreen(!isChartFullscreen)}
+                                            onToggleFloating={() => {
+                                                setIsChartFloating(!isChartFloating);
+                                                if (!isChartFloating) {
+                                                    setIsNormalChartMinimized(false);
+                                                }
+                                            }}
+                                            onMinimize={() => setIsNormalChartMinimized(true)}
+                                        />
+                                    </div>
+                                )}
+                                
+                                {/* 悬浮窗图表 */}
+                                {isChartFloating && !isChartMinimized && (
+                                    <div className="fixed top-0 left-0 w-[500px] h-[350px] z-50 pointer-events-none">
+                                        <div className="pointer-events-auto">
+                                            <BetterChart
+                                                theme={theme == "dark" ? "dark" : "light"}
+                                                gameInfo={gameInfo!}
+                                                isFullscreen={isChartFullscreen}
+                                                isFloating={isChartFloating}
+                                                onToggleFullscreen={() => setIsChartFullscreen(!isChartFullscreen)}
+                                                onToggleFloating={() => {
+                                                    setIsChartFloating(!isChartFloating);
+                                                    if (isChartFloating) {
+                                                        setIsChartMinimized(false);
+                                                    }
+                                                }}
+                                                onMinimize={() => setIsChartMinimized(true)}
+                                            />
                                         </div>
                                     </div>
-                                </div>
+                                )}
+
+                                {/* 正常模式最小化图表恢复按钮 */}
+                                {!isChartFloating && isNormalChartMinimized && (
+                                    <div className="fixed bottom-4 right-4 z-50">
+                                        <Button
+                                            onClick={() => setIsNormalChartMinimized(false)}
+                                            className={`p-3 rounded-full shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-110 ${
+                                                theme === 'dark'
+                                                    ? 'bg-slate-800/90 border border-slate-600/50 text-slate-200 hover:bg-slate-700/90'
+                                                    : 'bg-white/90 border border-gray-300/50 text-slate-700 hover:bg-gray-50/90'
+                                            }`}
+                                            title="显示图表"
+                                        >
+                                            <ChartArea className="w-5 h-5" />
+                                            <span className="text-sm">显示图表</span>
+                                        </Button>
+                                    </div>
+                                )}
+
+                                {/* 最小化图表恢复按钮 */}
+                                {isChartFloating && isChartMinimized && (
+                                    <div className="fixed bottom-4 right-4 z-50">
+                                        <Button
+                                            onClick={() => setIsChartMinimized(false)}
+                                            className={`p-3 rounded-full shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-110 ${
+                                                theme === 'dark'
+                                                    ? 'bg-slate-800/90 border border-slate-600/50 text-slate-200 hover:bg-slate-700/90'
+                                                    : 'bg-white/90 border border-gray-300/50 text-slate-700 hover:bg-gray-50/90'
+                                            }`}
+                                            title="显示图表"
+                                        >
+                                            <ChartArea className="w-5 h-5" />
+                                            <span className="text-sm">显示图表</span>
+                                        </Button>
+                                    </div>
+                                )}
+
+                                {/* 积分榜区域 - 悬浮窗模式下不受全屏影响 */}
+                                {((!isChartFullscreen && !isNormalChartMinimized) || isChartFloating || isNormalChartMinimized) && (
+                                    <div className='flex max-h-[80vh] lg:max-w-[90vw] w-full mx-auto overflow-y-auto overflow-x-hidden justify-center px-10'>
+                                        <div className='flex overflow-hidden w-full'>
+                                            <div className='flex flex-1 overflow-hidden'>
+                                                {scoreBoardModel ? (!isMobile ? (
+                                                    <>
+                                                        <ScoreTable scoreBoardModel={scoreBoardModel} setShowUserDetail={setShowUserDetail} challenges={challenges} />
+                                                    </>
+                                                ) : (
+                                                    <ScoreTableMobile scoreBoardModel={scoreBoardModel} setShowUserDetail={setShowUserDetail} challenges={challenges} />
+                                                )) : (
+                                                    <></>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </>
                         ) : (<></>)}
                     </div>

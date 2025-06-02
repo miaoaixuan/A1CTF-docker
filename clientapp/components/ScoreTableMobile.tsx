@@ -8,9 +8,8 @@ import dayjs from "dayjs";
 import ReactDOMServer from 'react-dom/server';
 import { GameScoreboardData, TeamScore, UserSimpleGameChallenge } from "utils/A1API";
 import AvatarUsername from "./modules/AvatarUsername";
-import { challengeCategoryIcons } from "utils/ClientAssets";
 
-export function ScoreTable ({ scoreBoardModel, setShowUserDetail, challenges }: { scoreBoardModel: GameScoreboardData, setShowUserDetail: Dispatch<SetStateAction<TeamScore>>, challenges: Record<string, UserSimpleGameChallenge[]> }) {
+export function ScoreTableMobile ({ scoreBoardModel, setShowUserDetail, challenges }: { scoreBoardModel: GameScoreboardData, setShowUserDetail: Dispatch<SetStateAction<TeamScore>>, challenges: Record<string, UserSimpleGameChallenge[]> }) {
 
     const tableRef = useRef<HTMLDivElement | null>(null)
     const [pageLines, setPageLines] = useState(10)
@@ -28,7 +27,7 @@ export function ScoreTable ({ scoreBoardModel, setShowUserDetail, challenges }: 
 
     // 计算总列数
     const totalColumns = Object.values(challenges).reduce((sum, challengeList) => sum + challengeList.length, 0)
-    const fixedColumnWidth = 120 // w-24 对应 96px
+    const fixedColumnWidth = 96 // w-24 对应 96px
     const totalFixedWidth = totalColumns * fixedColumnWidth
 
     // 判断是否需要添加空白列和计算空白列宽度
@@ -166,18 +165,15 @@ export function ScoreTable ({ scoreBoardModel, setShowUserDetail, challenges }: 
 
     return (
         
-        <div className="flex flex-col w-full h-full gap-4 pt-4 mt-10">
+        <div className="flex flex-col w-full h-full gap-4 pt-4">
             <div className="flex w-full flex-1 overflow-hidden">
-                <div id="left-container" className="min-w-[300px] max-w-[18vw] flex-none overflow-hidden">
-                    <div className="flex flex-col overflow-hidden">
-                        <div className={`w-full border-b-2 h-12 border-t-2 transition-[border-color] duration-300 flex items-center justify-center`}>
-                            {/* <span className="font-bold">Username</span> */}
-                        </div>
+                <div id="left-container" className="min-w-[200px] flex-none overflow-hidden w-full">
+                    <div className="flex flex-col overflow-hidden w-full">
                         <div className={`w-full border-b-2 h-12 transition-[border-color] duration-300 flex items-center justify-center`}>
-                            <span className="font-bold">Username</span>
+                            <span className="font-bold">Rank</span>
                         </div>
                         { curPageData[0] && curPageData.map((item, index) => (
-                            <div className={`w-full border-b-2 transition-[border-color] duration-300 h-12 flex items-center justify-center pl-6 pr-6`} key={`name-${index}`}>
+                            <div className={`w-full border-b-2 transition-[border-color] duration-300 h-12 flex items-center justify-center`} key={`name-${index}`}>
                                 <div className="flex w-full gap-2 overflow-hidden items-center">
                                     <div className="flex items-center">
                                         <div className="w-[40px] flex-none flex justify-center select-none">
@@ -192,74 +188,13 @@ export function ScoreTable ({ scoreBoardModel, setShowUserDetail, challenges }: 
                                             }}
                                         >{ item.team_name }</a>
                                     </div>
-                                    <div className="justify-end gap-1 hidden lg:flex">
+                                    <div className="justify-end gap-1">
                                         <span>{ item.score }</span>
                                         <span className="text-gray-500">pts</span>
                                     </div>
                                 </div>
                             </div>
                         )) }
-                    </div>
-                </div>
-                <div className="flex w-full overflow-hidden">
-                    <div className="w-full h-full" >
-                        <MacScrollbar className="flex flex-1 h-full overflow-x-auto pb-[18px]" suppressScrollY
-                            skin={ theme == "light" ? "light" : "dark" }
-                        >
-                            <div className="flex" ref={tableRef}>
-                                { Object.keys(challenges).map((key, index) => (
-                                    <div className="flex flex-col" key={`cate-${index}`} >
-                                        <div className={`h-12 border-t-2 border-b-2 flex items-center justify-center flex-none ${ index != Object.keys(challenges).length - 1 ? "border-r-2" : "" }`}
-                                            style={{ width: `${fixedColumnWidth * challenges[key].length}px` }}
-                                        >
-                                            <div className="flex gap-2 items-center">
-                                                { challengeCategoryIcons[key] }
-                                                <span className="font-bold">{ key }</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex">
-                                            { challenges[key].map((challenge, idx1) => (
-                                                <div className="flex flex-col h-full flex-shrink-0" key={`col-${idx1}`}
-                                                    style={{ width: `${fixedColumnWidth}px` }}
-                                                >
-                                                    <div className={`flex w-full h-12 border-b-2 transition-[border-color] duration-300 items-center justify-center flex-shrink-0 pl-2 pr-2`} >
-                                                        <span className="select-none text-nowrap text-ellipsis overflow-hidden font-bold" data-tooltip-id="challengeTooltip" data-tooltip-html={ `<div class='text-sm'>${challenge.challenge_name}</div>` }>{ challenge.challenge_name }</span>
-                                                    </div>
-                                                    { curPageData[0] && curPageData.map((item, idx2) => (
-                                                        <div className={`flex w-full h-12 border-b-2 transition-[border-color] duration-300 items-center justify-center flex-shrink-0`} key={`item-${idx2}`} >
-                                                            { getSolveStatus(challenge, item) }
-                                                        </div>
-                                                    )) }
-                                                </div>
-                                            )) }
-                                        </div>
-                                    </div>
-                                )) }
-                                
-                                {/* 添加空白列填充剩余宽度 */}
-                                { shouldAddBlankColumn && (
-                                    <div className="flex flex-col" key="blank-column">
-                                        <div className="h-12 border-t-2 border-b-2 flex items-center justify-center flex-none"
-                                            style={{ width: `${blankColumnWidth}px` }}
-                                        >
-                                            {/* 空白表头 */}
-                                        </div>
-                                        <div className="flex">
-                                            <div className="flex flex-col h-full flex-shrink-0" style={{ width: `${blankColumnWidth}px` }}>
-                                                <div className="flex w-full h-12 border-b-2 transition-[border-color] duration-300 items-center justify-center flex-shrink-0">
-                                                    {/* 空白挑战标题 */}
-                                                </div>
-                                                { curPageData[0] && curPageData.map((item, idx) => (
-                                                    <div className="flex w-full h-12 border-b-2 transition-[border-color] duration-300 items-center justify-center flex-shrink-0" key={`blank-${idx}`}>
-                                                        {/* 空白单元格 */}
-                                                    </div>
-                                                )) }
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </MacScrollbar>
                     </div>
                 </div>
             </div>
