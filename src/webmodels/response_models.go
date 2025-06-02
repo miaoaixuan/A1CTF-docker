@@ -95,6 +95,9 @@ type GameScoreboardData struct {
 	TeamScores           []TeamScoreItem           `json:"teams"`
 	YourTeam             *TeamScoreItem            `json:"your_team"`
 	SimpleGameChallenges []UserSimpleGameChallenge `json:"challenges"`
+	Groups               []GameGroupSimple         `json:"groups"`
+	CurrentGroup         *GameGroupSimple          `json:"current_group"`
+	Pagination           *PaginationInfo           `json:"pagination"`
 }
 
 // Admin User Controller
@@ -167,6 +170,8 @@ type TeamScoreItem struct {
 	Rank             int64           `json:"rank"`
 	Score            float64         `json:"score"`
 	Penalty          int64           `json:"penalty"` // 罚时（秒）
+	GroupID          *int64          `json:"group_id"`
+	GroupName        *string         `json:"group_name"`
 	SolvedChallenges []TeamSolveItem `json:"solved_challenges"`
 	LastSolveTime    int64           `json:"last_solve_time"`
 }
@@ -187,4 +192,18 @@ type TeamJoinRequestInfo struct {
 	Status     models.JoinRequestStatus `json:"status"`
 	CreateTime time.Time                `json:"create_time"`
 	Message    *string                  `json:"message"`
+}
+
+// 分组相关的响应模型
+type GameGroupSimple struct {
+	GroupID   int64  `json:"group_id"`
+	GroupName string `json:"group_name"`
+	TeamCount int64  `json:"team_count"`
+}
+
+type PaginationInfo struct {
+	CurrentPage int64 `json:"current_page"`
+	PageSize    int64 `json:"page_size"`
+	TotalCount  int64 `json:"total_count"`
+	TotalPages  int64 `json:"total_pages"`
 }

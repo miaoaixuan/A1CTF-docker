@@ -1,97 +1,37 @@
-import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from "components/ui/form"
-
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "components/ui/popover"
-
-import { useFieldArray, Controller, useWatch } from "react-hook-form";
-
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "components/ui/select"
-
-import { Input } from "../ui/input";
-import { number, z } from "zod"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Button } from "../ui/button";
-import { cn } from "lib/utils";
-
-import { ArrowLeft, ArrowRight, ArrowUpDown, CalendarIcon, CircleArrowLeft, ClockArrowDown, ClockArrowUp, Cloud, FileCode, FileUser, Github, Layers2, LoaderPinwheel, Pencil, PlusCircle, Save, ScanBarcode, Squirrel, TableProperties, Tag, Trash2, Underline, Upload } from "lucide-react"
-import { Textarea } from "../ui/textarea";
-
+import React, { useState, useEffect, useRef } from 'react';
+import { Button } from 'components/ui/button';
+import { Input } from 'components/ui/input';
+import { Textarea } from 'components/ui/textarea';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from 'components/ui/form';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from 'components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from 'components/ui/popover';
+import { Calendar } from 'components/ui/calendar';
+import { ScrollArea, ScrollBar } from 'components/ui/scroll-area';
+import { Switch } from 'components/ui/switch';
+import { Badge } from 'components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'components/ui/select';
+import { format } from 'date-fns';
+import { cn } from 'lib/utils';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/ui/table';
+import { Checkbox } from 'components/ui/checkbox';
+import { MacScrollbar } from 'mac-scrollbar';
+import { useTheme } from 'next-themes';
+import { useNavigate } from 'react-router';
+import { toast } from 'sonner';
+import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
+import { ColumnDef, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, SortingState, useReactTable, VisibilityState } from '@tanstack/react-table';
+import { useForm, useFieldArray, useWatch, useController } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import dayjs from 'dayjs';
+import { CalendarIcon, CircleArrowLeft, Save, Upload, PlusCircle, Radar, MessageSquareLock, Bug, GlobeLock, Binary, FileSearch, HardDrive, Smartphone, SquareCode, Bot, BadgeCent, Github, Layers2, FileUser, Pencil, Trash2, LoaderPinwheel, ArrowLeft, ArrowRight, ScanBarcode, FileCode, ClockArrowUp, ClockArrowDown, ArrowUpDown } from 'lucide-react';
+import { AxiosError } from 'axios';
+import { api, ErrorMessage } from 'utils/ApiHelper';
+import { ChallengeCategory, AdminDetailGameChallenge, AdminFullGameInfo, JudgeType } from 'utils/A1API';
+import { challengeCategoryIcons, challengeCategoryColorMap } from 'utils/ClientAssets';
 import CodeEditor from '@uiw/react-textarea-code-editor';
-
-import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
-import { useEffect, useRef, useState } from "react";
-
-import { MacScrollbar } from "mac-scrollbar";
-import { ChallengeCategory, AdminChallengeConfig, AdminFullGameInfo, UserGameSimpleInfo, JudgeType, AdminDetailGameChallenge } from "utils/A1API";
-import { api, ErrorMessage } from "utils/ApiHelper";
-import dayjs from "dayjs";
-import { toast } from "sonner";
-import { AxiosError } from "axios";
-
-import { ScrollArea, ScrollBar } from "components/ui/scroll-area";
-import { Switch } from "components/ui/switch"
-import { Calendar } from "../ui/calendar";
-import { format } from "date-fns";
-import { Badge } from "../ui/badge";
-
-import {
-    ColumnDef,
-    ColumnFiltersState,
-    SortingState,
-    VisibilityState,
-    flexRender,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable,
-} from "@tanstack/react-table"
-
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "components/ui/dialog"
-
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "components/ui/table"
-
-import { Label } from "components/ui/label"
-import { Checkbox } from "../ui/checkbox";
-import { size } from "mathjs";
-import { useTheme } from "next-themes";
-import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
-import { challengeCategoryColorMap, challengeCategoryIcons } from "utils/ClientAssets";
-import { useNavigate } from "react-router";
-import { GameTimelineEditor } from "./GameTimelineEditor";
+import { GameTimelineEditor } from './GameTimelineEditor';
+import { GameGroupManager } from './GameGroupManager';
 
 interface JudgeConfigFormProps {
     control: any;
@@ -1689,6 +1629,16 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                                         </div>
                                     )}
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* 分组管理 */}
+                        <div className="mt-6">
+                            <div className="flex items-center mb-4">
+                                <span className="text-lg font-semibold">分组管理</span>
+                            </div>
+                            <div className="border rounded-lg p-4 bg-background">
+                                <GameGroupManager gameId={game_info.game_id} />
                             </div>
                         </div>
 

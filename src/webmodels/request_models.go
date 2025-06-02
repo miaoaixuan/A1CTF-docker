@@ -19,6 +19,7 @@ type UserCreateTeamPayload struct {
 	Name        string `json:"name" binding:"required"`
 	Description string `json:"description"`
 	Slogan      string `json:"slogan"`
+	GroupID     *int64 `json:"group_id"`
 }
 
 type UserSubmitFlagPayload struct {
@@ -133,4 +134,15 @@ type TransferCaptainPayload struct {
 
 type UpdateTeamInfoPayload struct {
 	TeamSlogan *string `json:"team_slogan"`
+}
+
+// 分组管理相关的请求模型
+type CreateGameGroupPayload struct {
+	GroupName   string `json:"group_name" binding:"required"`
+	Description string `json:"description"`
+}
+
+type UpdateGameGroupPayload struct {
+	GroupName   string `json:"group_name" binding:"required"`
+	Description string `json:"description"`
 }

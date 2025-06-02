@@ -12,6 +12,13 @@ import { ScoreTable } from './ScoreTable';
 import { Tooltip } from 'react-tooltip';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Button } from './ui/button';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "components/ui/select"
 
 import { randomInt } from "mathjs";
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -21,7 +28,7 @@ import BetterChart from './BetterChart';
 
 import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
 import { api } from 'utils/ApiHelper';
-import { GameScoreboardData, TeamScore, TeamTimeline, UserFullGameInfo, UserSimpleGameChallenge } from 'utils/A1API';
+import { GameScoreboardData, TeamScore, TeamTimeline, UserFullGameInfo, UserSimpleGameChallenge, GameGroupSimple, PaginationInfo } from 'utils/A1API';
 import { LoadingPage } from './LoadingPage';
 import { useLocation, useNavigate } from 'react-router';
 import { useIsMobile } from 'hooks/use-mobile';
@@ -42,6 +49,13 @@ export default function ScoreBoardPage(
     const [gameStatus, setGameStatus] = useState<string>("")
     const [challenges, setChallenges] = useState<Record<string, UserSimpleGameChallenge[]>>({})
     const [scoreBoardModel, setScoreBoardModel] = useState<GameScoreboardData>()
+
+    // 分组和分页相关状态
+    const [selectedGroupId, setSelectedGroupId] = useState<number | undefined>(undefined)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [pageSize] = useState(20)
+    const [groups, setGroups] = useState<GameGroupSimple[]>([])
+    const [pagination, setPagination] = useState<PaginationInfo | undefined>(undefined)
 
     const lastTimeLine = useRef<string>()
     const [showGraphy, setShowGraphy] = useState(false)
@@ -116,8 +130,15 @@ export default function ScoreBoardPage(
         
         setIsDownloading(true);
         try {
-            // 获取完整的积分榜数据
-            const response = await api.user.userGetGameScoreboard(gmid);
+            // 获取完整的积分榜数据（不分页，获取所有数据用于导出）
+            const params: any = {};
+            if (selectedGroupId) {
+                params.group_id = selectedGroupId;
+            }
+            params.page = 1;
+            params.size = 1000; // 获取大量数据用于导出
+            
+            const response = await api.user.userGetGameScoreboard(gmid, params);
             const data = response.data.data as GameScoreboardData;
             
             if (!data?.teams || !data?.challenges) {
@@ -132,7 +153,8 @@ export default function ScoreBoardPage(
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
             
-            const filename = `${gameInfo.name}_积分榜_${dayjs().format('YYYY-MM-DD_HH-mm-ss')}.csv`;
+            const groupSuffix = selectedGroupId && data.current_group ? `_${data.current_group.group_name}组` : '';
+            const filename = `${gameInfo.name}${groupSuffix}_积分榜_${dayjs().format('YYYY-MM-DD_HH-mm-ss')}.csv`;
             link.setAttribute('href', url);
             link.setAttribute('download', filename);
             link.style.visibility = 'hidden';
@@ -157,7 +179,19 @@ export default function ScoreBoardPage(
         } finally {
             setIsDownloading(false);
         }
-    }, [gameInfo, gmid, isDownloading]);
+    }, [gameInfo, gmid, isDownloading, selectedGroupId]);
+
+    // 分组选择处理
+    const handleGroupChange = useCallback((value: string) => {
+        const groupId = value === "all" ? undefined : parseInt(value);
+        setSelectedGroupId(groupId);
+        setCurrentPage(1); // 重置到第一页
+    }, []);
+
+    // 分页处理
+    const handlePageChange = useCallback((page: number) => {
+        setCurrentPage(page);
+    }, []);
 
     // 生成CSV内容
     const generateScoreboardCSV = (data: GameScoreboardData): string => {
@@ -224,9 +258,29 @@ export default function ScoreBoardPage(
         if (dayjs() < dayjs(gameInfo.start_time)) return
 
         const updateScoreBoard = () => {
-            api.user.userGetGameScoreboard(gmid).then((res) => {
+            // 构建查询参数
+            const params: any = {
+                page: currentPage,
+                size: pageSize
+            };
+            
+            if (selectedGroupId) {
+                params.group_id = selectedGroupId;
+            }
+
+            api.user.userGetGameScoreboard(gmid, params).then((res) => {
 
                 setScoreBoardModel(res.data.data)
+
+                // 设置分组信息
+                if (res.data.data?.groups) {
+                    setGroups(res.data.data.groups);
+                }
+
+                // 设置分页信息
+                if (res.data.data?.pagination) {
+                    setPagination(res.data.data.pagination);
+                }
 
                 const groupedChallenges: Record<string, UserSimpleGameChallenge[]> = {};
                 res.data.data?.challenges?.forEach((challenge: UserSimpleGameChallenge) => {
@@ -374,7 +428,7 @@ export default function ScoreBoardPage(
         return () => {
             clearInterval(scoreBoardInter)
         }
-    }, [gameInfo])
+    }, [gameInfo, currentPage, selectedGroupId, pageSize])
 
     useEffect(() => {
 
@@ -782,21 +836,93 @@ export default function ScoreBoardPage(
 
                                 {/* 积分榜区域 - 悬浮窗模式下不受全屏影响 */}
                                 {((!isChartFullscreen && !isNormalChartMinimized) || isChartFloating || isNormalChartMinimized) && (
-                                    <div className='flex max-h-[80vh] lg:max-w-[90vw] w-full mx-auto overflow-y-auto overflow-x-hidden justify-center px-10'>
-                                        <div className='flex overflow-hidden w-full'>
-                                            <div className='flex flex-1 overflow-hidden'>
-                                                {scoreBoardModel ? (!isMobile ? (
-                                                    <>
-                                                        <ScoreTable scoreBoardModel={scoreBoardModel} setShowUserDetail={setShowUserDetail} challenges={challenges} />
-                                                    </>
-                                                ) : (
-                                                    <ScoreTableMobile scoreBoardModel={scoreBoardModel} setShowUserDetail={setShowUserDetail} challenges={challenges} />
-                                                )) : (
-                                                    <></>
+                                    <>
+                                        {/* 分组选择器和分页信息 */}
+                                        <div className='w-full px-10 mb-4'>
+                                            <div className='flex items-center justify-between gap-4 flex-wrap'>
+                                                {/* 分组选择器 */}
+                                                {groups.length > 0 && (
+                                                    <div className='flex items-center gap-2'>
+                                                        <span className='text-sm font-medium'>分组筛选:</span>
+                                                        <Select value={selectedGroupId?.toString() || "all"} onValueChange={handleGroupChange}>
+                                                            <SelectTrigger className="w-[200px]">
+                                                                <SelectValue placeholder="选择分组" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="all">全部队伍</SelectItem>
+                                                                {groups.map((group) => (
+                                                                    <SelectItem key={group.group_id} value={group.group_id.toString()}>
+                                                                        {group.group_name} ({group.team_count}队)
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                )}
+
+                                                {/* 分页信息 */}
+                                                {pagination && (
+                                                    <div className='flex items-center gap-4 flex-wrap'>
+                                                        <span className='text-sm text-muted-foreground'>
+                                                            共 {pagination.total_count} 支队伍，第 {pagination.current_page} / {pagination.total_pages} 页
+                                                        </span>
+                                                        
+                                                        {/* 分页按钮 */}
+                                                        <div className='flex items-center gap-1'>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => handlePageChange(1)}
+                                                                disabled={pagination.current_page === 1}
+                                                            >
+                                                                首页
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => handlePageChange(pagination.current_page - 1)}
+                                                                disabled={pagination.current_page === 1}
+                                                            >
+                                                                上一页
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => handlePageChange(pagination.current_page + 1)}
+                                                                disabled={pagination.current_page === pagination.total_pages}
+                                                            >
+                                                                下一页
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => handlePageChange(pagination.total_pages)}
+                                                                disabled={pagination.current_page === pagination.total_pages}
+                                                            >
+                                                                末页
+                                                            </Button>
+                                                        </div>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
-                                    </div>
+
+                                        <div className='flex max-h-[80vh] lg:max-w-[90vw] w-full mx-auto overflow-y-auto overflow-x-hidden justify-center px-10'>
+                                            <div className='flex overflow-hidden w-full'>
+                                                <div className='flex flex-1 overflow-hidden'>
+                                                    {scoreBoardModel ? (!isMobile ? (
+                                                        <>
+                                                            <ScoreTable scoreBoardModel={scoreBoardModel} setShowUserDetail={setShowUserDetail} challenges={challenges} />
+                                                        </>
+                                                    ) : (
+                                                        <ScoreTableMobile scoreBoardModel={scoreBoardModel} setShowUserDetail={setShowUserDetail} challenges={challenges} />
+                                                    )) : (
+                                                        <></>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
                                 )}
                             </>
                         ) : (<></>)}

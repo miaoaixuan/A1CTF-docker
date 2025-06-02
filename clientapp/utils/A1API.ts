@@ -438,6 +438,8 @@ export interface CreateGameTeamPayload {
   name: string;
   description: string;
   slogan: string;
+  /** 选择的分组ID，如果不传则不指定分组 */
+  group_id?: number | null;
 }
 
 export interface ExposePortInfo {
@@ -464,6 +466,9 @@ export interface GameScoreboardData {
   your_team?: TeamScore;
   time_lines?: TeamTimeline[];
   challenges?: UserSimpleGameChallenge[];
+  groups?: GameGroupSimple[];
+  current_group?: GameGroupSimple;
+  pagination?: PaginationInfo;
 }
 
 export interface TeamScore {
@@ -486,6 +491,10 @@ export interface TeamScore {
    * @example 500
    */
   score?: number;
+  /** 所属分组ID */
+  group_id?: number | null;
+  /** 所属分组名称 */
+  group_name?: string | null;
   solved_challenges?: SolvedChallenge[];
 }
 
@@ -718,6 +727,62 @@ export interface TransferCaptainPayload {
 export interface UpdateTeamInfoPayload {
   /** 战队口号 */
   team_slogan: string | null;
+}
+
+export interface GameGroup {
+  /** 分组ID */
+  group_id: number;
+  /** 分组名称 */
+  group_name: string;
+  /** 分组描述 */
+  group_description?: string | null;
+  /** 显示顺序 */
+  display_order: number;
+  /**
+   * 创建时间
+   * @format date-time
+   */
+  created_at: string;
+  /**
+   * 更新时间
+   * @format date-time
+   */
+  updated_at: string;
+  teams: AdminListTeamItem[];
+}
+
+export interface CreateGameGroupPayload {
+  /** 分组名称 */
+  group_name: string;
+  /** 分组描述 */
+  description: string;
+}
+
+export interface UpdateGameGroupPayload {
+  /** 分组名称 */
+  group_name: string;
+  /** 分组描述 */
+  description: string;
+}
+
+export interface GameGroupSimple {
+  /** 分组ID */
+  group_id: number;
+  /** 分组名称 */
+  group_name: string;
+  /** 分组内队伍数量 */
+  team_count: number;
+}
+
+export interface PaginationInfo {
+  /** 当前页码 */
+  current_page: number;
+  /** 每页大小 */
+  page_size: number;
+  /** 总记录数 */
+  total_count: number;
+  /** 总页数 */
+  total_pages: number;
 }
 
 import type {
@@ -1281,10 +1346,28 @@ export class Api<
      * @summary Get game scoreboard data
      * @request GET:/api/game/{game_id}/scoreboard
      */
-    userGetGameScoreboard: (gameId: number, params: RequestParams = {}) =>
+    userGetGameScoreboard: (
+      gameId: number,
+      query?: {
+        /** 分组ID，如果不传则显示所有队伍 */
+        group_id?: number;
+        /**
+         * 页码，从1开始
+         * @default 1
+         */
+        page?: number;
+        /**
+         * 每页大小
+         * @default 20
+         */
+        size?: number;
+      },
+      params: RequestParams = {},
+    ) =>
       this.request<GameScoreboardResponse, any>({
         path: `/api/game/${gameId}/scoreboard`,
         method: "GET",
+        query: query,
         format: "json",
         ...params,
       }),
@@ -1324,6 +1407,28 @@ export class Api<
         body: data,
         secure: true,
         type: ContentType.FormData,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags user
+     * @name UserGetGameGroups
+     * @summary 获取比赛分组列表（用户）
+     * @request GET:/api/game/{game_id}/groups
+     */
+    userGetGameGroups: (gameId: number, params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+          data: GameGroup[];
+        },
+        any
+      >({
+        path: `/api/game/${gameId}/groups`,
+        method: "GET",
         format: "json",
         ...params,
       }),
@@ -2011,6 +2116,111 @@ export class Api<
         path: `/api/admin/container/flag`,
         method: "GET",
         query: query,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags admin
+     * @name AdminGetGameGroups
+     * @summary 获取比赛分组列表
+     * @request GET:/api/admin/game/{game_id}/groups
+     */
+    adminGetGameGroups: (gameId: number, params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+          data: GameGroup[];
+        },
+        any
+      >({
+        path: `/api/admin/game/${gameId}/groups`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags admin
+     * @name AdminCreateGameGroup
+     * @summary 创建比赛分组
+     * @request POST:/api/admin/game/{game_id}/groups
+     */
+    adminCreateGameGroup: (
+      gameId: number,
+      data: CreateGameGroupPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: GameGroup;
+        },
+        any
+      >({
+        path: `/api/admin/game/${gameId}/groups`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags admin
+     * @name AdminUpdateGameGroup
+     * @summary 更新比赛分组
+     * @request PUT:/api/admin/game/{game_id}/groups/{group_id}
+     */
+    adminUpdateGameGroup: (
+      gameId: number,
+      groupId: number,
+      data: UpdateGameGroupPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          message: string;
+        },
+        any
+      >({
+        path: `/api/admin/game/${gameId}/groups/${groupId}`,
+        method: "PUT",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags admin
+     * @name AdminDeleteGameGroup
+     * @summary 删除比赛分组
+     * @request DELETE:/api/admin/game/{game_id}/groups/{group_id}
+     */
+    adminDeleteGameGroup: (
+      gameId: number,
+      groupId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          message: string;
+        },
+        any
+      >({
+        path: `/api/admin/game/${gameId}/groups/${groupId}`,
+        method: "DELETE",
         format: "json",
         ...params,
       }),

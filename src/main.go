@@ -226,6 +226,12 @@ func main() {
 			gameGroup.GET("/:game_id", controllers.AdminGetGame)
 			gameGroup.PUT("/:game_id/challenge/:challenge_id", controllers.AdminAddGameChallenge)
 			gameGroup.PUT("/:game_id", controllers.AdminUpdateGame)
+
+			// 分组管理路由
+			gameGroup.GET("/:game_id/groups", controllers.AdminGetGameGroups)
+			gameGroup.POST("/:game_id/groups", controllers.AdminCreateGameGroup)
+			gameGroup.PUT("/:game_id/groups/:group_id", controllers.AdminUpdateGameGroup)
+			gameGroup.DELETE("/:game_id/groups/:group_id", controllers.AdminDeleteGameGroup)
 		}
 
 		// 用户相关接口
@@ -238,6 +244,9 @@ func main() {
 
 			// 比赛通知接口
 			userGameGroup.GET("/:game_id/notices", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameNotices)
+
+			// 用户获取分组列表（公开接口，用于创建团队时选择分组）
+			userGameGroup.GET("/:game_id/groups", controllers.GameStatusMiddleware(true, false), controllers.UserGetGameGroups)
 
 			// 创建比赛队伍
 			userGameGroup.POST("/:game_id/createTeam", controllers.GameStatusMiddleware(false, true), controllers.UserCreateGameTeam)
