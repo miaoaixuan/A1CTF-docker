@@ -273,6 +273,7 @@ export function GameGroupManager({ gameId }: GameGroupManagerProps) {
                                             <Button
                                                 variant="outline"
                                                 size="sm"
+                                                type="button"
                                                 onClick={() => handleEditGroup(group)}
                                             >
                                                 <Pencil className="w-4 h-4" />
@@ -280,6 +281,7 @@ export function GameGroupManager({ gameId }: GameGroupManagerProps) {
                                             <Button
                                                 variant="outline"
                                                 size="sm"
+                                                type="button"
                                                 onClick={() => handleDeleteGroup(group.group_id)}
                                                 className="text-red-600 hover:text-red-700"
                                             >

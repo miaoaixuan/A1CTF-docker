@@ -1422,6 +1422,16 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                             />
                         </div>
 
+                        {/* 分组管理 */}
+                        <div className="mt-6">
+                            <div className="flex items-center mb-4">
+                                <span className="text-lg font-semibold">分组管理</span>
+                            </div>
+                            <div className="border rounded-lg p-4 bg-background">
+                                <GameGroupManager gameId={game_info.game_id} />
+                            </div>
+                        </div>
+
                         {/* 题目设置 */}
                         <div className="mt-6">
                             <div className="flex items-center mb-4">
@@ -1629,16 +1639,6 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                                         </div>
                                     )}
                                 </div>
-                            </div>
-                        </div>
-
-                        {/* 分组管理 */}
-                        <div className="mt-6">
-                            <div className="flex items-center mb-4">
-                                <span className="text-lg font-semibold">分组管理</span>
-                            </div>
-                            <div className="border rounded-lg p-4 bg-background">
-                                <GameGroupManager gameId={game_info.game_id} />
                             </div>
                         </div>
 
