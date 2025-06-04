@@ -15,6 +15,7 @@ import (
 	"a1ctf/src/utils"
 	dbtool "a1ctf/src/utils/db_tool"
 	k8stool "a1ctf/src/utils/k8s_tool"
+	"a1ctf/src/utils/ristretto_tool"
 
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/pprof"
@@ -80,6 +81,12 @@ func main() {
 
 	// 初始化数据库连接
 	dbtool.Init()
+
+	// 初始化缓存池
+	ristretto_tool.LoadCacheTime()
+	ristretto_tool.InitCachePool()
+
+	defer ristretto_tool.CloseCachePool()
 
 	// 初始化 db
 	db.InitDB()

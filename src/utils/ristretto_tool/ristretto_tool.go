@@ -1,4 +1,4 @@
-package redis_tool
+package ristretto_tool
 
 import (
 	"a1ctf/src/db/models"
@@ -31,7 +31,10 @@ func InitCachePool() {
 		panic(err)
 	}
 	cachePool = cache
-	defer cache.Close()
+}
+
+func CloseCachePool() {
+	cachePool.Close()
 }
 
 // 使用singleflight防止缓存击穿
@@ -46,10 +49,10 @@ func GetOrCacheSingleFlight(key string, callback func() (interface{}, error), ca
 	// singleflight确保同一个key只有一个goroutine执行回调函数
 	result, err, _ := sfGroup.Do(key, func() (interface{}, error) {
 		// 双重检查，避免在等待期间其他goroutine已经设置了缓存
-		value, err := dbtool.Redis().Get(key).Result()
-		if err == nil {
+		value, found := cachePool.Get(key)
+		if found {
 			// 缓存已存在，直接返回序列化的字节数据
-			return []byte(value), nil
+			return value, nil
 		}
 
 		// 执行回调获取数据
@@ -61,10 +64,9 @@ func GetOrCacheSingleFlight(key string, callback func() (interface{}, error), ca
 		// 设置随机过期时间，避免同时大量过期
 		expireTime := cacheTime
 		if enableRandomTime {
-			expireTime += time.Duration(rand.Intn(500)) * time.Millisecond
+			expireTime += time.Duration(rand.Intn(100)) * time.Millisecond
 		}
 
-		// 序列化并存入Redis
 		cachePool.SetWithTTL(key, data, 1, expireTime)
 
 		return data, nil
@@ -83,13 +85,23 @@ func DeleteCache(key string) error {
 }
 
 // 这里设置 redis 的缓存时间
-var userListCacheTime = viper.GetDuration("redis-cache-time.user-list")
-var fileListCacheTime = viper.GetDuration("redis-cache-time.upload-list")
-var solvedChallengesForGameCacheTime = viper.GetDuration("redis-cache-time.solved-challenges-for-game")
-var gameInfoCacheTime = viper.GetDuration("redis-cache-time.game-info")
-var allTeamsForGameCacheTime = viper.GetDuration("redis-cache-time.all-teams-for-game")
-var gameScoreBoardCacheTime = viper.GetDuration("redis-cache-time.game-scoreboard")
-var challengesForGameCacheTime = viper.GetDuration("redis-cache-time.challenges-for-game")
+var userListCacheTime = time.Duration(0)
+var fileListCacheTime = time.Duration(0)
+var solvedChallengesForGameCacheTime = time.Duration(0)
+var gameInfoCacheTime = time.Duration(0)
+var allTeamsForGameCacheTime = time.Duration(0)
+var gameScoreBoardCacheTime = time.Duration(0)
+var challengesForGameCacheTime = time.Duration(0)
+
+func LoadCacheTime() {
+	userListCacheTime = viper.GetDuration("cache-time.user-list")
+	fileListCacheTime = viper.GetDuration("cache-time.upload-list")
+	solvedChallengesForGameCacheTime = viper.GetDuration("cache-time.solved-challenges-for-game")
+	gameInfoCacheTime = viper.GetDuration("cache-time.game-info")
+	allTeamsForGameCacheTime = viper.GetDuration("cache-time.all-teams-for-game")
+	gameScoreBoardCacheTime = viper.GetDuration("cache-time.game-scoreboard")
+	challengesForGameCacheTime = viper.GetDuration("cache-time.challenges-for-game")
+}
 
 func CachedMemberSearchTeamMap(gameID int64) (map[string]models.Team, error) {
 	var memberBelongSearchMap map[string]models.Team = make(map[string]models.Team)

@@ -108,27 +108,6 @@ func Init() {
 		delete(gameSessions, s)
 		return nil
 	})
-
-	redis_instance = redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", viper.GetString("redis.host"), viper.GetString("redis.port")),
-		Password: viper.GetString("redis.password"),
-		DB:       viper.GetInt("redis.db"),
-	})
-
-	_, err = redis_instance.Ping().Result()
-	if err != nil {
-		log.Fatalf("Connect to redis failed: %v", err)
-	}
-
-	keys, err := redis_instance.Keys("*").Result()
-	if err != nil {
-		log.Fatalf("Get redis keys failed: %v", err)
-	}
-
-	// 删除所有缓存 防止意外关闭后缓存未删除
-	for _, key := range keys {
-		redis_instance.Del(key)
-	}
 }
 
 func GameSessions() map[*melody.Session]int64 {

@@ -5,7 +5,7 @@ import (
 	jwtauth "a1ctf/src/modules/jwt_auth"
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
-	"a1ctf/src/utils/redis_tool"
+	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/webmodels"
 	"fmt"
 	"log"
@@ -34,7 +34,7 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool) gin.Handle
 			return
 		}
 
-		game, err := redis_tool.CachedGameInfo(gameID)
+		game, err := ristretto_tool.CachedGameInfo(gameID)
 		if err != nil {
 			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 				Code:    404,
@@ -93,7 +93,7 @@ func TeamStatusMiddleware() gin.HandlerFunc {
 
 		c.Set("user_id", user_id)
 
-		memberBelongSearchMap, err := redis_tool.CachedMemberSearchTeamMap(game.GameID)
+		memberBelongSearchMap, err := ristretto_tool.CachedMemberSearchTeamMap(game.GameID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
@@ -183,7 +183,7 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 	var curTeam models.Team
 
 	// 先获取所有队伍的信息
-	teamDataMap, err := redis_tool.CachedMemberSearchTeamMap(game.GameID)
+	teamDataMap, err := ristretto_tool.CachedMemberSearchTeamMap(game.GameID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
@@ -234,7 +234,7 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 		// 获取团队成员信息
 		var members []webmodels.TeamMemberInfo
 		if len(curTeam.TeamMembers) > 0 {
-			userMap, err := redis_tool.CachedMemberMap()
+			userMap, err := ristretto_tool.CachedMemberMap()
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 					Code:    500,
@@ -282,7 +282,7 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 		}
 
 		if curTeam.TeamStatus == models.ParticipateApproved {
-			cachedData, err := redis_tool.CachedGameScoreBoard(game.GameID)
+			cachedData, err := ristretto_tool.CachedGameScoreBoard(game.GameID)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 					Code:    500,
@@ -315,7 +315,7 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 func UserGetGameChallenges(c *gin.Context) {
 	game := c.MustGet("game").(models.Game)
 
-	simpleGameChallenges, err := redis_tool.CachedGameSimpleChallenges(game.GameID)
+	simpleGameChallenges, err := ristretto_tool.CachedGameSimpleChallenges(game.GameID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
@@ -328,7 +328,7 @@ func UserGetGameChallenges(c *gin.Context) {
 
 	// Cache all solves to redis
 
-	solveMap, err := redis_tool.CachedSolvedChallengesForGame(game.GameID)
+	solveMap, err := ristretto_tool.CachedSolvedChallengesForGame(game.GameID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
@@ -1143,7 +1143,7 @@ func UserGameGetScoreBoard(c *gin.Context) {
 	var curTeam models.Team
 
 	// 先获取所有队伍的信息
-	teamDataMap, err := redis_tool.CachedMemberSearchTeamMap(game.GameID)
+	teamDataMap, err := ristretto_tool.CachedMemberSearchTeamMap(game.GameID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
@@ -1162,7 +1162,7 @@ func UserGameGetScoreBoard(c *gin.Context) {
 	}
 
 	// 获取题目信息
-	simpleGameChallenges, err := redis_tool.CachedGameSimpleChallenges(game.GameID)
+	simpleGameChallenges, err := ristretto_tool.CachedGameSimpleChallenges(game.GameID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
@@ -1172,7 +1172,7 @@ func UserGameGetScoreBoard(c *gin.Context) {
 	}
 
 	// 获取排行榜数据（用于获取 Top10 时间线和当前用户队伍信息）
-	scoreBoard, err := redis_tool.CachedGameScoreBoard(game.GameID)
+	scoreBoard, err := ristretto_tool.CachedGameScoreBoard(game.GameID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
@@ -1182,7 +1182,7 @@ func UserGameGetScoreBoard(c *gin.Context) {
 	}
 
 	// 获取带队伍数量的分组信息（已缓存）
-	simpleGameGroups, err := redis_tool.CachedGameGroupsWithTeamCount(game.GameID)
+	simpleGameGroups, err := ristretto_tool.CachedGameGroupsWithTeamCount(game.GameID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
@@ -1203,7 +1203,7 @@ func UserGameGetScoreBoard(c *gin.Context) {
 	}
 
 	// 获取过滤后的排行榜数据（已缓存）
-	filteredData, err := redis_tool.CachedFilteredGameScoreBoard(game.GameID, groupID)
+	filteredData, err := ristretto_tool.CachedFilteredGameScoreBoard(game.GameID, groupID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,

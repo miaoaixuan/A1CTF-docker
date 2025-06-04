@@ -5,7 +5,7 @@ import (
 	clientconfig "a1ctf/src/modules/client_config"
 	dbtool "a1ctf/src/utils/db_tool"
 	"a1ctf/src/utils/general"
-	"a1ctf/src/utils/redis_tool"
+	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/utils/turnstile"
 	"time"
 
@@ -191,7 +191,7 @@ func authorizator() func(data interface{}, c *gin.Context) bool {
 
 				var all_users map[string]models.User = make(map[string]models.User)
 
-				obj, err := redis_tool.GetOrCacheSingleFlight("jwt_version_map", func() (interface{}, error) {
+				obj, err := ristretto_tool.GetOrCacheSingleFlight("jwt_version_map", func() (interface{}, error) {
 
 					var tmpAllUsers map[string]models.User = make(map[string]models.User)
 					var tmpUser []models.User

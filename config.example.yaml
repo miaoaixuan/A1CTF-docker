@@ -31,14 +31,8 @@ postgres:
   dbname: a1ctf
   sslmode: disable
 
-redis:
-  host: localhost
-  port: 6379
-  password: example
-  db: 0
-
 # time format like 1s 500ms etc..
-redis-cache-time:
+cache-time:
   user-list: 500ms
   upload-list: 500ms
   solved-challenges-for-game: 500ms

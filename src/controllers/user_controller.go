@@ -12,7 +12,7 @@ import (
 	clientconfig "a1ctf/src/modules/client_config"
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
-	"a1ctf/src/utils/redis_tool"
+	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/utils/turnstile"
 	"a1ctf/src/webmodels"
 )
@@ -23,7 +23,7 @@ func GetProfile(c *gin.Context) {
 	claims := jwt.ExtractClaims(c)
 	userID := claims["UserID"].(string)
 
-	userMap, err := redis_tool.CachedMemberMap()
+	userMap, err := ristretto_tool.CachedMemberMap()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,

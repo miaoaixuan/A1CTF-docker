@@ -16,7 +16,7 @@ import (
 
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
-	"a1ctf/src/utils/redis_tool"
+	"a1ctf/src/utils/ristretto_tool"
 )
 
 func UploadFile(c *gin.Context) {
@@ -122,7 +122,7 @@ func DownloadFile(c *gin.Context) {
 		return
 	}
 
-	filesMap, err := redis_tool.CachedFileMap()
+	filesMap, err := ristretto_tool.CachedFileMap()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -302,7 +302,7 @@ func UploadUserAvatar(c *gin.Context) {
 		return
 	}
 
-	redis_tool.DeleteCache("user_list")
+	ristretto_tool.DeleteCache("user_list")
 
 	// 返回成功响应
 	c.JSON(http.StatusOK, gin.H{
@@ -518,7 +518,7 @@ func UploadTeamAvatar(c *gin.Context) {
 		return
 	}
 
-	redis_tool.DeleteCache(fmt.Sprintf("all_teams_for_game_%d", team.GameID))
+	ristretto_tool.DeleteCache(fmt.Sprintf("all_teams_for_game_%d", team.GameID))
 
 	// 返回成功响应
 	c.JSON(http.StatusOK, gin.H{
