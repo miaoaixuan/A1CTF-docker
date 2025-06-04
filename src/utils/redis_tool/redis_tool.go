@@ -10,26 +10,36 @@ import (
 	"sort"
 	"time"
 
+	"github.com/dgraph-io/ristretto/v2"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
-
-	"github.com/vmihailenco/msgpack/v5"
 )
+
+var cachePool *ristretto.Cache[string, interface{}]
 
 // 全局singleflight组，用于防止缓存击穿
 var sfGroup singleflight.Group
 
+func InitCachePool() {
+	cache, err := ristretto.NewCache(&ristretto.Config[string, interface{}]{
+		NumCounters: 1e7,     // number of keys to track frequency of (10M).
+		MaxCost:     1 << 30, // maximum cost of cache (1GB).
+		BufferItems: 64,      // number of keys per Get buffer.
+	})
+	if err != nil {
+		panic(err)
+	}
+	cachePool = cache
+	defer cache.Close()
+}
+
 // 使用singleflight防止缓存击穿
-func GetOrCacheSingleFlight(key string, model interface{}, callback func() (interface{}, error), cacheTime time.Duration, enableRandomTime bool) error {
+func GetOrCacheSingleFlight(key string, callback func() (interface{}, error), cacheTime time.Duration, enableRandomTime bool) (interface{}, error) {
 	// 1. 尝试从缓存获取数据
-	value, err := dbtool.Redis().Get(key).Result()
-	if err == nil {
-		// 缓存命中，直接返回
-		if err := msgpack.Unmarshal([]byte(value), model); err != nil {
-			return err
-		}
-		return nil
+	value, found := cachePool.Get(key)
+	if found {
+		return value, nil
 	}
 
 	// 2. 缓存未命中，使用singleflight防止缓存击穿
@@ -55,29 +65,17 @@ func GetOrCacheSingleFlight(key string, model interface{}, callback func() (inte
 		}
 
 		// 序列化并存入Redis
-		b, err := msgpack.Marshal(data)
-		if err != nil {
-			return nil, err
-		}
+		cachePool.SetWithTTL(key, data, 1, expireTime)
 
-		if err := dbtool.Redis().Set(key, b, expireTime).Err(); err != nil {
-			return nil, err
-		}
-
-		// 返回序列化的字节数据，避免并发问题
-		return b, nil
+		return data, nil
 	})
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// 将结果反序列化到model中
-	if bytes, ok := result.([]byte); ok {
-		return msgpack.Unmarshal(bytes, model)
-	}
-
-	return errors.New("unexpected result type from singleflight")
+	return result, nil
 }
 
 func DeleteCache(key string) error {
@@ -96,7 +94,7 @@ var challengesForGameCacheTime = viper.GetDuration("redis-cache-time.challenges-
 func CachedMemberSearchTeamMap(gameID int64) (map[string]models.Team, error) {
 	var memberBelongSearchMap map[string]models.Team = make(map[string]models.Team)
 
-	if err := GetOrCacheSingleFlight(fmt.Sprintf("all_teams_for_game_%d", gameID), &memberBelongSearchMap, func() (interface{}, error) {
+	obj, err := GetOrCacheSingleFlight(fmt.Sprintf("all_teams_for_game_%d", gameID), func() (interface{}, error) {
 		var allTeams []models.Team
 		if err := dbtool.DB().Find(&allTeams).Where("game_id = ?", gameID).Error; err != nil {
 			return nil, err
@@ -109,9 +107,13 @@ func CachedMemberSearchTeamMap(gameID int64) (map[string]models.Team, error) {
 		}
 
 		return memberBelongSearchMap, nil
-	}, allTeamsForGameCacheTime, true); err != nil {
+	}, allTeamsForGameCacheTime, true)
+
+	if err != nil {
 		return nil, err
 	}
+
+	memberBelongSearchMap = obj.(map[string]models.Team)
 
 	return memberBelongSearchMap, nil
 }
@@ -119,7 +121,7 @@ func CachedMemberSearchTeamMap(gameID int64) (map[string]models.Team, error) {
 func CachedMemberMap() (map[string]models.User, error) {
 	var allUserMap map[string]models.User = make(map[string]models.User)
 
-	if err := GetOrCacheSingleFlight("user_list", &allUserMap, func() (interface{}, error) {
+	obj, err := GetOrCacheSingleFlight("user_list", func() (interface{}, error) {
 		var allUsers []models.User
 
 		if err := dbtool.DB().Find(&allUsers).Error; err != nil {
@@ -131,9 +133,13 @@ func CachedMemberMap() (map[string]models.User, error) {
 		}
 
 		return allUserMap, nil
-	}, userListCacheTime, true); err != nil {
+	}, userListCacheTime, true)
+
+	if err != nil {
 		return nil, err
 	}
+
+	allUserMap = obj.(map[string]models.User)
 
 	return allUserMap, nil
 }
@@ -141,7 +147,7 @@ func CachedMemberMap() (map[string]models.User, error) {
 func CachedFileMap() (map[string]models.Upload, error) {
 	var filesMap map[string]models.Upload = make(map[string]models.Upload)
 
-	if err := GetOrCacheSingleFlight("file_list", &filesMap, func() (interface{}, error) {
+	obj, err := GetOrCacheSingleFlight("file_list", func() (interface{}, error) {
 		var files []models.Upload
 		dbtool.DB().Find(&files)
 
@@ -150,9 +156,13 @@ func CachedFileMap() (map[string]models.Upload, error) {
 		}
 
 		return filesMap, nil
-	}, fileListCacheTime, true); err != nil {
+	}, fileListCacheTime, true)
+
+	if err != nil {
 		return nil, err
 	}
+
+	filesMap = obj.(map[string]models.Upload)
 
 	return filesMap, nil
 }
@@ -160,7 +170,7 @@ func CachedFileMap() (map[string]models.Upload, error) {
 func CachedSolvedChallengesForGame(gameID int64) (map[int64][]models.Solve, error) {
 	var solveMap map[int64][]models.Solve = make(map[int64][]models.Solve)
 
-	if err := GetOrCacheSingleFlight(fmt.Sprintf("solved_challenges_for_game_%d", gameID), &solveMap, func() (interface{}, error) {
+	obj, err := GetOrCacheSingleFlight(fmt.Sprintf("solved_challenges_for_game_%d", gameID), func() (interface{}, error) {
 		var totalSolves []models.Solve
 
 		if err := dbtool.DB().Where("game_id = ? AND solve_status = ?", gameID, models.SolveCorrect).Preload("Challenge").Find(&totalSolves).Error; err != nil {
@@ -178,9 +188,13 @@ func CachedSolvedChallengesForGame(gameID int64) (map[int64][]models.Solve, erro
 		}
 
 		return solveMap, nil
-	}, solvedChallengesForGameCacheTime, true); err != nil {
+	}, solvedChallengesForGameCacheTime, true)
+
+	if err != nil {
 		return nil, err
 	}
+
+	solveMap = obj.(map[int64][]models.Solve)
 
 	return solveMap, nil
 }
@@ -188,7 +202,7 @@ func CachedSolvedChallengesForGame(gameID int64) (map[int64][]models.Solve, erro
 func CachedGameInfo(gameID int64) (*models.Game, error) {
 	var game models.Game
 
-	if err := GetOrCacheSingleFlight(fmt.Sprintf("game_info_%d", gameID), &game, func() (interface{}, error) {
+	obj, err := GetOrCacheSingleFlight(fmt.Sprintf("game_info_%d", gameID), func() (interface{}, error) {
 		if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
 				return nil, errors.New("game not found")
@@ -198,9 +212,13 @@ func CachedGameInfo(gameID int64) (*models.Game, error) {
 		}
 
 		return game, nil
-	}, gameInfoCacheTime, true); err != nil {
+	}, gameInfoCacheTime, true)
+
+	if err != nil {
 		return nil, err
 	}
+
+	game = obj.(models.Game)
 
 	return &game, nil
 }
@@ -208,7 +226,7 @@ func CachedGameInfo(gameID int64) (*models.Game, error) {
 func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, error) {
 	var cachedData webmodels.CachedGameScoreBoardData
 
-	if err := GetOrCacheSingleFlight(fmt.Sprintf("game_scoreboard_%d", gameID), &cachedData, func() (interface{}, error) {
+	obj, err := GetOrCacheSingleFlight(fmt.Sprintf("game_scoreboard_%d", gameID), func() (interface{}, error) {
 		var finalScoreBoardMap map[int64]webmodels.TeamScoreItem = make(map[int64]webmodels.TeamScoreItem)
 		var timeLines []webmodels.TimeLineItem = make([]webmodels.TimeLineItem, 0)
 
@@ -488,9 +506,13 @@ func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, er
 		cachedData.Top10Teams = top10Teams
 
 		return cachedData, nil
-	}, gameScoreBoardCacheTime, true); err != nil {
+	}, gameScoreBoardCacheTime, true)
+
+	if err != nil {
 		return nil, err
 	}
+
+	cachedData = obj.(webmodels.CachedGameScoreBoardData)
 
 	return &cachedData, nil
 }
@@ -503,7 +525,7 @@ func CachedGameGroups(gameID int64) (map[int64]models.GameGroup, error) {
 		return nil, err
 	}
 
-	if err := GetOrCacheSingleFlight(fmt.Sprintf("game_groups_for_game_%d", game.GameID), &gameGroupsMap, func() (interface{}, error) {
+	obj, err := GetOrCacheSingleFlight(fmt.Sprintf("game_groups_for_game_%d", game.GameID), func() (interface{}, error) {
 		// 查找分组
 		var tmpGameMap map[int64]models.GameGroup = make(map[int64]models.GameGroup)
 		var tmpGameGroups []models.GameGroup
@@ -516,9 +538,13 @@ func CachedGameGroups(gameID int64) (map[int64]models.GameGroup, error) {
 		}
 
 		return tmpGameMap, nil
-	}, challengesForGameCacheTime, true); err != nil {
+	}, challengesForGameCacheTime, true)
+
+	if err != nil {
 		return nil, err
 	}
+
+	gameGroupsMap = obj.(map[int64]models.GameGroup)
 
 	return gameGroupsMap, nil
 }
@@ -532,8 +558,7 @@ func CachedGameSimpleChallenges(gameID int64) ([]webmodels.UserSimpleGameChallen
 		return nil, err
 	}
 
-	// Cache challenge list to redis
-	if err := GetOrCacheSingleFlight(fmt.Sprintf("challenges_for_game_%d", game.GameID), &simpleGameChallenges, func() (interface{}, error) {
+	obj, err := GetOrCacheSingleFlight(fmt.Sprintf("challenges_for_game_%d", game.GameID), func() (interface{}, error) {
 		// 查找队伍
 		var tmpSimpleGameChallenges []webmodels.UserSimpleGameChallenge = make([]webmodels.UserSimpleGameChallenge, 0)
 		var gameChallenges []models.GameChallenge
@@ -581,9 +606,14 @@ func CachedGameSimpleChallenges(gameID int64) ([]webmodels.UserSimpleGameChallen
 		}
 
 		return tmpSimpleGameChallenges, nil
-	}, challengesForGameCacheTime, true); err != nil {
+	}, challengesForGameCacheTime, true)
+
+	// Cache challenge list to redis
+	if err != nil {
 		return nil, err
 	}
+
+	simpleGameChallenges = obj.([]webmodels.UserSimpleGameChallenge)
 
 	return simpleGameChallenges, nil
 }
@@ -592,7 +622,7 @@ func CachedGameSimpleChallenges(gameID int64) ([]webmodels.UserSimpleGameChallen
 func CachedGameGroupsWithTeamCount(gameID int64) ([]webmodels.GameGroupSimple, error) {
 	var gameGroupsWithTeamCount []webmodels.GameGroupSimple
 
-	if err := GetOrCacheSingleFlight(fmt.Sprintf("game_groups_with_team_count_%d", gameID), &gameGroupsWithTeamCount, func() (interface{}, error) {
+	obj, err := GetOrCacheSingleFlight(fmt.Sprintf("game_groups_with_team_count_%d", gameID), func() (interface{}, error) {
 		// 获取分组信息
 		gameGroupMap, err := CachedGameGroups(gameID)
 		if err != nil {
@@ -628,9 +658,13 @@ func CachedGameGroupsWithTeamCount(gameID int64) ([]webmodels.GameGroupSimple, e
 		})
 
 		return result, nil
-	}, allTeamsForGameCacheTime, true); err != nil {
+	}, allTeamsForGameCacheTime, true)
+
+	if err != nil {
 		return nil, err
 	}
+
+	gameGroupsWithTeamCount = obj.([]webmodels.GameGroupSimple)
 
 	return gameGroupsWithTeamCount, nil
 }
@@ -654,7 +688,7 @@ func CachedFilteredGameScoreBoard(gameID int64, groupID *int64) (*CachedFiltered
 		cacheKey = fmt.Sprintf("filtered_game_scoreboard_%d_all", gameID)
 	}
 
-	if err := GetOrCacheSingleFlight(cacheKey, &cachedFilteredData, func() (interface{}, error) {
+	obj, err := GetOrCacheSingleFlight(cacheKey, func() (interface{}, error) {
 		// 获取完整的排行榜数据
 		scoreBoard, err := CachedGameScoreBoard(gameID)
 		if err != nil {
@@ -699,9 +733,13 @@ func CachedFilteredGameScoreBoard(gameID int64, groupID *int64) (*CachedFiltered
 		}
 
 		return cachedFilteredData, nil
-	}, gameScoreBoardCacheTime, true); err != nil {
+	}, gameScoreBoardCacheTime, true)
+
+	if err != nil {
 		return nil, err
 	}
+
+	cachedFilteredData = obj.(CachedFilteredGameScoreBoardData)
 
 	return &cachedFilteredData, nil
 }
