@@ -12,13 +12,6 @@ import { ScoreTable } from './ScoreTable';
 import { Tooltip } from 'react-tooltip';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Button } from './ui/button';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "components/ui/select"
 
 import { randomInt } from "mathjs";
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -34,6 +27,14 @@ import { useLocation, useNavigate } from 'react-router';
 import { useIsMobile } from 'hooks/use-mobile';
 import { ScoreTableMobile } from './ScoreTableMobile';
 import { toast } from 'sonner';
+
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "components/ui/select"
 
 export default function ScoreBoardPage(
     { gmid }
@@ -53,7 +54,7 @@ export default function ScoreBoardPage(
     // 分组和分页相关状态
     const [selectedGroupId, setSelectedGroupId] = useState<number | undefined>(undefined)
     const [currentPage, setCurrentPage] = useState(1)
-    const [pageSize] = useState(20)
+    const [pageSize, setPageSize] = useState(20)
     const [groups, setGroups] = useState<GameGroupSimple[]>([])
     const [pagination, setPagination] = useState<PaginationInfo | undefined>(undefined)
 
@@ -136,7 +137,7 @@ export default function ScoreBoardPage(
                 params.group_id = selectedGroupId;
             }
             params.page = 1;
-            params.size = 1000; // 获取大量数据用于导出
+            params.size = 10000; // 获取大量数据用于导出
             
             const response = await api.user.userGetGameScoreboard(gmid, params);
             const data = response.data.data as GameScoreboardData;
@@ -295,7 +296,7 @@ export default function ScoreBoardPage(
                 const current = dayjs()
                 const end = dayjs(gameInfo.end_time).diff(current) > 0 ? current : dayjs(gameInfo.end_time)
 
-                const curTimeLine = JSON.stringify(res.data.data?.time_lines)
+                const curTimeLine = JSON.stringify(res.data.data?.top10_timelines)
 
                 if (curTimeLine != lastTimeLine.current || true) {
                     lastTimeLine.current = curTimeLine
@@ -327,7 +328,7 @@ export default function ScoreBoardPage(
                                         ],
                                     },
                         },
-                        ...(res.data.data?.time_lines?.map((team) => ({
+                        ...(res.data.data?.top10_timelines?.map((team) => ({
                             name: team.team_name,
                             type: 'line',
                             showSymbol: false,
@@ -351,68 +352,6 @@ export default function ScoreBoardPage(
                             smooth: true,
                         }) as echarts.SeriesOption) || [])
                     ] as echarts.SeriesOption[]
-
-                    // setChartOpton({
-                    //     backgroundColor: 'transparent',
-                    //     tooltip: {
-                    //         trigger: 'axis',
-                    //         borderWidth: 0,
-                    //         textStyle: {
-                    //             fontSize: 12,
-                    //             color: theme == "dark" ? "#121212" : "#FFFFFF",
-                    //         },
-                    //         backgroundColor: theme == "dark" ? "#FFFFFF" : "#121212"
-                    //     },
-                    //     title: {
-                    //         left: 'center',
-                    //         text: `${gameInfo?.title} - 记分榜`,
-                    //         textStyle: {
-                    //             color: theme == "dark" ? "#FFFFFF" : "#121212",
-                    //         }
-                    //     },
-                    //     toolbox: {
-                    //         show: true,
-                    //         feature: {
-                    //             dataZoom: {
-                    //                 yAxisIndex: 'none'
-                    //             },
-                    //             restore: {},
-                    //             saveAsImage: {}
-                    //         }
-                    //     },
-                    //     xAxis: {
-                    //         type: 'time',
-                    //         min: dayjs(gameInfo?.start).toDate(),
-                    //         max: dayjs(gameInfo?.end).toDate(),
-                    //         splitLine: {
-                    //             show: false,
-                    //         },
-                    //     },
-                    //     yAxis: {
-                    //         type: 'value',
-                    //         boundaryGap: [0, '100%'],
-                    //         max: (value: any) => (Math.floor(value.max / 1000) + 1) * 1000,
-                    //         splitLine: {
-                    //             show: true,
-                    //         },
-                    //     },
-                    //     dataZoom: [
-                    //         {
-                    //             type: 'inside',
-                    //             start: 0,
-                    //             end: 100,
-                    //             xAxisIndex: 0,
-                    //             filterMode: 'none'
-                    //         },
-                    //         {
-                    //             start: 0,
-                    //             end: 100,
-                    //             xAxisIndex: 0,
-                    //             showDetail: false,
-                    //         }
-                    //     ],
-                    //     series: 
-                    // })
                 }
 
                 setLoadingVisibility(false)
@@ -436,7 +375,7 @@ export default function ScoreBoardPage(
         const current = dayjs()
         const end = dayjs(gameInfo.end_time).diff(current) > 0 ? current : dayjs(gameInfo.end_time)
 
-        const curTimeLine = JSON.stringify(scoreBoardModel?.time_lines?.find((e) => e.team_id == showUserDetail.team_id))
+        const curTimeLine = JSON.stringify(scoreBoardModel?.team_timelines?.find((e) => e.team_id == showUserDetail.team_id))
 
         if (curTimeLine != lastPersonalTimeLine.current) {
             lastPersonalTimeLine.current = curTimeLine
@@ -527,7 +466,7 @@ export default function ScoreBoardPage(
                                     ],
                                 },
                     },
-                    ...(scoreBoardModel?.time_lines?.filter((e) => e.team_id == showUserDetail.team_id).map((team) => ({
+                    ...(scoreBoardModel?.team_timelines?.filter((e) => e.team_id == showUserDetail.team_id).map((team) => ({
                         name: team.team_name,
                         type: 'line',
                         showSymbol: false,
@@ -561,12 +500,6 @@ export default function ScoreBoardPage(
     const navigator = useNavigate()
 
     const gamePath = useLocation().pathname.split("/").slice(0, -1).join("/")
-
-    useEffect(() => {
-        if (gameInfo) {
-            console.log(scoreBoardModel)
-        }
-    }, [scoreBoardModel])
 
     return (
         <>
@@ -838,7 +771,7 @@ export default function ScoreBoardPage(
                                 {((!isChartFullscreen && !isNormalChartMinimized) || isChartFloating || isNormalChartMinimized) && (
                                     <>
                                         {/* 分组选择器和分页信息 */}
-                                        <div className='w-full px-10 mb-4'>
+                                        <div className={`w-full lg:max-w-[90vw] mx-auto px-10 mb-4 select-none ${!isNormalChartMinimized ? "mt-6" : ""}`}>
                                             <div className='flex items-center justify-between gap-4 flex-wrap'>
                                                 {/* 分组选择器 */}
                                                 {groups.length > 0 && (
@@ -866,53 +799,24 @@ export default function ScoreBoardPage(
                                                         <span className='text-sm text-muted-foreground'>
                                                             共 {pagination.total_count} 支队伍，第 {pagination.current_page} / {pagination.total_pages} 页
                                                         </span>
-                                                        
-                                                        {/* 分页按钮 */}
-                                                        <div className='flex items-center gap-1'>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => handlePageChange(1)}
-                                                                disabled={pagination.current_page === 1}
-                                                            >
-                                                                首页
-                                                            </Button>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => handlePageChange(pagination.current_page - 1)}
-                                                                disabled={pagination.current_page === 1}
-                                                            >
-                                                                上一页
-                                                            </Button>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => handlePageChange(pagination.current_page + 1)}
-                                                                disabled={pagination.current_page === pagination.total_pages}
-                                                            >
-                                                                下一页
-                                                            </Button>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => handlePageChange(pagination.total_pages)}
-                                                                disabled={pagination.current_page === pagination.total_pages}
-                                                            >
-                                                                末页
-                                                            </Button>
-                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
-
-                                        <div className='flex max-h-[80vh] lg:max-w-[90vw] w-full mx-auto overflow-y-auto overflow-x-hidden justify-center px-10'>
+                                        <div className='flex lg:max-w-[90vw] w-full mx-auto overflow-y-auto overflow-x-hidden justify-center px-10'>
                                             <div className='flex overflow-hidden w-full'>
                                                 <div className='flex flex-1 overflow-hidden'>
                                                     {scoreBoardModel ? (!isMobile ? (
                                                         <>
-                                                            <ScoreTable scoreBoardModel={scoreBoardModel} setShowUserDetail={setShowUserDetail} challenges={challenges} />
+                                                            <ScoreTable 
+                                                                scoreBoardModel={scoreBoardModel}
+                                                                setShowUserDetail={setShowUserDetail}
+                                                                challenges={challenges}
+                                                                pageSize={pageSize}
+                                                                pagination={pagination}
+                                                                curPage={currentPage}
+                                                                setCurPage={setCurrentPage}
+                                                            />
                                                         </>
                                                     ) : (
                                                         <ScoreTableMobile scoreBoardModel={scoreBoardModel} setShowUserDetail={setShowUserDetail} challenges={challenges} />

@@ -180,35 +180,31 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 
 	var user_id string
 	var logined bool = false
+	var curTeam models.Team
 
-	if err == nil {
-		tmpUserID, ok := claims["UserID"]
+	// 先获取所有队伍的信息
+	teamDataMap, err := redis_tool.CachedMemberSearchTeamMap(game.GameID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: "failed to load team data",
+		})
+		return
+	}
+
+	tmpUserID, ok := claims["UserID"]
+	if ok {
+		user_id = tmpUserID.(string)
+		curTeam, ok = teamDataMap[user_id]
 		if ok {
-			user_id = tmpUserID.(string)
 			logined = true
 		}
 	}
 
 	var team_status models.ParticipationStatus = models.ParticipateUnRegistered
-	var team models.Team
 
 	if logined {
-		memberBelongSearchMap, err := redis_tool.CachedMemberSearchTeamMap(game.GameID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-				Code:    500,
-				Message: "Failed to load teams",
-			})
-		}
-
-		// 查找队伍
-		tmpTeam, ok := memberBelongSearchMap[user_id]
-		if !ok {
-			team_status = models.ParticipateUnRegistered
-		} else {
-			team_status = tmpTeam.TeamStatus
-			team = tmpTeam
-		}
+		team_status = curTeam.TeamStatus
 	} else {
 		team_status = models.ParticipateUnLogin
 	}
@@ -234,10 +230,10 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 	}
 
 	// 如果用户已加入队伍，添加队伍信息
-	if team_status != models.ParticipateUnRegistered && team.TeamID != 0 {
+	if team_status != models.ParticipateUnRegistered && curTeam.TeamID != 0 {
 		// 获取团队成员信息
 		var members []webmodels.TeamMemberInfo
-		if len(team.TeamMembers) > 0 {
+		if len(curTeam.TeamMembers) > 0 {
 			userMap, err := redis_tool.CachedMemberMap()
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
@@ -247,8 +243,8 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 			}
 
 			// 构建成员详细信息
-			for _, userID := range team.TeamMembers {
-				user, ok := userMap[userID]
+			for _, memberID := range curTeam.TeamMembers {
+				user, ok := userMap[memberID]
 				if !ok {
 					continue
 				}
@@ -270,22 +266,22 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 
 		// 构建团队信息
 		teamInfo := gin.H{
-			"team_id":          team.TeamID,
-			"game_id":          team.GameID,
-			"team_name":        team.TeamName,
-			"team_avatar":      team.TeamAvatar,
-			"team_slogan":      team.TeamSlogan,
-			"team_description": team.TeamDescription,
+			"team_id":          curTeam.TeamID,
+			"game_id":          curTeam.GameID,
+			"team_name":        curTeam.TeamName,
+			"team_avatar":      curTeam.TeamAvatar,
+			"team_slogan":      curTeam.TeamSlogan,
+			"team_description": curTeam.TeamDescription,
 			"team_members":     members,
-			"team_score":       team.TeamScore,
-			"team_hash":        team.TeamHash,
-			"invite_code":      team.InviteCode,
-			"team_status":      team.TeamStatus,
+			"team_score":       curTeam.TeamScore,
+			"team_hash":        curTeam.TeamHash,
+			"invite_code":      curTeam.InviteCode,
+			"team_status":      curTeam.TeamStatus,
 			"rank":             0,
 			"penalty":          0,
 		}
 
-		if team.TeamStatus == models.ParticipateApproved {
+		if curTeam.TeamStatus == models.ParticipateApproved {
 			cachedData, err := redis_tool.CachedGameScoreBoard(game.GameID)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
@@ -295,7 +291,7 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 				return
 			}
 
-			teamSatus, ok := cachedData.FinalScoreBoardMap[team.TeamID]
+			teamSatus, ok := cachedData.FinalScoreBoardMap[curTeam.TeamID]
 
 			if !ok {
 				teamInfo["rank"] = 0
@@ -1146,155 +1142,23 @@ func UserGameGetScoreBoard(c *gin.Context) {
 	var curTeamScoreItem *webmodels.TeamScoreItem = nil
 	var curTeam models.Team
 
-	if err == nil {
-		tmpUserID, ok := claims["UserID"]
+	// 先获取所有队伍的信息
+	teamDataMap, err := redis_tool.CachedMemberSearchTeamMap(game.GameID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: "failed to load team data",
+		})
+		return
+	}
+
+	tmpUserID, ok := claims["UserID"]
+	if ok {
+		user_id = tmpUserID.(string)
+		curTeam, ok = teamDataMap[user_id]
 		if ok {
-			user_id = tmpUserID.(string)
-
-			teamDataMap, err := redis_tool.CachedMemberSearchTeamMap(game.GameID)
-			if err == nil {
-				curTeam, ok = teamDataMap[user_id]
-				if ok {
-					logined = true
-				}
-			}
+			logined = true
 		}
-	}
-
-	// 获取所有分组信息
-	var groups []models.GameGroup
-	if err := dbtool.DB().Where("game_id = ?", game.GameID).Order("display_order ASC, created_at ASC").Find(&groups).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-			Code:    500,
-			Message: "Failed to load game groups",
-		})
-		return
-	}
-
-	// 构建分组简单信息
-	var groupSimples []webmodels.GameGroupSimple
-	var currentGroup *webmodels.GameGroupSimple
-
-	for _, group := range groups {
-		var teamCount int64
-		dbtool.DB().Model(&models.Team{}).Where("group_id = ? AND team_status = ?", group.GroupID, models.ParticipateApproved).Count(&teamCount)
-
-		groupSimple := webmodels.GameGroupSimple{
-			GroupID:   group.GroupID,
-			GroupName: group.GroupName,
-			TeamCount: teamCount,
-		}
-		groupSimples = append(groupSimples, groupSimple)
-
-		if groupID != nil && *groupID == group.GroupID {
-			currentGroup = &groupSimple
-		}
-	}
-
-	// 构建查询条件
-	query := dbtool.DB().Model(&models.Team{}).Where("game_id = ? AND team_status = ?", game.GameID, models.ParticipateApproved)
-	if groupID != nil {
-		query = query.Where("group_id = ?", *groupID)
-	}
-
-	// 获取总数
-	var totalCount int64
-	if err := query.Count(&totalCount).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-			Code:    500,
-			Message: "Failed to count teams",
-		})
-		return
-	}
-
-	// 分页查询队伍
-	var teams []models.Team
-	offset := (page - 1) * size
-	if err := query.Preload("Group").Order("team_score DESC, team_id ASC").Offset(int(offset)).Limit(int(size)).Find(&teams).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-			Code:    500,
-			Message: "Failed to load teams",
-		})
-		return
-	}
-
-	// 获取解题记录
-	var teamIDs []int64
-	for _, team := range teams {
-		teamIDs = append(teamIDs, team.TeamID)
-	}
-
-	var solves []models.Solve
-	if len(teamIDs) > 0 {
-		if err := dbtool.DB().Preload("GameChallenge").Preload("Solver").Where("game_id = ? AND team_id IN ?", game.GameID, teamIDs).Order("solve_time ASC").Find(&solves).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-				Code:    500,
-				Message: "Failed to load solves",
-			})
-			return
-		}
-	}
-
-	// 构建解题记录映射
-	teamSolvesMap := make(map[int64][]models.Solve)
-	for _, solve := range solves {
-		teamSolvesMap[solve.TeamID] = append(teamSolvesMap[solve.TeamID], solve)
-	}
-
-	// 构建队伍积分数据
-	var teamScores []webmodels.TeamScoreItem
-	for i, team := range teams {
-		var solvedChallenges []webmodels.TeamSolveItem
-		var lastSolveTime int64 = 0
-
-		if teamSolves, ok := teamSolvesMap[team.TeamID]; ok {
-			for _, solve := range teamSolves {
-				solvedChallenges = append(solvedChallenges, webmodels.TeamSolveItem{
-					ChallengeID: solve.ChallengeID,
-					Score:       solve.GameChallenge.CurScore,
-					Solver:      solve.Solver.Username,
-					Rank:        int64(solve.Rank),
-					SolveTime:   solve.SolveTime,
-				})
-				if solve.SolveTime.Unix() > lastSolveTime {
-					lastSolveTime = solve.SolveTime.Unix()
-				}
-			}
-		}
-
-		var groupName *string
-		if team.Group != nil {
-			groupName = &team.Group.GroupName
-		}
-
-		teamScore := webmodels.TeamScoreItem{
-			TeamID:           team.TeamID,
-			TeamName:         team.TeamName,
-			TeamAvatar:       team.TeamAvatar,
-			TeamSlogan:       team.TeamSlogan,
-			TeamDescription:  team.TeamDescription,
-			Rank:             int64(offset + int64(i) + 1), // 基于分页的排名
-			Score:            team.TeamScore,
-			Penalty:          0, // TODO: 计算罚时
-			GroupID:          team.GroupID,
-			GroupName:        groupName,
-			SolvedChallenges: solvedChallenges,
-			LastSolveTime:    lastSolveTime,
-		}
-
-		teamScores = append(teamScores, teamScore)
-
-		// 如果是当前用户的队伍，保存引用
-		if logined && team.TeamID == curTeam.TeamID {
-			curTeamScoreItem = &teamScore
-		}
-	}
-
-	// 获取前10名的时间线数据（用于图表）
-	cachedData, err := redis_tool.CachedGameScoreBoard(game.GameID)
-	var timeLines []webmodels.TimeLineItem
-	if err == nil {
-		timeLines = cachedData.Top10TimeLines
 	}
 
 	// 获取题目信息
@@ -1302,27 +1166,101 @@ func UserGameGetScoreBoard(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load game challenges",
+			Message: "failed to load game challenges",
 		})
 		return
 	}
 
-	// 构建分页信息
-	totalPages := (totalCount + size - 1) / size
+	// 获取排行榜数据（用于获取 Top10 时间线和当前用户队伍信息）
+	scoreBoard, err := redis_tool.CachedGameScoreBoard(game.GameID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: "failed to load game scoreboard",
+		})
+		return
+	}
+
+	// 获取带队伍数量的分组信息（已缓存）
+	simpleGameGroups, err := redis_tool.CachedGameGroupsWithTeamCount(game.GameID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: "failed to load game groups",
+		})
+		return
+	}
+
+	// 查找当前分组信息
+	var currentGroup *webmodels.GameGroupSimple
+	if groupID != nil {
+		for _, group := range simpleGameGroups {
+			if group.GroupID == *groupID {
+				currentGroup = &group
+				break
+			}
+		}
+	}
+
+	// 获取过滤后的排行榜数据（已缓存）
+	filteredData, err := redis_tool.CachedFilteredGameScoreBoard(game.GameID, groupID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: "failed to load filtered scoreboard",
+		})
+		return
+	}
+
+	totalCachedTeamsCount := filteredData.TotalCount
+
+	totalPages := (totalCachedTeamsCount + size - 1) / size
 	pagination := webmodels.PaginationInfo{
 		CurrentPage: page,
 		PageSize:    size,
-		TotalCount:  totalCount,
+		TotalCount:  totalCachedTeamsCount,
 		TotalPages:  totalPages,
+	}
+
+	if totalPages == 0 {
+		// 如果没有数据，设置为第1页
+		page = 1
+		pagination.CurrentPage = 1
+	} else if page > totalPages {
+		// 如果页码超出范围，使用最后一页
+		page = totalPages
+		pagination.CurrentPage = totalPages
+	}
+
+	// 设置当前用户的队伍信息
+	if logined {
+		if myTeamScoreItem, ok := scoreBoard.FinalScoreBoardMap[curTeam.TeamID]; ok {
+			curTeamScoreItem = &myTeamScoreItem
+		}
+	}
+
+	curStartIdx := (page - 1) * size
+	curEndIdx := min(curStartIdx+size, totalCachedTeamsCount)
+
+	var pageTeamScores []webmodels.TeamScoreItem
+	var pageTimeLines []webmodels.TimeLineItem
+
+	if totalCachedTeamsCount > 0 && curStartIdx < totalCachedTeamsCount {
+		pageTeamScores = filteredData.FilteredTeamRankings[curStartIdx:curEndIdx]
+		pageTimeLines = filteredData.FilteredTimeLines[curStartIdx:curEndIdx]
+	} else {
+		pageTeamScores = make([]webmodels.TeamScoreItem, 0)
+		pageTimeLines = make([]webmodels.TimeLineItem, 0)
 	}
 
 	result := webmodels.GameScoreboardData{
 		GameID:               game.GameID,
 		Name:                 game.Name,
-		TimeLines:            timeLines,
-		TeamScores:           teamScores,
+		Top10TimeLines:       scoreBoard.Top10TimeLines,
+		TeamScores:           pageTeamScores,
+		TeamTimeLines:        pageTimeLines,
 		SimpleGameChallenges: simpleGameChallenges,
-		Groups:               groupSimples,
+		Groups:               simpleGameGroups,
 		CurrentGroup:         currentGroup,
 		Pagination:           &pagination,
 	}

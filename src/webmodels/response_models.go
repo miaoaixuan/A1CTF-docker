@@ -91,8 +91,9 @@ type GameNotice struct {
 type GameScoreboardData struct {
 	GameID               int64                     `json:"game_id"`
 	Name                 string                    `json:"name"`
-	TimeLines            []TimeLineItem            `json:"time_lines"`
+	Top10TimeLines       []TimeLineItem            `json:"top10_timelines"`
 	TeamScores           []TeamScoreItem           `json:"teams"`
+	TeamTimeLines        []TimeLineItem            `json:"team_timelines"`
 	YourTeam             *TeamScoreItem            `json:"your_team"`
 	SimpleGameChallenges []UserSimpleGameChallenge `json:"challenges"`
 	Groups               []GameGroupSimple         `json:"groups"`
@@ -180,6 +181,8 @@ type CachedGameScoreBoardData struct {
 	FinalScoreBoardMap map[int64]TeamScoreItem
 	Top10TimeLines     []TimeLineItem
 	Top10Teams         []TeamScoreItem
+	AllTimeLines       []TimeLineItem
+	TeamRankings       []TeamScoreItem
 }
 
 // Team management responses

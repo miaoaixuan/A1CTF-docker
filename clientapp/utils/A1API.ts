@@ -464,7 +464,8 @@ export interface GameScoreboardData {
   name?: string;
   teams?: TeamScore[];
   your_team?: TeamScore;
-  time_lines?: TeamTimeline[];
+  top10_timelines?: TeamTimeline[];
+  team_timelines?: TeamTimeline[];
   challenges?: UserSimpleGameChallenge[];
   groups?: GameGroupSimple[];
   current_group?: GameGroupSimple;

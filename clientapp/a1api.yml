@@ -3229,7 +3229,11 @@ components:
             $ref: '#/components/schemas/TeamScore'
         your_team:
           $ref: '#/components/schemas/TeamScore'
-        time_lines:
+        top10_timelines:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamTimeline'
+        team_timelines:
           type: array
           items:
             $ref: '#/components/schemas/TeamTimeline'

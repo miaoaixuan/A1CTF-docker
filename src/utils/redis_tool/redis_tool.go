@@ -237,16 +237,17 @@ func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, er
 		}
 
 		// 计算每个队伍的总分和罚时
-		teamDataMap := make(map[int64]*webmodels.TeamScoreItem)
+		teamDataMap := make(map[int64]webmodels.TeamScoreItem)
 
 		// 初始化队伍数据
 		for _, team := range teams {
-			teamDataMap[team.TeamID] = &webmodels.TeamScoreItem{
+			teamDataMap[team.TeamID] = webmodels.TeamScoreItem{
 				TeamID:           team.TeamID,
 				TeamName:         team.TeamName,
 				TeamAvatar:       team.TeamAvatar,
 				TeamSlogan:       team.TeamSlogan,
 				TeamDescription:  team.TeamDescription,
+				GroupID:          team.GroupID,
 				Score:            0,
 				Penalty:          0,
 				SolvedChallenges: make([]webmodels.TeamSolveItem, 0),
@@ -280,7 +281,7 @@ func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, er
 		}
 
 		// 转换为切片并排序
-		teamRankings := make([]*webmodels.TeamScoreItem, 0, len(teamDataMap))
+		teamRankings := make([]webmodels.TeamScoreItem, 0, len(teamDataMap))
 		for _, teamData := range teamDataMap {
 			teamRankings = append(teamRankings, teamData)
 		}
@@ -308,14 +309,16 @@ func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, er
 				return teamI.LastSolveTime > teamJ.LastSolveTime
 			}
 
-			// 最后比较队伍名称（升序，字典序小的排前面）... 这个应该不会出现
-			return teamI.TeamName < teamJ.TeamName
+			// 比较队伍 ID。。。
+			return teamI.TeamID < teamJ.TeamID
 		})
+
+		processedTeamRankings := make([]webmodels.TeamScoreItem, 0, len(teamDataMap))
 
 		// 设置排名
 		for i, teamData := range teamRankings {
 			teamData.Rank = int64(i + 1)
-			finalScoreBoardMap[teamData.TeamID] = webmodels.TeamScoreItem{
+			tmp := webmodels.TeamScoreItem{
 				TeamID:           teamData.TeamID,
 				TeamName:         teamData.TeamName,
 				TeamAvatar:       teamData.TeamAvatar,
@@ -325,8 +328,13 @@ func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, er
 				Score:            teamData.Score,
 				Penalty:          teamData.Penalty,
 				SolvedChallenges: teamData.SolvedChallenges,
+				GroupID:          teamData.GroupID,
 			}
+			finalScoreBoardMap[teamData.TeamID] = tmp
+			processedTeamRankings = append(processedTeamRankings, tmp)
 		}
+
+		cachedData.TeamRankings = processedTeamRankings
 
 		// 获取 TOP10
 		idx := 0
@@ -342,6 +350,7 @@ func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, er
 				Score:            teamData.Score,
 				Penalty:          teamData.Penalty,
 				SolvedChallenges: teamData.SolvedChallenges,
+				GroupID:          teamData.GroupID,
 			})
 			idx += 1
 			if idx == 10 {
@@ -363,6 +372,7 @@ func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, er
 		// 如果没有历史记录，创建空的时间线
 		if len(scoreboardRecords) == 0 {
 			timeLines = make([]webmodels.TimeLineItem, 0)
+			cachedData.AllTimeLines = make([]webmodels.TimeLineItem, 0)
 		} else {
 			sort.Slice(scoreboardRecords, func(i, j int) bool {
 				return scoreboardRecords[i].RecordTime.Before(scoreboardRecords[j].RecordTime)
@@ -380,10 +390,26 @@ func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, er
 				}
 			}
 
+			// 构建所有队伍的时间线
+			allTimeLineMap := make(map[int64]webmodels.TimeLineItem)
+			allPrevScoreMap := make(map[int64]float64)
+
+			// 初始化所有队伍的时间线
+			for _, team := range teams {
+				if teamData, ok := teamDataMap[team.TeamID]; ok {
+					allTimeLineMap[team.TeamID] = webmodels.TimeLineItem{
+						TeamID:   team.TeamID,
+						TeamName: teamData.TeamName,
+						Scores:   make([]webmodels.TimeLineScoreItem, 0),
+					}
+				}
+			}
+
 			// 统计时间线数据
 			for _, item := range scoreboardRecords {
 				recordTime := item.RecordTime
 				for teamID, scoreValue := range item.Data {
+					// 为 TOP10 构建时间线
 					if timeline, ok := timeLineMap[teamID]; ok {
 						lastScore, valid := prevScoreMap[teamID]
 						if !valid || lastScore != scoreValue.Score {
@@ -395,10 +421,23 @@ func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, er
 							prevScoreMap[teamID] = scoreValue.Score
 						}
 					}
+
+					// 为所有队伍构建时间线
+					if allTimeline, ok := allTimeLineMap[teamID]; ok {
+						lastScore, valid := allPrevScoreMap[teamID]
+						if !valid || lastScore != scoreValue.Score {
+							allTimeline.Scores = append(allTimeline.Scores, webmodels.TimeLineScoreItem{
+								RecordTime: recordTime.UnixMilli(),
+								Score:      scoreValue.Score,
+							})
+							allTimeLineMap[teamID] = allTimeline
+							allPrevScoreMap[teamID] = scoreValue.Score
+						}
+					}
 				}
 			}
 
-			// 转换时间线数据
+			// 转换 TOP10 时间线数据
 			timeLines = make([]webmodels.TimeLineItem, 0, len(timeLineMap))
 			for _, item := range timeLineMap {
 				timeLines = append(timeLines, item)
@@ -418,6 +457,30 @@ func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, er
 				}
 				return rankI < rankJ
 			})
+
+			// 转换所有队伍的时间线数据
+			allTimeLines := make([]webmodels.TimeLineItem, 0, len(allTimeLineMap))
+			for _, item := range allTimeLineMap {
+				allTimeLines = append(allTimeLines, item)
+			}
+
+			// 按照最终排名排序所有队伍的时间线
+			sort.Slice(allTimeLines, func(i, j int) bool {
+				// 找到对应队伍的排名
+				rankI, rankJ := 999999, 999999
+				teamI, ok := finalScoreBoardMap[allTimeLines[i].TeamID]
+				if ok {
+					rankI = int(teamI.Rank)
+				}
+				teamJ, ok := finalScoreBoardMap[allTimeLines[j].TeamID]
+				if ok {
+					rankJ = int(teamJ.Rank)
+				}
+				return rankI < rankJ
+			})
+
+			// 将所有队伍的时间线数据存储到结构体中
+			cachedData.AllTimeLines = allTimeLines
 		}
 
 		cachedData.FinalScoreBoardMap = finalScoreBoardMap
@@ -430,6 +493,34 @@ func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, er
 	}
 
 	return &cachedData, nil
+}
+
+func CachedGameGroups(gameID int64) (map[int64]models.GameGroup, error) {
+	var gameGroupsMap map[int64]models.GameGroup = make(map[int64]models.GameGroup)
+
+	game, err := CachedGameInfo(gameID)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := GetOrCacheSingleFlight(fmt.Sprintf("game_groups_for_game_%d", game.GameID), &gameGroupsMap, func() (interface{}, error) {
+		// 查找分组
+		var tmpGameMap map[int64]models.GameGroup = make(map[int64]models.GameGroup)
+		var tmpGameGroups []models.GameGroup
+		if err := dbtool.DB().Where("game_id = ?", game.GameID).Find(&tmpGameGroups).Error; err != nil {
+			return nil, errors.New("failed to load game groups")
+		}
+
+		for _, group := range tmpGameGroups {
+			tmpGameMap[group.GroupID] = group
+		}
+
+		return tmpGameMap, nil
+	}, challengesForGameCacheTime, true); err != nil {
+		return nil, err
+	}
+
+	return gameGroupsMap, nil
 }
 
 func CachedGameSimpleChallenges(gameID int64) ([]webmodels.UserSimpleGameChallenge, error) {
@@ -495,4 +586,122 @@ func CachedGameSimpleChallenges(gameID int64) ([]webmodels.UserSimpleGameChallen
 	}
 
 	return simpleGameChallenges, nil
+}
+
+// CachedGameGroupsWithTeamCount 缓存带队伍数量的分组信息
+func CachedGameGroupsWithTeamCount(gameID int64) ([]webmodels.GameGroupSimple, error) {
+	var gameGroupsWithTeamCount []webmodels.GameGroupSimple
+
+	if err := GetOrCacheSingleFlight(fmt.Sprintf("game_groups_with_team_count_%d", gameID), &gameGroupsWithTeamCount, func() (interface{}, error) {
+		// 获取分组信息
+		gameGroupMap, err := CachedGameGroups(gameID)
+		if err != nil {
+			return nil, err
+		}
+
+		// 获取排行榜数据
+		scoreBoard, err := CachedGameScoreBoard(gameID)
+		if err != nil {
+			return nil, err
+		}
+
+		var result []webmodels.GameGroupSimple = make([]webmodels.GameGroupSimple, 0, len(gameGroupMap))
+		for _, group := range gameGroupMap {
+			// 统计每个分组的队伍数量
+			teamCount := int64(0)
+			for _, team := range scoreBoard.TeamRankings {
+				if team.GroupID != nil && *team.GroupID == group.GroupID {
+					teamCount++
+				}
+			}
+
+			result = append(result, webmodels.GameGroupSimple{
+				GroupID:   group.GroupID,
+				GroupName: group.GroupName,
+				TeamCount: teamCount,
+			})
+		}
+
+		// 按 GroupID 排序
+		sort.Slice(result, func(i, j int) bool {
+			return result[i].GroupID < result[j].GroupID
+		})
+
+		return result, nil
+	}, allTeamsForGameCacheTime, true); err != nil {
+		return nil, err
+	}
+
+	return gameGroupsWithTeamCount, nil
+}
+
+// CachedFilteredGameScoreBoardData 缓存过滤后的排行榜数据
+type CachedFilteredGameScoreBoardData struct {
+	FilteredTeamRankings []webmodels.TeamScoreItem
+	FilteredTimeLines    []webmodels.TimeLineItem
+	TotalCount           int64
+}
+
+// CachedFilteredGameScoreBoard 缓存按分组过滤的排行榜数据
+func CachedFilteredGameScoreBoard(gameID int64, groupID *int64) (*CachedFilteredGameScoreBoardData, error) {
+	var cachedFilteredData CachedFilteredGameScoreBoardData
+
+	// 构建缓存键
+	var cacheKey string
+	if groupID != nil {
+		cacheKey = fmt.Sprintf("filtered_game_scoreboard_%d_group_%d", gameID, *groupID)
+	} else {
+		cacheKey = fmt.Sprintf("filtered_game_scoreboard_%d_all", gameID)
+	}
+
+	if err := GetOrCacheSingleFlight(cacheKey, &cachedFilteredData, func() (interface{}, error) {
+		// 获取完整的排行榜数据
+		scoreBoard, err := CachedGameScoreBoard(gameID)
+		if err != nil {
+			return nil, err
+		}
+
+		if groupID == nil {
+			// 没有分组过滤，直接返回全部数据
+			cachedFilteredData.FilteredTeamRankings = scoreBoard.TeamRankings
+			cachedFilteredData.FilteredTimeLines = scoreBoard.AllTimeLines
+			cachedFilteredData.TotalCount = int64(len(scoreBoard.TeamRankings))
+		} else {
+			// 按分组过滤
+			filteredTeamRankings := make([]webmodels.TeamScoreItem, 0)
+			filteredTimeLines := make([]webmodels.TimeLineItem, 0)
+
+			// 创建时间线映射以便快速查找
+			timeLineMap := make(map[int64]webmodels.TimeLineItem)
+			for _, timeline := range scoreBoard.AllTimeLines {
+				timeLineMap[timeline.TeamID] = timeline
+			}
+
+			// 过滤队伍排名数据
+			for _, team := range scoreBoard.TeamRankings {
+				if team.GroupID != nil && *team.GroupID == *groupID {
+					filteredTeamRankings = append(filteredTeamRankings, team)
+					// 添加对应的时间线数据
+					if timeline, exists := timeLineMap[team.TeamID]; exists {
+						filteredTimeLines = append(filteredTimeLines, timeline)
+					}
+				}
+			}
+
+			// 重新计算分组内的排名
+			for i := range filteredTeamRankings {
+				filteredTeamRankings[i].Rank = int64(i + 1)
+			}
+
+			cachedFilteredData.FilteredTeamRankings = filteredTeamRankings
+			cachedFilteredData.FilteredTimeLines = filteredTimeLines
+			cachedFilteredData.TotalCount = int64(len(filteredTeamRankings))
+		}
+
+		return cachedFilteredData, nil
+	}, gameScoreBoardCacheTime, true); err != nil {
+		return nil, err
+	}
+
+	return &cachedFilteredData, nil
 }
