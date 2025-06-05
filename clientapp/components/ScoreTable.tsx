@@ -18,7 +18,8 @@ export function ScoreTable(
         pageSize,
         pagination,
         curPage,
-        setCurPage
+        setCurPage,
+        isLoading
     }: {
         scoreBoardModel: GameScoreboardData,
         setShowUserDetail: Dispatch<SetStateAction<TeamScore>>,
@@ -26,14 +27,17 @@ export function ScoreTable(
         pageSize: number,
         pagination: PaginationInfo | undefined,
         curPage: number,
-        setCurPage: Dispatch<SetStateAction<number>>
+        setCurPage: Dispatch<SetStateAction<number>>,
+        isLoading: boolean
     }
 ) {
 
     const tableRef = useRef<HTMLDivElement | null>(null)
+    const isUserEditing = useRef<boolean>(false)
 
     const [challengeCount, setChallengeCount] = useState(20)
     const [containerWidth, setContainerWidth] = useState(0)
+    const [jumpPage, setJumpPage] = useState(1)
 
     const { theme } = useTheme()
 
@@ -57,8 +61,20 @@ export function ScoreTable(
         if (pagination) {
             setCurPage(pagination.current_page)
             setTotalPage(pagination.total_pages)
+            // 仅当用户不在编辑状态时更新跳转页码
+            if (!isUserEditing.current) {
+                setJumpPage(pagination.current_page)
+            }
         }
     }, [pagination])
+
+    // 当当前页码变化时，更新跳转页码
+    useEffect(() => {
+        // 仅当用户不在编辑状态时更新跳转页码
+        if (!isUserEditing.current) {
+            setJumpPage(curPage);
+        }
+    }, [curPage]);
 
     useEffect(() => {
 
@@ -166,9 +182,33 @@ export function ScoreTable(
 
     // if (!pageLines) return (<></>)
 
+    // 处理页码变化
+    const handlePageChange = (page: number) => {
+        setCurPage(page);
+        isUserEditing.current = false;
+    };
+
+    // 处理页面跳转
+    const handleJumpPage = () => {
+        if (jumpPage >= 1 && jumpPage <= totalPage) {
+            setCurPage(jumpPage);
+            isUserEditing.current = false;
+        }
+    }
+
     return (
         <div className="flex flex-col w-full h-full gap-4 pt-4">
-            <div className="flex w-full flex-1 overflow-hidden">
+            <div className="flex w-full flex-1 overflow-hidden relative">
+                {/* 加载动画 - 放在表格内容上方 */}
+                {isLoading && (
+                    <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center z-10">
+                        <div className="flex flex-col items-center gap-3 bg-background/80 p-6 rounded-lg shadow-lg">
+                            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+                            <span className="text-sm font-medium text-foreground">加载中...</span>
+                        </div>
+                    </div>
+                )}
+                
                 <div id="left-container" className="min-w-[300px] max-w-[18vw] flex-none overflow-hidden">
                     <div className="flex flex-col overflow-hidden">
                         <div className={`w-full border-b-2 h-12 border-t-2 transition-[border-color] duration-300 flex items-center justify-center`}>
@@ -264,57 +304,133 @@ export function ScoreTable(
                     </div>
                 </div>
             </div>
-            <div className="flex w-full items-center justify-center gap-2 select-none">
-                {totalPage > 7 ? (
-                    <>
-                        <Button size={"icon"} variant={curPage == 1 ? "default" : "ghost"} onClick={() => { setCurPage(1) }} >1</Button>
-                        {curPage > 3 ? (
-                            <>
-                                <span>…</span>
-                                {curPage <= totalPage - 4 ? (
-                                    <>
-                                        <Button size={"icon"} variant="ghost" onClick={() => { setCurPage(curPage - 1) }}>{curPage - 1}</Button>
-                                        <Button size={"icon"} variant="default" onClick={() => { setCurPage(curPage) }}>{curPage}</Button>
-                                        <Button size={"icon"} variant="ghost" onClick={() => { setCurPage(curPage + 1) }}>{curPage + 1}</Button>
-                                    </>
-                                ) : (
-                                    <>
+            <div className="flex w-full items-center justify-center gap-2 select-none mt-4 mb-2 flex-wrap">
+                {/* 上一页按钮 */}
+                <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => { handlePageChange(Math.max(1, curPage - 1)) }}
+                    disabled={curPage === 1 || isLoading}
+                    className="hidden sm:flex items-center gap-1"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-left"><path d="m15 18-6-6 6-6"/></svg>
+                    上一页
+                </Button>
+                <Button 
+                    size="icon" 
+                    variant="outline" 
+                    onClick={() => { handlePageChange(Math.max(1, curPage - 1)) }}
+                    disabled={curPage === 1 || isLoading}
+                    className="sm:hidden"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-left"><path d="m15 18-6-6 6-6"/></svg>
+                </Button>
 
-                                    </>
-                                )}
-                            </>
-                        ) : (
-                            <>
-                                <Button size={"icon"} variant={curPage == 2 ? "default" : "ghost"} onClick={() => { setCurPage(2) }}>2</Button>
-                                <Button size={"icon"} variant={curPage == 3 ? "default" : "ghost"} onClick={() => { setCurPage(3) }}>3</Button>
-                                <Button size={"icon"} variant={curPage == 4 ? "default" : "ghost"} onClick={() => { setCurPage(4) }}>4</Button>
-                                <Button size={"icon"} variant={curPage == 5 ? "default" : "ghost"} onClick={() => { setCurPage(5) }}>5</Button>
-                            </>
-                        )}
+                {/* 页码按钮 */}
+                <div className="flex items-center gap-1">
+                    {totalPage > 7 ? (
+                        <>
+                            <Button size={"icon"} variant={curPage == 1 ? "default" : "ghost"} onClick={() => { handlePageChange(1) }} disabled={isLoading}>1</Button>
+                            {curPage > 3 ? (
+                                <>
+                                    <span className="px-1">…</span>
+                                    {curPage <= totalPage - 4 ? (
+                                        <>
+                                            <Button size={"icon"} variant="ghost" onClick={() => { handlePageChange(curPage - 1) }} disabled={isLoading}>{curPage - 1}</Button>
+                                            <Button size={"icon"} variant="default" onClick={() => { handlePageChange(curPage) }} disabled={isLoading}>{curPage}</Button>
+                                            <Button size={"icon"} variant="ghost" onClick={() => { handlePageChange(curPage + 1) }} disabled={isLoading}>{curPage + 1}</Button>
+                                        </>
+                                    ) : (
+                                        <></>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <Button size={"icon"} variant={curPage == 2 ? "default" : "ghost"} onClick={() => { handlePageChange(2) }} disabled={isLoading}>2</Button>
+                                    <Button size={"icon"} variant={curPage == 3 ? "default" : "ghost"} onClick={() => { handlePageChange(3) }} disabled={isLoading}>3</Button>
+                                    <Button size={"icon"} variant={curPage == 4 ? "default" : "ghost"} onClick={() => { handlePageChange(4) }} disabled={isLoading}>4</Button>
+                                    <Button size={"icon"} variant={curPage == 5 ? "default" : "ghost"} onClick={() => { handlePageChange(5) }} disabled={isLoading}>5</Button>
+                                </>
+                            )}
 
-                        {curPage <= totalPage - 4 ? (
-                            <>
-                                <span>…</span>
-                                <Button size={"icon"} variant="ghost" onClick={() => { setCurPage(totalPage) }}>{totalPage}</Button>
-                            </>
-                        ) : (
-                            <>
-                                <Button size={"icon"} variant={curPage == totalPage - 4 ? "default" : "ghost"} onClick={() => { setCurPage(totalPage - 4) }}>{totalPage - 4}</Button>
-                                <Button size={"icon"} variant={curPage == totalPage - 3 ? "default" : "ghost"} onClick={() => { setCurPage(totalPage - 3) }}>{totalPage - 3}</Button>
-                                <Button size={"icon"} variant={curPage == totalPage - 2 ? "default" : "ghost"} onClick={() => { setCurPage(totalPage - 2) }}>{totalPage - 2}</Button>
-                                <Button size={"icon"} variant={curPage == totalPage - 1 ? "default" : "ghost"} onClick={() => { setCurPage(totalPage - 1) }}>{totalPage - 1}</Button>
-                                <Button size={"icon"} variant={curPage == totalPage ? "default" : "ghost"} onClick={() => { setCurPage(totalPage) }}>{totalPage}</Button>
-                            </>
-                        )}
-                    </>
-                ) : (
-                    <>
-                        {totalPage > 0 && new Array(totalPage).fill(0).map((e, index) => (
-                            <Button size={"icon"} key={`pageX-${index + 1}`} variant={curPage == index + 1 ? "default" : "ghost"} onClick={() => { setCurPage(index + 1) }}>{index + 1}</Button>
-                        ))}
-                    </>
+                            {curPage <= totalPage - 4 ? (
+                                <>
+                                    <span className="px-1">…</span>
+                                    <Button size={"icon"} variant="ghost" onClick={() => { handlePageChange(totalPage) }} disabled={isLoading}>{totalPage}</Button>
+                                </>
+                            ) : (
+                                <>
+                                    <Button size={"icon"} variant={curPage == totalPage - 4 ? "default" : "ghost"} onClick={() => { handlePageChange(totalPage - 4) }} disabled={isLoading}>{totalPage - 4}</Button>
+                                    <Button size={"icon"} variant={curPage == totalPage - 3 ? "default" : "ghost"} onClick={() => { handlePageChange(totalPage - 3) }} disabled={isLoading}>{totalPage - 3}</Button>
+                                    <Button size={"icon"} variant={curPage == totalPage - 2 ? "default" : "ghost"} onClick={() => { handlePageChange(totalPage - 2) }} disabled={isLoading}>{totalPage - 2}</Button>
+                                    <Button size={"icon"} variant={curPage == totalPage - 1 ? "default" : "ghost"} onClick={() => { handlePageChange(totalPage - 1) }} disabled={isLoading}>{totalPage - 1}</Button>
+                                    <Button size={"icon"} variant={curPage == totalPage ? "default" : "ghost"} onClick={() => { handlePageChange(totalPage) }} disabled={isLoading}>{totalPage}</Button>
+                                </>
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            {totalPage > 0 && new Array(totalPage).fill(0).map((e, index) => (
+                                <Button size={"icon"} key={`pageX-${index + 1}`} variant={curPage == index + 1 ? "default" : "ghost"} onClick={() => { handlePageChange(index + 1) }} disabled={isLoading}>{index + 1}</Button>
+                            ))}
+                        </>
+                    )}
+                </div>
+
+                {/* 下一页按钮 */}
+                <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => { handlePageChange(Math.min(totalPage, curPage + 1)) }}
+                    disabled={curPage === totalPage || isLoading}
+                    className="hidden sm:flex items-center gap-1"
+                >
+                    下一页
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg>
+                </Button>
+                <Button 
+                    size="icon" 
+                    variant="outline" 
+                    onClick={() => { handlePageChange(Math.min(totalPage, curPage + 1)) }}
+                    disabled={curPage === totalPage || isLoading}
+                    className="sm:hidden"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg>
+                </Button>
+
+                {/* 跳转到指定页 */}
+                {totalPage > 1 && (
+                    <div className="flex items-center ml-2 gap-1">
+                        <input
+                            min="1"
+                            max={totalPage}
+                            className="w-12 h-8 px-2 text-center rounded-md border border-input bg-background"
+                            value={jumpPage}
+                            onChange={(e) => {
+                                isUserEditing.current = true;
+                                setJumpPage(Math.min(Math.max(1, parseInt(e.target.value) || 1), totalPage));
+                            }}
+                            onBlur={() => {
+                                // 如果用户完成编辑但未按回车或点击跳转按钮，保持编辑状态
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !isLoading) {
+                                    handleJumpPage();
+                                }
+                            }}
+                            disabled={isLoading}
+                        />
+                        <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="h-8 px-2"
+                            onClick={handleJumpPage}
+                            disabled={isLoading}
+                        >
+                            跳转
+                        </Button>
+                    </div>
                 )}
-
             </div>
         </div>
     )

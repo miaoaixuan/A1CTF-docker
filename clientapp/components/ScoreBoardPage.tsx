@@ -75,6 +75,8 @@ export default function ScoreBoardPage(
 
     // 加载动画
     const [loadingVisiblity, setLoadingVisibility] = useState(true)
+    // 换页加载状态
+    const [pageLoading, setPageLoading] = useState(false)
 
     // const serialOptions = useRef<echarts.SeriesOption[]>([])
 
@@ -194,6 +196,20 @@ export default function ScoreBoardPage(
         setCurrentPage(page);
     }, []);
 
+    // 页面大小变化处理
+    const handlePageSizeChange = useCallback((size: string) => {
+        const newSize = parseInt(size);
+        setPageSize(newSize);
+        setCurrentPage(1); // 重置到第一页
+        
+        if (pagination && pagination.current_page > 1) {
+            toast.info('页面大小已更改', {
+                description: '已重置到第一页',
+                duration: 2000,
+            });
+        }
+    }, [pagination]);
+
     // 生成CSV内容
     const generateScoreboardCSV = (data: GameScoreboardData): string => {
         const teams = data.teams || [];
@@ -258,7 +274,10 @@ export default function ScoreBoardPage(
         if (!gameInfo?.name) return
         if (dayjs() < dayjs(gameInfo.start_time)) return
 
-        const updateScoreBoard = () => {
+        const updateScoreBoard = (silent: boolean = false) => {
+            // 设置加载状态
+            if (!silent) setPageLoading(true);
+            
             // 构建查询参数
             const params: any = {
                 page: currentPage,
@@ -355,13 +374,23 @@ export default function ScoreBoardPage(
                 }
 
                 setLoadingVisibility(false)
+                // 结束加载状态
+                setPageLoading(false)
+            }).catch(error => {
+                console.error('加载积分榜失败:', error);
+                // 出错时也要结束加载状态
+                setPageLoading(false);
+                toast.error('加载积分榜失败', {
+                    description: '请稍后重试',
+                    duration: 3000,
+                });
             })
         }
 
-        updateScoreBoard()
+        updateScoreBoard(false)
         const scoreBoardInter = setInterval(() => {
             // if (visibleRef.current) updateScoreBoard()
-            updateScoreBoard()
+            updateScoreBoard(true)
         }, randomInt(4000, 5000))
 
         return () => {
@@ -772,31 +801,52 @@ export default function ScoreBoardPage(
                                     <>
                                         {/* 分组选择器和分页信息 */}
                                         <div className={`w-full lg:max-w-[90vw] mx-auto px-10 mb-4 select-none ${!isNormalChartMinimized ? "mt-6" : ""}`}>
-                                            <div className='flex items-center justify-between gap-4 flex-wrap'>
-                                                {/* 分组选择器 */}
-                                                {groups.length > 0 && (
-                                                    <div className='flex items-center gap-2'>
-                                                        <span className='text-sm font-medium'>分组筛选:</span>
-                                                        <Select value={selectedGroupId?.toString() || "all"} onValueChange={handleGroupChange}>
-                                                            <SelectTrigger className="w-[200px]">
-                                                                <SelectValue placeholder="选择分组" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="all">全部队伍</SelectItem>
-                                                                {groups.map((group) => (
-                                                                    <SelectItem key={group.group_id} value={group.group_id.toString()}>
-                                                                        {group.group_name} ({group.team_count}队)
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </div>
-                                                )}
+                                            <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 flex-wrap'>
+                                                <div className='flex flex-wrap items-center gap-4'>
+                                                    {/* 分组选择器 */}
+                                                    {groups.length > 0 && (
+                                                        <div className='flex items-center gap-2'>
+                                                            <span className='text-sm font-medium'>分组筛选:</span>
+                                                            <Select value={selectedGroupId?.toString() || "all"} onValueChange={handleGroupChange} disabled={pageLoading}>
+                                                                <SelectTrigger className="w-[180px]">
+                                                                    <SelectValue placeholder="选择分组" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="all">全部队伍</SelectItem>
+                                                                    {groups.map((group) => (
+                                                                        <SelectItem key={group.group_id} value={group.group_id.toString()}>
+                                                                            {group.group_name} ({group.team_count}队)
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+                                                    )}
+
+                                                    {/* 页面大小选择器 */}
+                                                    {pagination && (
+                                                        <div className='flex items-center gap-2'>
+                                                            <span className='text-sm font-medium hidden sm:inline'>每页显示:</span>
+                                                            <span className='text-sm font-medium sm:hidden'>每页:</span>
+                                                            <Select value={pageSize.toString()} onValueChange={handlePageSizeChange} disabled={pageLoading}>
+                                                                <SelectTrigger className="w-[70px] h-8 text-xs sm:text-sm">
+                                                                    <SelectValue placeholder="页面大小" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="10">10</SelectItem>
+                                                                    <SelectItem value="20">20</SelectItem>
+                                                                    <SelectItem value="50">50</SelectItem>
+                                                                    <SelectItem value="100">100</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+                                                    )}
+                                                </div>
 
                                                 {/* 分页信息 */}
                                                 {pagination && (
-                                                    <div className='flex items-center gap-4 flex-wrap'>
-                                                        <span className='text-sm text-muted-foreground'>
+                                                    <div className='flex items-center'>
+                                                        <span className='text-xs sm:text-sm text-muted-foreground'>
                                                             共 {pagination.total_count} 支队伍，第 {pagination.current_page} / {pagination.total_pages} 页
                                                         </span>
                                                     </div>
@@ -816,6 +866,7 @@ export default function ScoreBoardPage(
                                                                 pagination={pagination}
                                                                 curPage={currentPage}
                                                                 setCurPage={setCurrentPage}
+                                                                isLoading={pageLoading}
                                                             />
                                                         </>
                                                     ) : (

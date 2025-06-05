@@ -245,30 +245,3 @@ func AdminDeleteGameGroup(c *gin.Context) {
 		"message": "Group deleted successfully",
 	})
 }
-
-// UserGetGameGroups 用户获取比赛分组列表
-func UserGetGameGroups(c *gin.Context) {
-	gameIDStr := c.Param("game_id")
-	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
-			Code:    400,
-			Message: "Invalid game ID",
-		})
-		return
-	}
-
-	var groups []models.GameGroup
-	if err := dbtool.DB().Where("game_id = ?", gameID).Order("display_order ASC, created_at ASC").Find(&groups).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-			Code:    500,
-			Message: "Failed to load game groups",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code": 200,
-		"data": groups,
-	})
-}
