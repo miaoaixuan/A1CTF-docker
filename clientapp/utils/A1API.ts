@@ -602,6 +602,8 @@ export interface AdminListTeamsPayload {
   /** @min 0 */
   size: number;
   offset?: number;
+  /** 搜索关键词，用于过滤队伍名称或队伍口号 */
+  search?: string;
 }
 
 export interface AdminTeamOperationPayload {
@@ -662,6 +664,8 @@ export interface AdminListContainersPayload {
   /** @min 0 */
   size: number;
   offset?: number;
+  /** 搜索关键词，用于过滤容器名称、队伍名称或游戏名称 */
+  search?: string;
 }
 
 export interface AdminContainerOperationPayload {
@@ -1739,8 +1743,11 @@ export class Api<
      */
     listUsers: (
       data: {
-        size: number;
-        offset: number;
+        size?: number;
+        offset?: number;
+        /** 搜索关键词，用于过滤用户名、邮箱、真实姓名或学号 */
+        search?: string;
+        required?: any;
       },
       params: RequestParams = {},
     ) =>

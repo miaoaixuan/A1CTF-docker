@@ -53,14 +53,16 @@ type AdminAddGameChallengePayload struct {
 }
 
 type AdminListUsersPayload struct {
-	Size   int `json:"size" binding:"min=0"`
-	Offset int `json:"offset"`
+	Size   int    `json:"size" binding:"min=0"`
+	Offset int    `json:"offset"`
+	Search string `json:"search"`
 }
 
 type AdminListTeamsPayload struct {
-	GameID int `json:"game_id"`
-	Size   int `json:"size" binding:"min=0"`
-	Offset int `json:"offset"`
+	GameID int    `json:"game_id"`
+	Size   int    `json:"size" binding:"min=0"`
+	Offset int    `json:"offset"`
+	Search string `json:"search"`
 }
 
 type AdminTeamOperationPayload struct {
@@ -90,9 +92,10 @@ type AdminUserOperationPayload struct {
 
 // 容器列表请求参数
 type AdminListContainersPayload struct {
-	GameID int64 `json:"game_id" binding:"required"`
-	Size   int   `json:"size" binding:"required"`
-	Offset int   `json:"offset"`
+	GameID int    `json:"game_id"`
+	Size   int    `json:"size" binding:"min=0"`
+	Offset int    `json:"offset"`
+	Search string `json:"search"`
 }
 
 // 容器操作请求参数

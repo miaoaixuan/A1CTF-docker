@@ -127,6 +127,8 @@ export function ContainerManageView() {
     const [curPage, setCurPage] = React.useState(0);
     const [totalCount, setTotalCount] = React.useState(0);
     const [gameId, setGameId] = React.useState(1); // 默认游戏ID
+    const [searchKeyword, setSearchKeyword] = React.useState("");
+    const [debouncedSearchKeyword, setDebouncedSearchKeyword] = React.useState("");
     
     // 比赛选择相关状态
     const [games, setGames] = React.useState<UserGameSimpleInfo[]>([]);
@@ -140,6 +142,16 @@ export function ContainerManageView() {
         description: "",
         onConfirm: () => {},
     });
+    
+    // 防抖处理搜索关键词
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchKeyword(searchKeyword);
+            setCurPage(0); // 重置到第一页
+        }, 200); // 200ms 防抖延迟
+
+        return () => clearTimeout(timer);
+    }, [searchKeyword]);
     
     // 获取比赛列表
     const fetchGames = () => {
@@ -425,11 +437,18 @@ export function ContainerManageView() {
 
     // 获取容器列表数据
     const fetchContainers = () => {
-        api.admin.adminListContainers({ 
+        const payload: any = { 
             game_id: gameId, 
             size: pageSize, 
             offset: pageSize * curPage 
-        }).then((res: any) => {
+        };
+        
+        // 如果有搜索关键词，添加到请求中
+        if (debouncedSearchKeyword.trim()) {
+            payload.search = debouncedSearchKeyword.trim();
+        }
+        
+        api.admin.adminListContainers(payload).then((res: any) => {
             setTotalCount(res.data.total ?? 0);
             const formattedData: ContainerModel[] = res.data.data.map((item: AdminContainerItem) => {
                 // 格式化端口信息为可读字符串
@@ -457,6 +476,11 @@ export function ContainerManageView() {
         });
     };
 
+    // 处理搜索
+    const handleSearch = (value: string) => {
+        setSearchKeyword(value);
+    };
+
     const table = useReactTable({
         data,
         columns,
@@ -479,7 +503,7 @@ export function ContainerManageView() {
     React.useEffect(() => {
         table.setPageSize(pageSize);
         fetchContainers();
-    }, [curPage, pageSize, gameId]);
+    }, [curPage, pageSize, gameId, debouncedSearchKeyword]);
 
     return (
         <MacScrollbar className="overflow-hidden w-full">
@@ -568,11 +592,9 @@ export function ContainerManageView() {
                     </div>
                     <div className="flex items-center py-4">
                         <Input
-                            placeholder="按队伍名称过滤..."
-                            value={(table.getColumn("TeamName")?.getFilterValue() as string) ?? ""}
-                            onChange={(event) =>
-                                table.getColumn("TeamName")?.setFilterValue(event.target.value)
-                            }
+                            placeholder="按容器或队伍名称过滤..."
+                            value={searchKeyword}
+                            onChange={(event) => handleSearch(event.target.value)}
                             className="max-w-sm"
                         />
                         <div className="flex gap-2 ml-auto">

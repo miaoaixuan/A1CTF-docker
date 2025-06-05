@@ -536,9 +536,12 @@ paths:
                     type: number
                   offset:
                     type: number
-                required:
-                  - size
-                  - offset
+                  search:
+                    type: string
+                    description: 搜索关键词，用于过滤用户名、邮箱、真实姓名或学号
+                  required:
+                    - size
+                    - offset
   /api/admin/user/update:
     post:
       tags: [admin]
@@ -3460,6 +3463,9 @@ components:
           minimum: 0
         offset:
           type: integer
+        search:
+          type: string
+          description: 搜索关键词，用于过滤队伍名称或队伍口号
       required:
         - game_id
         - size
@@ -3578,6 +3584,9 @@ components:
           minimum: 0
         offset:
           type: integer
+        search:
+          type: string
+          description: 搜索关键词，用于过滤容器名称、队伍名称或游戏名称
       required:
         - game_id
         - size

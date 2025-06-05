@@ -19,14 +19,29 @@ func AdminListUsers(c *gin.Context) {
 		return
 	}
 
+	query := dbtool.DB().Model(&models.User{})
+
+	// 如果有搜索关键词，添加搜索条件
+	if payload.Search != "" {
+		searchPattern := "%" + payload.Search + "%"
+		query = query.Where("username LIKE ? OR email LIKE ? OR realname LIKE ? OR student_number LIKE ?",
+			searchPattern, searchPattern, searchPattern, searchPattern)
+	}
+
 	var users []models.User
-	if err := dbtool.DB().Find(&users).Offset(payload.Offset).Limit(payload.Size).Error; err != nil {
+	if err := query.Offset(payload.Offset).Limit(payload.Size).Find(&users).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
 		return
 	}
 
 	var count int64
-	if err := dbtool.DB().Model(&models.User{}).Count(&count).Error; err != nil {
+	countQuery := dbtool.DB().Model(&models.User{})
+	if payload.Search != "" {
+		searchPattern := "%" + payload.Search + "%"
+		countQuery = countQuery.Where("username LIKE ? OR email LIKE ? OR realname LIKE ? OR student_number LIKE ?",
+			searchPattern, searchPattern, searchPattern, searchPattern)
+	}
+	if err := countQuery.Count(&count).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count users"})
 		return
 	}

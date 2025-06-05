@@ -18,15 +18,29 @@ func AdminListTeams(c *gin.Context) {
 		return
 	}
 
+	query := dbtool.DB().Where("game_id = ?", payload.GameID)
+
+	// 如果有搜索关键词，添加搜索条件
+	if payload.Search != "" {
+		searchPattern := "%" + payload.Search + "%"
+		query = query.Where("team_name LIKE ? OR team_slogan LIKE ?", searchPattern, searchPattern)
+	}
+
 	var teams []models.Team
-	if err := dbtool.DB().Where("game_id = ?", payload.GameID).Offset(payload.Offset).Limit(payload.Size).Find(&teams).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
+	if err := query.Offset(payload.Offset).Limit(payload.Size).Find(&teams).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch teams"})
 		return
 	}
 
+	// 计算总数时也要应用搜索条件
 	var count int64
-	if err := dbtool.DB().Model(&models.Team{}).Count(&count).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count users"})
+	countQuery := dbtool.DB().Model(&models.Team{}).Where("game_id = ?", payload.GameID)
+	if payload.Search != "" {
+		searchPattern := "%" + payload.Search + "%"
+		countQuery = countQuery.Where("team_name LIKE ? OR team_slogan LIKE ?", searchPattern, searchPattern)
+	}
+	if err := countQuery.Count(&count).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count teams"})
 		return
 	}
 

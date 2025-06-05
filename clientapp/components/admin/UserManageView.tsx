@@ -118,6 +118,8 @@ export function UserManageView() {
     const [pageSize, setPageSize] = React.useState(30);
     const [curPage, setCurPage] = React.useState(0);
     const [totalCount, setTotalCount] = React.useState(0);
+    const [searchKeyword, setSearchKeyword] = React.useState("");
+    const [debouncedSearchKeyword, setDebouncedSearchKeyword] = React.useState("");
 
     const [curPageData, setCurPageData] = React.useState<AdminListUserItem[]>([])
     
@@ -128,6 +130,16 @@ export function UserManageView() {
         description: "",
         onConfirm: () => {},
     });
+
+    // 防抖处理搜索关键词
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchKeyword(searchKeyword);
+            setCurPage(0); // 重置到第一页
+        }, 200); // 200ms 防抖延迟
+
+        return () => clearTimeout(timer);
+    }, [searchKeyword]);
     
     // 处理用户删除
     const handleDeleteUser = (userId: string) => {
@@ -353,10 +365,17 @@ export function UserManageView() {
 
     // 获取用户列表数据
     const fetchUsers = () => {
-        api.admin.listUsers({ 
+        const payload: any = { 
             size: pageSize, 
             offset: pageSize * curPage 
-        }).then((res) => {
+        };
+        
+        // 如果有搜索关键词，添加到请求中
+        if (debouncedSearchKeyword.trim()) {
+            payload.search = debouncedSearchKeyword.trim();
+        }
+        
+        api.admin.listUsers(payload).then((res) => {
             setTotalCount(res.data.total ?? 0);
             setCurPageData(res.data.data);
             const formattedData = res.data.data.map(user => ({
@@ -378,6 +397,11 @@ export function UserManageView() {
             toast.error("获取用户列表失败");
             console.error("获取用户列表失败:", err);
         });
+    };
+
+    // 处理搜索
+    const handleSearch = (value: string) => {
+        setSearchKeyword(value);
     };
 
     const table = useReactTable({
@@ -402,7 +426,7 @@ export function UserManageView() {
     React.useEffect(() => {
         table.setPageSize(pageSize);
         fetchUsers();
-    }, [curPage, pageSize]);
+    }, [curPage, pageSize, debouncedSearchKeyword]);
 
     return (
         <MacScrollbar className="overflow-hidden w-full">
@@ -438,10 +462,8 @@ export function UserManageView() {
                     <div className="flex items-center py-4">
                         <Input
                             placeholder="按用户名过滤..."
-                            value={(table.getColumn("Username")?.getFilterValue() as string) ?? ""}
-                            onChange={(event) =>
-                                table.getColumn("Username")?.setFilterValue(event.target.value)
-                            }
+                            value={searchKeyword}
+                            onChange={(event) => handleSearch(event.target.value)}
                             className="max-w-sm"
                         />
                         <DropdownMenu>

@@ -307,6 +307,8 @@ func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, er
 				if teamData.LastSolveTime < solve.SolveTime.UnixMilli() {
 					teamData.LastSolveTime = solve.SolveTime.UnixMilli()
 				}
+
+				teamDataMap[solve.TeamID] = teamData
 			}
 		}
 
