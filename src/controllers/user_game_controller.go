@@ -239,12 +239,12 @@ func UserGameGetScoreBoard(c *gin.Context) {
 	}
 
 	size, err := strconv.ParseInt(sizeStr, 10, 64)
-	if err != nil || size < 1 || size > 100 {
+	if err != nil || size < 1 {
 		size = 20
 	}
 
 	// 获取当前用户的队伍信息（如果已登录）
-	claims, err := jwtauth.GetJwtMiddleWare().GetClaimsFromJWT(c)
+	claims, _ := jwtauth.GetJwtMiddleWare().GetClaimsFromJWT(c)
 
 	var user_id string
 	var logined bool = false
