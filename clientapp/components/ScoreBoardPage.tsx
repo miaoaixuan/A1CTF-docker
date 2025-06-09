@@ -71,6 +71,7 @@ export default function ScoreBoardPage(
     const [showUserDetail, setShowUserDetail] = useState<TeamScore>({})
     const [personalChartOption, setPersonalChartOption] = useState<echarts.EChartsOption>()
     const lastPersonalTimeLine = useRef<string>()
+    const personalChartRef = useRef<ReactECharts>(null)
 
     const isMobile = useIsMobile()
 
@@ -127,6 +128,29 @@ export default function ScoreBoardPage(
     const handleFloatingRestore = useCallback(() => {
         setIsChartMinimized(false);
     }, []);
+
+    // 保存个人图表为图片
+    const handleSavePersonalChart = useCallback(() => {
+        const chartInstance = personalChartRef.current?.getEchartsInstance();
+        if (!chartInstance) return;
+
+        try {
+            const url = chartInstance.getDataURL({
+                type: 'png',
+                pixelRatio: 2,
+                backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff'
+            });
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${showUserDetail.team_name || '队伍'}_个人积分图表_${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('保存个人图表失败:', error);
+        }
+    }, [theme, showUserDetail.team_name]);
 
     // 下载积分榜XLSX功能
     const downloadScoreboardXLSX = useCallback(async () => {
@@ -682,13 +706,21 @@ export default function ScoreBoardPage(
                                 opacity: 0
                             }}
                         >
-                            <Button className='w-[50px] h-[50px] [&_svg]:size-8 rounded-lg' variant="default"
-                                onClick={() => {
-                                    setShowUserDetail({})
-                                }}
-                            >
-                                <X />
-                            </Button>
+                            <div className='flex gap-2'>
+                                <Button className='w-[50px] h-[50px] [&_svg]:size-6 rounded-lg' variant="outline"
+                                    onClick={handleSavePersonalChart}
+                                    title="保存图表"
+                                >
+                                    <Download />
+                                </Button>
+                                <Button className='w-[50px] h-[50px] [&_svg]:size-8 rounded-lg' variant="default"
+                                    onClick={() => {
+                                        setShowUserDetail({})
+                                    }}
+                                >
+                                    <X />
+                                </Button>
+                            </div>
                         </motion.div>
                         <motion.div className='w-[100%] pl-6 pt-10 pb-6 lg:p-0 lg:w-[90%] h-[100%] lg:h-[70%]'
                             initial={{
@@ -727,6 +759,7 @@ export default function ScoreBoardPage(
                                         <div className='lg:pr-14 pt-5 h-[400px] flex-shrink-0 lg:h-auto lg:flex-1'>
                                             {personalChartOption && (
                                                 <ReactECharts
+                                                    ref={personalChartRef}
                                                     option={personalChartOption}
                                                     notMerge={false}
                                                     lazyUpdate={true}

@@ -57,6 +57,13 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 	var user_id string
 	var logined bool = false
 	var curTeam models.Team
+	var teamFounded bool = false
+
+	if err != nil {
+		logined = false
+	} else {
+		logined = true
+	}
 
 	// 先获取所有队伍的信息
 	teamDataMap, err := ristretto_tool.CachedMemberSearchTeamMap(game.GameID)
@@ -71,16 +78,15 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 	tmpUserID, ok := claims["UserID"]
 	if ok {
 		user_id = tmpUserID.(string)
-		curTeam, ok = teamDataMap[user_id]
-		if ok {
-			logined = true
-		}
+		curTeam, teamFounded = teamDataMap[user_id]
 	}
 
 	var team_status models.ParticipationStatus = models.ParticipateUnRegistered
 
 	if logined {
-		team_status = curTeam.TeamStatus
+		if teamFounded {
+			team_status = curTeam.TeamStatus
+		}
 	} else {
 		team_status = models.ParticipateUnLogin
 	}

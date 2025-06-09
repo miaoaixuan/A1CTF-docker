@@ -40,6 +40,9 @@ cache-time:
   all-teams-for-game: 500ms
   game-scoreboard: 500ms
   challenges-for-game: 1s
+  challenge-detail: 500ms
+  container-status: 100ms
+  team-flag: 100ms
 
 # if you need garafana, enable it
 monitoring:

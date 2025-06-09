@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
 import { clear } from 'console';
 import { UserFullGameInfo } from 'utils/A1API';
-import { Maximize2, Minimize2, Move, X, Minus } from 'lucide-react';
+import { Maximize2, Minimize2, Move, X, Minus, Download } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface SmartUpdateChartProps {
@@ -224,6 +224,29 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
 
     const handleRestore = () => {
         setIsMinimized(false);
+    };
+
+    // 保存图表为图片
+    const handleSaveAsImage = () => {
+        const chartInstance = chartRef.current?.getEchartsInstance();
+        if (!chartInstance) return;
+
+        try {
+            const url = chartInstance.getDataURL({
+                type: 'png',
+                pixelRatio: 2,
+                backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff'
+            });
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${gameInfo?.name || 'CTF'}_积分图表_${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('保存图表失败:', error);
+        }
     };
 
     useEffect(() => {
@@ -765,6 +788,15 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
                             <span className="text-xs font-medium opacity-75">图表</span>
                         </div>
                         <div className="flex gap-1">
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={handleSaveAsImage}
+                                className="p-1 h-5 w-5 rounded hover:bg-green-500/20"
+                                title="保存图片"
+                            >
+                                <Download className="w-3 h-3" />
+                            </Button>
                             {onMinimize && (
                                 <Button
                                     size="sm"
@@ -788,8 +820,21 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
                 )}
 
                 {/* 全屏/悬浮窗切换按钮 */}
-                {(onToggleFullscreen || onToggleFloating || onMinimize) && !isFloating && (
+                {!isFloating && (
                     <div className="absolute top-4 right-4 z-10 flex gap-2">
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleSaveAsImage}
+                            className={`p-2 rounded-lg backdrop-blur-sm transition-all duration-200 hover:scale-110 ${
+                                theme === 'dark'
+                                    ? 'bg-slate-800/80 border border-slate-600/50 text-slate-200 hover:bg-slate-700/80'
+                                    : 'bg-white/80 border border-gray-300/50 text-slate-700 hover:bg-gray-50/80'
+                            }`}
+                            title="保存图片"
+                        >
+                            <Download className="w-4 h-4" />
+                        </Button>
                         {onMinimize && (
                             <Button
                                 size="sm"

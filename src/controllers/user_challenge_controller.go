@@ -11,7 +11,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 func UserGetGameChallenges(c *gin.Context) {
@@ -77,77 +76,64 @@ func UserGetGameChallenge(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	var gameChallenges []models.GameChallenge
 
-	// 使用 Preload 进行关联查询
-	if err := dbtool.DB().Preload("Challenge").
-		Where("game_id = ? and game_challenges.challenge_id = ?", game.GameID, challengeID).
-		Find(&gameChallenges).Error; err != nil {
-
+	// 1. 使用缓存检查题目可见性
+	isVisible, err := ristretto_tool.CachedGameChallengeVisibility(game.GameID, challengeID)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load game challenges",
+			Message: "Failed to check challenge visibility",
 		})
 		return
 	}
 
-	if len(gameChallenges) == 0 {
+	if !isVisible {
 		c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 			Code:    404,
-			Message: "Challenge not found",
+			Message: "Challenge not found or not visible",
 		})
 		return
 	}
 
-	gameChallenge := gameChallenges[0]
-
-	// 检查是否存在 Flag 如果不存在就按照 flag 模板生成一份
-	var flag models.TeamFlag
-	if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND challenge_id = ?", game.GameID, team.TeamID, gameChallenge.Challenge.ChallengeID).First(&flag).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			// 生成 Flag
-			flag = models.TeamFlag{
-				FlagID:      0,
-				FlagContent: *gameChallenge.JudgeConfig.FlagTemplate,
-				TeamID:      team.TeamID,
-				GameID:      game.GameID,
-				ChallengeID: *gameChallenge.Challenge.ChallengeID,
-			}
-
-			if err := dbtool.DB().Create(&flag).Error; err != nil {
-				c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-					Code:    500,
-					Message: "System error",
-				})
-				return
-			}
-		} else {
-			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-				Code:    500,
-				Message: "System error.",
-			})
-			return
-		}
-	}
-
-	userAttachments := make([]webmodels.UserAttachmentConfig, 0, len(gameChallenge.Challenge.Attachments))
-
-	for _, attachment := range gameChallenge.Challenge.Attachments {
-		userAttachments = append(userAttachments, webmodels.UserAttachmentConfig{
-			AttachName:   attachment.AttachName,
-			AttachType:   attachment.AttachType,
-			AttachURL:    attachment.AttachURL,
-			AttachHash:   attachment.AttachHash,
-			DownloadHash: attachment.DownloadHash,
+	// 2. 使用缓存获取题目详细信息
+	gameChallenge, err := ristretto_tool.CachedGameChallengeDetail(game.GameID, challengeID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: "Failed to load challenge details",
 		})
+		return
 	}
 
-	// Hints 处理
-	visibleHints := make(models.Hints, 0, len(*gameChallenge.Hints))
-	for _, hint := range *gameChallenge.Hints {
-		if hint.Visible {
-			visibleHints = append(visibleHints, hint)
-		}
+	// 5. Flag 处理 - 使用缓存优化高并发查询性能，防止重复创建
+	// 这里我们预创建 flag 以确保存在，但在 UserGetGameChallenge 接口中不需要返回具体内容
+	_, err = ristretto_tool.CachedTeamFlag(game.GameID, team.TeamID, *gameChallenge.Challenge.ChallengeID, *gameChallenge.JudgeConfig.FlagTemplate)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: "Failed to get team flag",
+		})
+		return
+	}
+
+	// 3. 使用缓存获取附件信息
+	userAttachments, err := ristretto_tool.CachedChallengeAttachments(*gameChallenge.Challenge.ChallengeID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: "Failed to load challenge attachments",
+		})
+		return
+	}
+
+	// 4. 使用缓存获取可见提示
+	visibleHints, err := ristretto_tool.CachedChallengeVisibleHints(game.GameID, challengeID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: "Failed to load challenge hints",
+		})
+		return
 	}
 
 	result := webmodels.UserDetailGameChallenge{
@@ -166,9 +152,9 @@ func UserGetGameChallenge(c *gin.Context) {
 		ContainerExpireTime: nil,
 	}
 
-	// 存活靶机处理
-	var containers []models.Container
-	if err := dbtool.DB().Where("game_id = ? AND challenge_id = ? AND team_id = ? AND (container_status = ? OR container_status = ?)", game.GameID, gameChallenge.Challenge.ChallengeID, team.TeamID, models.ContainerRunning, models.ContainerQueueing).Find(&containers).Error; err != nil {
+	// 6. 容器状态处理 - 使用短时缓存（200ms）平衡性能和实时性
+	containers, err := ristretto_tool.CachedContainerStatus(game.GameID, *gameChallenge.Challenge.ChallengeID, team.TeamID)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
 			Message: "Failed to load containers",
@@ -253,43 +239,40 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 		return
 	}
 
-	var gameChallenge models.GameChallenge
-	if err := dbtool.DB().Preload("Challenge").Where("game_id = ? AND game_challenges.challenge_id = ?", game.GameID, challengeID).First(&gameChallenge).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
-				Code:    404,
-				Message: "Challenge not found",
-			})
-		} else {
-			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-				Code:    500,
-				Message: "Failed to load game challenges",
-			})
-		}
+	// 1. 使用缓存获取题目详细信息
+	gameChallenge, err := ristretto_tool.CachedGameChallengeDetail(game.GameID, challengeID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: "Failed to load challenge details",
+		})
 		return
 	}
 
-	var teamFlag models.TeamFlag
-	if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND challenge_id = ?", game.GameID, team.TeamID, challengeID).First(&teamFlag).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
-				Code:    404,
-				Message: "Please click the challenge first.",
-			})
-		} else {
-			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-				Code:    500,
-				Message: "System error",
-			})
-		}
+	// 2. 使用缓存检查是否已解决
+	hasSolved, err := ristretto_tool.CachedTeamSolveStatus(game.GameID, team.TeamID, challengeID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: "Failed to check solve status",
+		})
 		return
 	}
 
-	var solve models.Solve
-	if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND challenge_id = ?", game.GameID, team.TeamID, challengeID).First(&solve).Error; err == nil {
+	if hasSolved {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
 			Message: "You have already solved this challenge",
+		})
+		return
+	}
+
+	// 3. 使用缓存获取 teamFlag，提升性能
+	teamFlag, err := ristretto_tool.CachedTeamFlag(game.GameID, team.TeamID, challengeID, *gameChallenge.JudgeConfig.FlagTemplate)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: "Failed to get team flag",
 		})
 		return
 	}
@@ -327,7 +310,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 
 func UserGameGetJudgeResult(c *gin.Context) {
 	_ = c.MustGet("game").(models.Game)
-	_ = c.MustGet("team").(models.Team)
+	team := c.MustGet("team").(models.Team)
 
 	judgeIDStr := c.Param("judge_id")
 
@@ -340,10 +323,10 @@ func UserGameGetJudgeResult(c *gin.Context) {
 		return
 	}
 
-	team := c.MustGet("team").(models.Team)
-	var judge models.Judge
-	if err := dbtool.DB().Where("judge_id = ? AND team_id = ?", judgeIDStr, team.TeamID).First(&judge).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+	// 使用缓存获取判题结果，减少高频查询的数据库压力
+	judge, err := ristretto_tool.CachedJudgeResult(judgeIDStr, team.TeamID)
+	if err != nil {
+		if err.Error() == "judge not found" {
 			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 				Code:    404,
 				Message: "Judge not found",
