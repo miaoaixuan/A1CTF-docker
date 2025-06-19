@@ -342,11 +342,7 @@ export function ChallengesView({ id }: { id: string }) {
                 })
 
                 res.data.data.forEach((obj) => {
-                    if (obj.notice_category == NoticeCategory.NewHint) filtedNotices[curIndex++] = obj
-                })
-
-                res.data.data.forEach((obj) => {
-                    if ([NoticeCategory.FirstBlood, NoticeCategory.SecondBlood, NoticeCategory.ThirdBlood].includes(obj.notice_category)) filtedNotices[curIndex++] = obj
+                    if ([NoticeCategory.FirstBlood, NoticeCategory.SecondBlood, NoticeCategory.ThirdBlood, NoticeCategory.NewHint].includes(obj.notice_category)) filtedNotices[curIndex++] = obj
                 })
 
                 noticesRef.current = filtedNotices
@@ -401,16 +397,9 @@ export function ChallengesView({ id }: { id: string }) {
                                     // 然后添加新的Hint通知
                                     newNotices[insertIndex++] = message
 
-                                    // 再添加其他Hint通知
-                                    noticesRef.current.forEach((notice) => {
-                                        if (notice.notice_category === NoticeCategory.NewHint) {
-                                            newNotices[insertIndex++] = notice
-                                        }
-                                    })
-
                                     // 最后添加其他通知
                                     noticesRef.current.forEach((notice) => {
-                                        if (![NoticeCategory.NewAnnouncement, NoticeCategory.NewHint].includes(notice.notice_category)) {
+                                        if (![NoticeCategory.NewAnnouncement].includes(notice.notice_category)) {
                                             newNotices[insertIndex++] = notice
                                         }
                                     })
@@ -421,7 +410,7 @@ export function ChallengesView({ id }: { id: string }) {
                                     // 显示toast通知
                                     toastNewHint({
                                         challenges: message.data,
-                                        time: new Date(message.create_time).getTime() / 1000,
+                                        time: dayjs(message.create_time).toDate().getTime() / 1000,
                                         openNotices: setNoticeOpened
                                     })
                                 }
@@ -438,7 +427,7 @@ export function ChallengesView({ id }: { id: string }) {
 
                                     toastNewNotice({
                                         title: message.data[0],
-                                        time: new Date(message.create_time).getTime() / 1000,
+                                        time: dayjs(message.create_time).toDate().getTime() / 1000,
                                         openNotices: setNoticeOpened
                                     })
                                 }

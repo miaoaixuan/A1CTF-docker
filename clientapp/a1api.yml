@@ -494,6 +494,88 @@ paths:
           description: The ID of the challenge to add
           schema:
             type: integer
+  /api/admin/game/{game_id}/poster/upload:
+    post:
+      tags: [admin]
+      operationId: uploadGamePoster
+      summary: 上传比赛海报
+      description: 上传比赛海报图片并更新比赛信息，需要管理员权限
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 比赛海报上传成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "比赛海报上传成功"
+                  poster_url:
+                    type: string
+                    description: 海报访问URL
+                required:
+                  - code
+                  - message
+                  - poster_url
+        '400':
+          description: 请求错误，未上传文件或格式不正确
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '401':
+          description: 未授权，用户未登录
+        '403':
+          description: 权限不足，非管理员
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '404':
+          description: 比赛不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '415':
+          description: 不支持的媒体类型，上传的不是图片文件
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                poster:
+                  type: string
+                  format: binary
+                  description: 要上传的比赛海报图片文件，支持jpg、png、gif等常见图片格式
+              required:
+                - poster
+        required: true
   /api/admin/user/list:
     post:
       tags: [admin]

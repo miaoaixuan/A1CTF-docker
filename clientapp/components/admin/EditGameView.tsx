@@ -895,6 +895,12 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
         name: "challenges"
     });
 
+    // 使用 useWatch 监听 poster 字段的变化，确保海报实时更新
+    const watchedPoster = useWatch({
+        control: form.control,
+        name: "poster"
+    });
+
     // 转换数据格式给时间线编辑器
     const timePoints = (watchedStages || []).map((stage, index) => ({
         id: `stage_${index}`,
@@ -922,6 +928,47 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
             belongStage: belongStageId,
         };
     });
+
+    // 海报上传处理函数
+    const handlePosterUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        // 检查文件类型
+        if (!file.type.startsWith('image/')) {
+            toast.error('请选择图片文件');
+            return;
+        }
+
+        // 检查文件大小 (限制为10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            toast.error('图片大小不能超过10MB');
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append('poster', file);
+
+            const response = await api.admin.uploadGamePoster(game_info.game_id, { poster: file });
+            
+            if (response.status === 200) {
+                // 更新表单中的poster字段
+                form.setValue('poster', response.data.poster_url);
+                toast.success('海报上传成功');
+            }
+        } catch (error: any) {
+            console.error('海报上传失败:', error);
+            if (error.response?.data?.message) {
+                toast.error(`上传失败: ${error.response.data.message}`);
+            } else {
+                toast.error('海报上传失败，请重试');
+            }
+        }
+
+        // 清空文件输入，允许重新选择相同文件
+        event.target.value = '';
+    };
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-background to-muted/30">
@@ -1487,19 +1534,25 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
 
                                     {/* 海报上传区域 */}
                                     <div className="h-fit">
-                                        <div className="aspect-[4/3] rounded-xl border border-border/50 shadow-md relative overflow-hidden bg-gradient-to-br from-muted/20 to-muted/10">
-                                            <div className="absolute top-0 left-0 w-full h-full opacity-0 hover:bg-background hover:opacity-85 z-20 transition-all duration-300 flex items-center justify-center cursor-pointer group">
-                                                <div className="flex flex-col items-center gap-3 text-muted-foreground group-hover:text-primary transition-colors duration-300">
+                                        <div className="aspect-[4/3] rounded-xl border border-border/50 shadow-md relative overflow-hidden bg-gradient-to-br from-muted/20 to-muted/10 group">
+                                            <div 
+                                                className="absolute top-0 left-0 w-full h-full bg-cover bg-center z-10"
+                                                style={{ 
+                                                    backgroundImage: `url(${watchedPoster || clientConfig.DefaultBGImage})` 
+                                                }}
+                                            />
+                                            <div className="absolute top-0 left-0 w-full h-full opacity-0 group-hover:bg-background group-hover:opacity-85 z-20 transition-all duration-300 flex items-center justify-center cursor-pointer">
+                                                <div className="flex flex-col items-center gap-3 text-muted-foreground group-hover:text-primary transition-colors duration-300 pointer-events-none">
                                                     <Upload size={40} />
                                                     <span className="text-lg font-medium">上传海报</span>
                                                     <span className="text-sm text-center">点击上传新的比赛海报</span>
                                                 </div>
                                             </div>
-                                            <div 
-                                                className="absolute top-0 left-0 w-full h-full bg-cover bg-center"
-                                                style={{ 
-                                                    backgroundImage: `url(${form.getValues("poster") || clientConfig.DefaultBGImage})` 
-                                                }}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer z-30"
+                                                onChange={handlePosterUpload}
                                             />
                                         </div>
                                     </div>

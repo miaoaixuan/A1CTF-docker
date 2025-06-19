@@ -1,9 +1,13 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -12,6 +16,9 @@ import (
 	dbtool "a1ctf/src/utils/db_tool"
 	noticetool "a1ctf/src/utils/notice_tool"
 	"a1ctf/src/webmodels"
+	"mime"
+
+	"github.com/google/uuid"
 )
 
 func AdminListGames(c *gin.Context) {
@@ -227,6 +234,7 @@ func AdminUpdateGame(c *gin.Context) {
 	game.Name = payload.Name
 	game.Summary = payload.Summary
 	game.Description = payload.Description
+	game.Poster = payload.Poster
 	game.InviteCode = payload.InviteCode
 	game.StartTime = payload.StartTime
 	game.EndTime = payload.EndTime
@@ -587,5 +595,171 @@ func AdminDeleteNotice(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
 		"message": "公告删除成功",
+	})
+}
+
+// AdminUploadGamePoster 上传比赛海报
+func AdminUploadGamePoster(c *gin.Context) {
+	gameIDStr := c.Param("game_id")
+	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid game ID",
+		})
+		return
+	}
+
+	// 验证游戏是否存在
+	var game models.Game
+	if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"code":    404,
+				"message": "Game not found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to verify game",
+			})
+		}
+		return
+	}
+
+	// 获取上传的海报文件
+	file, err := c.FormFile("poster")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "No poster file uploaded",
+		})
+		return
+	}
+
+	// 检查文件类型是否为图片
+	fileType := file.Header.Get("Content-Type")
+	if !isImageMimeType(fileType) {
+		c.JSON(http.StatusUnsupportedMediaType, gin.H{
+			"code":    415,
+			"message": "Uploaded file is not an image",
+		})
+		return
+	}
+
+	// 生成唯一的文件ID
+	var fileID uuid.UUID
+	for {
+		fileID = uuid.New()
+		var existingUpload models.Upload
+		result := dbtool.DB().Where("file_id = ?", fileID).First(&existingUpload)
+		if result.Error == gorm.ErrRecordNotFound {
+			break
+		} else if result.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Database query failed",
+			})
+			return
+		}
+	}
+
+	// 创建存储目录
+	now := time.Now().UTC()
+	storePath := filepath.Join("uploads", "posters", fmt.Sprintf("%d", now.Year()), fmt.Sprintf("%d", now.Month()))
+	if err := os.MkdirAll(storePath, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to create upload directory",
+		})
+		return
+	}
+
+	// 保存文件
+	newFilePath := filepath.Join(storePath, fileID.String())
+	if err := c.SaveUploadedFile(file, newFilePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to save poster file",
+		})
+		return
+	}
+
+	// 设置文件类型（如果为空）
+	if fileType == "" {
+		fileType = mime.TypeByExtension(filepath.Ext(file.Filename))
+		if fileType == "" {
+			fileType = "image/jpeg" // 默认类型
+		}
+	}
+
+	// 获取用户信息
+	users, _ := c.Get("UserID")
+	userClaims := users.(*models.JWTUser)
+	userID, err := uuid.Parse(userClaims.UserID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid user ID",
+		})
+		return
+	}
+
+	// 创建上传记录
+	newUpload := models.Upload{
+		FileID:     fileID.String(),
+		UserID:     userID.String(),
+		FileName:   file.Filename,
+		FilePath:   newFilePath,
+		FileHash:   "", // 可以添加文件哈希计算
+		FileType:   fileType,
+		FileSize:   file.Size,
+		UploadTime: now,
+	}
+
+	// 开始数据库事务
+	tx := dbtool.DB().Begin()
+
+	// 保存上传记录
+	if err := tx.Create(&newUpload).Error; err != nil {
+		tx.Rollback()
+		_ = os.Remove(newFilePath)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to save file record",
+		})
+		return
+	}
+
+	// 构建海报URL
+	posterURL := fmt.Sprintf("/api/file/download/%s", fileID.String())
+
+	// 更新游戏海报字段
+	if err := tx.Model(&models.Game{}).Where("game_id = ?", gameID).Update("poster", posterURL).Error; err != nil {
+		tx.Rollback()
+		_ = os.Remove(newFilePath)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to update game poster",
+		})
+		return
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		_ = os.Remove(newFilePath)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to commit transaction",
+		})
+		return
+	}
+
+	// 返回成功响应
+	c.JSON(http.StatusOK, gin.H{
+		"code":       200,
+		"message":    "Game poster uploaded successfully",
+		"poster_url": posterURL,
 	})
 }

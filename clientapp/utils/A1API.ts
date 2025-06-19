@@ -1769,6 +1769,46 @@ export class Api<
       }),
 
     /**
+     * @description 上传比赛海报图片并更新比赛信息，需要管理员权限
+     *
+     * @tags admin
+     * @name UploadGamePoster
+     * @summary 上传比赛海报
+     * @request POST:/api/admin/game/{game_id}/poster/upload
+     * @secure
+     */
+    uploadGamePoster: (
+      gameId: number,
+      data: {
+        /**
+         * 要上传的比赛海报图片文件，支持jpg、png、gif等常见图片格式
+         * @format binary
+         */
+        poster: File;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "比赛海报上传成功" */
+          message: string;
+          /** 海报访问URL */
+          poster_url: string;
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/admin/game/${gameId}/poster/upload`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.FormData,
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * No description
      *
      * @tags admin
