@@ -149,3 +149,20 @@ type UpdateGameGroupPayload struct {
 	GroupName   string `json:"group_name" binding:"required"`
 	Description string `json:"description"`
 }
+
+// 公告管理相关的请求模型
+type AdminCreateNoticePayload struct {
+	GameID  int64  `json:"game_id" binding:"required"`
+	Title   string `json:"title" binding:"required"`
+	Content string `json:"content" binding:"required"`
+}
+
+type AdminListNoticesPayload struct {
+	GameID int `json:"game_id" binding:"required"`
+	Size   int `json:"size" binding:"min=0"`
+	Offset int `json:"offset"`
+}
+
+type AdminDeleteNoticePayload struct {
+	NoticeID int64 `json:"notice_id" binding:"required"`
+}

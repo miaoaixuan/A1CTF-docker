@@ -1,12 +1,11 @@
-
 import {
     animated,
     useTransition,
 } from '@react-spring/web'
 
-import { Dispatch, MutableRefObject, SetStateAction, useEffect, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useRef, useState, useMemo, memo } from "react";
 import { Button } from "./ui/button";
-import { CalendarClock, CircleX, X } from "lucide-react";
+import { CalendarClock, X } from "lucide-react";
 import dayjs from "dayjs";
 import { GameNotice, NoticeCategory } from "utils/A1API";
 import { Mdx } from "./MdxCompoents";
@@ -15,6 +14,95 @@ import { useTheme } from "next-themes";
 import { MacScrollbar } from "mac-scrollbar";
 
 let messages: GameNotice[] = []
+
+// 单独的消息卡片组件，使用React.memo优化
+const NoticeCard = memo(({ 
+    notice, 
+    index, 
+    theme 
+}: { 
+    notice: GameNotice, 
+    index: number, 
+    theme: string | undefined 
+}) => {
+    const { t } = useTranslation("notices_view");
+
+    const getNoticeMessage = useMemo(() => {
+        switch (notice.notice_category) {
+            case NoticeCategory.NewAnnouncement:
+                return (<Mdx source={notice.data[1]}></Mdx>)
+            case NoticeCategory.NewHint:
+                return (<span>{`💡 题目 [${notice.data.join(", ")}] 新增了 Hint`}</span>)
+            case NoticeCategory.FirstBlood:
+                return (<span>{`🥇 ${notice.data[0]} ${t("blood_message_p1")} ${notice.data[1]} ${t("blood1")}`}</span>)
+            case NoticeCategory.SecondBlood:
+                return (<span>{`🥈 ${notice.data[0]} 获得了 ${notice.data[1]} ${t("blood2")}`}</span>)
+            case NoticeCategory.ThirdBlood:
+                return (<span>{`🥉 ${notice.data[0]} 获得了 ${notice.data[1]} ${t("blood3")}`}</span>)
+        }
+    }, [notice.notice_category, notice.data, t]);
+
+    const getNoticeIconColor = useMemo(() => {
+        switch (notice.notice_category) {
+            case NoticeCategory.NewAnnouncement:
+                return "text-blue-400"
+            case NoticeCategory.NewHint:
+                return "text-green-400"
+            case NoticeCategory.FirstBlood:
+                return "text-red-400"
+            case NoticeCategory.SecondBlood:
+                return "text-orange-400"
+            case NoticeCategory.ThirdBlood:
+                return "text-yellow-400"
+        }
+    }, [notice.notice_category]);
+
+    const noticeTitle = useMemo(() => {
+        return notice.notice_category == NoticeCategory.NewAnnouncement 
+            ? `${dayjs(notice.create_time).format("YYYY-MM-DD HH:mm:ss")} | ${notice.data[0]}` 
+            : dayjs(notice.create_time).format("YYYY-MM-DD HH:mm:ss");
+    }, [notice.notice_category, notice.create_time, notice.data]);
+
+    return (
+        <div
+            className={
+                `relative overflow-hidden flex-none transition-all duration-300 group ` +
+                `rounded-2xl shadow-lg border border-foreground/10 ` +
+                `bg-gradient-to-br ` +
+                (theme === 'dark'
+                    ? 'from-[#23272f]/80 to-[#181a20]/90 hover:from-[#23272f]/90 hover:to-[#23272f]/95'
+                    : 'from-white/90 to-gray-100/80 hover:from-white/95 hover:to-gray-200/90') +
+                ' hover:scale-[1.005] hover:shadow-2xl w-full'
+            }
+        >
+            <div className="flex flex-col gap-2 px-6 pt-5 pb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-6 select-none mb-2">
+                    <div className="flex gap-4 items-center">
+                        <CalendarClock className={getNoticeIconColor} />
+                        <span className="font-bold text-base sm:text-lg tracking-wide">
+                            {noticeTitle}
+                        </span>
+                    </div>
+                </div>
+                <div className="border-t border-dashed border-foreground/10" />
+                <div className="prose prose-sm sm:prose-base max-w-none text-foreground/90 dark:text-foreground/80 mt-2 break-words overflow-x-auto">
+                    {getNoticeMessage}
+                </div>
+            </div>
+        </div>
+    );
+}, (prevProps, nextProps) => {
+    // 自定义比较函数，只有当消息内容或主题发生变化时才重新渲染
+    return (
+        prevProps.notice.notice_id === nextProps.notice.notice_id &&
+        prevProps.notice.notice_category === nextProps.notice.notice_category &&
+        JSON.stringify(prevProps.notice.data) === JSON.stringify(nextProps.notice.data) &&
+        prevProps.notice.create_time === nextProps.notice.create_time &&
+        prevProps.theme === nextProps.theme
+    );
+});
+
+NoticeCard.displayName = 'NoticeCard';
 
 const calcTranslateX = (index: number) => {
     const width = window.innerWidth;
@@ -114,6 +202,9 @@ export function NoticesView({ opened, setOpened, notices }: { opened: boolean, s
     const observerRef = useRef<IntersectionObserver | null>(null);
     const [visibleItems, setVisibleItems] = useState<Record<string, boolean>>({});
 
+    // 使用useMemo缓存notices，避免每次渲染都重新计算
+    const memoizedNotices = useMemo(() => notices, [notices]);
+
     useEffect(() => {
 
         // 观察
@@ -209,19 +300,6 @@ export function NoticesView({ opened, setOpened, notices }: { opened: boolean, s
         }
     }, [durationTime])
 
-    const getNoticeMessage = (notice: GameNotice) => {
-        switch (notice.notice_category) {
-            case NoticeCategory.NewAnnouncement:
-                return (<Mdx source={notice.data[0]}></Mdx>)
-            case NoticeCategory.FirstBlood:
-                return (<span>{`🥇 ${notice.data[0]} ${t("blood_message_p1")} ${notice.data[1]} ${t("blood1")}`}</span>)
-            case NoticeCategory.SecondBlood:
-                return (<span>{`🥈 ${notice.data[0]} 获得了 ${notice.data[1]} ${t("blood2")}`}</span>)
-            case NoticeCategory.ThirdBlood:
-                return (<span>{`🥉 ${notice.data[0]} 获得了 ${notice.data[1]} ${t("blood3")}`}</span>)
-        }
-    }
-
     // 观察器
     const observeItem = (el: HTMLElement, id: string) => {
         if (el && observerRef.current) {
@@ -274,7 +352,7 @@ export function NoticesView({ opened, setOpened, notices }: { opened: boolean, s
                     >
                         <MacScrollbar className="w-full h-full flex-1" skin={theme === "dark" ? "dark" : "light"}>
                             <div className="w-full flex flex-col items-center">
-                                <div className="container flex flex-col gap-4 items-center justify-center">
+                                <div className="container flex flex-col gap-4 items-center justify-center pb-10">
                                     <div className="w-full p-10 pb-0 mb-8 flex items-center">
                                         <span className="font-bold text-3xl">Announcements</span>
                                         <div className="flex-1" />
@@ -286,32 +364,13 @@ export function NoticesView({ opened, setOpened, notices }: { opened: boolean, s
                                             <X />
                                         </Button>
                                     </div>
-                                    {messages.map((mes, index) => (
-                                        <div
-                                            key={`message-${index}`}
-                                            className={
-                                                `relative overflow-hidden flex-none transition-all duration-300 group ` +
-                                                `rounded-2xl shadow-lg border border-foreground/10 ` +
-                                                `bg-gradient-to-br ` +
-                                                (theme === 'dark'
-                                                    ? 'from-[#23272f]/80 to-[#181a20]/90 hover:from-[#23272f]/90 hover:to-[#23272f]/95'
-                                                    : 'from-white/90 to-gray-100/80 hover:from-white/95 hover:to-gray-200/90') +
-                                                ' hover:scale-[1.005] hover:shadow-2xl w-full'
-                                            }
-                                        >
-                                            <div className="flex flex-col gap-2 px-6 pt-5 pb-4">
-                                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-6 select-none mb-2">
-                                                    <div className="flex gap-4 items-center">
-                                                        <CalendarClock className="text-blue-400" />
-                                                        <span className="font-bold text-base sm:text-lg tracking-wide">{dayjs(mes.create_time).format("YYYY-MM-DD HH:mm:ss")}</span>
-                                                    </div>
-                                                </div>
-                                                <div className="border-t border-dashed border-foreground/10" />
-                                                <div className="prose prose-sm sm:prose-base max-w-none text-foreground/90 dark:text-foreground/80 mt-2 break-words overflow-x-auto">
-                                                    {getNoticeMessage(mes)}
-                                                </div>
-                                            </div>
-                                        </div>
+                                    {memoizedNotices.map((notice, index) => (
+                                        <NoticeCard
+                                            key={`notice-${notice.notice_id}`}
+                                            notice={notice}
+                                            index={index}
+                                            theme={theme}
+                                        />
                                     ))}
                                 </div>
 

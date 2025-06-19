@@ -239,6 +239,11 @@ func main() {
 			gameGroup.POST("/:game_id/groups", controllers.AdminCreateGameGroup)
 			gameGroup.PUT("/:game_id/groups/:group_id", controllers.AdminUpdateGameGroup)
 			gameGroup.DELETE("/:game_id/groups/:group_id", controllers.AdminDeleteGameGroup)
+
+			// 公告管理路由
+			gameGroup.POST("/:game_id/notices", controllers.AdminCreateNotice)
+			gameGroup.POST("/:game_id/notices/list", controllers.AdminListNotices)
+			gameGroup.DELETE("/notices", controllers.AdminDeleteNotice)
 		}
 
 		// 用户相关接口

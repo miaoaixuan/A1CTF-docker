@@ -88,6 +88,11 @@ var PermissionMap = map[string]PermissionSetting{
 	"/api/admin/game/:game_id/groups":           {RequestMethod: []string{"GET", "POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/game/:game_id/groups/:group_id": {RequestMethod: []string{"PUT", "DELETE"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 
+	// 公告管理相关权限
+	"/api/admin/game/:game_id/notices":      {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/game/:game_id/notices/list": {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/game/notices":               {RequestMethod: []string{"DELETE"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+
 	"/api/game/list":                             {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
 	"/api/game/:game_id":                         {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
 	"/api/game/:game_id/challenges":              {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},

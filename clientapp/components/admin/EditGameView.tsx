@@ -32,6 +32,7 @@ import { challengeCategoryIcons, challengeCategoryColorMap } from 'utils/ClientA
 import CodeEditor from '@uiw/react-textarea-code-editor';
 import { GameTimelineEditor } from './GameTimelineEditor';
 import { GameGroupManager } from './GameGroupManager';
+import { GameNoticeManager } from './GameNoticeManager';
 
 interface JudgeConfigFormProps {
     control: any;
@@ -1534,6 +1535,17 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                                 <GameGroupManager gameId={game_info.game_id} />
                             </div>
 
+                            {/* 公告管理 */}
+                            <div className="bg-card/60 backdrop-blur-sm border border-border/50 rounded-2xl p-6 shadow-lg">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
+                                        <MessageSquareLock className="h-4 w-4 text-blue-600" />
+                                    </div>
+                                    <h2 className="text-xl font-semibold">公告管理</h2>
+                                </div>
+                                <GameNoticeManager gameId={game_info.game_id} />
+                            </div>
+
                             {/* 题目设置 */}
                             <div className="bg-card/60 backdrop-blur-sm border border-border/50 rounded-2xl p-6 shadow-lg">
                                 <div className="flex items-center justify-between mb-6">
@@ -1565,6 +1577,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                                             <Button
                                                 type="button"
                                                 variant={"outline"}
+                                                size="sm"
                                                 className="bg-background/50 backdrop-blur-sm"
                                             >
                                                 <PlusCircle className="h-4 w-4" />

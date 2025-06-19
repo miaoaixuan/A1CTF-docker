@@ -2458,6 +2458,117 @@ paths:
                 required:
                   - code
                   - data
+  /api/admin/game/{game_id}/notices:
+    post:
+      tags: [admin]
+      operationId: adminCreateGameNotice
+      summary: 创建比赛公告
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminCreateNoticePayload'
+        required: true
+      responses:
+        '200':
+          description: 公告创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                required:
+                  - code
+                  - message
+        '400':
+          description: 请求参数错误
+        '404':
+          description: 比赛不存在
+        '500':
+          description: 服务器内部错误
+  /api/admin/game/{game_id}/notices/list:
+    post:
+      tags: [admin]
+      operationId: adminListGameNotices
+      summary: 获取比赛公告列表
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminListNoticesPayload'
+        required: true
+      responses:
+        '200':
+          description: 成功获取公告列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminNoticeItem'
+                  total:
+                    type: integer
+                required:
+                  - code
+                  - data
+                  - total
+        '400':
+          description: 请求参数错误
+        '500':
+          description: 服务器内部错误
+  /api/admin/game/notices:
+    delete:
+      tags: [admin]
+      operationId: adminDeleteGameNotice
+      summary: 删除比赛公告
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminDeleteNoticePayload'
+        required: true
+      responses:
+        '200':
+          description: 公告删除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                required:
+                  - code
+                  - message
+        '400':
+          description: 请求参数错误
+        '404':
+          description: 公告不存在
+        '500':
+          description: 服务器内部错误
 components:
   securitySchemes:
     cookieAuth:
@@ -3810,3 +3921,60 @@ components:
         - page_size
         - total_count
         - total_pages
+    AdminCreateNoticePayload:
+      type: object
+      properties:
+        title:
+          type: string
+          description: 公告标题
+        content:
+          type: string
+          description: 公告内容
+      required:
+        - title
+        - content
+    AdminListNoticesPayload:
+      type: object
+      properties:
+        game_id:
+          type: integer
+          description: 游戏ID
+        size:
+          type: integer
+          description: 每页大小
+        offset:
+          type: integer
+          description: 偏移量
+      required:
+        - game_id
+        - size
+        - offset
+    AdminNoticeItem:
+      type: object
+      properties:
+        notice_id:
+          type: integer
+          description: 公告ID
+        title:
+          type: string
+          description: 公告标题
+        content:
+          type: string
+          description: 公告内容
+        create_time:
+          type: string
+          format: date-time
+          description: 创建时间
+      required:
+        - notice_id
+        - title
+        - content
+        - create_time
+    AdminDeleteNoticePayload:
+      type: object
+      properties:
+        notice_id:
+          type: integer
+          description: 公告ID
+      required:
+        - notice_id

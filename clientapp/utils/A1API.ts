@@ -790,6 +790,41 @@ export interface PaginationInfo {
   total_pages: number;
 }
 
+export interface AdminCreateNoticePayload {
+  /** 公告标题 */
+  title: string;
+  /** 公告内容 */
+  content: string;
+}
+
+export interface AdminListNoticesPayload {
+  /** 游戏ID */
+  game_id: number;
+  /** 每页大小 */
+  size: number;
+  /** 偏移量 */
+  offset: number;
+}
+
+export interface AdminNoticeItem {
+  /** 公告ID */
+  notice_id: number;
+  /** 公告标题 */
+  title: string;
+  /** 公告内容 */
+  content: string;
+  /**
+   * 创建时间
+   * @format date-time
+   */
+  create_time: string;
+}
+
+export interface AdminDeleteNoticePayload {
+  /** 公告ID */
+  notice_id: number;
+}
+
 import type {
   AxiosInstance,
   AxiosRequestConfig,
@@ -2229,6 +2264,90 @@ export class Api<
       >({
         path: `/api/admin/game/${gameId}/groups/${groupId}`,
         method: "DELETE",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags admin
+     * @name AdminCreateGameNotice
+     * @summary 创建比赛公告
+     * @request POST:/api/admin/game/{game_id}/notices
+     */
+    adminCreateGameNotice: (
+      gameId: number,
+      data: AdminCreateNoticePayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          message: string;
+        },
+        void
+      >({
+        path: `/api/admin/game/${gameId}/notices`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags admin
+     * @name AdminListGameNotices
+     * @summary 获取比赛公告列表
+     * @request POST:/api/admin/game/{game_id}/notices/list
+     */
+    adminListGameNotices: (
+      gameId: number,
+      data: AdminListNoticesPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: AdminNoticeItem[];
+          total: number;
+        },
+        void
+      >({
+        path: `/api/admin/game/${gameId}/notices/list`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags admin
+     * @name AdminDeleteGameNotice
+     * @summary 删除比赛公告
+     * @request DELETE:/api/admin/game/notices
+     */
+    adminDeleteGameNotice: (
+      data: AdminDeleteNoticePayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          message: string;
+        },
+        void
+      >({
+        path: `/api/admin/game/notices`,
+        method: "DELETE",
+        body: data,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),

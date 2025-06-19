@@ -10,6 +10,7 @@ import (
 
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
+	noticetool "a1ctf/src/utils/notice_tool"
 	"a1ctf/src/webmodels"
 )
 
@@ -245,7 +246,53 @@ func AdminUpdateGame(c *gin.Context) {
 		return
 	}
 
+	shouldSendNotice := false
+	noticeData := []string{}
+
 	for _, chal := range payload.Challenges {
+		// 获取当前数据库中的GameChallenge
+		var existingGameChallenge models.GameChallenge
+		if err := dbtool.DB().Where("challenge_id = ? AND game_id = ?", chal.ChallengeID, gameID).First(&existingGameChallenge).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to load existing challenge",
+			})
+			return
+		}
+
+		// 检测新增的Hint
+		existingHints := existingGameChallenge.Hints
+		newHints := chal.Hints
+
+		// 如果存在新增的可见Hint，发送通知
+		if existingHints != nil && newHints != nil {
+			existingVisibleCount := 0
+			newVisibleCount := 0
+
+			// 计算现有可见Hint数量
+			for _, hint := range *existingHints {
+				if hint.Visible {
+					existingVisibleCount++
+				}
+			}
+
+			// 计算新的可见Hint数量
+			for _, hint := range *newHints {
+				if hint.Visible {
+					newVisibleCount++
+				}
+			}
+
+			// 如果新的可见Hint数量大于现有的，说明有新增的可见Hint
+			if newVisibleCount > existingVisibleCount {
+				var challenge models.Challenge
+				if err := dbtool.DB().Where("challenge_id = ?", chal.ChallengeID).First(&challenge).Error; err == nil {
+					shouldSendNotice = true
+					noticeData = append(noticeData, challenge.Name)
+				}
+			}
+		}
+
 		updateModel := models.GameChallenge{
 			TotalScore:  chal.TotalScore,
 			Hints:       chal.Hints,
@@ -265,10 +312,15 @@ func AdminUpdateGame(c *gin.Context) {
 		}
 	}
 
+	if shouldSendNotice {
+		go func() {
+			noticetool.InsertNotice(gameID, models.NoticeNewHint, noticeData)
+		}()
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
 	})
-
 }
 
 func AdminAddGameChallenge(c *gin.Context) {
@@ -365,5 +417,175 @@ func AdminAddGameChallenge(c *gin.Context) {
 			"judge_config":   gameChallenge.JudgeConfig,
 			"belong_stage":   gameChallenge.BelongStage,
 		},
+	})
+}
+
+// AdminCreateNotice 创建公告
+func AdminCreateNotice(c *gin.Context) {
+	gameIDStr := c.Param("game_id")
+	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid game ID",
+		})
+		return
+	}
+
+	var payload struct {
+		Title   string `json:"title" binding:"required"`
+		Content string `json:"content" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// 验证游戏是否存在
+	var game models.Game
+	if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"code":    404,
+				"message": "Game not found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to verify game",
+			})
+		}
+		return
+	}
+
+	// 使用 notice_tool 插入公告
+	go func() {
+		noticetool.InsertNotice(gameID, models.NoticeNewAnnounce, []string{payload.Title, payload.Content})
+	}()
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "公告创建成功",
+	})
+}
+
+// AdminListNotices 获取公告列表
+func AdminListNotices(c *gin.Context) {
+	gameIDStr := c.Param("game_id")
+	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid game ID",
+		})
+		return
+	}
+
+	var payload struct {
+		Size   int `json:"size" binding:"min=0"`
+		Offset int `json:"offset"`
+	}
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	var notices []models.Notice
+	query := dbtool.DB().Where("game_id = ? AND notice_category = ?", gameID, models.NoticeNewAnnounce).
+		Order("create_time DESC").
+		Offset(payload.Offset).
+		Limit(payload.Size)
+
+	if err := query.Find(&notices).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load notices",
+		})
+		return
+	}
+
+	// 获取总数
+	var total int64
+	if err := dbtool.DB().Model(&models.Notice{}).
+		Where("game_id = ? AND notice_category = ?", gameID, models.NoticeNewAnnounce).
+		Count(&total).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to count notices",
+		})
+		return
+	}
+
+	data := make([]gin.H, 0, len(notices))
+	for _, notice := range notices {
+		title := ""
+		content := ""
+		if len(notice.Data) >= 2 {
+			title = notice.Data[0]
+			content = notice.Data[1]
+		}
+
+		data = append(data, gin.H{
+			"notice_id":   notice.NoticeID,
+			"title":       title,
+			"content":     content,
+			"create_time": notice.CreateTime,
+			"announced":   notice.Announced,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":  200,
+		"data":  data,
+		"total": total,
+	})
+}
+
+// AdminDeleteNotice 删除公告
+func AdminDeleteNotice(c *gin.Context) {
+	var payload webmodels.AdminDeleteNoticePayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// 验证公告是否存在
+	var notice models.Notice
+	if err := dbtool.DB().Where("notice_id = ?", payload.NoticeID).First(&notice).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"code":    404,
+				"message": "Notice not found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to verify notice",
+			})
+		}
+		return
+	}
+
+	// 删除公告
+	if err := dbtool.DB().Delete(&notice).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to delete notice",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "公告删除成功",
 	})
 }

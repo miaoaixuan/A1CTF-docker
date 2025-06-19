@@ -18,76 +18,76 @@ const handleGlobalError = (error: any) => {
     let errorMessage = "发生未知错误";
     let errorCode = 0;
 
-    if (error.response) {
-        // 服务器返回了错误状态码
-        const { status, data } = error.response;
-        errorCode = status;
+    // if (error.response) {
+    //     // 服务器返回了错误状态码
+    //     const { status, data } = error.response;
+    //     errorCode = status;
 
-        if (data && typeof data === 'object') {
-            if (data.message) {
-                errorMessage = data.message;
-            } else if (data.error) {
-                errorMessage = data.error;
-            } else if (data.detail) {
-                errorMessage = data.detail;
-            }
-        } else if (typeof data === 'string') {
-            errorMessage = data;
-        } else {
-            // 根据状态码提供默认错误信息
-            switch (status) {
-                case 400:
-                    errorMessage = "请求参数错误";
-                    break;
-                case 401:
-                    errorMessage = "未授权，请重新登录";
-                    break;
-                case 403:
-                    errorMessage = "没有权限访问";
-                    break;
-                case 404:
-                    errorMessage = "请求的资源不存在";
-                    break;
-                case 500:
-                    errorMessage = "服务器内部错误";
-                    break;
-                case 502:
-                    errorMessage = "网关错误";
-                    break;
-                case 503:
-                    errorMessage = "服务暂时不可用";
-                    break;
-                case 504:
-                    errorMessage = "网关超时";
-                    break;
-                default:
-                    errorMessage = `服务器错误 (${status})`;
-            }
-        }
-    } else if (error.request) {
-        // 网络错误
-        errorMessage = "网络连接失败，请检查网络";
-        errorCode = -1;
-    } else {
-        // 其他错误
-        errorMessage = error.message || "发生未知错误";
-        errorCode = -2;
-    }
+    //     if (data && typeof data === 'object') {
+    //         if (data.message) {
+    //             errorMessage = data.message;
+    //         } else if (data.error) {
+    //             errorMessage = data.error;
+    //         } else if (data.detail) {
+    //             errorMessage = data.detail;
+    //         }
+    //     } else if (typeof data === 'string') {
+    //         errorMessage = data;
+    //     } else {
+    //         // 根据状态码提供默认错误信息
+    //         switch (status) {
+    //             case 400:
+    //                 errorMessage = "请求参数错误";
+    //                 break;
+    //             case 401:
+    //                 errorMessage = "未授权，请重新登录";
+    //                 break;
+    //             case 403:
+    //                 errorMessage = "没有权限访问";
+    //                 break;
+    //             case 404:
+    //                 errorMessage = "请求的资源不存在";
+    //                 break;
+    //             case 500:
+    //                 errorMessage = "服务器内部错误";
+    //                 break;
+    //             case 502:
+    //                 errorMessage = "网关错误";
+    //                 break;
+    //             case 503:
+    //                 errorMessage = "服务暂时不可用";
+    //                 break;
+    //             case 504:
+    //                 errorMessage = "网关超时";
+    //                 break;
+    //             default:
+    //                 errorMessage = `服务器错误 (${status})`;
+    //         }
+    //     }
+    // } else if (error.request) {
+    //     // 网络错误
+    //     errorMessage = "网络连接失败，请检查网络";
+    //     errorCode = -1;
+    // } else {
+    //     // 其他错误
+    //     errorMessage = error.message || "发生未知错误";
+    //     errorCode = -2;
+    // }
 
-    // 使用 sonner 显示错误提示
-    toast.error(errorMessage, {
-        description: errorCode > 0 ? `错误代码: ${errorCode}` : undefined,
-        duration: 4000,
-        action: errorCode === 401 ? {
-            label: "重新登录",
-            onClick: () => {
-                // 清除可能的认证信息
-                document.cookie = "a1token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-                // 重定向到登录页面
-                window.location.href = "/login";
-            }
-        } : undefined
-    });
+    // // 使用 sonner 显示错误提示
+    // toast.error(errorMessage, {
+    //     description: errorCode > 0 ? `错误代码: ${errorCode}` : undefined,
+    //     duration: 4000,
+    //     action: errorCode === 401 ? {
+    //         label: "重新登录",
+    //         onClick: () => {
+    //             // 清除可能的认证信息
+    //             document.cookie = "a1token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    //             // 重定向到登录页面
+    //             window.location.href = "/login";
+    //         }
+    //     } : undefined
+    // });
 
     // 如果是 401 错误，可以自动重定向到登录页面
     if (errorCode === 401) {
