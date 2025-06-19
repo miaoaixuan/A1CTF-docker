@@ -76,13 +76,17 @@ export function ScoreTable(
         }
     }, [curPage]);
 
+    const handleChangeView = () => {
+        setContainerWidth(tableRef.current?.parentElement?.clientWidth || 0)
+    }
+
     useEffect(() => {
 
         setCurPageData(scoreBoardModel.teams || [])
 
         setPageDataLoaded(true)
 
-        // window.addEventListener("resize", handleChangeView)
+        window.addEventListener("resize", handleChangeView)
 
         // 初始化容器宽度
         setTimeout(() => {
@@ -92,7 +96,7 @@ export function ScoreTable(
         }, 100)
 
         return () => {
-            // window.removeEventListener("resize", handleChangeView)
+            window.removeEventListener("resize", handleChangeView)
         }
     }, [scoreBoardModel])
 

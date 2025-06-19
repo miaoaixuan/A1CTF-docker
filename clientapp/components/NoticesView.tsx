@@ -1,4 +1,9 @@
-import { AnimatePresence, motion } from "framer-motion";
+
+import {
+    animated,
+    useTransition,
+} from '@react-spring/web'
+
 import { Dispatch, MutableRefObject, SetStateAction, useEffect, useRef, useState } from "react";
 import { Button } from "./ui/button";
 import { CalendarClock, CircleX, X } from "lucide-react";
@@ -6,6 +11,8 @@ import dayjs from "dayjs";
 import { GameNotice, NoticeCategory } from "utils/A1API";
 import { Mdx } from "./MdxCompoents";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "next-themes";
+import { MacScrollbar } from "mac-scrollbar";
 
 let messages: GameNotice[] = []
 
@@ -37,7 +44,7 @@ const calcTranslateY = (index: number) => {
             boxHeight += line_count * 24
             curBoxHeight += line_count * 24
         })
-        
+
         // gap 为 16px
         boxHeight += 16
         curBoxHeight += 16
@@ -73,7 +80,7 @@ const shouldAnimated = (index: number) => {
             boxHeight += line_count * 24
             curBoxHeight += line_count * 24
         })
-        
+
         // gap 为 16px
         boxHeight += 16
         curBoxHeight += 16
@@ -83,7 +90,7 @@ const shouldAnimated = (index: number) => {
 
     boxHeight = Math.min(boxHeight, height - 80)
     const paddingTop = (height - boxHeight) / 2
-    
+
     return (untilCurBoxHeight + paddingTop) < height - 40
 }
 
@@ -92,6 +99,7 @@ export function NoticesView({ opened, setOpened, notices }: { opened: boolean, s
     messages = notices
 
     const { t } = useTranslation("notices_view")
+    const { theme } = useTheme();
 
     // 消息卡片的可见列表
     const [visible, setVisible] = useState<boolean>(false)
@@ -111,7 +119,7 @@ export function NoticesView({ opened, setOpened, notices }: { opened: boolean, s
         // 观察
         observerRef.current = new IntersectionObserver((entries) => {
             entries.forEach((entry) => {
-                const target = entry.target as HTMLElement; 
+                const target = entry.target as HTMLElement;
                 const id = target.dataset.id as string;
 
                 if (entry.isIntersecting) {
@@ -126,11 +134,11 @@ export function NoticesView({ opened, setOpened, notices }: { opened: boolean, s
                     }));
                 }
             }
-        );
+            );
         },
-        {
-            rootMargin: "200px 0px",
-        });
+            {
+                rootMargin: "200px 0px",
+            });
 
         // 打开公告列表前计算每一个元素的动画时间和延迟列表
         if (opened) {
@@ -161,7 +169,7 @@ export function NoticesView({ opened, setOpened, notices }: { opened: boolean, s
             // 第一步找到有多少个可见的，第一张可见卡片前面的卡片需要在所有可视卡片动画完成后瞬间消失
             // 也就是 duration = 0, delay = visibleCount * 0.1
             let visibleCount = 0
-            Object.values(visibleItems).forEach((value) => { visibleCount += value ? 1 : 0})
+            Object.values(visibleItems).forEach((value) => { visibleCount += value ? 1 : 0 })
 
             // 计算每一张卡片的动画时间和延迟时间
             messages.forEach((ele, index) => {
@@ -191,7 +199,7 @@ export function NoticesView({ opened, setOpened, notices }: { opened: boolean, s
         // 关闭盒子
         if (!opened) {
             let visibleCount = 0
-            Object.values(visibleItems).forEach((value) => { visibleCount += value ? 1 : 0})
+            Object.values(visibleItems).forEach((value) => { visibleCount += value ? 1 : 0 })
             setVisible(false)
 
             // 等卡片动画结束再进行背景动画
@@ -222,88 +230,95 @@ export function NoticesView({ opened, setOpened, notices }: { opened: boolean, s
         }
     };
 
+    const transitions = useTransition(visible, {
+        from: {
+            opacity: 0,
+            backdropFilter: 'blur(0px)',
+            backgroundColor: 'rgba(0, 0, 0, 0)',
+            transform: 'translateY(40px)'
+        },
+        enter: {
+            opacity: 1,
+            backdropFilter: 'blur(4px)',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            transform: 'translateY(0)'
+        },
+        leave: {
+            opacity: 0,
+            backdropFilter: 'blur(0px)',
+            backgroundColor: 'rgba(0, 0, 0, 0)',
+            transform: 'translateY(40px)'
+        },
+        config: { tension: 220, friction: 20 }
+    });
+
+
     return (
-        <AnimatePresence key={`message-panel`}>
-            { visible2 && (
-                <motion.div className="absolute h-screen w-screen top-0 left-0 z-[100] flex items-center justify-center overflow-hidden"
-                    initial={{
-                        backdropFilter: "blur(0px)",
-                        opacity: 0
-                    }}
-                    animate={{
-                        backdropFilter: "blur(16px)",
-                        opacity: 1
-                    }}
-                    exit={{
-                        backdropFilter: "blur(0px)",
-                        opacity: 0
-                    }}
-                    transition={{
-                        duration: 0.3
-                    }}
-                >
-                    <AnimatePresence>
-                        { opened && (
-                            <motion.div className="absolute top-[20px] left-[20px]" key="close_button"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: notices.length ? 0.3 : 0}}
-                            >
-                                <Button asChild variant="secondary" className="pl-4 pr-4 [&_svg]:size-5 select-none" onClick={() => setOpened(false)}>
-                                    <div className="w-full h-full items-center justify-center">
-                                        <CircleX />
-                                        <span>Close</span>
-                                    </div>
-                                </Button>
-                            </motion.div>
-                        ) }
-                    </AnimatePresence>
-                    <div className="w-full overflow-y-auto" id="scroller">
-                        <div className="flex flex-col gap-4 justify-center items-center p-16 lg:p-10 overflow-hidden">
-                            { messages.map((mes, index) => (
-                                <AnimatePresence key={`message-${index}`}>
-                                    { visible && (
-                                        <motion.div className="w-[300px] lg:w-[600px] border-[3px] bg-background rounded-xl"
-                                            ref={(el) => observeItem(el!, index?.toString() || "")}
-                                            initial={{
-                                                translateX: calcTranslateX(index),
-                                                translateY: calcTranslateY(index),
-                                                scale: 0
-                                            }}
-                                            animate={{
-                                                translateX: "0px",
-                                                translateY: "0px",
-                                                scale: 1
-                                            }}
-                                            exit={{
-                                                translateX: calcTranslateX(index),
-                                                translateY: calcTranslateY(index),
-                                                scale: 0
-                                            }}
-                                            transition={{
-                                                duration: durationTime[index.toString()],
-                                                ease: "backInOut",
-                                                delay: delayTime[index.toString()]
+        transitions((style, visible2) =>
+            visible2 && (
+                <div>
+                    <animated.div className="absolute top-0 left-0 w-screen h-screen z-30"
+                        style={{
+                            opacity: style.opacity,
+                            backgroundColor: style.backgroundColor,
+                            backdropFilter: style.backdropFilter
+                        }}
+                    >
+
+                    </animated.div>
+                    <animated.div
+                        className="absolute top-0 left-0 w-screen h-screen flex justify-center items-center z-30 overflow-hidden"
+                        style={{
+                            opacity: style.opacity,
+                        }}
+                    >
+                        <MacScrollbar className="w-full h-full flex-1" skin={theme === "dark" ? "dark" : "light"}>
+                            <div className="w-full flex flex-col items-center">
+                                <div className="container flex flex-col gap-4 items-center justify-center">
+                                    <div className="w-full p-10 pb-0 mb-8 flex items-center">
+                                        <span className="font-bold text-3xl">Announcements</span>
+                                        <div className="flex-1" />
+                                        <Button className='w-[50px] h-[50px] [&_svg]:size-8 rounded-lg' variant="default"
+                                            onClick={() => {
+                                                setOpened(false)
                                             }}
                                         >
-                                            <div className="w-full h-full flex flex-col p-4 gap-2">
-                                                <div className="flex w-full gap-2">
-                                                    <CalendarClock />
-                                                    <span>{ dayjs(mes.create_time).format("YYYY-MM-DD HH:mm:ss") }</span>
+                                            <X />
+                                        </Button>
+                                    </div>
+                                    {messages.map((mes, index) => (
+                                        <div
+                                            key={`message-${index}`}
+                                            className={
+                                                `relative overflow-hidden flex-none transition-all duration-300 group ` +
+                                                `rounded-2xl shadow-lg border border-foreground/10 ` +
+                                                `bg-gradient-to-br ` +
+                                                (theme === 'dark'
+                                                    ? 'from-[#23272f]/80 to-[#181a20]/90 hover:from-[#23272f]/90 hover:to-[#23272f]/95'
+                                                    : 'from-white/90 to-gray-100/80 hover:from-white/95 hover:to-gray-200/90') +
+                                                ' hover:scale-[1.005] hover:shadow-2xl w-full'
+                                            }
+                                        >
+                                            <div className="flex flex-col gap-2 px-6 pt-5 pb-4">
+                                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-6 select-none mb-2">
+                                                    <div className="flex gap-4 items-center">
+                                                        <CalendarClock className="text-blue-400" />
+                                                        <span className="font-bold text-base sm:text-lg tracking-wide">{dayjs(mes.create_time).format("YYYY-MM-DD HH:mm:ss")}</span>
+                                                    </div>
                                                 </div>
-                                                <div className="flex flex-col break-words">
-                                                    { getNoticeMessage(mes) }
+                                                <div className="border-t border-dashed border-foreground/10" />
+                                                <div className="prose prose-sm sm:prose-base max-w-none text-foreground/90 dark:text-foreground/80 mt-2 break-words overflow-x-auto">
+                                                    {getNoticeMessage(mes)}
                                                 </div>
                                             </div>
-                                        </motion.div>
-                                    ) }
-                                </AnimatePresence>
-                            )) }
-                        </div>
-                    </div>
-                </motion.div>
-            ) }
-        </AnimatePresence>
+                                        </div>
+                                    ))}
+                                </div>
+
+                            </div>
+                        </MacScrollbar>
+                    </animated.div>
+                </div>
+            ))
     )
 }

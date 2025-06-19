@@ -52,24 +52,23 @@ export default function ChallengeHintPage(
         from: {
             opacity: 0,
             backdropFilter: 'blur(0px)',
+            backgroundColor: 'rgba(0, 0, 0, 0)',
             transform: 'translateY(40px)'
         },
         enter: {
             opacity: 1,
-            backdropFilter: 'blur(8px)',
+            backdropFilter: 'blur(4px)',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
             transform: 'translateY(0)'
         },
         leave: {
             opacity: 0,
             backdropFilter: 'blur(0px)',
+            backgroundColor: 'rgba(0, 0, 0, 0)',
             transform: 'translateY(40px)'
         },
         config: { tension: 220, friction: 20 }
     });
-
-    if (!visible) {
-        return <></>
-    }
 
     return (
         <SafeComponent animation={false}>
@@ -79,6 +78,7 @@ export default function ChallengeHintPage(
                         <animated.div className="absolute top-0 left-0 w-screen h-screen z-30" 
                             style={{
                                 opacity: style.opacity,
+                                backgroundColor: style.backgroundColor,
                                 backdropFilter: style.backdropFilter
                             }}
                         />
@@ -89,7 +89,7 @@ export default function ChallengeHintPage(
                             }}
                         >
                             <MacScrollbar
-                                className="w-full h-full overflow-auto flex flex-col"
+                                className="w-full h-full overflow-auto flex flex-col container"
                                 skin={theme == "light" ? "light" : "dark"}
                             >
                                 <div className="w-full p-10 pb-0 mb-8 flex items-center">

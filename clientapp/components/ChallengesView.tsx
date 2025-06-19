@@ -55,6 +55,7 @@ import { useSpring } from "@react-spring/web";
 import GameStatusMask from "components/modules/game/GameStatusMask";
 import ChallengeHintPage from "./modules/challenge/ChallengeHintPage";
 import { useTranslation } from "react-i18next";
+import { useParams, useSearchParams } from "react-router";
 
 export interface ChallengeSolveStatus {
     solved: boolean;
@@ -147,6 +148,8 @@ export function ChallengesView({ id }: { id: string }) {
 
     const [scoreBoardModel, setScoreBoardModel] = useState<GameScoreboardData | undefined>(undefined)
 
+    const [searchParams, setSearchParams] = useSearchParams()
+
 
     // 更新当前选中题目信息, 根据 Websocket 接收到的信息被动调用
     const updateChallenge = () => {
@@ -216,8 +219,6 @@ export function ChallengesView({ id }: { id: string }) {
     }, [refreshContainerTrigger])
 
     useEffect(() => {
-        console.log(curChallenge)
-
         setContainerInfo(curChallenge?.containers ?? [])
         setContainerExpireTime(curChallenge?.container_expiretime
             ? dayjs(curChallenge.container_expiretime)
@@ -309,11 +310,23 @@ export function ChallengesView({ id }: { id: string }) {
     }, [id])
 
     useEffect(() => {
-        console.log("GameStatus", gameStatus)
         // 根据比赛状态处理事件
         if (gameStatus == "running" || gameStatus == "practiceMode") {
 
-            setTimeout(() => setLoadingVisibility(false), 200)
+            const challengeID = searchParams.get("challenge")
+            if (challengeID) {
+                const challengeIDInt = parseInt(challengeID, 10)
+                api.user.userGetGameChallenge(gameID, challengeIDInt).then((response) => {
+                    // console.log(response)
+                    curChallengeDetail.current = response.data.data
+                    setCurChallenge(response.data.data)
+                    // setPageSwitch(true)
+
+                    setTimeout(() => setLoadingVisibility(false), 200)
+                }).catch((error: AxiosError) => {})
+            } else {
+                setTimeout(() => setLoadingVisibility(false), 200)
+            }
 
             // 获取比赛通知
             api.user.userGetGameNotices(gameID).then((res) => {
@@ -486,8 +499,6 @@ export function ChallengesView({ id }: { id: string }) {
         api.user.userCreateContainerForAChallenge(gameID, curChallenge?.challenge_id ?? 0).then((res) => {
             // 开始刷新靶机状态
             setRefreshContainerTrigger(true)
-            // const leftTime = Math.floor(dayjs(res.data.close_time).diff(dayjs()) / 1000)
-            // setContainerLeftTime(formatDuration(leftTime))
         })
     }
 
@@ -544,11 +555,11 @@ export function ChallengesView({ id }: { id: string }) {
         ) : null;
     }, [gameInfo?.description]); // 只依赖游戏描述
 
-    const fade = useSpring({
-        opacity: pageSwitch ? 0 : 1,
-        config: { tension: 320, friction: 50 },
-        immediate: pageSwitch
-    });
+    useEffect(() => {
+        if (curChallenge?.challenge_id) {
+            setSearchParams({ challenge: curChallenge.challenge_id.toString() })
+        }
+    }, [curChallenge?.challenge_id])
 
     const rankColor = (rank: number) => {
         if (rank == 1) return "text-red-400 font-bold"
@@ -593,6 +604,7 @@ export function ChallengesView({ id }: { id: string }) {
                         curChallenge={curChallenge}
                         setCurChallenge={setCurChallenge}
                         // setGameDetail={setGameDeatail}
+                        curChallengeRef={curChallengeDetail}
                         resizeTrigger={setResizeTrigger}
                         setPageSwitching={setPageSwitch}
                         challenges={challenges || {}}
@@ -655,7 +667,7 @@ export function ChallengesView({ id }: { id: string }) {
                                             <div className="absolute bottom-5 right-7 z-10 flex justify-end flex-col gap-[8px]">
                                                 <div className="flex">
                                                     <div className="flex-1" />
-                                                    {curChallenge && challengeSolveStatusList ? challengeSolveStatusList[curChallenge?.challenge_id ?? 0].solved ? (
+                                                    {curChallenge && challengeSolveStatusList ? (challengeSolveStatusList[curChallenge?.challenge_id ?? 0]?.solved ?? false) ? (
                                                             <Button
                                                                 className="h-[57px] px-5 rounded-3xl backdrop-blur-sm bg-green-600/70 hover:bg-green-800/70 [&_svg]:size-9 gap-2 flex items-center justify-center text-white disabled:opacity-100"
                                                                 onClick={() => { }}

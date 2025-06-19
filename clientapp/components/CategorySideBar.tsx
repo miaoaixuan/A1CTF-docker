@@ -12,7 +12,7 @@ import {
 import { Button } from "./ui/button"
 
 import { AxiosError } from 'axios';
-import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
+import { Dispatch, MutableRefObject, SetStateAction, useEffect, useRef, useState } from "react";
 import { TransitionLink } from "./TransitionLink";
 
 import { MacScrollbar } from 'mac-scrollbar';
@@ -28,11 +28,12 @@ import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import CategoryChallenges from "components/modules/game/CategoryChallenges";
 import { challengeCategoryColorMap, challengeCategoryIcons } from "utils/ClientAssets";
 
-export function CategorySidebar({ gameid, curChallenge, setCurChallenge, gameStatus, setGameStatus, resizeTrigger, setPageSwitching, challenges, setChallenges, challengeSolveStatusList, setChallengeSolveStatusList } : { 
+export function CategorySidebar({ gameid, curChallenge, setCurChallenge, curChallengeRef, gameStatus, setGameStatus, resizeTrigger, setPageSwitching, challenges, setChallenges, challengeSolveStatusList, setChallengeSolveStatusList } : { 
     gameid: string,
     curChallenge: UserDetailGameChallenge | undefined,
     setCurChallenge: Dispatch<SetStateAction<UserDetailGameChallenge | undefined>>,
     gameStatus: string,
+    curChallengeRef: MutableRefObject<UserDetailGameChallenge | undefined>,
     setGameStatus: Dispatch<SetStateAction<string>>,
     resizeTrigger: Dispatch<SetStateAction<number>>,
     setPageSwitching: Dispatch<SetStateAction<boolean>>,
@@ -48,7 +49,7 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, gameSta
     const gameID = parseInt(gameid, 10)
 
     // 为了实时更新
-    const curChallengeRef = useRef<UserDetailGameChallenge>()
+    
 
     // 之前的题目列表
     const prevChallenges = useRef<Record<string, UserSimpleGameChallenge[]>> ()
