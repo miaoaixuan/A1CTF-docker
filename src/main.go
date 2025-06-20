@@ -247,6 +247,12 @@ func main() {
 			gameGroup.POST("/:game_id/notices", controllers.AdminCreateNotice)
 			gameGroup.POST("/:game_id/notices/list", controllers.AdminListNotices)
 			gameGroup.DELETE("/notices", controllers.AdminDeleteNotice)
+
+			// 分数修正管理路由
+			gameGroup.GET("/:game_id/score-adjustments", controllers.AdminGetGameScoreAdjustments)
+			gameGroup.POST("/:game_id/score-adjustments", controllers.AdminCreateScoreAdjustment)
+			gameGroup.PUT("/:game_id/score-adjustments/:adjustment_id", controllers.AdminUpdateScoreAdjustment)
+			gameGroup.DELETE("/:game_id/score-adjustments/:adjustment_id", controllers.AdminDeleteScoreAdjustment)
 		}
 
 		// 用户相关接口

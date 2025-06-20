@@ -763,3 +763,433 @@ func AdminUploadGamePoster(c *gin.Context) {
 		"poster_url": posterURL,
 	})
 }
+
+// AdminGetGameScoreAdjustments 获取比赛分数修正记录
+func AdminGetGameScoreAdjustments(c *gin.Context) {
+	gameIDStr := c.Param("game_id")
+	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid game ID",
+		})
+		return
+	}
+
+	// 验证游戏是否存在
+	var game models.Game
+	if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"code":    404,
+				"message": "Game not found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to verify game",
+			})
+		}
+		return
+	}
+
+	// 获取分数修正记录
+	var adjustments []models.ScoreAdjustment
+	if err := dbtool.DB().Preload("Team").Preload("CreatedByUser").
+		Where("game_id = ?", gameID).
+		Order("created_at DESC").
+		Find(&adjustments).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load score adjustments",
+		})
+		return
+	}
+
+	// 构建响应数据
+	data := make([]gin.H, 0, len(adjustments))
+	for _, adj := range adjustments {
+		teamName := ""
+		if adj.Team != nil {
+			teamName = adj.Team.TeamName
+		}
+
+		createdByUsername := ""
+		if adj.CreatedByUser != nil {
+			createdByUsername = adj.CreatedByUser.Username
+		}
+
+		data = append(data, gin.H{
+			"adjustment_id":       adj.AdjustmentID,
+			"team_id":             adj.TeamID,
+			"team_name":           teamName,
+			"adjustment_type":     adj.AdjustmentType,
+			"score_change":        adj.ScoreChange,
+			"reason":              adj.Reason,
+			"created_by":          adj.CreatedBy,
+			"created_by_username": createdByUsername,
+			"created_at":          adj.CreatedAt,
+			"updated_at":          adj.UpdatedAt,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": data,
+	})
+}
+
+// AdminCreateScoreAdjustment 创建分数修正记录
+func AdminCreateScoreAdjustment(c *gin.Context) {
+	gameIDStr := c.Param("game_id")
+	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid game ID",
+		})
+		return
+	}
+
+	var payload webmodels.CreateScoreAdjustmentPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// 验证游戏是否存在
+	var game models.Game
+	if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"code":    404,
+				"message": "Game not found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to verify game",
+			})
+		}
+		return
+	}
+
+	// 验证队伍是否存在且属于该比赛
+	var team models.Team
+	if err := dbtool.DB().Where("team_id = ? AND game_id = ?", payload.TeamID, gameID).First(&team).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"code":    404,
+				"message": "Team not found in this game",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to verify team",
+			})
+		}
+		return
+	}
+
+	// 获取当前用户信息
+	users, _ := c.Get("UserID")
+	userClaims := users.(*models.JWTUser)
+	userID, err := uuid.Parse(userClaims.UserID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid user ID",
+		})
+		return
+	}
+
+	// 创建分数修正记录
+	adjustment := models.ScoreAdjustment{
+		TeamID:         payload.TeamID,
+		GameID:         gameID,
+		AdjustmentType: models.AdjustmentType(payload.AdjustmentType),
+		ScoreChange:    payload.ScoreChange,
+		Reason:         payload.Reason,
+		CreatedBy:      userID,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+	}
+
+	if err := dbtool.DB().Create(&adjustment).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to create score adjustment",
+		})
+		return
+	}
+
+	// 更新队伍分数
+	scoreChange := adjustment.ScoreChange
+	if err := dbtool.DB().Model(&models.Team{}).
+		Where("team_id = ?", payload.TeamID).
+		Update("team_score", gorm.Expr("team_score + ?", scoreChange)).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to update team score",
+		})
+		return
+	}
+
+	// 获取创建的记录详情
+	if err := dbtool.DB().Preload("Team").Preload("CreatedByUser").
+		Where("adjustment_id = ?", adjustment.AdjustmentID).
+		First(&adjustment).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load created adjustment",
+		})
+		return
+	}
+
+	// 构建响应数据
+	teamName := ""
+	if adjustment.Team != nil {
+		teamName = adjustment.Team.TeamName
+	}
+
+	createdByUsername := ""
+	if adjustment.CreatedByUser != nil {
+		createdByUsername = adjustment.CreatedByUser.Username
+	}
+
+	data := gin.H{
+		"adjustment_id":       adjustment.AdjustmentID,
+		"team_id":             adjustment.TeamID,
+		"team_name":           teamName,
+		"adjustment_type":     adjustment.AdjustmentType,
+		"score_change":        adjustment.ScoreChange,
+		"reason":              adjustment.Reason,
+		"created_by":          adjustment.CreatedBy,
+		"created_by_username": createdByUsername,
+		"created_at":          adjustment.CreatedAt,
+		"updated_at":          adjustment.UpdatedAt,
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": data,
+	})
+}
+
+// AdminUpdateScoreAdjustment 更新分数修正记录
+func AdminUpdateScoreAdjustment(c *gin.Context) {
+	gameIDStr := c.Param("game_id")
+	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid game ID",
+		})
+		return
+	}
+
+	adjustmentIDStr := c.Param("adjustment_id")
+	adjustmentID, err := strconv.ParseInt(adjustmentIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid adjustment ID",
+		})
+		return
+	}
+
+	var payload webmodels.UpdateScoreAdjustmentPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// 获取原始记录
+	var originalAdjustment models.ScoreAdjustment
+	if err := dbtool.DB().Where("adjustment_id = ? AND game_id = ?", adjustmentID, gameID).
+		First(&originalAdjustment).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"code":    404,
+				"message": "Score adjustment not found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to load score adjustment",
+			})
+		}
+		return
+	}
+
+	// 计算分数差异
+	scoreDifference := payload.ScoreChange - originalAdjustment.ScoreChange
+
+	// 开始事务
+	tx := dbtool.DB().Begin()
+
+	// 更新分数修正记录
+	if err := tx.Model(&originalAdjustment).Updates(models.ScoreAdjustment{
+		AdjustmentType: models.AdjustmentType(payload.AdjustmentType),
+		ScoreChange:    payload.ScoreChange,
+		Reason:         payload.Reason,
+		UpdatedAt:      time.Now(),
+	}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to update score adjustment",
+		})
+		return
+	}
+
+	// 更新队伍分数
+	if scoreDifference != 0 {
+		if err := tx.Model(&models.Team{}).
+			Where("team_id = ?", originalAdjustment.TeamID).
+			Update("team_score", gorm.Expr("team_score + ?", scoreDifference)).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to update team score",
+			})
+			return
+		}
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to commit transaction",
+		})
+		return
+	}
+
+	// 获取更新后的记录详情
+	var updatedAdjustment models.ScoreAdjustment
+	if err := dbtool.DB().Preload("Team").Preload("CreatedByUser").
+		Where("adjustment_id = ?", adjustmentID).
+		First(&updatedAdjustment).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load updated adjustment",
+		})
+		return
+	}
+
+	// 构建响应数据
+	teamName := ""
+	if updatedAdjustment.Team != nil {
+		teamName = updatedAdjustment.Team.TeamName
+	}
+
+	createdByUsername := ""
+	if updatedAdjustment.CreatedByUser != nil {
+		createdByUsername = updatedAdjustment.CreatedByUser.Username
+	}
+
+	data := gin.H{
+		"adjustment_id":       updatedAdjustment.AdjustmentID,
+		"team_id":             updatedAdjustment.TeamID,
+		"team_name":           teamName,
+		"adjustment_type":     updatedAdjustment.AdjustmentType,
+		"score_change":        updatedAdjustment.ScoreChange,
+		"reason":              updatedAdjustment.Reason,
+		"created_by":          updatedAdjustment.CreatedBy,
+		"created_by_username": createdByUsername,
+		"created_at":          updatedAdjustment.CreatedAt,
+		"updated_at":          updatedAdjustment.UpdatedAt,
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": data,
+	})
+}
+
+// AdminDeleteScoreAdjustment 删除分数修正记录
+func AdminDeleteScoreAdjustment(c *gin.Context) {
+	gameIDStr := c.Param("game_id")
+	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid game ID",
+		})
+		return
+	}
+
+	adjustmentIDStr := c.Param("adjustment_id")
+	adjustmentID, err := strconv.ParseInt(adjustmentIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid adjustment ID",
+		})
+		return
+	}
+
+	// 获取要删除的记录
+	var adjustment models.ScoreAdjustment
+	if err := dbtool.DB().Where("adjustment_id = ? AND game_id = ?", adjustmentID, gameID).
+		First(&adjustment).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"code":    404,
+				"message": "Score adjustment not found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to load score adjustment",
+			})
+		}
+		return
+	}
+
+	// 开始事务
+	tx := dbtool.DB().Begin()
+
+	// 删除分数修正记录
+	if err := tx.Delete(&adjustment).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to delete score adjustment",
+		})
+		return
+	}
+
+	// 从队伍分数中减去该修正值
+	if err := tx.Model(&models.Team{}).
+		Where("team_id = ?", adjustment.TeamID).
+		Update("team_score", gorm.Expr("team_score - ?", adjustment.ScoreChange)).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to update team score",
+		})
+		return
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to commit transaction",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "Score adjustment deleted successfully",
+	})
+}

@@ -497,6 +497,7 @@ export interface TeamScore {
   /** 所属分组名称 */
   group_name?: string | null;
   solved_challenges?: SolvedChallenge[];
+  score_adjustments?: TeamScoreAdjustment[];
 }
 
 export interface SolvedChallenge {
@@ -516,6 +517,22 @@ export interface SolvedChallenge {
    * @example "2025-05-03T07:07:34.650351Z"
    */
   solve_time?: string;
+}
+
+export interface TeamScoreAdjustment {
+  /** 分数修正ID */
+  adjustment_id: number;
+  /** 修正类型 */
+  adjustment_type: "cheat" | "reward" | "other";
+  /** 分数变化量 */
+  score_change: number;
+  /** 修正原因 */
+  reason: string;
+  /**
+   * 创建时间
+   * @format date-time
+   */
+  created_at: string;
 }
 
 export interface TeamTimeline {
@@ -823,6 +840,55 @@ export interface AdminNoticeItem {
 export interface AdminDeleteNoticePayload {
   /** 公告ID */
   notice_id: number;
+}
+
+export interface ScoreAdjustmentInfo {
+  /** 分数修正ID */
+  adjustment_id: number;
+  /** 队伍ID */
+  team_id: number;
+  /** 队伍名称 */
+  team_name: string;
+  /** 修正类型 */
+  adjustment_type: "cheat" | "reward" | "other";
+  /** 分数变化量 */
+  score_change: number;
+  /** 修正原因 */
+  reason: string;
+  /** 创建者用户ID */
+  created_by: number;
+  /** 创建者用户名 */
+  created_by_username: string;
+  /**
+   * 创建时间
+   * @format date-time
+   */
+  created_at: string;
+  /**
+   * 更新时间
+   * @format date-time
+   */
+  updated_at: string;
+}
+
+export interface CreateScoreAdjustmentPayload {
+  /** 队伍ID */
+  team_id: number;
+  /** 修正类型 */
+  adjustment_type: "cheat" | "reward" | "other";
+  /** 分数变化量 */
+  score_change: number;
+  /** 修正原因 */
+  reason: string;
+}
+
+export interface UpdateScoreAdjustmentPayload {
+  /** 修正类型 */
+  adjustment_type: "cheat" | "reward" | "other";
+  /** 分数变化量 */
+  score_change: number;
+  /** 修正原因 */
+  reason: string;
 }
 
 import type {
@@ -1764,6 +1830,111 @@ export class Api<
       >({
         path: `/api/admin/game/${gameId}/challenge/${challengeId}`,
         method: "PUT",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Get all score adjustments for a specific game
+     *
+     * @tags admin
+     * @name GetGameScoreAdjustments
+     * @summary Get game score adjustments
+     * @request GET:/api/admin/game/{game_id}/score-adjustments
+     */
+    getGameScoreAdjustments: (gameId: number, params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+          data: ScoreAdjustmentInfo[];
+        },
+        void
+      >({
+        path: `/api/admin/game/${gameId}/score-adjustments`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Create a new score adjustment for a team in the game
+     *
+     * @tags admin
+     * @name CreateScoreAdjustment
+     * @summary Create score adjustment
+     * @request POST:/api/admin/game/{game_id}/score-adjustments
+     */
+    createScoreAdjustment: (
+      gameId: number,
+      data: CreateScoreAdjustmentPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: ScoreAdjustmentInfo;
+        },
+        void
+      >({
+        path: `/api/admin/game/${gameId}/score-adjustments`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Update an existing score adjustment
+     *
+     * @tags admin
+     * @name UpdateScoreAdjustment
+     * @summary Update score adjustment
+     * @request PUT:/api/admin/game/{game_id}/score-adjustments/{adjustment_id}
+     */
+    updateScoreAdjustment: (
+      gameId: number,
+      adjustmentId: number,
+      data: UpdateScoreAdjustmentPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: ScoreAdjustmentInfo;
+        },
+        void
+      >({
+        path: `/api/admin/game/${gameId}/score-adjustments/${adjustmentId}`,
+        method: "PUT",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Delete a score adjustment
+     *
+     * @tags admin
+     * @name DeleteScoreAdjustment
+     * @summary Delete score adjustment
+     * @request DELETE:/api/admin/game/{game_id}/score-adjustments/{adjustment_id}
+     */
+    deleteScoreAdjustment: (
+      gameId: number,
+      adjustmentId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          message: string;
+        },
+        void
+      >({
+        path: `/api/admin/game/${gameId}/score-adjustments/${adjustmentId}`,
+        method: "DELETE",
         format: "json",
         ...params,
       }),

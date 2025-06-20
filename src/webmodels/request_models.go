@@ -166,3 +166,17 @@ type AdminListNoticesPayload struct {
 type AdminDeleteNoticePayload struct {
 	NoticeID int64 `json:"notice_id" binding:"required"`
 }
+
+// 分数修正管理相关的请求模型
+type CreateScoreAdjustmentPayload struct {
+	TeamID         int64   `json:"team_id" binding:"required"`
+	AdjustmentType string  `json:"adjustment_type" binding:"required,oneof=cheat reward other"`
+	ScoreChange    float64 `json:"score_change" binding:"required"`
+	Reason         string  `json:"reason" binding:"required"`
+}
+
+type UpdateScoreAdjustmentPayload struct {
+	AdjustmentType string  `json:"adjustment_type" binding:"required,oneof=cheat reward other"`
+	ScoreChange    float64 `json:"score_change" binding:"required"`
+	Reason         string  `json:"reason" binding:"required"`
+}

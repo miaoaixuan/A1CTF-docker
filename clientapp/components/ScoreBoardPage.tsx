@@ -1,4 +1,4 @@
-import { ChartArea, CircleArrowLeft, LogOut, X, Download } from 'lucide-react'
+import { ChartArea, CircleArrowLeft, LogOut, X, Download, Calculator, Gift, Ban, AlertTriangle } from 'lucide-react'
 
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
 
@@ -36,6 +36,13 @@ import {
     SelectTrigger,
     SelectValue,
 } from "components/ui/select"
+
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from "components/ui/tabs"
 
 export default function ScoreBoardPage(
     { gmid }
@@ -675,6 +682,36 @@ export default function ScoreBoardPage(
         return target
     }
 
+    // 获取分数修正类型的图标和颜色
+    const getAdjustmentTypeInfo = (type: string) => {
+        switch (type) {
+            case 'cheat':
+                return { 
+                    icon: <Ban className="w-5 h-5" />, 
+                    color: 'text-red-500',
+                    label: '作弊扣分'
+                };
+            case 'reward':
+                return { 
+                    icon: <Gift className="w-5 h-5" />, 
+                    color: 'text-green-500',
+                    label: '奖励加分'
+                };
+            case 'other':
+                return { 
+                    icon: <AlertTriangle className="w-5 h-5" />, 
+                    color: 'text-yellow-500',
+                    label: '其他调整'
+                };
+            default:
+                return { 
+                    icon: <Calculator className="w-5 h-5" />, 
+                    color: 'text-gray-500',
+                    label: '未知'
+                };
+        }
+    }
+
     const navigator = useNavigate()
 
     const gamePath = useLocation().pathname.split("/").slice(0, -1).join("/")
@@ -777,68 +814,181 @@ export default function ScoreBoardPage(
                                             )}
                                         </div>
                                         <div className='flex flex-col w-full lg:hidden p-2'>
-                                            <div className={`flex h-9 flex-none items-center border-b-2`}>
-                                                <div className='w-[150px] flex-shrink-0 justify-center border-r-2 h-full items-center hidden lg:flex'>
-                                                    <span>Solved Time</span>
-                                                </div>
-                                                <div className='flex-1 flex justify-center border-r-2 h-full items-center'>
-                                                    <span className=''>Challenge name</span>
-                                                </div>
-                                                <div className='w-[100px] flex-shrink-0 flex justify-center h-full items-center'>
-                                                    <span className=''>Score</span>
-                                                </div>
-                                            </div>
-                                            {showUserDetail.solved_challenges?.map((e, index) => (
-                                                <div key={`solved-problem-${index}`} className={`flex h-9 flex-none items-center border-b-2 gap-2`}>
-                                                    <div className='w-[150px] flex-shrink-0 justify-center hidden lg:flex'>
-                                                        <span>{dayjs(e.solve_time).format("MM-DD HH:mm:ss")}</span>
+                                            <Tabs defaultValue="solved" className="w-full">
+                                                <TabsList className="grid w-full grid-cols-2">
+                                                    <TabsTrigger value="solved" className="flex items-center gap-2">
+                                                        <Calculator className="w-4 h-4" />
+                                                        解题记录 ({showUserDetail.solved_challenges?.length || 0})
+                                                    </TabsTrigger>
+                                                    <TabsTrigger value="adjustments" className="flex items-center gap-2">
+                                                        <AlertTriangle className="w-4 h-4" />
+                                                        分数修正 ({showUserDetail.score_adjustments?.length || 0})
+                                                    </TabsTrigger>
+                                                </TabsList>
+                                                
+                                                <TabsContent value="solved" className="mt-4">
+                                                    <div className={`flex h-9 flex-none items-center border-b-2`}>
+                                                        <div className='flex-1 flex justify-center border-r-2 h-full items-center'>
+                                                            <span className=''>题目名称</span>
+                                                        </div>
+                                                        <div className='w-[100px] flex-shrink-0 flex justify-center h-full items-center'>
+                                                            <span className=''>分数</span>
+                                                        </div>
                                                     </div>
-                                                    <div className='flex-1 overflow-hidden'>
-                                                        <span className='text-nowrap overflow-hidden text-ellipsis'
-                                                            data-tooltip-id="challengeTooltip2"
-                                                            data-tooltip-html={`<div class='text-sm flex flex-col'><span>${dayjs(e.solve_time).format("MM-DD HH:mm:ss")}</span><span>${e.solver}</span><span>${getChallenge(e.challenge_id || 0)?.challenge_name}</span></div>`}
-                                                        >{getChallenge(e.challenge_id || 0)?.challenge_name}</span>
+                                                    {showUserDetail.solved_challenges?.map((e, index) => (
+                                                        <div key={`solved-problem-${index}`} className={`flex h-9 flex-none items-center border-b-2 gap-2`}>
+                                                            <div className='flex-1 overflow-hidden'>
+                                                                <span className='text-nowrap overflow-hidden text-ellipsis'
+                                                                    data-tooltip-id="challengeTooltip2"
+                                                                    data-tooltip-html={`<div class='text-sm flex flex-col'><span>${dayjs(e.solve_time).format("MM-DD HH:mm:ss")}</span><span>${e.solver}</span><span>${getChallenge(e.challenge_id || 0)?.challenge_name}</span></div>`}
+                                                                >{getChallenge(e.challenge_id || 0)?.challenge_name}</span>
+                                                            </div>
+                                                            <div className='w-[100px] flex-shrink-0 flex overflow-hidden'>
+                                                                <span className='text-green-500'> + {e.score} pts</span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {(!showUserDetail.solved_challenges || showUserDetail.solved_challenges.length === 0) && (
+                                                        <div className="flex items-center justify-center py-8 text-muted-foreground">
+                                                            暂无解题记录
+                                                        </div>
+                                                    )}
+                                                </TabsContent>
+                                                
+                                                <TabsContent value="adjustments" className="mt-4">
+                                                    <div className={`flex h-9 flex-none items-center border-b-2`}>
+                                                        <div className='flex-1 flex justify-center border-r-2 h-full items-center'>
+                                                            <span className=''>修正原因</span>
+                                                        </div>
+                                                        <div className='w-[100px] flex-shrink-0 flex justify-center h-full items-center'>
+                                                            <span className=''>分数变化</span>
+                                                        </div>
                                                     </div>
-                                                    <div className='w-[100px] flex-shrink-0 flex overflow-hidden'>
-                                                        <span className='text-green-500'> + {e.score} pts</span>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                    {showUserDetail.score_adjustments?.map((adj, index) => {
+                                                        const typeInfo = getAdjustmentTypeInfo(adj.adjustment_type);
+                                                        return (
+                                                            <div key={`score-adjustment-${index}`} className={`flex h-9 flex-none items-center border-b-2 gap-2 bg-muted/30`}>
+                                                                <div className='flex-1 overflow-hidden flex items-center gap-2'>
+                                                                    <span className={typeInfo.color}>
+                                                                        {typeInfo.icon}
+                                                                    </span>
+                                                                    <span className='text-nowrap overflow-hidden text-ellipsis text-sm'
+                                                                        data-tooltip-id="challengeTooltip2"
+                                                                        data-tooltip-html={`<div class='text-sm flex flex-col'><span>${dayjs(adj.created_at).format("MM-DD HH:mm:ss")}</span><span>${typeInfo.label}</span><span>${adj.reason}</span></div>`}
+                                                                    >{adj.reason}</span>
+                                                                </div>
+                                                                <div className='w-[100px] flex-shrink-0 flex overflow-hidden'>
+                                                                    <span className={adj.score_change >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                                                        {adj.score_change >= 0 ? '+' : ''}{adj.score_change} pts
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                    {(!showUserDetail.score_adjustments || showUserDetail.score_adjustments.length === 0) && (
+                                                        <div className="flex items-center justify-center py-8 text-muted-foreground">
+                                                            暂无分数修正记录
+                                                        </div>
+                                                    )}
+                                                </TabsContent>
+                                            </Tabs>
                                         </div>
                                     </div>
                                     <div className='h-full basis-1/2 overflow-hidden hidden lg:flex'>
-                                        <MacScrollbar className='flex flex-col w-full overflow-hidden pr-5' skin={theme == "light" ? "light" : "dark"}>
-                                            <div className={`flex h-9 flex-none items-center border-b-2 w-full`}>
-                                                <div className='w-[150px] flex-shrink-0 flex justify-center border-r-2 h-full items-center'>
-                                                    <span>Solved Time</span>
-                                                </div>
-                                                <div className='w-[100px] flex-shrink-0 flex justify-center border-r-2 h-full items-center'>
-                                                    <span>User</span>
-                                                </div>
-                                                <div className='flex-1 flex justify-center border-r-2 h-full items-center'>
-                                                    <span className=''>Challenge name</span>
-                                                </div>
-                                                <div className='w-[120px] flex-none flex justify-center h-full items-center'>
-                                                    <span className=''>Score</span>
-                                                </div>
-                                            </div>
-                                            {showUserDetail.solved_challenges?.map((e, index) => (
-                                                <div key={`solved-problem-${index}`} className={`flex h-9 flex-none items-center border-b-2`}>
-                                                    <div className='w-[150px] flex-shrink-0 flex justify-center'>
-                                                        <span>{dayjs(e.solve_time).format("MM-DD HH:mm:ss")}</span>
+                                        <Tabs defaultValue="solved" className="w-full h-full flex flex-col">
+                                            <TabsList className="grid w-full grid-cols-2 mb-4">
+                                                <TabsTrigger value="solved" className="flex items-center gap-2">
+                                                    <Calculator className="w-4 h-4" />
+                                                    解题记录 ({showUserDetail.solved_challenges?.length || 0})
+                                                </TabsTrigger>
+                                                <TabsTrigger value="adjustments" className="flex items-center gap-2">
+                                                    <AlertTriangle className="w-4 h-4" />
+                                                    分数修正 ({showUserDetail.score_adjustments?.length || 0})
+                                                </TabsTrigger>
+                                            </TabsList>
+                                            
+                                            <TabsContent value="solved" className="flex-1 overflow-hidden">
+                                                <MacScrollbar className='flex flex-col w-full overflow-hidden pr-5' skin={theme == "light" ? "light" : "dark"}>
+                                                    <div className={`flex h-9 flex-none items-center border-b-2 w-full`}>
+                                                        <div className='w-[150px] flex-shrink-0 flex justify-center border-r-2 h-full items-center'>
+                                                            <span>解题时间</span>
+                                                        </div>
+                                                        <div className='w-[100px] flex-shrink-0 flex justify-center border-r-2 h-full items-center'>
+                                                            <span>解题者</span>
+                                                        </div>
+                                                        <div className='flex-1 flex justify-center border-r-2 h-full items-center'>
+                                                            <span className=''>题目名称</span>
+                                                        </div>
+                                                        <div className='w-[120px] flex-none flex justify-center h-full items-center'>
+                                                            <span className=''>分数</span>
+                                                        </div>
                                                     </div>
-                                                    <div className='w-[100px] flex-shrink-0 flex justify-center overflow-hidden'>
-                                                        <span className='text-nowrap overflow-hidden text-ellipsis'>{e.solver}</span>
+                                                    {showUserDetail.solved_challenges?.map((e, index) => (
+                                                        <div key={`solved-problem-${index}`} className={`flex h-9 flex-none items-center border-b-2`}>
+                                                            <div className='w-[150px] flex-shrink-0 flex justify-center'>
+                                                                <span>{dayjs(e.solve_time).format("MM-DD HH:mm:ss")}</span>
+                                                            </div>
+                                                            <div className='w-[100px] flex-shrink-0 flex justify-center overflow-hidden'>
+                                                                <span className='text-nowrap overflow-hidden text-ellipsis'>{e.solver}</span>
+                                                            </div>
+                                                            <div className='flex-1 overflow-hidden pl-2 pr-2'>
+                                                                <span className='text-nowrap overflow-hidden text-ellipsis'>{getChallenge(e.challenge_id || 0)?.challenge_name}</span>
+                                                            </div>
+                                                            <div className='w-[120px] flex-none flex overflow-hidden justify-center'>
+                                                                <span className='text-green-500'> + {e.score} pts</span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {(!showUserDetail.solved_challenges || showUserDetail.solved_challenges.length === 0) && (
+                                                        <div className="flex items-center justify-center py-8 text-muted-foreground">
+                                                            暂无解题记录
+                                                        </div>
+                                                    )}
+                                                </MacScrollbar>
+                                            </TabsContent>
+                                            
+                                            <TabsContent value="adjustments" className="flex-1 overflow-hidden">
+                                                <MacScrollbar className='flex flex-col w-full overflow-hidden pr-5' skin={theme == "light" ? "light" : "dark"}>
+                                                    <div className={`flex h-9 flex-none items-center border-b-2 w-full`}>
+                                                        <div className='w-[150px] flex-shrink-0 flex justify-center border-r-2 h-full items-center'>
+                                                            <span>修正时间</span>
+                                                        </div>
+                                                        <div className='flex-1 flex justify-center border-r-2 h-full items-center'>
+                                                            <span className=''>修正原因</span>
+                                                        </div>
+                                                        <div className='w-[120px] flex-none flex justify-center h-full items-center'>
+                                                            <span className=''>分数变化</span>
+                                                        </div>
                                                     </div>
-                                                    <div className='flex-1 overflow-hidden pl-2 pr-2'>
-                                                        <span className='text-nowrap overflow-hidden text-ellipsis'>{getChallenge(e.challenge_id || 0)?.challenge_name}</span>
-                                                    </div>
-                                                    <div className='w-[120px] flex-none flex overflow-hidden justify-center'>
-                                                        <span className='text-green-500'> + {e.score} pts</span>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </MacScrollbar>
+                                                    {showUserDetail.score_adjustments?.map((adj, index) => {
+                                                        const typeInfo = getAdjustmentTypeInfo(adj.adjustment_type);
+                                                        return (
+                                                            <div key={`score-adjustment-${index}`} className={`flex h-9 flex-none items-center border-b-2 bg-muted/30`}>
+                                                                <div className='w-[150px] flex-shrink-0 flex justify-center'>
+                                                                    <span>{dayjs(adj.created_at).format("MM-DD HH:mm:ss")}</span>
+                                                                </div>
+                                                                <div className='flex-1 overflow-hidden pl-2 pr-2 flex items-center gap-2'>
+                                                                    <span className={typeInfo.color}>
+                                                                        {typeInfo.icon}
+                                                                    </span>
+                                                                    <span className='text-nowrap overflow-hidden text-ellipsis text-sm'>{adj.reason}</span>
+                                                                </div>
+                                                                <div className='w-[120px] flex-none flex overflow-hidden justify-center'>
+                                                                    <span className={adj.score_change >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                                                        {adj.score_change >= 0 ? '+' : '-'} {Math.abs(adj.score_change)} pts
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                    {(!showUserDetail.score_adjustments || showUserDetail.score_adjustments.length === 0) && (
+                                                        <div className="flex items-center justify-center py-8 text-muted-foreground">
+                                                            暂无分数修正记录
+                                                        </div>
+                                                    )}
+                                                </MacScrollbar>
+                                            </TabsContent>
+                                        </Tabs>
                                     </div>
                                 </div>
                             </MacScrollbar>

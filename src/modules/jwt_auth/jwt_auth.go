@@ -89,6 +89,10 @@ var PermissionMap = map[string]PermissionSetting{
 	"/api/admin/game/:game_id/groups":           {RequestMethod: []string{"GET", "POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/game/:game_id/groups/:group_id": {RequestMethod: []string{"PUT", "DELETE"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 
+	// 分数修正管理相关权限
+	"/api/admin/game/:game_id/score-adjustments":                {RequestMethod: []string{"GET", "POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/game/:game_id/score-adjustments/:adjustment_id": {RequestMethod: []string{"PUT", "DELETE"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+
 	// 公告管理相关权限
 	"/api/admin/game/:game_id/notices":      {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/game/:game_id/notices/list": {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},

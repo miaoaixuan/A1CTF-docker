@@ -162,19 +162,28 @@ type TeamSolveItem struct {
 	SolveTime   time.Time `json:"solve_time"`
 }
 
+type TeamScoreAdjustmentItem struct {
+	AdjustmentID   int64     `json:"adjustment_id"`
+	AdjustmentType string    `json:"adjustment_type"`
+	ScoreChange    float64   `json:"score_change"`
+	Reason         string    `json:"reason"`
+	CreatedAt      time.Time `json:"created_at"`
+}
+
 type TeamScoreItem struct {
-	TeamID           int64           `json:"team_id"`
-	TeamName         string          `json:"team_name"`
-	TeamAvatar       *string         `json:"team_avatar"`
-	TeamSlogan       *string         `json:"team_slogan"`
-	TeamDescription  *string         `json:"team_description"`
-	Rank             int64           `json:"rank"`
-	Score            float64         `json:"score"`
-	Penalty          int64           `json:"penalty"` // 罚时（秒）
-	GroupID          *int64          `json:"group_id"`
-	GroupName        *string         `json:"group_name"`
-	SolvedChallenges []TeamSolveItem `json:"solved_challenges"`
-	LastSolveTime    int64           `json:"last_solve_time"`
+	TeamID           int64                     `json:"team_id"`
+	TeamName         string                    `json:"team_name"`
+	TeamAvatar       *string                   `json:"team_avatar"`
+	TeamSlogan       *string                   `json:"team_slogan"`
+	TeamDescription  *string                   `json:"team_description"`
+	Rank             int64                     `json:"rank"`
+	Score            float64                   `json:"score"`
+	Penalty          int64                     `json:"penalty"` // 罚时（秒）
+	GroupID          *int64                    `json:"group_id"`
+	GroupName        *string                   `json:"group_name"`
+	SolvedChallenges []TeamSolveItem           `json:"solved_challenges"`
+	ScoreAdjustments []TeamScoreAdjustmentItem `json:"score_adjustments"`
+	LastSolveTime    int64                     `json:"last_solve_time"`
 }
 
 type CachedGameScoreBoardData struct {

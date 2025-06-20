@@ -24,6 +24,7 @@ export default [
 
     route("admin/games", "routes/[lng]/admin/games/page.tsx"),
     route("admin/games/:game_id", "routes/[lng]/admin/games/[game_id]/page.tsx"),
+    route("admin/games/:game_id/score-adjustments", "routes/[lng]/admin/games/[game_id]/score-adjustments/page.tsx"),
 
     route("admin/containers", "routes/[lng]/admin/containers/page.tsx"),
     route("admin/logs", "routes/[lng]/admin/logs/page.tsx"),

@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { CirclePlus, Eye, EyeClosed, EyeOff, FilePenLine, Trash2, Search, Calendar, Users, Trophy, Settings, Play, Pause, Square } from "lucide-react";
+import { CirclePlus, Eye, EyeClosed, EyeOff, FilePenLine, Trash2, Search, Calendar, Users, Trophy, Settings, Play, Pause, Square, Calculator } from "lucide-react";
 import { MacScrollbar } from "mac-scrollbar";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
@@ -236,6 +236,15 @@ export function GameManagePage() {
                                                                     title="编辑比赛"
                                                                 >
                                                                     <FilePenLine className="h-4 w-4" />
+                                                                </Button>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="secondary"
+                                                                    className="backdrop-blur-sm bg-white/20 hover:bg-white/30 border-white/20 text-white h-9 w-9 p-0"
+                                                                    onClick={() => router(`/admin/games/${game.game_id}/score-adjustments`)}
+                                                                    title="分数修正"
+                                                                >
+                                                                    <Calculator className="h-4 w-4" />
                                                                 </Button>
                                                                 <Button
                                                                     size="sm"

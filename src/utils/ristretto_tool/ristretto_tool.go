@@ -291,6 +291,7 @@ func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, er
 				Score:            0,
 				Penalty:          0,
 				SolvedChallenges: make([]webmodels.TeamSolveItem, 0),
+				ScoreAdjustments: make([]webmodels.TeamScoreAdjustmentItem, 0),
 				LastSolveTime:    0,
 			}
 		}
@@ -319,6 +320,31 @@ func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, er
 				}
 
 				teamDataMap[solve.TeamID] = teamData
+			}
+		}
+
+		// 获取并应用分数修正
+		var adjustments []models.ScoreAdjustment
+		if err := dbtool.DB().Where("game_id = ?", gameID).Find(&adjustments).Error; err != nil {
+			return nil, errors.New("failed to load score adjustments")
+		}
+
+		// 应用分数修正到队伍数据
+		for _, adjustment := range adjustments {
+			if teamData, exists := teamDataMap[adjustment.TeamID]; exists {
+				teamData.Score += adjustment.ScoreChange
+				// 添加分数修正到队伍的分数修正列表
+				if teamData.ScoreAdjustments == nil {
+					teamData.ScoreAdjustments = make([]webmodels.TeamScoreAdjustmentItem, 0)
+				}
+				teamData.ScoreAdjustments = append(teamData.ScoreAdjustments, webmodels.TeamScoreAdjustmentItem{
+					AdjustmentID:   adjustment.AdjustmentID,
+					AdjustmentType: string(adjustment.AdjustmentType),
+					ScoreChange:    adjustment.ScoreChange,
+					Reason:         adjustment.Reason,
+					CreatedAt:      adjustment.CreatedAt,
+				})
+				teamDataMap[adjustment.TeamID] = teamData
 			}
 		}
 
@@ -370,6 +396,7 @@ func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, er
 				Score:            teamData.Score,
 				Penalty:          teamData.Penalty,
 				SolvedChallenges: teamData.SolvedChallenges,
+				ScoreAdjustments: teamData.ScoreAdjustments,
 				GroupID:          teamData.GroupID,
 			}
 			finalScoreBoardMap[teamData.TeamID] = tmp
@@ -392,6 +419,7 @@ func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, er
 				Score:            teamData.Score,
 				Penalty:          teamData.Penalty,
 				SolvedChallenges: teamData.SolvedChallenges,
+				ScoreAdjustments: teamData.ScoreAdjustments,
 				GroupID:          teamData.GroupID,
 			})
 			idx += 1

@@ -494,6 +494,156 @@ paths:
           description: The ID of the challenge to add
           schema:
             type: integer
+  /api/admin/game/{game_id}/score-adjustments:
+    get:
+      tags: [admin]
+      operationId: getGameScoreAdjustments
+      summary: Get game score adjustments
+      description: Get all score adjustments for a specific game
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Score adjustments retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ScoreAdjustmentInfo'
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+    post:
+      tags: [admin]
+      operationId: createScoreAdjustment
+      summary: Create score adjustment
+      description: Create a new score adjustment for a team in the game
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateScoreAdjustmentPayload'
+      responses:
+        '200':
+          description: Score adjustment created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: '#/components/schemas/ScoreAdjustmentInfo'
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+  /api/admin/game/{game_id}/score-adjustments/{adjustment_id}:
+    put:
+      tags: [admin]
+      operationId: updateScoreAdjustment
+      summary: Update score adjustment
+      description: Update an existing score adjustment
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game
+          schema:
+            type: integer
+        - name: adjustment_id
+          in: path
+          required: true
+          description: The ID of the score adjustment
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateScoreAdjustmentPayload'
+      responses:
+        '200':
+          description: Score adjustment updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: '#/components/schemas/ScoreAdjustmentInfo'
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+    delete:
+      tags: [admin]
+      operationId: deleteScoreAdjustment
+      summary: Delete score adjustment
+      description: Delete a score adjustment
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game
+          schema:
+            type: integer
+        - name: adjustment_id
+          in: path
+          required: true
+          description: The ID of the score adjustment
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Score adjustment deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                required:
+                  - code
+                  - message
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
   /api/admin/game/{game_id}/poster/upload:
     post:
       tags: [admin]
@@ -3487,6 +3637,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SolvedChallenge'
+        score_adjustments:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamScoreAdjustment'
 
     SolvedChallenge:
       type: object
@@ -3508,6 +3662,33 @@ components:
           type: string
           format: date-time
           example: "2025-05-03T07:07:34.650351Z"
+
+    TeamScoreAdjustment:
+      type: object
+      properties:
+        adjustment_id:
+          type: integer
+          description: 分数修正ID
+        adjustment_type:
+          type: string
+          enum: [cheat, reward, other]
+          description: 修正类型
+        score_change:
+          type: number
+          description: 分数变化量
+        reason:
+          type: string
+          description: 修正原因
+        created_at:
+          type: string
+          format: date-time
+          description: 创建时间
+      required:
+        - adjustment_id
+        - adjustment_type
+        - score_change
+        - reason
+        - created_at
 
     TeamTimeline:
       type: object
@@ -4060,3 +4241,88 @@ components:
           description: 公告ID
       required:
         - notice_id
+    ScoreAdjustmentInfo:
+      type: object
+      properties:
+        adjustment_id:
+          type: integer
+          description: 分数修正ID
+        team_id:
+          type: integer
+          description: 队伍ID
+        team_name:
+          type: string
+          description: 队伍名称
+        adjustment_type:
+          type: string
+          enum: [cheat, reward, other]
+          description: 修正类型
+        score_change:
+          type: number
+          description: 分数变化量
+        reason:
+          type: string
+          description: 修正原因
+        created_by:
+          type: integer
+          description: 创建者用户ID
+        created_by_username:
+          type: string
+          description: 创建者用户名
+        created_at:
+          type: string
+          format: date-time
+          description: 创建时间
+        updated_at:
+          type: string
+          format: date-time
+          description: 更新时间
+      required:
+        - adjustment_id
+        - team_id
+        - team_name
+        - adjustment_type
+        - score_change
+        - reason
+        - created_by
+        - created_by_username
+        - created_at
+        - updated_at
+    CreateScoreAdjustmentPayload:
+      type: object
+      properties:
+        team_id:
+          type: integer
+          description: 队伍ID
+        adjustment_type:
+          type: string
+          enum: [cheat, reward, other]
+          description: 修正类型
+        score_change:
+          type: number
+          description: 分数变化量
+        reason:
+          type: string
+          description: 修正原因
+      required:
+        - team_id
+        - adjustment_type
+        - score_change
+        - reason
+    UpdateScoreAdjustmentPayload:
+      type: object
+      properties:
+        adjustment_type:
+          type: string
+          enum: [cheat, reward, other]
+          description: 修正类型
+        score_change:
+          type: number
+          description: 分数变化量
+        reason:
+          type: string
+          description: 修正原因
+      required:
+        - adjustment_type
+        - score_change
+        - reason
