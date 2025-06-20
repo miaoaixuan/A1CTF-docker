@@ -716,7 +716,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
             name: values.name,
             summary: values.summary,
             description: values.description,
-            // poster: values.poster,
+            poster: values.poster,
             invite_code: values.invite_code,
             start_time: format_date(values.start_time ?? new Date()),
             end_time: format_date(values.end_time ?? new Date()),

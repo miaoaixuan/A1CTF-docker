@@ -8,14 +8,20 @@ const ImageLoader = ({
     alt = '',
     className = '',
     width = 1920,
+    primaryColor = "white",
     height = 1080,
+    text = true,
+    onLoad = () => {},
     style = {},
 }: {
     src: string;
-    alt: string;
+    alt?: string;
     className: string;
     width?: number;
     height?: number;
+    primaryColor?: string;
+    text?: boolean;
+    onLoad?: React.ReactEventHandler<HTMLImageElement> | undefined;
     style?: React.CSSProperties;
 }) => {
     const [loaded, setLoaded] = useState(false);
@@ -57,16 +63,18 @@ const ImageLoader = ({
         >
             {/* 低分辨率模糊背景 */}
             <animated.div 
-                className='w-full h-full top-0 left-0 absolute bg-background flex items-center justify-center'
+                className={`w-full h-full top-0 left-0 absolute flex items-center justify-center bg-background`}
                 style={{
                     opacity: fadeSpring.opacity,
                     pointerEvents: loaded ? 'none' : 'auto',
                 }}
             >
-                <div className='flex items-center gap-3'>
-                    <LoaderPinwheel className="animate-spin" />
-                    <span className="font-bold">Loading...</span>
-                </div>
+                {text && (
+                    <div className='flex items-center gap-3'>
+                        <LoaderPinwheel className="animate-spin" />
+                        <span className="font-bold">Loading...</span>
+                    </div>
+                )}
             </animated.div>
 
             {/* 高清图 */}
@@ -74,6 +82,7 @@ const ImageLoader = ({
                 ref={imgRef}
                 src={src}
                 width={width}
+                onLoad={onLoad}
                 height={height}
                 alt={alt}
                 className={cn(className, "full-image w-fit h-full object-cover")}

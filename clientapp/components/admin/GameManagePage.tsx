@@ -11,6 +11,7 @@ import { api } from "utils/ApiHelper";
 import { FastAverageColor } from "fast-average-color"
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useNavigate } from "react-router";
+import ImageLoader from "components/modules/ImageLoader";
 
 export function GameManagePage() { 
 
@@ -149,8 +150,10 @@ export function GameManagePage() {
                                                 <>
                                                     {/* Background Image */}
                                                     <div className="absolute top-0 left-0 w-full h-full">
-                                                        <img 
-                                                            src={game.poster || clientConfig.DefaultBGImage} 
+                                                        <ImageLoader 
+                                                            text={false}
+                                                            src={game.poster || clientConfig.DefaultBGImage}
+                                                            primaryColor={primaryColorMap[index]}
                                                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
                                                             onLoad={(e) => {
                                                                 const fac = new FastAverageColor();
