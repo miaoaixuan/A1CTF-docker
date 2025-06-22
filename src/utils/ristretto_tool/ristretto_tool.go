@@ -118,7 +118,7 @@ func CachedMemberSearchTeamMap(gameID int64) (map[string]models.Team, error) {
 
 	obj, err := GetOrCacheSingleFlight(fmt.Sprintf("all_teams_for_game_%d", gameID), func() (interface{}, error) {
 		var allTeams []models.Team
-		if err := dbtool.DB().Find(&allTeams).Where("game_id = ?", gameID).Error; err != nil {
+		if err := dbtool.DB().Find(&allTeams).Where("game_id = ?", gameID).Preload("Group").Error; err != nil {
 			return nil, err
 		}
 

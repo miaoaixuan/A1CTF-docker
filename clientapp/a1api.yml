@@ -3368,6 +3368,9 @@ components:
         penalty:
           type: integer
           nullable: true
+        group_name:
+          type: string
+          nullable: true
         team_members:
           type: array
           items:

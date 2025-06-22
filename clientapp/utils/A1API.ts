@@ -368,6 +368,7 @@ export interface UserTeamInfo {
   team_description?: string | null;
   rank?: number | null;
   penalty?: number | null;
+  group_name?: string | null;
   team_members?: {
     captain?: boolean;
     /** 用户头像URL */

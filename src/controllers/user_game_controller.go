@@ -159,6 +159,7 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 			"team_hash":        curTeam.TeamHash,
 			"invite_code":      curTeam.InviteCode,
 			"team_status":      curTeam.TeamStatus,
+			"group_name":       nil,
 			"rank":             0,
 			"penalty":          0,
 		}
@@ -181,6 +182,10 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 			} else {
 				teamInfo["rank"] = teamSatus.Rank
 				teamInfo["penalty"] = teamSatus.Penalty
+
+				if curTeam.GroupID != nil {
+					teamInfo["group_name"] = curTeam.Group.GroupName
+				}
 			}
 
 		}

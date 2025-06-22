@@ -6,7 +6,7 @@ import { Label } from "components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "components/ui/card";
 import { Badge } from "components/ui/badge";
 import { Separator } from "components/ui/separator";
-import { Users, Trophy, Hash, Copy, Crown, UserCheck, UserMinus, UserPlus, Settings, Trash2, CircleArrowLeft, Upload } from "lucide-react";
+import { Users, Trophy, Hash, Copy, Crown, UserCheck, UserMinus, UserPlus, Settings, Trash2, CircleArrowLeft, Upload, Group, Pencil, Ban, Gift, AlertTriangle, Calculator } from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -291,6 +291,35 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
     const gamePath = useLocation().pathname.split("/").slice(0, -1).join("/")
     const navigator = useNavigate();
 
+    const getAdjustmentTypeInfo = (type: string) => {
+        switch (type) {
+            case 'cheat':
+                return { 
+                    icon: <Ban className="w-4 h-4" />, 
+                    color: 'text-red-500',
+                    label: '作弊扣分'
+                };
+            case 'reward':
+                return { 
+                    icon: <Gift className="w-4 h-4" />, 
+                    color: 'text-green-500',
+                    label: '奖励加分'
+                };
+            case 'other':
+                return { 
+                    icon: <AlertTriangle className="w-4 h-4" />, 
+                    color: 'text-yellow-500',
+                    label: '其他调整'
+                };
+            default:
+                return { 
+                    icon: <Calculator className="w-4 h-4" />, 
+                    color: 'text-gray-500',
+                    label: '未知'
+                };
+        }
+    }
+
     return (
         <>
             <LoadingPage visible={loadingVisiblity} />
@@ -395,6 +424,10 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
                                     >
                                         <Copy className="w-4 h-4" />
                                     </Button>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <Group className="w-5 h-5 text-purple-500" />
+                                    <span>所属队伍: {teamInfo?.group_name ?? "Public"}</span>
                                 </div>
                                 {teamInfo?.invite_code && (
                                     <div className="flex items-center space-x-2">
@@ -591,7 +624,44 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
                                             </div>
                                             <div className="flex items-center space-x-2">
                                                 <Badge variant="secondary">#{solvedChallenge.rank}</Badge>
-                                                <span className="text-green-600 font-medium">+{solvedChallenge.score}分</span>
+                                                <span className="text-green-600 font-medium">+{solvedChallenge.score} pts</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card className='bg-transparent backdrop-blur-md'>
+                        <CardHeader>
+                            <CardTitle className="flex items-center space-x-2">
+                                <Pencil className="w-5 h-5" />
+                                <span>分数修正</span>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {!currentUserTeam?.score_adjustments || currentUserTeam.score_adjustments.length === 0 ? (
+                                <p className="text-muted-foreground">暂无分数修正</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {currentUserTeam.score_adjustments.map((adjustedScore, index) => (
+                                        <div key={`solved-${index}`} className="flex items-center justify-between p-3 border rounded-lg">
+                                            <div>
+                                                <div className={`flex gap-2 items-center ${getAdjustmentTypeInfo(adjustedScore.adjustment_type).color}`}>
+                                                    { getAdjustmentTypeInfo(adjustedScore.adjustment_type).icon }
+                                                    <div className={`font-medium`}>{getAdjustmentTypeInfo(adjustedScore.adjustment_type).label}</div>
+                                                </div>
+                                                <div className="text-sm text-muted-foreground">
+                                                    理由：{adjustedScore.reason} 修正时间: {dayjs(adjustedScore.created_at).format('YYYY-MM-DD HH:mm:ss')}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                { adjustedScore.score_change > 0 ? (
+                                                    <span className="text-green-600 font-medium">+ {adjustedScore.score_change} pts</span>
+                                                ) : (
+                                                    <span className="text-red-600 font-medium">- {Math.abs(adjustedScore.score_change)} pts</span>
+                                                ) }
                                             </div>
                                         </div>
                                     ))}
