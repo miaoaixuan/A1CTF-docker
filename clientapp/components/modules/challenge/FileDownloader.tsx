@@ -45,9 +45,10 @@ const FileDownloader = (
     };
 
     const handleDownload = (attach: UserAttachmentConfig) => {
-        const url: string = attach.attach_url ?? "";
+        
     
         if (attach.attach_type == AttachmentType.STATICFILE || attach.attach_type == AttachmentType.REMOTEFILE) {
+            const url: string = `/api/file/download/${attach.attach_hash}`;
             const fileName = attach.attach_name
 
             setDownloadSpeed({
@@ -129,7 +130,7 @@ const FileDownloader = (
     
             fetchFile();
         } else {
-            setRedirectURL(url);
+            setRedirectURL(attach.attach_url ?? "");
         }
     };
 

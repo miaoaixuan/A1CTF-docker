@@ -31,7 +31,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "../ui/button";
 import { cn } from "lib/utils";
 
-import { CalendarIcon, CircleArrowLeft, Cloud, FileCode, Github, PlusCircle, Save, ScanBarcode, TableProperties } from "lucide-react"
+import { CalendarIcon, CircleArrowLeft, Cloud, FileCode, Github, PlusCircle, Save, ScanBarcode, TableProperties, Upload } from "lucide-react"
 import { Textarea } from "../ui/textarea";
 
 import CodeEditor from '@uiw/react-textarea-code-editor';
@@ -45,6 +45,7 @@ import dayjs from "dayjs";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
 import { useNavigate } from "react-router";
+import { UploadFileDialog } from "components/dialogs/UploadFileDialog";
 
 interface ContainerFormProps {
     control: any;
@@ -57,6 +58,7 @@ interface AttachmentFormProps {
     index: number;
     form: any;
     removeAttachment: (index: number) => void;
+    onFormSubmit: () => Promise<void>;
 }
 
 function ContainerForm({ control, index, removeContainer }: ContainerFormProps) {
@@ -271,7 +273,7 @@ function ContainerForm({ control, index, removeContainer }: ContainerFormProps) 
     );
 }
 
-function AttachmentForm({ control, index, form, removeAttachment }: AttachmentFormProps) {
+function AttachmentForm({ control, index, form, removeAttachment, onFormSubmit }: AttachmentFormProps) {
 
     const attachType = useWatch({
         control,
@@ -386,20 +388,39 @@ function AttachmentForm({ control, index, form, removeAttachment }: AttachmentFo
                             render={({ field }) => (
                                 <FormItem>
                                     <div className="flex items-center h-[20px]">
-                                        <FormLabel>附件哈希</FormLabel>
+                                        <FormLabel>附件ID</FormLabel>
                                         <div className="flex-1" />
                                         <FormMessage className="text-[14px]" />
                                     </div>
                                     <FormControl>
-                                        <Input {...field} value={field.value ?? ""} />
+                                        <Input {...field} value={field.value ?? ""} placeholder="上传文件后自动填充" />
                                     </FormControl>
                                 </FormItem>
                             )}
                         />
                     </div>
-                    <Button>
-                        上传附件
-                    </Button>
+                    <UploadFileDialog
+                        maxSize={500} // 设置最大文件大小为500MB
+                        onUploadSuccess={async (fileId, fileName) => {
+                            // 上传成功后自动填充文件ID和文件名
+                            form.setValue(`attachments.${index}.attach_hash`, fileId);
+                            form.setValue(`attachments.${index}.attach_name`, fileName);
+                            toast.success(`文件 "${fileName}" 上传成功`);
+                            
+                            // 自动保存表单
+                            try {
+                                await onFormSubmit();
+                                // toast.success("题目信息已自动保存");
+                            } catch (error) {
+                                toast.error("自动保存失败，请手动保存");
+                            }
+                        }}
+                    >
+                        <Button type="button" className="[&_svg]:size-4">
+                            <Upload />
+                            上传附件
+                        </Button>
+                    </UploadFileDialog>
                 </div>
             )}
         </div>
@@ -550,7 +571,7 @@ export function EditChallengeView({ challenge_info } : { challenge_info: AdminCh
 
     const [showScript, setShowScript] = useState(false);
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
+    async function onSubmit(values: z.infer<typeof formSchema>) {
         const finalData = {
             attachments: values.attachments,
             category: values.category.toUpperCase(),
@@ -571,16 +592,19 @@ export function EditChallengeView({ challenge_info } : { challenge_info: AdminCh
             name: values.name,
             type_: challenge_info.type_,
         };
-        api.admin.updateChallenge(challenge_info.challenge_id!, finalData as AdminChallengeConfig).then((res) => {
-            toast.success("更新成功")
-        }).catch((error: AxiosError) => {
+        
+        try {
+            await api.admin.updateChallenge(challenge_info.challenge_id!, finalData as AdminChallengeConfig);
+            toast.success("更新成功");
+        } catch (error: AxiosError | any) {
             if (error.response?.status) {
-                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.message)
+                const errorMessage: ErrorMessage = error.response.data as ErrorMessage;
+                toast.error(errorMessage.message);
             } else {
-                toast.error("Unknow Error")
+                toast.error("Unknow Error");
             }
-        })
+            throw error; // 重新抛出错误以便上层处理
+        }
     }
 
     const router = useNavigate()
@@ -853,6 +877,23 @@ export function EditChallengeView({ challenge_info } : { challenge_info: AdminCh
                                     index={index}
                                     form={form}
                                     removeAttachment={removeAttachment}
+                                    onFormSubmit={async () => {
+                                        return new Promise<void>((resolve, reject) => {
+                                            form.handleSubmit(
+                                                async (values) => {
+                                                    try {
+                                                        await onSubmit(values);
+                                                        resolve();
+                                                    } catch (error) {
+                                                        reject(error);
+                                                    }
+                                                },
+                                                (errors) => {
+                                                    reject(new Error('Form validation failed'));
+                                                }
+                                            )();
+                                        });
+                                    }}
                                 />
                             )) : (
                                 <span className="text-sm text-foreground/70">还没有附件哦</span>

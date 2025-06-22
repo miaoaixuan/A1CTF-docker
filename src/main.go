@@ -17,7 +17,6 @@ import (
 	k8stool "a1ctf/src/utils/k8s_tool"
 	"a1ctf/src/utils/ristretto_tool"
 
-	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron/v2"
@@ -131,10 +130,10 @@ func main() {
 	http.Handle("/metrics", promhttp.Handler())
 	go http.ListenAndServe(fmt.Sprintf("%s:%s", viper.GetString("system.prometheus-host"), viper.GetString("system.prometheus-port")), nil)
 
-	// 启动 Gzip 压缩
-	if viper.GetBool("system.gin-gzip-enabled") {
-		r.Use(gzip.Gzip(gzip.DefaultCompression))
-	}
+	// // 启动 Gzip 压缩
+	// if viper.GetBool("system.gin-gzip-enabled") {
+	// 	r.Use(gzip.Gzip(gzip.DefaultCompression))
+	// }
 
 	// JWT 鉴权中间件
 	authMiddleware := jwtauth.InitJwtMiddleWare()
