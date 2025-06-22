@@ -64,6 +64,7 @@ func InitDB() {
 	log.Printf("DB version: %d, max version: %d", version, maxVersion)
 
 	if version < maxVersion {
+		log.Printf("Starting migration from version %d to %d", version, maxVersion)
 		goose.Up(db, migrationsDir)
 	}
 

@@ -149,7 +149,7 @@ export function GameManagePage() {
                                             {(visibleItems[index.toString()] || isLoaded[index.toString()]) && (
                                                 <>
                                                     {/* Background Image */}
-                                                    <div className="absolute top-0 left-0 w-full h-full">
+                                                    <div className="absolute top-0 left-0 w-full h-full select-none">
                                                         <ImageLoader 
                                                             text={false}
                                                             src={game.poster || clientConfig.DefaultBGImage}
@@ -183,15 +183,19 @@ export function GameManagePage() {
                                                             <div className="flex items-center gap-2">
                                                                 <Badge 
                                                                     variant={status.variant as any} 
-                                                                    className="backdrop-blur-sm bg-background/20 border-white/20 text-white shadow-lg"
+                                                                    className="backdrop-blur-sm select-none bg-background/20 border-white/20 text-white shadow-lg"
                                                                 >
-                                                                    {status.icon}
-                                                                    {status.text}
+                                                                    <div className="flex gap-1 items-center justify-center">
+                                                                        {status.icon}
+                                                                        {status.text}
+                                                                    </div>
                                                                 </Badge>
                                                                 {!game.visible && (
-                                                                    <Badge variant="outline" className="backdrop-blur-sm bg-background/20 border-white/20 text-white">
-                                                                        <EyeClosed className="h-3 w-3" />
-                                                                        隐藏
+                                                                    <Badge variant="outline" className="backdrop-blur-sm select-none bg-background/20 border-white/20 text-white">
+                                                                        <div className="flex gap-1   items-center justify-center">
+                                                                            <EyeClosed className="h-3 w-3" />
+                                                                            隐藏
+                                                                        </div>
                                                                     </Badge>
                                                                 )}
                                                             </div>
@@ -210,7 +214,7 @@ export function GameManagePage() {
                                                         </div>
 
                                                         {/* Bottom Section */}
-                                                        <div className="flex justify-between items-end">
+                                                        <div className="flex justify-between items-end select-none">
                                                             <div className="space-y-1">
                                                                 <div className="flex items-center gap-2 text-white/90">
                                                                     <Calendar className="h-4 w-4" />
@@ -235,7 +239,7 @@ export function GameManagePage() {
                                                                     onClick={() => router(`/admin/games/${game.game_id}`)}
                                                                     title="编辑比赛"
                                                                 >
-                                                                    <FilePenLine className="h-4 w-4" />
+                                                                    <Settings className="h-4 w-4" />
                                                                 </Button>
                                                                 <Button
                                                                     size="sm"
@@ -246,14 +250,14 @@ export function GameManagePage() {
                                                                 >
                                                                     <Calculator className="h-4 w-4" />
                                                                 </Button>
-                                                                <Button
+                                                                {/* <Button
                                                                     size="sm"
                                                                     variant="secondary"
                                                                     className="backdrop-blur-sm bg-white/20 hover:bg-white/30 border-white/20 text-white h-9 w-9 p-0"
                                                                     title="设置"
                                                                 >
                                                                     <Settings className="h-4 w-4" />
-                                                                </Button>
+                                                                </Button> */}
                                                                 <Button
                                                                     size="sm"
                                                                     variant="destructive"
