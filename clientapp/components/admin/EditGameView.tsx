@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from 'components/ui/button';
 import { Input } from 'components/ui/input';
 import { Textarea } from 'components/ui/textarea';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from 'components/ui/form';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from 'components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from 'components/ui/alert-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/ui/popover';
 import { Calendar } from 'components/ui/calendar';
 import { ScrollArea, ScrollBar } from 'components/ui/scroll-area';
@@ -577,6 +578,28 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                     <Button 
                         variant="ghost" 
                         size="sm"
+                        className="h-8 px-3 hover:bg-yellow-500/10 hover:text-yellow-600 transition-all duration-200"
+                        onClick={() => handleDeleteTeamSolve(gameData.challenge_id)}
+                        title="删除队伍解题记录"
+                        type="button"
+                    >
+                        <Users className="h-4 w-4 mr-1" />
+                        删队伍
+                    </Button>
+                    <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="h-8 px-3 hover:bg-orange-500/10 hover:text-orange-600 transition-all duration-200"
+                        onClick={() => handleClearAllSolves(gameData.challenge_id)}
+                        title="清空所有解题记录"
+                        type="button"
+                    >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        清空
+                    </Button>
+                    <Button 
+                        variant="ghost" 
+                        size="sm"
                         className="h-8 px-3 hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
                         onClick={() => removeGameChallenge(index)}
                         title="删除题目"
@@ -773,6 +796,48 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
     const [ isOpen, setIsOpen ] = useState(false)
     const [ curEditChallengeID, setCurEditChallengeID ] = useState(0)
     const [ isJudgeConfigOpen, setIsJudgeOpen ] = useState(false)
+    
+    // 删除解题记录相关状态
+    const [ isDeleteTeamSolveOpen, setIsDeleteTeamSolveOpen ] = useState(false)
+    const [ currentChallengeId, setCurrentChallengeId ] = useState(0)
+    const [ teamSearchTerm, setTeamSearchTerm ] = useState('')
+    const [ teamSearchResults, setTeamSearchResults ] = useState<{ team_id: number; team_name: string }[]>([])
+    const [ isSearchingTeams, setIsSearchingTeams ] = useState(false)
+    const [ selectedTeamId, setSelectedTeamId ] = useState<number | null>(null)
+    
+    // 清空解题记录确认对话框状态
+    const [ isClearSolvesAlertOpen, setIsClearSolvesAlertOpen ] = useState(false)
+    const [ clearSolvesChallengeId, setClearSolvesChallengeId ] = useState(0)
+
+    // 搜索队伍
+    const searchTeams = useCallback(async (searchTerm: string) => {
+        if (!searchTerm.trim()) {
+            setTeamSearchResults([]);
+            return;
+        }
+
+        try {
+            setIsSearchingTeams(true);
+            const response = await api.admin.adminListTeams({
+                game_id: game_info.game_id,
+                size: 50,
+                offset: 0,
+                search: searchTerm
+            });
+            
+            const teamList = response.data.data?.map((team: any) => ({
+                team_id: team.team_id,
+                team_name: team.team_name
+            })) || [];
+            
+            setTeamSearchResults(teamList);
+        } catch (error) {
+            console.error('搜索队伍失败:', error);
+            toast.error('搜索队伍失败');
+        } finally {
+            setIsSearchingTeams(false);
+        }
+    }, [game_info.game_id]);
 
     const setInputState = (value: string) => {
         setAddChallengeInput(value)
@@ -805,6 +870,19 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
             clearInterval(inputListener)
         }
     }, [])
+
+    // 队伍搜索防抖
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (teamSearchTerm) {
+                searchTeams(teamSearchTerm);
+            } else {
+                setTeamSearchResults([]);
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [teamSearchTerm, searchTeams]);
 
 
     function handleDateSelect(date: Date | undefined, tm_type: "start_time" | "end_time" | "wp_expire_time") {
@@ -928,6 +1006,52 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
             belongStage: belongStageId,
         };
     });
+
+    // 删除特定队伍的解题记录
+    const handleDeleteTeamSolve = (challengeId: number) => {
+        setCurrentChallengeId(challengeId);
+        setIsDeleteTeamSolveOpen(true);
+        setTeamSearchTerm('');
+        setTeamSearchResults([]);
+        setSelectedTeamId(null);
+    };
+
+    // 清空所有解题记录
+    const handleClearAllSolves = (challengeId: number) => {
+        setClearSolvesChallengeId(challengeId);
+        setIsClearSolvesAlertOpen(true);
+    };
+
+    // 确认清空所有解题记录
+    const confirmClearAllSolves = async () => {
+        try {
+            await api.admin.deleteChallengeSolves(game_info.game_id, clearSolvesChallengeId, {});
+            toast.success('已清空所有解题记录');
+            setIsClearSolvesAlertOpen(false);
+        } catch (error: any) {
+            console.error('清空解题记录失败:', error);
+            toast.error('清空解题记录失败: ' + (error.response?.data?.message || error.message));
+        }
+    };
+
+    // 确认删除特定队伍的解题记录
+    const confirmDeleteTeamSolve = async () => {
+        if (!selectedTeamId) {
+            toast.error('请选择一个队伍');
+            return;
+        }
+
+        try {
+            await api.admin.deleteChallengeSolves(game_info.game_id, currentChallengeId, {
+                team_id: selectedTeamId
+            });
+            toast.success('已删除队伍解题记录');
+            setIsDeleteTeamSolveOpen(false);
+        } catch (error: any) {
+            console.error('删除队伍解题记录失败:', error);
+            toast.error('删除队伍解题记录失败: ' + (error.response?.data?.message || error.message));
+        }
+    };
 
     // 海报上传处理函数
     const handlePosterUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1767,10 +1891,95 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                                                         form={form}
                                                     />
                                                 </div>
-                                            </MacScrollbar>
-                                        </DialogContent>
-                                    </Dialog>
+                                                                        </MacScrollbar>
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* 删除队伍解题记录对话框 */}
+                    <Dialog open={isDeleteTeamSolveOpen} onOpenChange={setIsDeleteTeamSolveOpen}>
+                        <DialogContent className="sm:max-w-[425px]">
+                            <DialogHeader>
+                                <DialogTitle>删除队伍解题记录</DialogTitle>
+                                <DialogDescription>
+                                    选择要删除解题记录的队伍
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-sm font-medium">搜索队伍</label>
+                                    <Input
+                                        placeholder="输入队伍名称..."
+                                        value={teamSearchTerm}
+                                        onChange={(e) => setTeamSearchTerm(e.target.value)}
+                                        className="mt-1"
+                                    />
                                 </div>
+                                
+                                {teamSearchResults.length > 0 && (
+                                    <div className="border rounded-md max-h-60 overflow-y-auto">
+                                        {teamSearchResults.map((team) => (
+                                            <div
+                                                key={team.team_id}
+                                                className={`p-3 cursor-pointer hover:bg-muted transition-colors ${
+                                                    selectedTeamId === team.team_id ? 'bg-primary/10 border-primary' : ''
+                                                }`}
+                                                onClick={() => setSelectedTeamId(team.team_id)}
+                                            >
+                                                <div className="font-medium">{team.team_name}</div>
+                                                <div className="text-sm text-muted-foreground">ID: {team.team_id}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                
+                                {isSearchingTeams && (
+                                    <div className="text-center py-4 text-muted-foreground">
+                                        搜索中...
+                                    </div>
+                                )}
+                                
+                                {teamSearchTerm && teamSearchResults.length === 0 && !isSearchingTeams && (
+                                    <div className="text-center py-4 text-muted-foreground">
+                                        未找到匹配的队伍
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div className="flex justify-end gap-2 pt-4">
+                                <Button variant="outline" onClick={() => setIsDeleteTeamSolveOpen(false)}>
+                                    取消
+                                </Button>
+                                <Button 
+                                    onClick={confirmDeleteTeamSolve}
+                                    disabled={!selectedTeamId}
+                                    variant="destructive"
+                                >
+                                    确认删除
+                                </Button>
+                            </div>
+                                                 </DialogContent>
+                    </Dialog>
+
+                    {/* 清空解题记录确认对话框 */}
+                    <AlertDialog open={isClearSolvesAlertOpen} onOpenChange={setIsClearSolvesAlertOpen}>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>确认清空解题记录</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    确定要清空这道题的所有解题记录吗？此操作不可撤销！
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel onClick={() => setIsClearSolvesAlertOpen(false)}>
+                                    取消
+                                </AlertDialogCancel>
+                                <AlertDialogAction onClick={confirmClearAllSolves} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    确认清空
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
 
                                 <div className="mt-6">
                                     {/* Search Bar */}

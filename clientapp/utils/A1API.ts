@@ -892,6 +892,11 @@ export interface UpdateScoreAdjustmentPayload {
   reason: string;
 }
 
+export interface DeleteChallengeSolvesPayload {
+  /** 队伍ID（可选，不提供则删除所有解题记录） */
+  team_id?: number;
+}
+
 import type {
   AxiosInstance,
   AxiosRequestConfig,
@@ -1936,6 +1941,39 @@ export class Api<
       >({
         path: `/api/admin/game/${gameId}/score-adjustments/${adjustmentId}`,
         method: "DELETE",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Delete solve records for a challenge (all or specific team)
+     *
+     * @tags admin
+     * @name DeleteChallengeSolves
+     * @summary Delete challenge solve records
+     * @request POST:/api/admin/game/{game_id}/challenge/{challenge_id}/solves/delete
+     */
+    deleteChallengeSolves: (
+      gameId: number,
+      challengeId: number,
+      data: DeleteChallengeSolvesPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          message: string;
+          data: {
+            deleted_count?: number;
+            team_name?: string;
+          };
+        },
+        void
+      >({
+        path: `/api/admin/game/${gameId}/challenge/${challengeId}/solves/delete`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),

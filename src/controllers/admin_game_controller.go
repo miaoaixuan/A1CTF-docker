@@ -1193,3 +1193,150 @@ func AdminDeleteScoreAdjustment(c *gin.Context) {
 		"message": "Score adjustment deleted successfully",
 	})
 }
+
+// AdminDeleteChallengeSolves 删除题目解题记录（支持删除所有或特定队伍）
+func AdminDeleteChallengeSolves(c *gin.Context) {
+	gameIDStr := c.Param("game_id")
+	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid game ID",
+		})
+		return
+	}
+
+	challengeIDStr := c.Param("challenge_id")
+	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid challenge ID",
+		})
+		return
+	}
+
+	var payload struct {
+		TeamID *int64 `json:"team_id"` // 可选，如果不提供则删除所有
+	}
+
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// 验证比赛和题目是否存在
+	var gameChallenge models.GameChallenge
+	if err := dbtool.DB().Where("game_id = ? AND challenge_id = ?", gameID, challengeID).
+		First(&gameChallenge).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"code":    404,
+				"message": "Game challenge not found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to load game challenge",
+			})
+		}
+		return
+	}
+
+	// 如果指定了队伍ID，验证队伍是否存在
+	var team *models.Team
+	if payload.TeamID != nil {
+		team = &models.Team{}
+		if err := dbtool.DB().Where("team_id = ?", *payload.TeamID).First(team).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				c.JSON(http.StatusNotFound, gin.H{
+					"code":    404,
+					"message": "Team not found",
+				})
+			} else {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"code":    500,
+					"message": "Failed to load team",
+				})
+			}
+			return
+		}
+	}
+
+	// 开始事务
+	tx := dbtool.DB().Begin()
+
+	// 构建查询条件
+	query := tx.Where("game_id = ? AND challenge_id = ?", gameID, challengeID)
+	if payload.TeamID != nil {
+		query = query.Where("team_id = ?", *payload.TeamID)
+	}
+
+	// 获取要删除的解题记录
+	var solves []models.Solve
+	if err := query.Find(&solves).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load solves",
+		})
+		return
+	}
+
+	if len(solves) == 0 {
+		tx.Rollback()
+		message := "No solve records found"
+		if payload.TeamID != nil {
+			message = "No solve records found for this team and challenge"
+		}
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":    404,
+			"message": message,
+		})
+		return
+	}
+
+	// 删除解题记录
+	if err := query.Delete(&models.Solve{}).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to delete solves",
+		})
+		return
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to commit transaction",
+		})
+		return
+	}
+
+	// 构建响应消息
+	var message string
+	var data gin.H
+	if payload.TeamID != nil {
+		message = fmt.Sprintf("Deleted %d solve records for team %s", len(solves), team.TeamName)
+		data = gin.H{
+			"deleted_count": len(solves),
+			"team_name":     team.TeamName,
+		}
+	} else {
+		message = fmt.Sprintf("Cleared %d solve records", len(solves))
+		data = gin.H{
+			"deleted_count": len(solves),
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": message,
+		"data":    data,
+	})
+}

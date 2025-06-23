@@ -298,6 +298,10 @@ func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, er
 
 		// 计算每个队伍的分数和罚时
 		for _, solve := range solves {
+			if !solve.GameChallenge.Visible {
+				continue
+			}
+
 			if teamData, exists := teamDataMap[solve.TeamID]; exists {
 				// 计算罚时（解题时间 - 首杀时间，单位：秒）
 				penalty := int64(0)

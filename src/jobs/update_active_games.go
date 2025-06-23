@@ -57,6 +57,7 @@ func updateActiveGameScores(game_ids []int64) {
 				LEFT JOIN game_challenges gc ON s.ingame_id = gc.ingame_id
 				WHERE s.game_id IN ? 
 					AND s.solve_status = '"SolveCorrect"'::jsonb
+					AND gc.visible = true
 				GROUP BY s.team_id
 			) team_scores
 			LEFT JOIN (
@@ -138,6 +139,10 @@ func UpdateActiveGameScoreBoard() {
 
 		var teamMap = make(map[int64]models.ScoreBoardData)
 		for _, solve := range solves {
+			if !solve.GameChallenge.Visible {
+				continue
+			}
+
 			if scoreBoardData, exists := teamMap[solve.TeamID]; exists {
 				scoreBoardData.Score += solve.GameChallenge.CurScore
 				scoreBoardData.SolvedChallenges = append(scoreBoardData.SolvedChallenges, solve.SolveID)

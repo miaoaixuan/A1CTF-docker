@@ -644,6 +644,59 @@ paths:
           description: Bad request
         '500':
           description: Server error
+  /api/admin/game/{game_id}/challenge/{challenge_id}/solves/delete:
+    post:
+      tags: [admin]
+      operationId: deleteChallengeSolves
+      summary: Delete challenge solve records
+      description: Delete solve records for a challenge (all or specific team)
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game
+          schema:
+            type: integer
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteChallengeSolvesPayload'
+      responses:
+        '200':
+          description: Solve records deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      deleted_count:
+                        type: integer
+                      team_name:
+                        type: string
+                required:
+                  - code
+                  - message
+                  - data
+        '400':
+          description: Bad request
+        '404':
+          description: Not found
+        '500':
+          description: Server error
   /api/admin/game/{game_id}/poster/upload:
     post:
       tags: [admin]
@@ -4329,3 +4382,10 @@ components:
         - adjustment_type
         - score_change
         - reason
+    DeleteChallengeSolvesPayload:
+      type: object
+      properties:
+        team_id:
+          type: integer
+          description: 队伍ID（可选，不提供则删除所有解题记录）
+      required: []

@@ -252,6 +252,9 @@ func main() {
 			gameGroup.POST("/:game_id/score-adjustments", controllers.AdminCreateScoreAdjustment)
 			gameGroup.PUT("/:game_id/score-adjustments/:adjustment_id", controllers.AdminUpdateScoreAdjustment)
 			gameGroup.DELETE("/:game_id/score-adjustments/:adjustment_id", controllers.AdminDeleteScoreAdjustment)
+
+			// 题目解题记录管理路由
+			gameGroup.POST("/:game_id/challenge/:challenge_id/solves/delete", controllers.AdminDeleteChallengeSolves)
 		}
 
 		// 用户相关接口
