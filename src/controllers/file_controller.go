@@ -5,6 +5,7 @@ import (
 	"mime"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -138,7 +139,7 @@ func DownloadFile(c *gin.Context) {
 		return
 	}
 
-	if _, err := os.Stat(uploadRecord.FilePath); os.IsNotExist(err) {
+	if _, err := os.Stat(path.Join("./data", uploadRecord.FilePath)); os.IsNotExist(err) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":    404,
 			"message": "File not found on server",
@@ -146,7 +147,7 @@ func DownloadFile(c *gin.Context) {
 		return
 	}
 
-	file, err := os.Open(uploadRecord.FilePath)
+	file, err := os.Open(path.Join("./data", uploadRecord.FilePath))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,

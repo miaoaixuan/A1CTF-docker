@@ -117,7 +117,7 @@ func Register(c *gin.Context) {
 		Username:      payload.Username,
 		Password:      saltedPassword,
 		Salt:          newSalt,
-		Role:          models.UserRoleAdmin,
+		Role:          models.UserRoleUser,
 		CurToken:      nil,
 		Phone:         nil,
 		StudentNumber: nil,

@@ -7,6 +7,12 @@ import (
 	"a1ctf/src/utils/general"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/utils/turnstile"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
+	"log"
+	"os"
 	"time"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
@@ -15,7 +21,129 @@ import (
 
 var (
 	identityKey = "UserID"
+	privateKey  *rsa.PrivateKey
+	publicKey   *rsa.PublicKey
 )
+
+// generateRSAKeyPair 生成RSA密钥对
+func generateRSAKeyPair() (*rsa.PrivateKey, error) {
+	return rsa.GenerateKey(rand.Reader, 2048)
+}
+
+// savePrivateKeyToFile 保存私钥到文件
+func savePrivateKeyToFile(privateKey *rsa.PrivateKey, filename string) error {
+	keyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+
+	keyPEM := &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: keyBytes,
+	}
+
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	return pem.Encode(file, keyPEM)
+}
+
+// loadPrivateKeyFromFile 从文件加载私钥
+func loadPrivateKeyFromFile(filename string) (*rsa.PrivateKey, error) {
+	keyPEM, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	block, _ := pem.Decode(keyPEM)
+	if block == nil {
+		return nil, err
+	}
+
+	return x509.ParsePKCS1PrivateKey(block.Bytes)
+}
+
+// savePublicKeyToFile 保存公钥到文件
+func savePublicKeyToFile(publicKey *rsa.PublicKey, filename string) error {
+	keyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
+	if err != nil {
+		return err
+	}
+
+	keyPEM := &pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: keyBytes,
+	}
+
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	return pem.Encode(file, keyPEM)
+}
+
+// loadPublicKeyFromFile 从文件加载公钥
+func loadPublicKeyFromFile(filename string) (*rsa.PublicKey, error) {
+	keyPEM, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	block, _ := pem.Decode(keyPEM)
+	if block == nil {
+		return nil, err
+	}
+
+	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return pubKey.(*rsa.PublicKey), nil
+}
+
+var privKeyFile = "./data/rsa_private_key.pem"
+var pubKeyFile = "./data/rsa_public_key.pem"
+
+// initRSAKeys 初始化RSA密钥对
+func initRSAKeys() error {
+	// 尝试从文件加载私钥和公钥
+	if _, err := os.Stat(privKeyFile); err == nil {
+		if _, err := os.Stat(pubKeyFile); err == nil {
+			privKey, err := loadPrivateKeyFromFile(privKeyFile)
+			if err == nil {
+				pubKey, err := loadPublicKeyFromFile(pubKeyFile)
+				if err == nil {
+					privateKey = privKey
+					publicKey = pubKey
+					return nil
+				}
+			}
+		}
+	}
+
+	// 如果文件不存在或加载失败，生成新的密钥对
+	key, err := generateRSAKeyPair()
+	if err != nil {
+		return err
+	}
+
+	// 保存私钥到文件
+	if err := savePrivateKeyToFile(key, privKeyFile); err != nil {
+		return err
+	}
+
+	// 保存公钥到文件
+	if err := savePublicKeyToFile(&key.PublicKey, pubKeyFile); err != nil {
+		return err
+	}
+
+	privateKey = key
+	publicKey = &key.PublicKey
+	return nil
+}
 
 func identityHandler() func(c *gin.Context) interface{} {
 	return func(c *gin.Context) interface{} {
@@ -305,12 +433,14 @@ func Login() func(c *gin.Context) (interface{}, error) {
 func initParams() *jwt.GinJWTMiddleware {
 
 	return &jwt.GinJWTMiddleware{
-		Realm:       "test zone",
-		Key:         []byte("secret key"),
-		Timeout:     time.Hour * 48,
-		MaxRefresh:  time.Hour,
-		IdentityKey: identityKey,
-		PayloadFunc: payloadFunc(),
+		Realm:            "test zone",
+		SigningAlgorithm: "RS384",
+		PrivKeyFile:      privKeyFile,
+		PubKeyFile:       pubKeyFile,
+		Timeout:          time.Hour * 48,
+		MaxRefresh:       time.Hour,
+		IdentityKey:      identityKey,
+		PayloadFunc:      payloadFunc(),
 
 		SendCookie: true,
 		CookieName: "a1token",
@@ -330,9 +460,15 @@ func initParams() *jwt.GinJWTMiddleware {
 var authMiddleware *jwt.GinJWTMiddleware
 
 func InitJwtMiddleWare() *jwt.GinJWTMiddleware {
+	// 首先初始化RSA密钥对
+	if err := initRSAKeys(); err != nil {
+		panic("Failed to initialize RSA keys: " + err.Error())
+	}
+
 	optimizePermissionMap()
 	tmpMiddleware, err := jwt.New(initParams())
 	if err != nil {
+		log.Println("Failed to initialize JWT middleware: " + err.Error())
 		panic(err)
 	}
 	authMiddleware = tmpMiddleware
