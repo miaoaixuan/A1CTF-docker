@@ -58,7 +58,7 @@ func UploadFile(c *gin.Context) {
 	}
 
 	now := time.Now().UTC()
-	storePath := filepath.Join("uploads", fmt.Sprintf("%d", now.Month()), fmt.Sprintf("%d", now.Day()))
+	storePath := filepath.Join("data", "uploads", fmt.Sprintf("%d", now.Month()), fmt.Sprintf("%d", now.Day()))
 	if err := os.MkdirAll(storePath, 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -139,7 +139,7 @@ func DownloadFile(c *gin.Context) {
 		return
 	}
 
-	if _, err := os.Stat(path.Join("./data", uploadRecord.FilePath)); os.IsNotExist(err) {
+	if _, err := os.Stat(path.Join(uploadRecord.FilePath)); os.IsNotExist(err) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":    404,
 			"message": "File not found on server",
@@ -147,7 +147,7 @@ func DownloadFile(c *gin.Context) {
 		return
 	}
 
-	file, err := os.Open(path.Join("./data", uploadRecord.FilePath))
+	file, err := os.Open(path.Join(uploadRecord.FilePath))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -224,7 +224,7 @@ func UploadUserAvatar(c *gin.Context) {
 
 	// 创建存储目录
 	now := time.Now().UTC()
-	storePath := filepath.Join("uploads", "avatars", fmt.Sprintf("%d", now.Year()), fmt.Sprintf("%d", now.Month()))
+	storePath := filepath.Join("data", "uploads", "avatars", fmt.Sprintf("%d", now.Year()), fmt.Sprintf("%d", now.Month()))
 	if err := os.MkdirAll(storePath, 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -301,8 +301,6 @@ func UploadUserAvatar(c *gin.Context) {
 		})
 		return
 	}
-
-	ristretto_tool.DeleteCache("user_list")
 
 	// 返回成功响应
 	c.JSON(http.StatusOK, gin.H{
@@ -440,7 +438,7 @@ func UploadTeamAvatar(c *gin.Context) {
 
 	// 创建存储目录
 	now := time.Now().UTC()
-	storePath := filepath.Join("uploads", "team_avatars", fmt.Sprintf("%d", now.Year()), fmt.Sprintf("%d", now.Month()))
+	storePath := filepath.Join("data", "uploads", "team_avatars", fmt.Sprintf("%d", now.Year()), fmt.Sprintf("%d", now.Month()))
 	if err := os.MkdirAll(storePath, 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -517,8 +515,6 @@ func UploadTeamAvatar(c *gin.Context) {
 		})
 		return
 	}
-
-	ristretto_tool.DeleteCache(fmt.Sprintf("all_teams_for_game_%d", team.GameID))
 
 	// 返回成功响应
 	c.JSON(http.StatusOK, gin.H{

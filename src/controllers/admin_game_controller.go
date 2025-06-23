@@ -666,7 +666,7 @@ func AdminUploadGamePoster(c *gin.Context) {
 
 	// 创建存储目录
 	now := time.Now().UTC()
-	storePath := filepath.Join("uploads", "posters", fmt.Sprintf("%d", now.Year()), fmt.Sprintf("%d", now.Month()))
+	storePath := filepath.Join("data", "uploads", "posters", fmt.Sprintf("%d", now.Year()), fmt.Sprintf("%d", now.Month()))
 	if err := os.MkdirAll(storePath, 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,

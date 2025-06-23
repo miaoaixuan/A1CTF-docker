@@ -76,7 +76,7 @@ func UploadSystemFile(c *gin.Context) {
 	}
 
 	// 创建上传目录
-	uploadDir := "./uploads/system"
+	uploadDir := "./data/uploads/system"
 	if err := os.MkdirAll(uploadDir, 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -100,7 +100,7 @@ func UploadSystemFile(c *gin.Context) {
 	}
 
 	// 返回文件URL
-	fileURL := "/uploads/system/" + fileName
+	fileURL := "/data/uploads/system/" + fileName
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
 		"data": gin.H{

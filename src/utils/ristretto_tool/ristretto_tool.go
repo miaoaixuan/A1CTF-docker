@@ -80,10 +80,6 @@ func GetOrCacheSingleFlight(key string, callback func() (interface{}, error), ca
 	return result, nil
 }
 
-func DeleteCache(key string) error {
-	return dbtool.Redis().Del(key).Err()
-}
-
 // 这里设置 redis 的缓存时间
 var userListCacheTime = time.Duration(0)
 var fileListCacheTime = time.Duration(0)

@@ -320,12 +320,12 @@ func main() {
 	// 未知接口
 	// r.NoRoute(authMiddleware.MiddlewareFunc(), handleNoRoute())
 
-	r.Static("/assets", "./clientapp/build/client/assets")
-	r.Static("/favicon.ico", "./clientapp/build/client/favicon.ico")
-	r.Static("/images", "./clientapp/build/client/images")
-	r.Static("/locales", "./clientapp/build/client/locales")
+	r.Static("/assets", "./clientapp/assets")
+	r.Static("/favicon.ico", "./clientapp/favicon.ico")
+	r.Static("/images", "./clientapp/images")
+	r.Static("/locales", "./clientapp/locales")
 	r.NoRoute(func(c *gin.Context) {
-		c.File("./clientapp/build/client/index.html")
+		c.File("./clientapp/index.html")
 	})
 
 	// 任务线程

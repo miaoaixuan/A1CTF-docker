@@ -7,3 +7,5 @@ k8sconfig.yaml
 uploads
 benchmark
 .VSCodeCounter
+postgres_data
+appdata
