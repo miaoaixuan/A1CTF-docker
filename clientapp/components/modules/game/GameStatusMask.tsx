@@ -14,8 +14,9 @@ import TimerDisplay from "../TimerDisplay";
 import dayjs from "dayjs";
 
 export default function GameStatusMask(
-    { gameStatus, gameInfo, setScoreBoardVisible, gameID, startCheckForGameStart }: {
+    { gameStatus, fetchGameInfoWithTeamInfo, gameInfo, setScoreBoardVisible, gameID, startCheckForGameStart }: {
         gameStatus: string,
+        fetchGameInfoWithTeamInfo: () => void,
         gameInfo: UserFullGameInfo | undefined,
         setScoreBoardVisible: Dispatch<SetStateAction<boolean>>,
         gameID: number,
@@ -121,10 +122,18 @@ export default function GameStatusMask(
                                             </TransitionLink>
                                         </div>
                                         <div className="flex gap-[15px] mt-[-5px] pointer-events-auto">
-                                            <CreateTeamDialog updateTeam={() => { }} gameID={gameID}>
+                                            <CreateTeamDialog callback={() => { 
+                                                setTimeout(() => {
+                                                    fetchGameInfoWithTeamInfo()
+                                                }, 600)
+                                            }} gameID={gameID}>
                                                 <Button variant="default" type="button"><Pickaxe />创建队伍</Button>
                                             </CreateTeamDialog>
-                                            <JoinTeamDialog updateTeam={() => { }}>
+                                            <JoinTeamDialog callback={() => { 
+                                                setTimeout(() => {
+                                                    fetchGameInfoWithTeamInfo()
+                                                }, 600)
+                                            }}>
                                                 <Button variant="default" type="button"><Users />加入队伍</Button>
                                             </JoinTeamDialog>
 

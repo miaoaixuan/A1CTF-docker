@@ -4,6 +4,7 @@ import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
+	"a1ctf/src/webmodels"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,28 +13,43 @@ import (
 
 func AdminListUsers(c *gin.Context) {
 
-	var payload AdminListUsersPayload
+	var payload webmodels.AdminListUsersPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 		return
 	}
 
+	query := dbtool.DB().Model(&models.User{})
+
+	// 如果有搜索关键词，添加搜索条件
+	if payload.Search != "" {
+		searchPattern := "%" + payload.Search + "%"
+		query = query.Where("username LIKE ? OR email LIKE ? OR realname LIKE ? OR student_number LIKE ?",
+			searchPattern, searchPattern, searchPattern, searchPattern)
+	}
+
 	var users []models.User
-	if err := dbtool.DB().Find(&users).Offset(payload.Offset).Limit(payload.Size).Error; err != nil {
+	if err := query.Offset(payload.Offset).Limit(payload.Size).Find(&users).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
 		return
 	}
 
 	var count int64
-	if err := dbtool.DB().Model(&models.User{}).Count(&count).Error; err != nil {
+	countQuery := dbtool.DB().Model(&models.User{})
+	if payload.Search != "" {
+		searchPattern := "%" + payload.Search + "%"
+		countQuery = countQuery.Where("username LIKE ? OR email LIKE ? OR realname LIKE ? OR student_number LIKE ?",
+			searchPattern, searchPattern, searchPattern, searchPattern)
+	}
+	if err := countQuery.Count(&count).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count users"})
 		return
 	}
 
-	userItems := make([]AdminListUserItem, 0, len(users))
+	userItems := make([]webmodels.AdminListUserItem, 0, len(users))
 
 	for _, user := range users {
-		userItems = append(userItems, AdminListUserItem{
+		userItems = append(userItems, webmodels.AdminListUserItem{
 			UserID:        user.UserID,
 			UserName:      user.Username,
 			RealName:      user.Realname,
@@ -59,7 +75,7 @@ func AdminListUsers(c *gin.Context) {
 
 // AdminUpdateUser 更新用户信息
 func AdminUpdateUser(c *gin.Context) {
-	var payload AdminUpdateUserPayload
+	var payload webmodels.AdminUpdateUserPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -111,7 +127,7 @@ func AdminUpdateUser(c *gin.Context) {
 
 // AdminResetUserPassword 重置用户密码
 func AdminResetUserPassword(c *gin.Context) {
-	var payload AdminUserOperationPayload
+	var payload webmodels.AdminUserOperationPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -165,7 +181,7 @@ func AdminResetUserPassword(c *gin.Context) {
 
 // AdminDeleteUser 删除用户
 func AdminDeleteUser(c *gin.Context) {
-	var payload AdminUserOperationPayload
+	var payload webmodels.AdminUserOperationPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,

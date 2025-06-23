@@ -3,7 +3,9 @@ package controllers
 import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
+	"a1ctf/src/webmodels"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,7 +14,7 @@ import (
 
 // AdminListContainers 获取容器列表
 func AdminListContainers(c *gin.Context) {
-	var payload AdminListContainersPayload
+	var payload webmodels.AdminListContainersPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -21,7 +23,6 @@ func AdminListContainers(c *gin.Context) {
 		return
 	}
 
-	var containers []models.Container
 	query := dbtool.DB().Model(&models.Container{})
 
 	// 如果提供了游戏ID，则按游戏ID过滤
@@ -29,10 +30,17 @@ func AdminListContainers(c *gin.Context) {
 		query = query.Where("game_id = ? AND container_status NOT IN ?", payload.GameID, []models.ContainerStatus{models.ContainerStopped})
 	}
 
+	// 如果有搜索关键词，添加搜索条件
+	// if payload.Search != "" {
+	// 	searchPattern := "%" + payload.Search + "%"
+	// 	query = query.Where("challenge_name LIKE ?", searchPattern)
+	// }
+
 	// 分页查询容器列表
 	var total int64
 	query.Count(&total)
 
+	var containers []models.Container
 	if err := query.Offset(payload.Offset).Limit(payload.Size).Find(&containers).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -78,8 +86,8 @@ func AdminListContainers(c *gin.Context) {
 		gameMap[game.GameID] = game
 	}
 
-	// 构建返回数据
-	var containerItems []AdminContainerItem = make([]AdminContainerItem, 0)
+	// 如果有搜索关键词，需要进一步过滤团队名称和游戏名称
+	var containerItems []webmodels.AdminContainerItem = make([]webmodels.AdminContainerItem, 0)
 	for _, container := range containers {
 		team, teamExists := teamMap[container.TeamID]
 		game, gameExists := gameMap[container.GameID]
@@ -92,13 +100,23 @@ func AdminListContainers(c *gin.Context) {
 			gameName = game.Name
 		}
 
+		// 如果有搜索关键词，检查是否匹配队伍名称或游戏名称
+		if payload.Search != "" {
+			searchLower := strings.ToLower(payload.Search)
+			if !strings.Contains(strings.ToLower(container.ChallengeName), searchLower) &&
+				!strings.Contains(strings.ToLower(teamName), searchLower) &&
+				!strings.Contains(strings.ToLower(gameName), searchLower) {
+				continue // 跳过不匹配的容器
+			}
+		}
+
 		// 处理容器端口，返回所有容器的暴露端口信息
 		var containerPorts models.ExposePorts
 		for _, exposeInfo := range container.ContainerExposeInfos {
 			containerPorts = append(containerPorts, exposeInfo.ExposePorts...)
 		}
 
-		containerItems = append(containerItems, AdminContainerItem{
+		containerItems = append(containerItems, webmodels.AdminContainerItem{
 			ContainerID:         container.ContainerID,
 			ContainerName:       container.ChallengeName,
 			ContainerStatus:     container.ContainerStatus,
@@ -114,13 +132,13 @@ func AdminListContainers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":  200,
 		"data":  containerItems,
-		"total": total,
+		"total": int64(len(containerItems)), // 返回过滤后的总数
 	})
 }
 
 // AdminDeleteContainer 删除容器
 func AdminDeleteContainer(c *gin.Context) {
-	var payload AdminContainerOperationPayload
+	var payload webmodels.AdminContainerOperationPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -185,7 +203,7 @@ func AdminDeleteContainer(c *gin.Context) {
 
 // AdminExtendContainer 延长容器生命周期
 func AdminExtendContainer(c *gin.Context) {
-	var payload AdminExtendContainerPayload
+	var payload webmodels.AdminExtendContainerPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,

@@ -14,36 +14,30 @@ export default function ChallengeHintCard(
     const [ unlocked, setUnlocked ] = useState(false);
 
     return (
-        <div className="border-2 border-foreground/20 rounded-xl w-full relative overflow-hidden flex-none pt-5">
-            {/* { !unlocked ? (
-                <div className="absolute w-full h-full flex flex-col items-center justify-center gap-4 backdrop-blur-sm bg-background/40 z-40 select-none mt-[-20px]">
-                    <KeyRound size={60} />
-                    <Button className="font-bold text-md mt-4" variant={"default"}
-                        onClick={() => {
-                            setUnlocked(!unlocked);
-                        }}
-                    >Unlock</Button>
-                    <div className="flex gap-2 text-red-500 items-center">
-                        <Coins size={30} />
-                        <span className="font-bold text-xl">-50pts</span>
+        <div className={
+            `w-full relative overflow-hidden flex-none transition-all duration-300 group ` +
+            `rounded-2xl shadow-lg border border-foreground/10 ` +
+            `bg-gradient-to-br ` +
+            (theme === 'dark'
+                ? 'from-[#23272f]/80 to-[#181a20]/90 hover:from-[#23272f]/90 hover:to-[#23272f]/95'
+                : 'from-white/90 to-gray-100/80 hover:from-white/95 hover:to-gray-200/90') +
+            ' hover:scale-[1.005] hover:shadow-2xl'
+        }>
+            <div className="flex flex-col gap-2 px-6 pt-5 pb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-6 select-none mb-2">
+                    <div className="flex gap-4 items-center">
+                        <BringToFront className="text-yellow-500" />
+                        <span className="font-bold text-base sm:text-lg tracking-wide">Hint {index}</span>
+                    </div>
+                    <div className="flex gap-2 items-center text-xs sm:text-sm text-foreground/60 mt-1 sm:mt-0">
+                        <CalendarClock className="" />
+                        <span>发布时间 { publish_time.format("YYYY-MM-DD HH:mm:ss") }</span>
                     </div>
                 </div>
-            ) : (<></>) } */}
-
-            <div 
-                className={`w-full h-full flex flex-col text-wrap break-words px-6`}
-            >
-                <div className="flex gap-6 select-none mb-4">
-                    <div className="flex gap-2 items-center">
-                        <BringToFront />
-                        <span className="font-bold text-lg">Hint {index}</span>
-                    </div>
-                    <div className="flex gap-2 items-center">
-                        <CalendarClock />
-                        <span className="font-bold text-lg">Up at { publish_time.format("YYYY-MM-DD HH:mm:ss") }</span>
-                    </div>
+                <div className="border-t border-dashed border-foreground/10" />
+                <div className="prose prose-sm sm:prose-base max-w-none text-foreground/90 dark:text-foreground/80">
+                    <Mdx source={hint} />
                 </div>
-                <Mdx source={hint} />
             </div>
         </div>
     )

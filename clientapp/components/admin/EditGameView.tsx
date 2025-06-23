@@ -1,358 +1,38 @@
-import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from "components/ui/form"
-
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "components/ui/popover"
-
-import { useFieldArray, Controller, useWatch } from "react-hook-form";
-
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "components/ui/select"
-
-import { Input } from "../ui/input";
-import { number, z } from "zod"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Button } from "../ui/button";
-import { cn } from "lib/utils";
-
-import { ArrowLeft, ArrowRight, ArrowUpDown, CalendarIcon, CircleArrowLeft, ClockArrowDown, ClockArrowUp, Cloud, FileCode, FileUser, Github, Layers2, LoaderPinwheel, Pencil, PlusCircle, Save, ScanBarcode, Squirrel, TableProperties, Tag, Trash2, Underline, Upload } from "lucide-react"
-import { Textarea } from "../ui/textarea";
-
+import React, { useState, useEffect, useRef } from 'react';
+import { Button } from 'components/ui/button';
+import { Input } from 'components/ui/input';
+import { Textarea } from 'components/ui/textarea';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from 'components/ui/form';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from 'components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from 'components/ui/popover';
+import { Calendar } from 'components/ui/calendar';
+import { ScrollArea, ScrollBar } from 'components/ui/scroll-area';
+import { Switch } from 'components/ui/switch';
+import { Badge } from 'components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'components/ui/select';
+import { format } from 'date-fns';
+import { cn } from 'lib/utils';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/ui/table';
+import { Checkbox } from 'components/ui/checkbox';
+import { MacScrollbar } from 'mac-scrollbar';
+import { useTheme } from 'next-themes';
+import { useNavigate } from 'react-router';
+import { toast } from 'sonner';
+import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
+import { ColumnDef, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, SortingState, useReactTable, VisibilityState } from '@tanstack/react-table';
+import { useForm, useFieldArray, useWatch, useController } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import dayjs from 'dayjs';
+import { CalendarIcon, CircleArrowLeft, Save, Upload, PlusCircle, Radar, MessageSquareLock, Bug, GlobeLock, Binary, FileSearch, HardDrive, Smartphone, SquareCode, Bot, BadgeCent, Github, Layers2, FileUser, Pencil, Trash2, LoaderPinwheel, ArrowLeft, ArrowRight, ScanBarcode, FileCode, ClockArrowUp, ClockArrowDown, ArrowUpDown, FilePenLine, Settings, Trophy, Users, Search } from 'lucide-react';
+import { AxiosError } from 'axios';
+import { api, ErrorMessage } from 'utils/ApiHelper';
+import { ChallengeCategory, AdminDetailGameChallenge, AdminFullGameInfo, JudgeType } from 'utils/A1API';
+import { challengeCategoryIcons, challengeCategoryColorMap } from 'utils/ClientAssets';
 import CodeEditor from '@uiw/react-textarea-code-editor';
-
-import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
-import { useEffect, useRef, useState } from "react";
-
-import { MacScrollbar } from "mac-scrollbar";
-import { ChallengeCategory, AdminChallengeConfig, AdminFullGameInfo, UserGameSimpleInfo, JudgeType, AdminDetailGameChallenge } from "utils/A1API";
-import { api, ErrorMessage } from "utils/ApiHelper";
-import dayjs from "dayjs";
-import { toast } from "sonner";
-import { AxiosError } from "axios";
-
-import { ScrollArea, ScrollBar } from "components/ui/scroll-area";
-import { Switch } from "components/ui/switch"
-import { Calendar } from "../ui/calendar";
-import { format } from "date-fns";
-import { Badge } from "../ui/badge";
-
-import {
-    ColumnDef,
-    ColumnFiltersState,
-    SortingState,
-    VisibilityState,
-    flexRender,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable,
-} from "@tanstack/react-table"
-
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "components/ui/dialog"
-
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "components/ui/table"
-
-import { Label } from "components/ui/label"
-import { Checkbox } from "../ui/checkbox";
-import { size } from "mathjs";
-import { useTheme } from "next-themes";
-import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
-import { challengeCategoryColorMap, challengeCategoryIcons } from "utils/ClientAssets";
-import { useNavigate } from "react-router";
-
-interface GameStageFormProps {
-    control: any;
-    index: number;
-    form: any,
-    removeStage: (index: number) => void;
-}
-
-function GameStageForm({ control, index, removeStage, form }: GameStageFormProps) {
-
-    function handleDateSelect(date: Date | undefined, tm_type: "start_time" | "end_time") {
-        if (date) {
-            form.setValue(`stages.${index}.${tm_type}`, date);
-        }
-    }
-
-    function handleTimeChange(type: "hour" | "minute", value: string, tm_type: "start_time" | "end_time") {
-        const field_name = `stages.${index}.${tm_type}`;
-        console.log(field_name)
-        const currentDate = form.getValues(field_name) || new Date();
-        const newDate = new Date(currentDate);
-
-        if (type === "hour") {
-            const hour = parseInt(value, 10);
-            newDate.setHours(hour);
-        } else if (type === "minute") {
-            newDate.setMinutes(parseInt(value, 10));
-        }
-
-        console.log(newDate)
-        form.setValue(field_name, newDate);
-    }
-
-    return (
-        <div className="border p-6 mb-4 rounded-lg hover:shadow-lg transition-shadow duration-300 space-y-4">
-            <div className="flex justify-between items-center mb-2">
-                <span className="font-md font-semibold">阶段 {index + 1}</span>
-                <Button variant="destructive" type="button" onClick={() => removeStage(index)}>
-                    删除阶段
-                </Button>
-            </div>
-            <FormField
-                control={control}
-                name={`stages.${index}.stage_name`}
-                render={({ field }) => (
-                    <FormItem>
-                        <div className="flex items-center h-[20px]">
-                            <FormLabel>阶段名称</FormLabel>
-                            <div className="flex-1" />
-                            <FormMessage className="text-[14px]" />
-                        </div>
-                        <FormControl>
-                            <Input {...field} value={field.value ?? ""} />
-                        </FormControl>
-                    </FormItem>
-                )}
-            />
-            <div className="grid grid-cols-2 gap-4">
-                <FormField
-                    control={form.control}
-                    name={`stages.${index}.start_time`}
-                    render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                            <FormLabel>开始时间</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <FormControl>
-                                        <Button
-                                            variant={"outline"}
-                                            className={cn(
-                                                "w-full pl-3 text-left font-normal",
-                                                !field.value && "text-muted-foreground"
-                                            )}
-                                        >
-                                            {field.value ? (
-                                                format(field.value, "MM/dd/yyyy HH:mm")
-                                            ) : (
-                                                <span>MM/DD/YYYY HH:mm</span>
-                                            )}
-                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                        </Button>
-                                    </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <div className="sm:flex">
-                                        <Calendar
-                                            mode="single"
-                                            selected={field.value}
-                                            onSelect={(date) => handleDateSelect(date, "start_time")}
-                                            initialFocus
-                                        />
-                                        <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
-                                            <ScrollArea className="w-64 sm:w-auto">
-                                                <div className="flex sm:flex-col p-2">
-                                                    {Array.from({ length: 24 }, (_, i) => i)
-                                                        .reverse()
-                                                        .map((hour) => (
-                                                            <Button
-                                                                key={hour}
-                                                                size="icon"
-                                                                variant={
-                                                                    field.value && field.value.getHours() === hour
-                                                                        ? "default"
-                                                                        : "ghost"
-                                                                }
-                                                                className="sm:w-full shrink-0 aspect-square"
-                                                                onClick={() =>
-                                                                    handleTimeChange("hour", hour.toString(), "start_time")
-                                                                }
-                                                            >
-                                                                {hour}
-                                                            </Button>
-                                                        ))}
-                                                </div>
-                                                <ScrollBar
-                                                    orientation="horizontal"
-                                                    className="sm:hidden"
-                                                />
-                                            </ScrollArea>
-                                            <ScrollArea className="w-64 sm:w-auto">
-                                                <div className="flex sm:flex-col p-2">
-                                                    {Array.from({ length: 60 }, (_, i) => i).map(
-                                                        (minute) => (
-                                                            <Button
-                                                                key={minute}
-                                                                size="icon"
-                                                                variant={
-                                                                    field.value &&
-                                                                        field.value.getMinutes() === minute
-                                                                        ? "default"
-                                                                        : "ghost"
-                                                                }
-                                                                className="sm:w-full shrink-0 aspect-square"
-                                                                onClick={() =>
-                                                                    handleTimeChange("minute", minute.toString(), "start_time")
-                                                                }
-                                                            >
-                                                                {minute.toString().padStart(2, "0")}
-                                                            </Button>
-                                                        )
-                                                    )}
-                                                </div>
-                                                <ScrollBar
-                                                    orientation="horizontal"
-                                                    className="sm:hidden"
-                                                />
-                                            </ScrollArea>
-                                        </div>
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
-                            <FormDescription>
-                                请选择这个阶段的开始时间
-                            </FormDescription>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name={`stages.${index}.end_time`}
-                    render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                            <FormLabel>结束时间</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <FormControl>
-                                        <Button
-                                            variant={"outline"}
-                                            className={cn(
-                                                "w-full pl-3 text-left font-normal",
-                                                !field.value && "text-muted-foreground"
-                                            )}
-                                        >
-                                            {field.value ? (
-                                                format(field.value, "MM/dd/yyyy HH:mm")
-                                            ) : (
-                                                <span>MM/DD/YYYY HH:mm</span>
-                                            )}
-                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                        </Button>
-                                    </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <div className="sm:flex">
-                                        <Calendar
-                                            mode="single"
-                                            selected={field.value}
-                                            onSelect={(date) => handleDateSelect(date, "end_time")}
-                                            initialFocus
-                                        />
-                                        <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
-                                            <ScrollArea className="w-64 sm:w-auto">
-                                                <div className="flex sm:flex-col p-2">
-                                                    {Array.from({ length: 24 }, (_, i) => i)
-                                                        .reverse()
-                                                        .map((hour) => (
-                                                            <Button
-                                                                key={hour}
-                                                                size="icon"
-                                                                variant={
-                                                                    field.value && field.value.getHours() === hour
-                                                                        ? "default"
-                                                                        : "ghost"
-                                                                }
-                                                                className="sm:w-full shrink-0 aspect-square"
-                                                                onClick={() =>
-                                                                    handleTimeChange("hour", hour.toString(), "end_time")
-                                                                }
-                                                            >
-                                                                {hour}
-                                                            </Button>
-                                                        ))}
-                                                </div>
-                                                <ScrollBar
-                                                    orientation="horizontal"
-                                                    className="sm:hidden"
-                                                />
-                                            </ScrollArea>
-                                            <ScrollArea className="w-64 sm:w-auto">
-                                                <div className="flex sm:flex-col p-2">
-                                                    {Array.from({ length: 60 }, (_, i) => i).map(
-                                                        (minute) => (
-                                                            <Button
-                                                                key={minute}
-                                                                size="icon"
-                                                                variant={
-                                                                    field.value &&
-                                                                        field.value.getMinutes() === minute
-                                                                        ? "default"
-                                                                        : "ghost"
-                                                                }
-                                                                className="sm:w-full shrink-0 aspect-square"
-                                                                onClick={() =>
-                                                                    handleTimeChange("minute", minute.toString(), "end_time")
-                                                                }
-                                                            >
-                                                                {minute.toString().padStart(2, "0")}
-                                                            </Button>
-                                                        )
-                                                    )}
-                                                </div>
-                                                <ScrollBar
-                                                    orientation="horizontal"
-                                                    className="sm:hidden"
-                                                />
-                                            </ScrollArea>
-                                        </div>
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
-                            <FormDescription>
-                                请选择这个阶段的结束时间
-                            </FormDescription>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            </div>
-        </div>
-    );
-}
+import { GameTimelineEditor } from './GameTimelineEditor';
+import { GameGroupManager } from './GameGroupManager';
+import { GameNoticeManager } from './GameNoticeManager';
 
 interface JudgeConfigFormProps {
     control: any;
@@ -760,6 +440,8 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
         return env
     }
 
+    console.log(game_info)
+
     const { clientConfig } = useGlobalVariableContext()
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -806,6 +488,9 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
         }
     })
 
+    console.log('表单初始化后的 stages:', form.getValues("stages"));
+    console.log('game_info.stages:', game_info.stages);
+
     const {
         fields: challengeFields,
         append: appendChallenge,
@@ -815,53 +500,91 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
         name: "challenges",
     });
 
-    const {
-        fields: stageFields,
-        append: appendStage,
-        remove: removeStage,
-    } = useFieldArray({
-        control: form.control,
-        name: "stages",
-    });
-
     const GameChallengeForm = ({ control, index, form, removeGameChallenge, gameData, onEditChallenge }: GameChallengeFormProps) => {
 
         return (
-            <div className="border-[1px] rounded-lg h-full w-full shadow-md flex items-center p-4 gap-3 px-6">
-                {cateIcon[gameData.category?.toLowerCase() || "misc"]}
-                <span className="font-bold text-nowrap" >{gameData.challenge_name}</span>
-                <span>/</span>
-                <div className="flex gap-4 w-full">
-                    <div className="flex items-center gap-2">
-                        <Layers2 size={18} />
-                        <span className="text-sm">{gameData.cur_score}pts</span>
+            <div className="group bg-card/60 backdrop-blur-sm border border-border/50 rounded-xl p-5 hover:shadow-lg hover:border-primary/20 transition-all duration-300 hover:scale-[1.02] hover:bg-card/80">
+                {/* Challenge Header */}
+                <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className={`p-2.5 rounded-xl bg-gradient-to-br ${colorMap[gameData.category?.toLowerCase() || "misc"] || "from-muted/40 to-muted/20"} flex-shrink-0`}>
+                            {cateIcon[gameData.category?.toLowerCase() || "misc"]}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <h3 className="font-semibold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors duration-200">
+                                {gameData.challenge_name}
+                            </h3>
+                            <div className="flex items-center gap-2 mt-1">
+                                <Badge 
+                                    variant="outline" 
+                                    className="text-xs font-medium border-muted-foreground/30"
+                                >
+                                    {gameData.category?.toUpperCase() || "MISC"}
+                                </Badge>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <FileUser size={18} />
-                        <span>{gameData.solve_count}</span>
-                        <span className="text-sm">solves</span>
-                    </div>
-                    <div className="flex-1" />
-                    <div className="flex gap-1 items-center h-full">
-                        <div className="flex h-full items-center mr-2">
-                            <FormField
-                                control={control}
-                                name={`challenges.${index}.visible`}
-                                render={({ field }) => (
+                    
+                    {/* Visibility Toggle */}
+                    <div className="flex-shrink-0 ml-3">
+                        <FormField
+                            control={control}
+                            name={`challenges.${index}.visible`}
+                            render={({ field }) => (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm text-muted-foreground">可见</span>
                                     <Switch 
                                         checked={field.value}
                                         onCheckedChange={field.onChange} 
                                     />
-                                )}
-                            />
-                        </div>
-                        <Button variant={"ghost"} size={"icon"} type="button" onClick={() => onEditChallenge(index)}>
-                            <Pencil />
-                        </Button>
-                        <Button variant={"ghost"} size={"icon"} type="button">
-                            <Trash2 />
-                        </Button>
+                                </div>
+                            )}
+                        />
                     </div>
+                </div>
+
+                {/* Challenge Stats */}
+                <div className="flex items-center gap-6 mb-4">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        <div className="p-1 rounded bg-blue-500/10">
+                            <Layers2 className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <span className="text-sm font-medium">{gameData.cur_score}</span>
+                        <span className="text-xs">分数</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        <div className="p-1 rounded bg-green-500/10">
+                            <FileUser className="h-4 w-4 text-green-600" />
+                        </div>
+                        <span className="text-sm font-medium">{gameData.solve_count}</span>
+                        <span className="text-xs">解决</span>
+                    </div>
+                </div>
+
+                {/* Challenge Actions */}
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/30">
+                    <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="h-8 px-3 hover:bg-blue-500/10 hover:text-blue-600 transition-all duration-200"
+                        onClick={() => onEditChallenge(index)}
+                        title="编辑题目"
+                        type="button"
+                    >
+                        <Pencil className="h-4 w-4 mr-1" />
+                        编辑
+                    </Button>
+                    <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="h-8 px-3 hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
+                        onClick={() => removeGameChallenge(index)}
+                        title="删除题目"
+                        type="button"
+                    >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        删除
+                    </Button>
                 </div>
             </div>
         );
@@ -974,7 +697,6 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                                     toast.error(errorMessage.message)
                                 }
                             })
-                            // console.log(data)
                         }}
                     >Select</Button>
                 )
@@ -994,7 +716,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
             name: values.name,
             summary: values.summary,
             description: values.description,
-            // poster: values.poster,
+            poster: values.poster,
             invite_code: values.invite_code,
             start_time: format_date(values.start_time ?? new Date()),
             end_time: format_date(values.end_time ?? new Date()),
@@ -1106,789 +828,1059 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
         form.setValue(field_name, newDate);
     }
 
+    // 时间线编辑器相关函数
+    const handleTimePointsChange = (timePoints: any[]) => {
+        // 检查是否有时间段被删除
+        const currentStages = form.getValues("stages") || [];
+        const deletedStageNames = currentStages
+            .filter(oldStage => !timePoints.find(newStage => newStage.name === oldStage.stage_name))
+            .map(stage => stage.stage_name);
+        
+        // 将删除时间段的题目移回全局
+        if (deletedStageNames.length > 0) {
+            const currentChallenges = form.getValues("challenges") || [];
+            currentChallenges.forEach((challenge, index) => {
+                if (challenge.belong_stage && deletedStageNames.includes(challenge.belong_stage)) {
+                    form.setValue(`challenges.${index}.belong_stage`, null);
+                }
+            });
+        }
+        
+        const stages = timePoints.map(tp => ({
+            stage_name: tp.name,
+            start_time: tp.startTime,
+            end_time: tp.endTime,
+        }));
+        console.log(stages)
+        form.setValue("stages", stages);
+    };
+
+    const handleChallengeAssignmentChange = (challengeId: number, stageId: string | null) => {
+        
+        // 使用实时的 challenges 数据而不是静态的 challengeFields
+        const currentChallenges = form.getValues("challenges") || [];
+        const challengeIndex = currentChallenges.findIndex(c => c.challenge_id === challengeId);
+        
+        if (challengeIndex !== -1) {
+            // 如果 stageId 是 null，则设置为全局
+            if (stageId === null) {
+                form.setValue(`challenges.${challengeIndex}.belong_stage`, null);
+                return;
+            }
+            
+            // 从当前的时间点数据中找到对应的stage_name
+            const currentStages = form.getValues("stages") || [];
+            const stageIndex = parseInt(stageId.replace('stage_', ''));
+            
+            if (stageIndex >= 0 && stageIndex < currentStages.length) {
+                const stageName = currentStages[stageIndex].stage_name;
+                form.setValue(`challenges.${challengeIndex}.belong_stage`, stageName);
+            } else {
+                console.error(`无效的时间段索引: ${stageIndex}`);
+            }
+        } else {
+            console.error(`找不到题目 ID: ${challengeId}`);
+        }
+    };
+
+    // 使用 useWatch 监听 stages 字段的变化，确保 timePoints 实时更新
+    const watchedStages = useWatch({
+        control: form.control,
+        name: "stages"
+    });
+
+    // 使用 useWatch 监听 challenges 字段的变化，确保 challengeBlocks 实时更新
+    const watchedChallenges = useWatch({
+        control: form.control,
+        name: "challenges"
+    });
+
+    // 使用 useWatch 监听 poster 字段的变化，确保海报实时更新
+    const watchedPoster = useWatch({
+        control: form.control,
+        name: "poster"
+    });
+
+    // 转换数据格式给时间线编辑器
+    const timePoints = (watchedStages || []).map((stage, index) => ({
+        id: `stage_${index}`,
+        name: stage.stage_name,
+        startTime: stage.start_time,
+        endTime: stage.end_time,
+    }));
+
+    const challengeBlocks = (watchedChallenges || []).map(challenge => {
+        // 将belong_stage转换为对应的ID
+        let belongStageId = null;
+        if (challenge.belong_stage) {
+            const stages = watchedStages || [];
+            const stageIndex = stages.findIndex(stage => stage.stage_name === challenge.belong_stage);
+            if (stageIndex !== -1) {
+                belongStageId = `stage_${stageIndex}`;
+            }
+        }
+        
+        return {
+            id: challenge.challenge_id || 0,
+            name: challenge.challenge_name || "",
+            category: challenge.category || "misc",
+            score: challenge.total_score || 0,
+            belongStage: belongStageId,
+        };
+    });
+
+    // 海报上传处理函数
+    const handlePosterUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        // 检查文件类型
+        if (!file.type.startsWith('image/')) {
+            toast.error('请选择图片文件');
+            return;
+        }
+
+        // 检查文件大小 (限制为10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            toast.error('图片大小不能超过10MB');
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append('poster', file);
+
+            const response = await api.admin.uploadGamePoster(game_info.game_id, { poster: file });
+            
+            if (response.status === 200) {
+                // 更新表单中的poster字段
+                form.setValue('poster', response.data.poster_url);
+                toast.success('海报上传成功');
+            }
+        } catch (error: any) {
+            console.error('海报上传失败:', error);
+            if (error.response?.data?.message) {
+                toast.error(`上传失败: ${error.response.data.message}`);
+            } else {
+                toast.error('海报上传失败，请重试');
+            }
+        }
+
+        // 清空文件输入，允许重新选择相同文件
+        event.target.value = '';
+    };
+
     return (
-        <div className="absolute w-screen h-screen bg-background items-center justify-center flex select-none overflow-x-hidden overflow-hidden">
+        <div className="min-h-screen bg-gradient-to-br from-background to-muted/30">
             <Form {...form}>
-                <MacScrollbar className="h-full w-full flex flex-col items-center">
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20 pt-20 w-[80%] flex flex-col">
-                        <div className="flex">
-                            <Button type="button" variant={"default"} onClick={() => {
-                                router(`/admin/games`)
-                            }}>
-                                <CircleArrowLeft />
-                                Back to games
-                            </Button>
-                        </div>
-                        <span className="text-3xl font-bold">Edit - {game_info.name}</span>
-                        <span className="text-lg font-semibold">基本信息</span>
-                        <div className="flex gap-10 items-center">
-                            <div className="w-1/3">
-                                <FormField
-                                    control={form.control}
-                                    name="name"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <div className="flex items-center h-[20px]">
-                                                <FormLabel>比赛名称</FormLabel>
-                                                <div className="flex-1" />
-                                                <FormMessage className="text-[14px]" />
-                                            </div>
-                                            <FormControl>
-                                                <Input {...field} />
-                                            </FormControl>
-                                            <FormDescription>
-                                                请填写比赛名称
-                                            </FormDescription>
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                            <div className="w-1/3">
-                                <FormField
-                                    control={form.control}
-                                    name={`start_time`}
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-col">
-                                            <FormLabel>开始时间</FormLabel>
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <FormControl>
-                                                        <Button
-                                                            variant={"outline"}
-                                                            type="button"
-                                                            className={cn(
-                                                                "w-full pl-3 text-left font-normal",
-                                                                !field.value && "text-muted-foreground"
-                                                            )}
-                                                        >
-                                                            {field.value ? (
-                                                                format(field.value, "MM/dd/yyyy HH:mm")
-                                                            ) : (
-                                                                <span>MM/DD/YYYY HH:mm</span>
-                                                            )}
-                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                        </Button>
-                                                    </FormControl>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0">
-                                                    <div className="sm:flex">
-                                                        <Calendar
-                                                            mode="single"
-                                                            selected={field.value}
-                                                            onSelect={(date) => handleDateSelect(date, "start_time")}
-                                                            initialFocus
-                                                        />
-                                                        <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
-                                                            <ScrollArea className="w-64 sm:w-auto">
-                                                                <div className="flex sm:flex-col p-2">
-                                                                    {Array.from({ length: 24 }, (_, i) => i)
-                                                                        .reverse()
-                                                                        .map((hour) => (
-                                                                            <Button
-                                                                                type="button"
-                                                                                key={hour}
-                                                                                size="icon"
-                                                                                variant={
-                                                                                    field.value && field.value.getHours() === hour
-                                                                                        ? "default"
-                                                                                        : "ghost"
-                                                                                }
-                                                                                className="sm:w-full shrink-0 aspect-square"
-                                                                                onClick={() =>
-                                                                                    handleTimeChange("hour", hour.toString(), "start_time")
-                                                                                }
-                                                                            >
-                                                                                {hour}
-                                                                            </Button>
-                                                                        ))}
-                                                                </div>
-                                                                <ScrollBar
-                                                                    orientation="horizontal"
-                                                                    className="sm:hidden"
-                                                                />
-                                                            </ScrollArea>
-                                                            <ScrollArea className="w-64 sm:w-auto">
-                                                                <div className="flex sm:flex-col p-2">
-                                                                    {Array.from({ length: 60 }, (_, i) => i).map(
-                                                                        (minute) => (
-                                                                            <Button
-                                                                                type="button"
-                                                                                key={minute}
-                                                                                size="icon"
-                                                                                variant={
-                                                                                    field.value &&
-                                                                                        field.value.getMinutes() === minute
-                                                                                        ? "default"
-                                                                                        : "ghost"
-                                                                                }
-                                                                                className="sm:w-full shrink-0 aspect-square"
-                                                                                onClick={() =>
-                                                                                    handleTimeChange("minute", minute.toString(), "start_time")
-                                                                                }
-                                                                            >
-                                                                                {minute.toString().padStart(2, "0")}
-                                                                            </Button>
-                                                                        )
-                                                                    )}
-                                                                </div>
-                                                                <ScrollBar
-                                                                    orientation="horizontal"
-                                                                    className="sm:hidden"
-                                                                />
-                                                            </ScrollArea>
-                                                        </div>
-                                                    </div>
-                                                </PopoverContent>
-                                            </Popover>
-                                            <FormDescription>
-                                                请选择比赛开始时间
-                                            </FormDescription>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                            <div className="w-1/3">
-                                <FormField
-                                    control={form.control}
-                                    name={`end_time`}
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-col">
-                                            <FormLabel>结束时间</FormLabel>
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <FormControl>
-                                                        <Button
-                                                            type="button"
-                                                            variant={"outline"}
-                                                            className={cn(
-                                                                "w-full pl-3 text-left font-normal",
-                                                                !field.value && "text-muted-foreground"
-                                                            )}
-                                                        >
-                                                            {field.value ? (
-                                                                format(field.value, "MM/dd/yyyy HH:mm")
-                                                            ) : (
-                                                                <span>MM/DD/YYYY HH:mm</span>
-                                                            )}
-                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                        </Button>
-                                                    </FormControl>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0">
-                                                    <div className="sm:flex">
-                                                        <Calendar
-                                                            mode="single"
-                                                            selected={field.value}
-                                                            onSelect={(date) => handleDateSelect(date, "end_time")}
-                                                            initialFocus
-                                                        />
-                                                        <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
-                                                            <ScrollArea className="w-64 sm:w-auto">
-                                                                <div className="flex sm:flex-col p-2">
-                                                                    {Array.from({ length: 24 }, (_, i) => i)
-                                                                        .reverse()
-                                                                        .map((hour) => (
-                                                                            <Button
-                                                                                type="button"
-                                                                                key={hour}
-                                                                                size="icon"
-                                                                                variant={
-                                                                                    field.value && field.value.getHours() === hour
-                                                                                        ? "default"
-                                                                                        : "ghost"
-                                                                                }
-                                                                                className="sm:w-full shrink-0 aspect-square"
-                                                                                onClick={() =>
-                                                                                    handleTimeChange("hour", hour.toString(), "end_time")
-                                                                                }
-                                                                            >
-                                                                                {hour}
-                                                                            </Button>
-                                                                        ))}
-                                                                </div>
-                                                                <ScrollBar
-                                                                    orientation="horizontal"
-                                                                    className="sm:hidden"
-                                                                />
-                                                            </ScrollArea>
-                                                            <ScrollArea className="w-64 sm:w-auto">
-                                                                <div className="flex sm:flex-col p-2">
-                                                                    {Array.from({ length: 60 }, (_, i) => i).map(
-                                                                        (minute) => (
-                                                                            <Button
-                                                                                type="button"
-                                                                                key={minute}
-                                                                                size="icon"
-                                                                                variant={
-                                                                                    field.value &&
-                                                                                        field.value.getMinutes() === minute
-                                                                                        ? "default"
-                                                                                        : "ghost"
-                                                                                }
-                                                                                className="sm:w-full shrink-0 aspect-square"
-                                                                                onClick={() =>
-                                                                                    handleTimeChange("minute", minute.toString(), "end_time")
-                                                                                }
-                                                                            >
-                                                                                {minute.toString().padStart(2, "0")}
-                                                                            </Button>
-                                                                        )
-                                                                    )}
-                                                                </div>
-                                                                <ScrollBar
-                                                                    orientation="horizontal"
-                                                                    className="sm:hidden"
-                                                                />
-                                                            </ScrollArea>
-                                                        </div>
-                                                    </div>
-                                                </PopoverContent>
-                                            </Popover>
-                                            <FormDescription>
-                                                请选择比赛结束时间
-                                            </FormDescription>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                        </div>
-                        <FormField
-                            control={form.control}
-                            name="summary"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <div className="flex items-center h-[20px]">
-                                        <FormLabel>比赛简介</FormLabel>
-                                        <div className="flex-1" />
-                                        <FormMessage className="text-[14px]" />
-                                    </div>
-                                    <FormControl>
-                                        <Textarea {...field} className="h-[100px]" />
-                                    </FormControl>
-                                    <FormDescription>
-                                        比赛简介
-                                    </FormDescription>
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="description"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <div className="flex items-center h-[20px]">
-                                        <FormLabel>比赛详细信息</FormLabel>
-                                        <div className="flex-1" />
-                                        <FormMessage className="text-[14px]" />
-                                    </div>
-                                    <FormControl>
-                                        <Textarea {...field} className="h-[300px]" />
-                                    </FormControl>
-                                    <FormDescription>
-                                        比赛详细信息 (支持Markdown)
-                                    </FormDescription>
-                                </FormItem>
-                            )}
-                        />
-                        <div className="flex gap-10 items-center">
-                            <div className="w-1/3">
-                                <FormField
-                                    control={form.control}
-                                    name="practice_mode"
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                            <div className="space-y-0.5">
-                                                <FormLabel>练习模式</FormLabel>
-                                                <FormDescription>
-                                                    是否开启练习模式
-                                                </FormDescription>
-                                            </div>
-                                            <FormControl>
-                                                <Switch
-                                                    checked={field.value}
-                                                    onCheckedChange={field.onChange}
-                                                />
-                                            </FormControl>
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                            <div className="w-1/3">
-                                <FormField
-                                    control={form.control}
-                                    name="require_wp"
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                            <div className="space-y-0.5">
-                                                <FormLabel>WriteUP</FormLabel>
-                                                <FormDescription>
-                                                    是否需要提交 WriteUP
-                                                </FormDescription>
-                                            </div>
-                                            <FormControl>
-                                                <Switch
-                                                    checked={field.value}
-                                                    onCheckedChange={field.onChange}
-                                                />
-                                            </FormControl>
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                            <div className="w-1/3">
-                                <FormField
-                                    control={form.control}
-                                    name="visible"
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                            <div className="space-y-0.5">
-                                                <FormLabel>是否可见</FormLabel>
-                                                <FormDescription>
-                                                    比赛是否可见
-                                                </FormDescription>
-                                            </div>
-                                            <FormControl>
-                                                <Switch
-                                                    checked={field.value}
-                                                    onCheckedChange={field.onChange}
-                                                />
-                                            </FormControl>
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                        </div>
-                        <span className="text-lg font-semibold">详细设置</span>
-                        <div className="flex gap-10 items-center">
-                            <div className="w-1/2 flex flex-col gap-6">
-                                <FormField
-                                    control={form.control}
-                                    name="invite_code"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <div className="flex items-center h-[20px]">
-                                                <FormLabel>邀请码</FormLabel>
-                                                <div className="flex-1" />
-                                                <FormMessage className="text-[14px]" />
-                                            </div>
-                                            <FormControl>
-                                                <Input {...field} />
-                                            </FormControl>
-                                            <FormDescription>
-                                                不需要请留空
-                                            </FormDescription>
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name={`wp_expire_time`}
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-col">
-                                            <FormLabel>WriteUP截至时间</FormLabel>
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <FormControl>
-                                                        <Button
-                                                            type="button"
-                                                            variant={"outline"}
-                                                            className={cn(
-                                                                "w-full pl-3 text-left font-normal",
-                                                                !field.value && "text-muted-foreground"
-                                                            )}
-                                                        >
-                                                            {field.value ? (
-                                                                format(field.value, "MM/dd/yyyy HH:mm")
-                                                            ) : (
-                                                                <span>MM/DD/YYYY HH:mm</span>
-                                                            )}
-                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                        </Button>
-                                                    </FormControl>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0">
-                                                    <div className="sm:flex">
-                                                        <Calendar
-                                                            mode="single"
-                                                            selected={field.value}
-                                                            onSelect={(date) => handleDateSelect(date, "wp_expire_time")}
-                                                            initialFocus
-                                                        />
-                                                        <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
-                                                            <ScrollArea className="w-64 sm:w-auto">
-                                                                <div className="flex sm:flex-col p-2">
-                                                                    {Array.from({ length: 24 }, (_, i) => i)
-                                                                        .reverse()
-                                                                        .map((hour) => (
-                                                                            <Button
-                                                                                type="button"
-                                                                                key={hour}
-                                                                                size="icon"
-                                                                                variant={
-                                                                                    field.value && field.value.getHours() === hour
-                                                                                        ? "default"
-                                                                                        : "ghost"
-                                                                                }
-                                                                                className="sm:w-full shrink-0 aspect-square"
-                                                                                onClick={() =>
-                                                                                    handleTimeChange("hour", hour.toString(), "wp_expire_time")
-                                                                                }
-                                                                            >
-                                                                                {hour}
-                                                                            </Button>
-                                                                        ))}
-                                                                </div>
-                                                                <ScrollBar
-                                                                    orientation="horizontal"
-                                                                    className="sm:hidden"
-                                                                />
-                                                            </ScrollArea>
-                                                            <ScrollArea className="w-64 sm:w-auto">
-                                                                <div className="flex sm:flex-col p-2">
-                                                                    {Array.from({ length: 60 }, (_, i) => i).map(
-                                                                        (minute) => (
-                                                                            <Button
-                                                                                type="button"
-                                                                                key={minute}
-                                                                                size="icon"
-                                                                                variant={
-                                                                                    field.value &&
-                                                                                        field.value.getMinutes() === minute
-                                                                                        ? "default"
-                                                                                        : "ghost"
-                                                                                }
-                                                                                className="sm:w-full shrink-0 aspect-square"
-                                                                                onClick={() =>
-                                                                                    handleTimeChange("minute", minute.toString(), "wp_expire_time")
-                                                                                }
-                                                                            >
-                                                                                {minute.toString().padStart(2, "0")}
-                                                                            </Button>
-                                                                        )
-                                                                    )}
-                                                                </div>
-                                                                <ScrollBar
-                                                                    orientation="horizontal"
-                                                                    className="sm:hidden"
-                                                                />
-                                                            </ScrollArea>
-                                                        </div>
-                                                    </div>
-                                                </PopoverContent>
-                                            </Popover>
-                                            <FormDescription>
-                                                请选择WP截止时间
-                                            </FormDescription>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="team_number_limit"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <div className="flex items-center h-[20px]">
-                                                <FormLabel>队伍人数限制</FormLabel>
-                                                <div className="flex-1" />
-                                                <FormMessage className="text-[14px]" />
-                                            </div>
-                                            <FormControl>
-                                                <Input {...field} />
-                                            </FormControl>
-                                            <FormDescription>
-                                                队伍人数限制
-                                            </FormDescription>
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="container_number_limit"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <div className="flex items-center h-[20px]">
-                                                <FormLabel>队伍容器数量限制</FormLabel>
-                                                <div className="flex-1" />
-                                                <FormMessage className="text-[14px]" />
-                                            </div>
-                                            <FormControl>
-                                                <Input {...field} />
-                                            </FormControl>
-                                            <FormDescription>
-                                                队伍容器数量限制
-                                            </FormDescription>
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                            <div className="w-1/2 h-full py-4">
-                                <div className="w-full h-full rounded-lg border shadow-md relative overflow-hidden">
-                                    <div className="absolute top-0 left-0 w-full h-full opacity-0 hover:bg-background hover:opacity-85 z-20 transition-all duration-300 flex items-center justify-center cursor-pointer" >
-                                        <div className="flex gap-5 hover:text-cyan-500 transition-colors duration-300 items-center">
-                                            <Upload size={60} />
-                                            <span className="text-3xl font-bold">上传海报</span>
-                                        </div>
-                                    </div>
-                                    <div className="absolute top-0 left-0 w-full h-full" style={{ background: `url(${form.getValues("poster") || clientConfig.DefaultBGImage})`, backgroundSize: "cover", backgroundPosition: "center" }} >
+                <MacScrollbar className="h-full w-full">
+                    <div className="max-w-7xl mx-auto p-6 space-y-8">
+                        {/* Header Section */}
+                        <div className="sticky top-0 z-50 backdrop-blur-sm bg-background/80 border-b rounded-t-2xl p-6 mb-6">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <Button 
+                                        type="button" 
+                                        variant="outline" 
+                                        onClick={() => router(`/admin/games`)}
+                                        className="bg-background/50 backdrop-blur-sm"
+                                    >
+                                        <CircleArrowLeft className="h-4 w-4" />
+                                        返回比赛列表
+                                    </Button>
+                                    <div className="h-8 w-px bg-border" />
+                                    <div>
+                                        <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                                            编辑比赛
+                                        </h1>
+                                        <p className="text-muted-foreground">{game_info.name}</p>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-
-                        {/* 比赛阶段列表 */}
-                        <div className="mt-6">
-                            <div className="flex items-center mb-4">
-                                <span className="text-lg font-semibold">比赛阶段</span>
-                                <div className="flex-1" />
-                                <Button
-                                    type="button"
-                                    variant={"outline"}
-                                    className="[&_svg]:size-5"
-                                    onClick={() =>
-                                        appendStage({
-                                            stage_name: "",
-                                            start_time: new Date(),
-                                            end_time: new Date(),
-                                        })
-                                    }
+                                <Button 
+                                    type="submit" 
+                                    form="game-edit-form"
+                                    className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-200"
                                 >
-                                    <PlusCircle />
-                                    添加阶段
+                                    <Save className="h-4 w-4" />
+                                    保存设置
                                 </Button>
                             </div>
-                            {stageFields.length > 0 ? stageFields.map((stage, index) => (
-                                <GameStageForm
-                                    key={index}
-                                    control={form.control}
-                                    form={form}
-                                    index={index}
-                                    removeStage={removeStage}
-                                />
-                            )) : (
-                                <span className="text-sm text-foreground/70">还没有比赛阶段哦</span>
-                            )}
                         </div>
 
-                        {/* 题目列表 */}
-                        <div className="mt-6">
-                            <div className="flex items-center mb-4">
-                                <span className="text-lg font-semibold">题目设置</span>
-                                <div className="flex-1" />
-                                <Dialog open={isOpen} onOpenChange={(status) => {
-                                    setIsOpen(status)
-                                    if (status && searchResult.length == 0 && curKeyWord.current == "") {
-                                        setLoadingHover(true)
-                                        api.admin.searchChallenges({ keyword: curKeyWord.current }).then((res) => {
-                                            setSearchResult(res.data.data.map((c) => ({
-                                                "Category": c.category,
-                                                "ChallengeID": c.challenge_id || 0,
-                                                "GameID": game_info.game_id,
-                                                "Name": c.name,
-                                                "CreateTime": c.create_time
-                                            })))
-                                            setTotalCount(res.data.data.length)
-                                            setLoadingHover(false)
-                                        })
-                                    }
-                                }}>
-                                    <DialogTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            variant={"outline"}
-                                            className="[&_svg]:size-5"
-                                        >
-                                            <PlusCircle />
-                                            添加题目
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="sm:max-w-[825px]" onInteractOutside={(e) => e.preventDefault()}>
-                                        <DialogHeader className="select-none">
-                                            <DialogTitle>搜索题目</DialogTitle>
-                                            <DialogDescription>
-                                                这会从题目库中搜索题目
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        <Input className="select-none" value={addChallengeInput} onChange={(e) => setInputState(e.target.value)} placeholder="在这里输入题目名字" />
-                                        <div className="rounded-md border relative h-[300px]">
-                                            {loadingHover && (
-                                                <div className="absolute top-0 left-0 w-full h-full bg-background opacity-95 z-10 flex items-center justify-center">
-                                                    <div className="flex">
-                                                        <LoaderPinwheel className="animate-spin" />
-                                                        <span className="font-bold ml-3">搜索中...</span>
-                                                    </div>
+                        <form id="game-edit-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                            {/* 基本信息 Section */}
+                            <div className="bg-card/60 backdrop-blur-sm border border-border/50 rounded-2xl p-6 shadow-lg">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
+                                        <FilePenLine className="h-4 w-4 text-blue-600" />
+                                    </div>
+                                    <h2 className="text-xl font-semibold">基本信息</h2>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                                    <FormField
+                                        control={form.control}
+                                        name="name"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <div className="flex items-center h-[20px]">
+                                                    <FormLabel>比赛名称</FormLabel>
+                                                    <div className="flex-1" />
+                                                    <FormMessage className="text-[14px]" />
                                                 </div>
-                                            )}
-                                            <Table>
-                                                <TableHeader className="select-none">
-                                                    {table.getHeaderGroups().map((headerGroup) => (
-                                                        <TableRow key={headerGroup.id}>
-                                                            {headerGroup.headers.map((header) => {
-                                                                return (
-                                                                    <TableHead key={header.id}>
-                                                                        {header.isPlaceholder
-                                                                            ? null
-                                                                            : flexRender(
-                                                                                header.column.columnDef.header,
-                                                                                header.getContext()
-                                                                            )}
-                                                                    </TableHead>
-                                                                )
-                                                            })}
-                                                        </TableRow>
-                                                    ))}
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {table.getRowModel().rows?.length ? (
-                                                        table.getRowModel().rows.map((row) => (
-                                                            <TableRow
-                                                                key={row.id}
-                                                                data-state={row.getIsSelected() && "selected"}
+                                                <FormControl>
+                                                    <Input {...field} className="bg-background/50" />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    请填写比赛名称
+                                                </FormDescription>
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={form.control}
+                                        name={`start_time`}
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-col">
+                                                <FormLabel>开始时间</FormLabel>
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <FormControl>
+                                                            <Button
+                                                                variant={"outline"}
+                                                                type="button"
+                                                                className={cn(
+                                                                    "w-full pl-3 text-left font-normal bg-background/50",
+                                                                    !field.value && "text-muted-foreground"
+                                                                )}
                                                             >
-                                                                {row.getVisibleCells().map((cell) => (
-                                                                    <TableCell key={cell.id}>
-                                                                        {flexRender(
-                                                                            cell.column.columnDef.cell,
-                                                                            cell.getContext()
+                                                                {field.value ? (
+                                                                    format(field.value, "MM/dd/yyyy HH:mm")
+                                                                ) : (
+                                                                    <span>MM/DD/YYYY HH:mm</span>
+                                                                )}
+                                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                            </Button>
+                                                        </FormControl>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0">
+                                                        <div className="sm:flex">
+                                                            <Calendar
+                                                                mode="single"
+                                                                selected={field.value}
+                                                                onSelect={(date) => handleDateSelect(date, "start_time")}
+                                                                initialFocus
+                                                            />
+                                                            <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
+                                                                <ScrollArea className="w-64 sm:w-auto">
+                                                                    <div className="flex sm:flex-col p-2">
+                                                                        {Array.from({ length: 24 }, (_, i) => i)
+                                                                            .reverse()
+                                                                            .map((hour) => (
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    key={hour}
+                                                                                    size="icon"
+                                                                                    variant={
+                                                                                        field.value && field.value.getHours() === hour
+                                                                                            ? "default"
+                                                                                            : "ghost"
+                                                                                    }
+                                                                                    className="sm:w-full shrink-0 aspect-square"
+                                                                                    onClick={() =>
+                                                                                        handleTimeChange("hour", hour.toString(), "start_time")
+                                                                                    }
+                                                                                >
+                                                                                    {hour}
+                                                                                </Button>
+                                                                            ))}
+                                                                    </div>
+                                                                    <ScrollBar
+                                                                        orientation="horizontal"
+                                                                        className="sm:hidden"
+                                                                    />
+                                                                </ScrollArea>
+                                                                <ScrollArea className="w-64 sm:w-auto">
+                                                                    <div className="flex sm:flex-col p-2">
+                                                                        {Array.from({ length: 60 }, (_, i) => i).map(
+                                                                            (minute) => (
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    key={minute}
+                                                                                    size="icon"
+                                                                                    variant={
+                                                                                        field.value &&
+                                                                                            field.value.getMinutes() === minute
+                                                                                            ? "default"
+                                                                                            : "ghost"
+                                                                                    }
+                                                                                    className="sm:w-full shrink-0 aspect-square"
+                                                                                    onClick={() =>
+                                                                                        handleTimeChange("minute", minute.toString(), "start_time")
+                                                                                    }
+                                                                                >
+                                                                                    {minute.toString().padStart(2, "0")}
+                                                                                </Button>
+                                                                            )
                                                                         )}
-                                                                    </TableCell>
-                                                                ))}
-                                                            </TableRow>
-                                                        ))
-                                                    ) : (
-                                                        <TableRow>
-                                                            <TableCell
-                                                                colSpan={columns.length}
-                                                                className="h-24 text-center"
+                                                                    </div>
+                                                                    <ScrollBar
+                                                                        orientation="horizontal"
+                                                                        className="sm:hidden"
+                                                                    />
+                                                                </ScrollArea>
+                                                            </div>
+                                                        </div>
+                                                    </PopoverContent>
+                                                </Popover>
+                                                <FormDescription>
+                                                    请选择比赛开始时间
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={form.control}
+                                        name={`end_time`}
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-col">
+                                                <FormLabel>结束时间</FormLabel>
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <FormControl>
+                                                            <Button
+                                                                type="button"
+                                                                variant={"outline"}
+                                                                className={cn(
+                                                                    "w-full pl-3 text-left font-normal bg-background/50",
+                                                                    !field.value && "text-muted-foreground"
+                                                                )}
                                                             >
-                                                                No results.
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    )}
-                                                </TableBody>
-                                            </Table>
-                                        </div>
-                                        <div className="flex items-center justify-end space-x-2 select-none">
-                                            <div className="flex-1 text-sm text-muted-foreground flex items-center">
-                                                {table.getFilteredSelectedRowModel().rows.length} of{" "}
-                                                {table.getFilteredRowModel().rows.length} row(s) selected.
-                                            </div>
-                                            <div className="flex gap-3 items-center">
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="icon"
-                                                    onClick={() => {
-                                                        setCurPage(curPage - 1)
-                                                        table.previousPage()
-                                                    }}
-                                                    disabled={curPage == 0}
-                                                >
-                                                    <ArrowLeft />
-                                                </Button>
-                                                <div className="text-sm text-muted-foreground">
-                                                    {curPage + 1} / {Math.ceil(totalCount / 5)}
+                                                                {field.value ? (
+                                                                    format(field.value, "MM/dd/yyyy HH:mm")
+                                                                ) : (
+                                                                    <span>MM/DD/YYYY HH:mm</span>
+                                                                )}
+                                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                            </Button>
+                                                        </FormControl>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0">
+                                                        <div className="sm:flex">
+                                                            <Calendar
+                                                                mode="single"
+                                                                selected={field.value}
+                                                                onSelect={(date) => handleDateSelect(date, "end_time")}
+                                                                initialFocus
+                                                            />
+                                                            <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
+                                                                <ScrollArea className="w-64 sm:w-auto">
+                                                                    <div className="flex sm:flex-col p-2">
+                                                                        {Array.from({ length: 24 }, (_, i) => i)
+                                                                            .reverse()
+                                                                            .map((hour) => (
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    key={hour}
+                                                                                    size="icon"
+                                                                                    variant={
+                                                                                        field.value && field.value.getHours() === hour
+                                                                                            ? "default"
+                                                                                            : "ghost"
+                                                                                    }
+                                                                                    className="sm:w-full shrink-0 aspect-square"
+                                                                                    onClick={() =>
+                                                                                        handleTimeChange("hour", hour.toString(), "end_time")
+                                                                                    }
+                                                                                >
+                                                                                    {hour}
+                                                                                </Button>
+                                                                            ))}
+                                                                    </div>
+                                                                    <ScrollBar
+                                                                        orientation="horizontal"
+                                                                        className="sm:hidden"
+                                                                    />
+                                                                </ScrollArea>
+                                                                <ScrollArea className="w-64 sm:w-auto">
+                                                                    <div className="flex sm:flex-col p-2">
+                                                                        {Array.from({ length: 60 }, (_, i) => i).map(
+                                                                            (minute) => (
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    key={minute}
+                                                                                    size="icon"
+                                                                                    variant={
+                                                                                        field.value &&
+                                                                                            field.value.getMinutes() === minute
+                                                                                            ? "default"
+                                                                                            : "ghost"
+                                                                                    }
+                                                                                    className="sm:w-full shrink-0 aspect-square"
+                                                                                    onClick={() =>
+                                                                                        handleTimeChange("minute", minute.toString(), "end_time")
+                                                                                    }
+                                                                                >
+                                                                                    {minute.toString().padStart(2, "0")}
+                                                                                </Button>
+                                                                            )
+                                                                        )}
+                                                                    </div>
+                                                                    <ScrollBar
+                                                                        orientation="horizontal"
+                                                                        className="sm:hidden"
+                                                                    />
+                                                                </ScrollArea>
+                                                            </div>
+                                                        </div>
+                                                    </PopoverContent>
+                                                </Popover>
+                                                <FormDescription>
+                                                    请选择比赛结束时间
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+
+                                <div className="space-y-6">
+                                    <FormField
+                                        control={form.control}
+                                        name="summary"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <div className="flex items-center h-[20px]">
+                                                    <FormLabel>比赛简介</FormLabel>
+                                                    <div className="flex-1" />
+                                                    <FormMessage className="text-[14px]" />
                                                 </div>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="icon"
-                                                    onClick={() => {
-                                                        setCurPage(curPage + 1)
-                                                        table.nextPage()
-                                                    }}
-                                                    disabled={curPage >= Math.ceil(totalCount / 5) - 1}
-                                                >
-                                                    <ArrowRight />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </DialogContent>
-                                </Dialog>
+                                                <FormControl>
+                                                    <Textarea {...field} className="h-[100px] bg-background/50" />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    比赛简介
+                                                </FormDescription>
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={form.control}
+                                        name="description"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <div className="flex items-center h-[20px]">
+                                                    <FormLabel>比赛详细信息</FormLabel>
+                                                    <div className="flex-1" />
+                                                    <FormMessage className="text-[14px]" />
+                                                </div>
+                                                <FormControl>
+                                                    <Textarea {...field} className="h-[300px] bg-background/50" />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    比赛详细信息 (支持Markdown)
+                                                </FormDescription>
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+
+                                {/* 开关设置 */}
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
+                                    <FormField
+                                        control={form.control}
+                                        name="practice_mode"
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/50 p-4 shadow-sm bg-background/30">
+                                                <div className="space-y-0.5">
+                                                    <FormLabel>练习模式</FormLabel>
+                                                    <FormDescription>
+                                                        是否开启练习模式
+                                                    </FormDescription>
+                                                </div>
+                                                <FormControl>
+                                                    <Switch
+                                                        checked={field.value}
+                                                        onCheckedChange={field.onChange}
+                                                    />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={form.control}
+                                        name="require_wp"
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/50 p-4 shadow-sm bg-background/30">
+                                                <div className="space-y-0.5">
+                                                    <FormLabel>WriteUP</FormLabel>
+                                                    <FormDescription>
+                                                        是否需要提交 WriteUP
+                                                    </FormDescription>
+                                                </div>
+                                                <FormControl>
+                                                    <Switch
+                                                        checked={field.value}
+                                                        onCheckedChange={field.onChange}
+                                                    />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={form.control}
+                                        name="visible"
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/50 p-4 shadow-sm bg-background/30">
+                                                <div className="space-y-0.5">
+                                                    <FormLabel>是否可见</FormLabel>
+                                                    <FormDescription>
+                                                        比赛是否可见
+                                                    </FormDescription>
+                                                </div>
+                                                <FormControl>
+                                                    <Switch
+                                                        checked={field.value}
+                                                        onCheckedChange={field.onChange}
+                                                    />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
                             </div>
-                            <Dialog open={isJudgeConfigOpen} onOpenChange={async (status) => {
-                                const checkResult = await form.trigger(`challenges.${curEditChallengeID}`)
-                                if (checkResult) setIsJudgeOpen(status)
-                                else {
-                                    toast.error("请检查题目设置是否正确")
-                                }
-                            }}>
-                                <DialogContent className="sm:max-w-[825px] p-0" onInteractOutside={(e) => e.preventDefault()}>
-                                    <DialogHeader className="select-none px-8 pt-8">
-                                        <DialogTitle>覆盖题目评测</DialogTitle>
-                                        <DialogDescription>
-                                            这里可以覆盖题目的评测设置, 编辑完成后直接关闭, 外面点保存即可
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <MacScrollbar className="w-full max-h-[84vh] overflow-y-auto"
-                                        skin={theme ==  "light" ? "light" : "dark"}
-                                        trackStyle={(horizontal) => ({ [horizontal ? "height" : "width"]: 0, borderWidth: 0})}
-                                        thumbStyle={(horizontal) => ({ [horizontal ? "height" : "width"]: 6})}
-                                    >
-                                        <div className="flex flex-col gap-4 pl-8 pr-8 pb-8">
-                                            <JudgeConfigForm
-                                                control={form.control}
-                                                index={curEditChallengeID}
-                                                form={form}
+
+                            {/* 详细设置 Section */}
+                            <div className="bg-card/60 backdrop-blur-sm border border-border/50 rounded-2xl p-6 shadow-lg">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/10 flex items-center justify-center">
+                                        <Settings className="h-4 w-4 text-green-600" />
+                                    </div>
+                                    <h2 className="text-xl font-semibold">详细设置</h2>
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    <div className="space-y-6">
+                                        <FormField
+                                            control={form.control}
+                                            name="invite_code"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <div className="flex items-center h-[20px]">
+                                                        <FormLabel>邀请码</FormLabel>
+                                                        <div className="flex-1" />
+                                                        <FormMessage className="text-[14px]" />
+                                                    </div>
+                                                    <FormControl>
+                                                        <Input {...field} className="bg-background/50" />
+                                                    </FormControl>
+                                                    <FormDescription>
+                                                        不需要请留空
+                                                    </FormDescription>
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={form.control}
+                                            name={`wp_expire_time`}
+                                            render={({ field }) => (
+                                                <FormItem className="flex flex-col">
+                                                    <FormLabel>WriteUP截至时间</FormLabel>
+                                                    <Popover>
+                                                        <PopoverTrigger asChild>
+                                                            <FormControl>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant={"outline"}
+                                                                    className={cn(
+                                                                        "w-full pl-3 text-left font-normal bg-background/50",
+                                                                        !field.value && "text-muted-foreground"
+                                                                    )}
+                                                                >
+                                                                    {field.value ? (
+                                                                        format(field.value, "MM/dd/yyyy HH:mm")
+                                                                    ) : (
+                                                                        <span>MM/DD/YYYY HH:mm</span>
+                                                                    )}
+                                                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                                </Button>
+                                                            </FormControl>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-auto p-0">
+                                                            <div className="sm:flex">
+                                                                <Calendar
+                                                                    mode="single"
+                                                                    selected={field.value}
+                                                                    onSelect={(date) => handleDateSelect(date, "wp_expire_time")}
+                                                                    initialFocus
+                                                                />
+                                                                <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
+                                                                    <ScrollArea className="w-64 sm:w-auto">
+                                                                        <div className="flex sm:flex-col p-2">
+                                                                            {Array.from({ length: 24 }, (_, i) => i)
+                                                                                .reverse()
+                                                                                .map((hour) => (
+                                                                                    <Button
+                                                                                        type="button"
+                                                                                        key={hour}
+                                                                                        size="icon"
+                                                                                        variant={
+                                                                                            field.value && field.value.getHours() === hour
+                                                                                                ? "default"
+                                                                                                : "ghost"
+                                                                                        }
+                                                                                        className="sm:w-full shrink-0 aspect-square"
+                                                                                        onClick={() =>
+                                                                                            handleTimeChange("hour", hour.toString(), "wp_expire_time")
+                                                                                        }
+                                                                                    >
+                                                                                        {hour}
+                                                                                    </Button>
+                                                                                ))}
+                                                                        </div>
+                                                                        <ScrollBar
+                                                                            orientation="horizontal"
+                                                                            className="sm:hidden"
+                                                                        />
+                                                                    </ScrollArea>
+                                                                    <ScrollArea className="w-64 sm:w-auto">
+                                                                        <div className="flex sm:flex-col p-2">
+                                                                            {Array.from({ length: 60 }, (_, i) => i).map(
+                                                                                (minute) => (
+                                                                                    <Button
+                                                                                        type="button"
+                                                                                        key={minute}
+                                                                                        size="icon"
+                                                                                        variant={
+                                                                                            field.value &&
+                                                                                                field.value.getMinutes() === minute
+                                                                                                ? "default"
+                                                                                                : "ghost"
+                                                                                        }
+                                                                                        className="sm:w-full shrink-0 aspect-square"
+                                                                                        onClick={() =>
+                                                                                            handleTimeChange("minute", minute.toString(), "wp_expire_time")
+                                                                                        }
+                                                                                    >
+                                                                                        {minute.toString().padStart(2, "0")}
+                                                                                    </Button>
+                                                                                )
+                                                                            )}
+                                                                        </div>
+                                                                        <ScrollBar
+                                                                            orientation="horizontal"
+                                                                            className="sm:hidden"
+                                                                        />
+                                                                    </ScrollArea>
+                                                                </div>
+                                                            </div>
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                    <FormDescription>
+                                                        请选择WP截止时间
+                                                    </FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={form.control}
+                                            name="team_number_limit"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <div className="flex items-center h-[20px]">
+                                                        <FormLabel>队伍人数限制</FormLabel>
+                                                        <div className="flex-1" />
+                                                        <FormMessage className="text-[14px]" />
+                                                    </div>
+                                                    <FormControl>
+                                                        <Input {...field} className="bg-background/50" />
+                                                    </FormControl>
+                                                    <FormDescription>
+                                                        队伍人数限制
+                                                    </FormDescription>
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={form.control}
+                                            name="container_number_limit"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <div className="flex items-center h-[20px]">
+                                                        <FormLabel>队伍容器数量限制</FormLabel>
+                                                        <div className="flex-1" />
+                                                        <FormMessage className="text-[14px]" />
+                                                    </div>
+                                                    <FormControl>
+                                                        <Input {...field} className="bg-background/50" />
+                                                    </FormControl>
+                                                    <FormDescription>
+                                                        队伍容器数量限制
+                                                    </FormDescription>
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+
+                                    {/* 海报上传区域 */}
+                                    <div className="h-fit">
+                                        <div className="aspect-[4/3] rounded-xl border border-border/50 shadow-md relative overflow-hidden bg-gradient-to-br from-muted/20 to-muted/10 group">
+                                            <div 
+                                                className="absolute top-0 left-0 w-full h-full bg-cover bg-center z-10"
+                                                style={{ 
+                                                    backgroundImage: `url(${watchedPoster || clientConfig.DefaultBGImage})` 
+                                                }}
+                                            />
+                                            <div className="absolute top-0 left-0 w-full h-full opacity-0 group-hover:bg-background group-hover:opacity-85 z-20 transition-all duration-300 flex items-center justify-center cursor-pointer">
+                                                <div className="flex flex-col items-center gap-3 text-muted-foreground group-hover:text-primary transition-colors duration-300 pointer-events-none">
+                                                    <Upload size={40} />
+                                                    <span className="text-lg font-medium">上传海报</span>
+                                                    <span className="text-sm text-center">点击上传新的比赛海报</span>
+                                                </div>
+                                            </div>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer z-30"
+                                                onChange={handlePosterUpload}
                                             />
                                         </div>
-                                    </MacScrollbar>
-                                </DialogContent>
-                            </Dialog>
-                            <div className="flex w-full gap-4 h-[600px]">
-                                <div className="flex flex-col w-[150px] gap-1 select-none flex-none">
-                                    <span className="font-bold mb-2">Categories</span>
-                                    {Object.keys(cateIcon).map((cat, index) => (
-                                        <Button key={index} className={`flex items-center justify-start gap-2 px-2 pt-[6px] pb-[6px] rounded-lg transition-colors duration-300`}
-                                            variant={curChoicedCategory === cat ? "default" : "ghost"}
-                                            type="button"
-                                            onClick={() => setCurChoicedCategory(cat)}
-                                        >
-                                            {cateIcon[cat]}
-                                            <span className="text-md">{cat.substring(0, 1).toUpperCase() + cat.substring(1)}</span>
-                                            <div className="flex-1" />
-                                            <Badge className={`p-1 h-[20px] ${curChoicedCategory === cat ? "invert" : ""}`}>{challengeFields.filter((res) => (cat == "all" || res.category?.toLowerCase() == cat)).length}</Badge>
-                                        </Button>
-                                    ))}
-                                </div>
-                                <div className="flex-1">
-                                    {filtedData.length > 0 ? (
-                                        <MacScrollbar className="max-h-[600px] overflow-y-auto p-6">
-                                            <div className={`grid auto-rows-[70px] gap-4 w-full grid-cols-[repeat(auto-fill,minmax(320px,1fr))] lg:grid-cols-[repeat(auto-fill,minmax(600px,1fr))] "}`}>
-                                                {filtedData.map((gameData, index) => (
-                                                    <GameChallengeForm
-                                                        key={index}
-                                                        control={form.control}
-                                                        form={form}
-                                                        gameData={gameData as any}
-                                                        index={challengeFields.findIndex((e) => e.id == gameData.id)}
-                                                        removeGameChallenge={removeChallenge}
-                                                        onEditChallenge={(idx) => {
-                                                            setCurEditChallengeID(idx)
-                                                            setIsJudgeOpen(true)
-                                                        }}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </MacScrollbar>
-                                    ) : (
-                                        <div className="flex items-center justify-center h-full w-full">
-                                            <span className="text-xl">还没有设置题目哦</span>
-                                        </div>
-                                    )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="flex">
-                            <Button type="submit">
-                                <Save />
-                                提交
-                            </Button>
-                        </div>
-                    </form>
+                            {/* 比赛时间线和题目分配 */}
+                            <div className="bg-card/60 backdrop-blur-sm border border-border/50 rounded-2xl p-6 shadow-lg">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/10 flex items-center justify-center">
+                                        <CalendarIcon className="h-4 w-4 text-purple-600" />
+                                    </div>
+                                    <h2 className="text-xl font-semibold">时间线与题目分配</h2>
+                                </div>
+                                <GameTimelineEditor
+                                    gameStartTime={form.getValues("start_time") || new Date()}
+                                    gameEndTime={form.getValues("end_time") || new Date()}
+                                    timePoints={timePoints}
+                                    challenges={challengeBlocks}
+                                    onTimePointsChange={handleTimePointsChange}
+                                    onChallengeAssignmentChange={handleChallengeAssignmentChange}
+                                />
+                            </div>
+
+                            {/* 分组管理 */}
+                            <div className="bg-card/60 backdrop-blur-sm border border-border/50 rounded-2xl p-6 shadow-lg">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-600/10 flex items-center justify-center">
+                                        <Users className="h-4 w-4 text-orange-600" />
+                                    </div>
+                                    <h2 className="text-xl font-semibold">分组管理</h2>
+                                </div>
+                                <GameGroupManager gameId={game_info.game_id} />
+                            </div>
+
+                            {/* 公告管理 */}
+                            <div className="bg-card/60 backdrop-blur-sm border border-border/50 rounded-2xl p-6 shadow-lg">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
+                                        <MessageSquareLock className="h-4 w-4 text-blue-600" />
+                                    </div>
+                                    <h2 className="text-xl font-semibold">公告管理</h2>
+                                </div>
+                                <GameNoticeManager gameId={game_info.game_id} />
+                            </div>
+
+                            {/* 题目设置 */}
+                            <div className="bg-card/60 backdrop-blur-sm border border-border/50 rounded-2xl p-6 shadow-lg">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-red-500/20 to-red-600/10 flex items-center justify-center">
+                                            <Trophy className="h-4 w-4 text-red-600" />
+                                        </div>
+                                        <h2 className="text-xl font-semibold">题目设置</h2>
+                                    </div>
+                                    
+                                    <Dialog open={isOpen} onOpenChange={(status) => {
+                                        setIsOpen(status)
+                                        if (status && searchResult.length == 0 && curKeyWord.current == "") {
+                                            setLoadingHover(true)
+                                            api.admin.searchChallenges({ keyword: curKeyWord.current }).then((res) => {
+                                                setSearchResult(res.data.data.map((c) => ({
+                                                    "Category": c.category,
+                                                    "ChallengeID": c.challenge_id || 0,
+                                                    "Name": c.name,
+                                                    "GameID": game_info.game_id,
+                                                    "CreateTime": c.create_time
+                                                })))
+                                                setTotalCount(res.data.data.length)
+                                                setLoadingHover(false)
+                                            })
+                                        }
+                                    }}>
+                                        <DialogTrigger asChild>
+                                            <Button
+                                                type="button"
+                                                variant={"outline"}
+                                                size="sm"
+                                                className="bg-background/50 backdrop-blur-sm"
+                                            >
+                                                <PlusCircle className="h-4 w-4" />
+                                                添加题目
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="sm:max-w-[825px]" onInteractOutside={(e) => e.preventDefault()}>
+                                            <DialogHeader className="select-none">
+                                                <DialogTitle>搜索题目</DialogTitle>
+                                                <DialogDescription>
+                                                    这会从题目库中搜索题目
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <Input className="select-none" value={addChallengeInput} onChange={(e) => setInputState(e.target.value)} placeholder="在这里输入题目名字" />
+                                            <div className="rounded-md border relative h-[300px]">
+                                                {loadingHover && (
+                                                    <div className="absolute top-0 left-0 w-full h-full bg-background opacity-95 z-10 flex items-center justify-center">
+                                                        <div className="flex">
+                                                            <LoaderPinwheel className="animate-spin" />
+                                                            <span className="font-bold ml-3">搜索中...</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <Table>
+                                                    <TableHeader className="select-none">
+                                                        {table.getHeaderGroups().map((headerGroup) => (
+                                                            <TableRow key={headerGroup.id}>
+                                                                {headerGroup.headers.map((header) => {
+                                                                    return (
+                                                                        <TableHead key={header.id}>
+                                                                            {header.isPlaceholder
+                                                                                ? null
+                                                                                : flexRender(
+                                                                                    header.column.columnDef.header,
+                                                                                    header.getContext()
+                                                                                )}
+                                                                        </TableHead>
+                                                                    )
+                                                                })}
+                                                            </TableRow>
+                                                        ))}
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {table.getRowModel().rows?.length ? (
+                                                            table.getRowModel().rows.map((row) => (
+                                                                <TableRow
+                                                                    key={row.id}
+                                                                    data-state={row.getIsSelected() && "selected"}
+                                                                >
+                                                                    {row.getVisibleCells().map((cell) => (
+                                                                        <TableCell key={cell.id}>
+                                                                            {flexRender(
+                                                                                cell.column.columnDef.cell,
+                                                                                cell.getContext()
+                                                                            )}
+                                                                        </TableCell>
+                                                                    ))}
+                                                                </TableRow>
+                                                            ))
+                                                        ) : (
+                                                            <TableRow>
+                                                                <TableCell
+                                                                    colSpan={columns.length}
+                                                                    className="h-24 text-center"
+                                                                >
+                                                                    No results.
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        )}
+                                                    </TableBody>
+                                                </Table>
+                                            </div>
+                                            <div className="flex items-center justify-end space-x-2 select-none">
+                                                <div className="flex-1 text-sm text-muted-foreground flex items-center">
+                                                    {table.getFilteredSelectedRowModel().rows.length} of{" "}
+                                                    {table.getFilteredRowModel().rows.length} row(s) selected.
+                                                </div>
+                                                <div className="flex gap-3 items-center">
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="icon"
+                                                        onClick={() => {
+                                                            setCurPage(curPage - 1)
+                                                            table.previousPage()
+                                                        }}
+                                                        disabled={curPage == 0}
+                                                    >
+                                                        <ArrowLeft />
+                                                    </Button>
+                                                    <div className="text-sm text-muted-foreground">
+                                                        {curPage + 1} / {Math.ceil(totalCount / 5)}
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="icon"
+                                                        onClick={() => {
+                                                            setCurPage(curPage + 1)
+                                                            table.nextPage()
+                                                        }}
+                                                        disabled={curPage >= Math.ceil(totalCount / 5) - 1}
+                                                    >
+                                                        <ArrowRight />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
+
+                                    <Dialog open={isJudgeConfigOpen} onOpenChange={async (status) => {
+                                        const checkResult = await form.trigger(`challenges.${curEditChallengeID}`)
+                                        if (checkResult) setIsJudgeOpen(status)
+                                        else {
+                                            toast.error("请检查题目设置是否正确")
+                                        }
+                                    }}>
+                                        <DialogContent className="sm:max-w-[825px] p-0" onInteractOutside={(e) => e.preventDefault()}>
+                                            <DialogHeader className="select-none px-8 pt-8">
+                                                <DialogTitle>覆盖题目评测</DialogTitle>
+                                                <DialogDescription>
+                                                    这里可以覆盖题目的评测设置, 编辑完成后直接关闭, 外面点保存即可
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <MacScrollbar className="w-full max-h-[84vh] overflow-y-auto"
+                                                skin={theme ==  "light" ? "light" : "dark"}
+                                                trackStyle={(horizontal) => ({ [horizontal ? "height" : "width"]: 0, borderWidth: 0})}
+                                                thumbStyle={(horizontal) => ({ [horizontal ? "height" : "width"]: 6})}
+                                            >
+                                                <div className="flex flex-col gap-4 pl-8 pr-8 pb-8">
+                                                    <JudgeConfigForm
+                                                        control={form.control}
+                                                        index={curEditChallengeID}
+                                                        form={form}
+                                                    />
+                                                </div>
+                                            </MacScrollbar>
+                                        </DialogContent>
+                                    </Dialog>
+                                </div>
+
+                                <div className="mt-6">
+                                    {/* Search Bar */}
+                                    <div className="mb-6">
+                                        <div className="relative max-w-md">
+                                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <Input 
+                                                value={searchContent} 
+                                                onChange={(e) => setSearchContent(e.target.value)} 
+                                                placeholder="搜索题目..."
+                                                className="pl-10 bg-background/50 backdrop-blur-sm"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-6">
+                                        {/* Categories Sidebar */}
+                                        <div className="w-64 flex-none bg-card/30 backdrop-blur-sm border border-border/50 rounded-xl p-4">
+                                            <h3 className="font-semibold text-lg mb-4 text-foreground/90">分类筛选</h3>
+                                            <div className="space-y-1">
+                                                {Object.keys(cateIcon).map((cat, index) => (
+                                                    <Button 
+                                                        key={index} 
+                                                        className={`w-full justify-start gap-3 h-11 transition-all duration-200 border ${
+                                                            curChoicedCategory === cat 
+                                                                ? "bg-gradient-to-r from-primary/20 to-primary/10 border-primary/30 text-primary shadow-sm" 
+                                                                : "hover:bg-muted/60 hover:shadow-sm border-transparent"
+                                                        }`}
+                                                        variant="ghost"
+                                                        type="button"
+                                                        onClick={() => setCurChoicedCategory(cat)}
+                                                    >
+                                                        <div className={`p-1.5 rounded-lg flex-shrink-0 ${curChoicedCategory === cat ? "bg-primary/20" : "bg-muted/40"}`}>
+                                                            {cateIcon[cat]}
+                                                        </div>
+                                                        <span className="font-medium flex-1 text-left truncate">
+                                                            {cat === "all" ? "全部" : cat.substring(0, 1).toUpperCase() + cat.substring(1)}
+                                                        </span>
+                                                        <Badge 
+                                                            variant="secondary" 
+                                                            className={`h-6 px-2 text-xs font-semibold flex-shrink-0 ${
+                                                                curChoicedCategory === cat ? "bg-primary/20 text-primary" : ""
+                                                            }`}
+                                                        >
+                                                            {challengeFields.filter((res) => (cat == "all" || res.category?.toLowerCase() == cat)).length}
+                                                        </Badge>
+                                                    </Button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Main Content */}
+                                        <div className="flex-1 overflow-hidden">
+                                            {filtedData.length > 0 ? (
+                                                <MacScrollbar className="h-[700px]">
+                                                    <div className="p-4 pr-6">
+                                                        <div className="grid gap-4 grid-cols-1 xl:grid-cols-2">
+                                                            {filtedData.map((gameData, index) => (
+                                                                <GameChallengeForm
+                                                                    key={index}
+                                                                    control={form.control}
+                                                                    form={form}
+                                                                    gameData={gameData as any}
+                                                                    index={challengeFields.findIndex((e) => e.id == gameData.id)}
+                                                                    removeGameChallenge={removeChallenge}
+                                                                    onEditChallenge={(idx) => {
+                                                                        setCurEditChallengeID(idx)
+                                                                        setIsJudgeOpen(true)
+                                                                    }}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </MacScrollbar>
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center h-[700px] text-center p-8">
+                                                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-muted/40 to-muted/20 flex items-center justify-center mb-4">
+                                                        {searchContent ? (
+                                                            <Search className="h-8 w-8 text-muted-foreground" />
+                                                        ) : (
+                                                            <Trophy className="h-8 w-8 text-muted-foreground" />
+                                                        )}
+                                                    </div>
+                                                    <h3 className="text-xl font-semibold mb-2">
+                                                        {searchContent ? "没有找到题目" : "还没有设置题目"}
+                                                    </h3>
+                                                    <p className="text-muted-foreground max-w-md">
+                                                        {searchContent 
+                                                            ? `没有找到包含 "${searchContent}" 的题目` 
+                                                            : "开始为比赛添加题目吧！"
+                                                        }
+                                                    </p>
+                                                    {searchContent && (
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            onClick={() => setSearchContent("")}
+                                                            className="mt-4"
+                                                            type="button"
+                                                        >
+                                                            清除搜索
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </MacScrollbar>
             </Form>
         </div>

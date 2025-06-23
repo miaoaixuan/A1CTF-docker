@@ -368,6 +368,7 @@ export interface UserTeamInfo {
   team_description?: string | null;
   rank?: number | null;
   penalty?: number | null;
+  group_name?: string | null;
   team_members?: {
     captain?: boolean;
     /** 用户头像URL */
@@ -438,6 +439,8 @@ export interface CreateGameTeamPayload {
   name: string;
   description: string;
   slogan: string;
+  /** 选择的分组ID，如果不传则不指定分组 */
+  group_id?: number | null;
 }
 
 export interface ExposePortInfo {
@@ -462,7 +465,12 @@ export interface GameScoreboardData {
   name?: string;
   teams?: TeamScore[];
   your_team?: TeamScore;
-  time_lines?: TeamTimeline[];
+  top10_timelines?: TeamTimeline[];
+  team_timelines?: TeamTimeline[];
+  challenges?: UserSimpleGameChallenge[];
+  groups?: GameGroupSimple[];
+  current_group?: GameGroupSimple;
+  pagination?: PaginationInfo;
 }
 
 export interface TeamScore {
@@ -485,7 +493,12 @@ export interface TeamScore {
    * @example 500
    */
   score?: number;
+  /** 所属分组ID */
+  group_id?: number | null;
+  /** 所属分组名称 */
+  group_name?: string | null;
   solved_challenges?: SolvedChallenge[];
+  score_adjustments?: TeamScoreAdjustment[];
 }
 
 export interface SolvedChallenge {
@@ -505,6 +518,22 @@ export interface SolvedChallenge {
    * @example "2025-05-03T07:07:34.650351Z"
    */
   solve_time?: string;
+}
+
+export interface TeamScoreAdjustment {
+  /** 分数修正ID */
+  adjustment_id: number;
+  /** 修正类型 */
+  adjustment_type: "cheat" | "reward" | "other";
+  /** 分数变化量 */
+  score_change: number;
+  /** 修正原因 */
+  reason: string;
+  /**
+   * 创建时间
+   * @format date-time
+   */
+  created_at: string;
 }
 
 export interface TeamTimeline {
@@ -591,6 +620,8 @@ export interface AdminListTeamsPayload {
   /** @min 0 */
   size: number;
   offset?: number;
+  /** 搜索关键词，用于过滤队伍名称或队伍口号 */
+  search?: string;
 }
 
 export interface AdminTeamOperationPayload {
@@ -651,6 +682,8 @@ export interface AdminListContainersPayload {
   /** @min 0 */
   size: number;
   offset?: number;
+  /** 搜索关键词，用于过滤容器名称、队伍名称或游戏名称 */
+  search?: string;
 }
 
 export interface AdminContainerOperationPayload {
@@ -685,6 +718,178 @@ export interface UserProfile {
   last_login_ip: string | null;
   /** @format date-time */
   client_config_version?: string;
+}
+
+export interface TeamJoinPayload {
+  /** 战队邀请码 */
+  invite_code: string;
+}
+
+export interface TeamJoinRequestInfo {
+  /** @format int64 */
+  request_id: number;
+  user_id: string;
+  username: string;
+  user_avatar?: string | null;
+  status: "Pending" | "Approved" | "Rejected";
+  /** @format date-time */
+  create_time: string;
+  message?: string | null;
+}
+
+export interface HandleJoinRequestPayload {
+  /** 处理动作：approve批准，reject拒绝 */
+  action: "approve" | "reject";
+}
+
+export interface TransferCaptainPayload {
+  /** 新队长的用户ID */
+  new_captain_id: string;
+}
+
+export interface UpdateTeamInfoPayload {
+  /** 战队口号 */
+  team_slogan: string | null;
+}
+
+export interface GameGroup {
+  /** 分组ID */
+  group_id: number;
+  /** 分组名称 */
+  group_name: string;
+  /** 分组描述 */
+  group_description?: string | null;
+  /** 显示顺序 */
+  display_order: number;
+  /**
+   * 创建时间
+   * @format date-time
+   */
+  created_at: string;
+  /**
+   * 更新时间
+   * @format date-time
+   */
+  updated_at: string;
+  teams: AdminListTeamItem[];
+}
+
+export interface CreateGameGroupPayload {
+  /** 分组名称 */
+  group_name: string;
+  /** 分组描述 */
+  description: string;
+}
+
+export interface UpdateGameGroupPayload {
+  /** 分组名称 */
+  group_name: string;
+  /** 分组描述 */
+  description: string;
+}
+
+export interface GameGroupSimple {
+  /** 分组ID */
+  group_id: number;
+  /** 分组名称 */
+  group_name: string;
+  /** 分组内队伍数量 */
+  team_count: number;
+}
+
+export interface PaginationInfo {
+  /** 当前页码 */
+  current_page: number;
+  /** 每页大小 */
+  page_size: number;
+  /** 总记录数 */
+  total_count: number;
+  /** 总页数 */
+  total_pages: number;
+}
+
+export interface AdminCreateNoticePayload {
+  /** 公告标题 */
+  title: string;
+  /** 公告内容 */
+  content: string;
+}
+
+export interface AdminListNoticesPayload {
+  /** 游戏ID */
+  game_id: number;
+  /** 每页大小 */
+  size: number;
+  /** 偏移量 */
+  offset: number;
+}
+
+export interface AdminNoticeItem {
+  /** 公告ID */
+  notice_id: number;
+  /** 公告标题 */
+  title: string;
+  /** 公告内容 */
+  content: string;
+  /**
+   * 创建时间
+   * @format date-time
+   */
+  create_time: string;
+}
+
+export interface AdminDeleteNoticePayload {
+  /** 公告ID */
+  notice_id: number;
+}
+
+export interface ScoreAdjustmentInfo {
+  /** 分数修正ID */
+  adjustment_id: number;
+  /** 队伍ID */
+  team_id: number;
+  /** 队伍名称 */
+  team_name: string;
+  /** 修正类型 */
+  adjustment_type: "cheat" | "reward" | "other";
+  /** 分数变化量 */
+  score_change: number;
+  /** 修正原因 */
+  reason: string;
+  /** 创建者用户ID */
+  created_by: number;
+  /** 创建者用户名 */
+  created_by_username: string;
+  /**
+   * 创建时间
+   * @format date-time
+   */
+  created_at: string;
+  /**
+   * 更新时间
+   * @format date-time
+   */
+  updated_at: string;
+}
+
+export interface CreateScoreAdjustmentPayload {
+  /** 队伍ID */
+  team_id: number;
+  /** 修正类型 */
+  adjustment_type: "cheat" | "reward" | "other";
+  /** 分数变化量 */
+  score_change: number;
+  /** 修正原因 */
+  reason: string;
+}
+
+export interface UpdateScoreAdjustmentPayload {
+  /** 修正类型 */
+  adjustment_type: "cheat" | "reward" | "other";
+  /** 分数变化量 */
+  score_change: number;
+  /** 修正原因 */
+  reason: string;
 }
 
 import type {
@@ -1248,10 +1453,28 @@ export class Api<
      * @summary Get game scoreboard data
      * @request GET:/api/game/{game_id}/scoreboard
      */
-    userGetGameScoreboard: (gameId: number, params: RequestParams = {}) =>
+    userGetGameScoreboard: (
+      gameId: number,
+      query?: {
+        /** 分组ID，如果不传则显示所有队伍 */
+        group_id?: number;
+        /**
+         * 页码，从1开始
+         * @default 1
+         */
+        page?: number;
+        /**
+         * 每页大小
+         * @default 20
+         */
+        size?: number;
+      },
+      params: RequestParams = {},
+    ) =>
       this.request<GameScoreboardResponse, any>({
         path: `/api/game/${gameId}/scoreboard`,
         method: "GET",
+        query: query,
         format: "json",
         ...params,
       }),
@@ -1291,6 +1514,28 @@ export class Api<
         body: data,
         secure: true,
         type: ContentType.FormData,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags user
+     * @name UserGetGameGroups
+     * @summary 获取比赛分组列表（用户）
+     * @request GET:/api/game/{game_id}/groups
+     */
+    userGetGameGroups: (gameId: number, params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+          data: GameGroup[];
+        },
+        any
+      >({
+        path: `/api/game/${gameId}/groups`,
+        method: "GET",
         format: "json",
         ...params,
       }),
@@ -1591,6 +1836,151 @@ export class Api<
       }),
 
     /**
+     * @description Get all score adjustments for a specific game
+     *
+     * @tags admin
+     * @name GetGameScoreAdjustments
+     * @summary Get game score adjustments
+     * @request GET:/api/admin/game/{game_id}/score-adjustments
+     */
+    getGameScoreAdjustments: (gameId: number, params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+          data: ScoreAdjustmentInfo[];
+        },
+        void
+      >({
+        path: `/api/admin/game/${gameId}/score-adjustments`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Create a new score adjustment for a team in the game
+     *
+     * @tags admin
+     * @name CreateScoreAdjustment
+     * @summary Create score adjustment
+     * @request POST:/api/admin/game/{game_id}/score-adjustments
+     */
+    createScoreAdjustment: (
+      gameId: number,
+      data: CreateScoreAdjustmentPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: ScoreAdjustmentInfo;
+        },
+        void
+      >({
+        path: `/api/admin/game/${gameId}/score-adjustments`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Update an existing score adjustment
+     *
+     * @tags admin
+     * @name UpdateScoreAdjustment
+     * @summary Update score adjustment
+     * @request PUT:/api/admin/game/{game_id}/score-adjustments/{adjustment_id}
+     */
+    updateScoreAdjustment: (
+      gameId: number,
+      adjustmentId: number,
+      data: UpdateScoreAdjustmentPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: ScoreAdjustmentInfo;
+        },
+        void
+      >({
+        path: `/api/admin/game/${gameId}/score-adjustments/${adjustmentId}`,
+        method: "PUT",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Delete a score adjustment
+     *
+     * @tags admin
+     * @name DeleteScoreAdjustment
+     * @summary Delete score adjustment
+     * @request DELETE:/api/admin/game/{game_id}/score-adjustments/{adjustment_id}
+     */
+    deleteScoreAdjustment: (
+      gameId: number,
+      adjustmentId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          message: string;
+        },
+        void
+      >({
+        path: `/api/admin/game/${gameId}/score-adjustments/${adjustmentId}`,
+        method: "DELETE",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 上传比赛海报图片并更新比赛信息，需要管理员权限
+     *
+     * @tags admin
+     * @name UploadGamePoster
+     * @summary 上传比赛海报
+     * @request POST:/api/admin/game/{game_id}/poster/upload
+     * @secure
+     */
+    uploadGamePoster: (
+      gameId: number,
+      data: {
+        /**
+         * 要上传的比赛海报图片文件，支持jpg、png、gif等常见图片格式
+         * @format binary
+         */
+        poster: File;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "比赛海报上传成功" */
+          message: string;
+          /** 海报访问URL */
+          poster_url: string;
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/admin/game/${gameId}/poster/upload`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.FormData,
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * No description
      *
      * @tags admin
@@ -1600,8 +1990,11 @@ export class Api<
      */
     listUsers: (
       data: {
-        size: number;
-        offset: number;
+        size?: number;
+        offset?: number;
+        /** 搜索关键词，用于过滤用户名、邮箱、真实姓名或学号 */
+        search?: string;
+        required?: any;
       },
       params: RequestParams = {},
     ) =>
@@ -1981,6 +2374,195 @@ export class Api<
         format: "json",
         ...params,
       }),
+
+    /**
+     * No description
+     *
+     * @tags admin
+     * @name AdminGetGameGroups
+     * @summary 获取比赛分组列表
+     * @request GET:/api/admin/game/{game_id}/groups
+     */
+    adminGetGameGroups: (gameId: number, params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+          data: GameGroup[];
+        },
+        any
+      >({
+        path: `/api/admin/game/${gameId}/groups`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags admin
+     * @name AdminCreateGameGroup
+     * @summary 创建比赛分组
+     * @request POST:/api/admin/game/{game_id}/groups
+     */
+    adminCreateGameGroup: (
+      gameId: number,
+      data: CreateGameGroupPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: GameGroup;
+        },
+        any
+      >({
+        path: `/api/admin/game/${gameId}/groups`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags admin
+     * @name AdminUpdateGameGroup
+     * @summary 更新比赛分组
+     * @request PUT:/api/admin/game/{game_id}/groups/{group_id}
+     */
+    adminUpdateGameGroup: (
+      gameId: number,
+      groupId: number,
+      data: UpdateGameGroupPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          message: string;
+        },
+        any
+      >({
+        path: `/api/admin/game/${gameId}/groups/${groupId}`,
+        method: "PUT",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags admin
+     * @name AdminDeleteGameGroup
+     * @summary 删除比赛分组
+     * @request DELETE:/api/admin/game/{game_id}/groups/{group_id}
+     */
+    adminDeleteGameGroup: (
+      gameId: number,
+      groupId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          message: string;
+        },
+        any
+      >({
+        path: `/api/admin/game/${gameId}/groups/${groupId}`,
+        method: "DELETE",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags admin
+     * @name AdminCreateGameNotice
+     * @summary 创建比赛公告
+     * @request POST:/api/admin/game/{game_id}/notices
+     */
+    adminCreateGameNotice: (
+      gameId: number,
+      data: AdminCreateNoticePayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          message: string;
+        },
+        void
+      >({
+        path: `/api/admin/game/${gameId}/notices`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags admin
+     * @name AdminListGameNotices
+     * @summary 获取比赛公告列表
+     * @request POST:/api/admin/game/{game_id}/notices/list
+     */
+    adminListGameNotices: (
+      gameId: number,
+      data: AdminListNoticesPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: AdminNoticeItem[];
+          total: number;
+        },
+        void
+      >({
+        path: `/api/admin/game/${gameId}/notices/list`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags admin
+     * @name AdminDeleteGameNotice
+     * @summary 删除比赛公告
+     * @request DELETE:/api/admin/game/notices
+     */
+    adminDeleteGameNotice: (
+      data: AdminDeleteNoticePayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          message: string;
+        },
+        void
+      >({
+        path: `/api/admin/game/notices`,
+        method: "DELETE",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
   };
   file = {
     /**
@@ -2078,6 +2660,211 @@ export class Api<
         body: data,
         secure: true,
         type: ContentType.FormData,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 使用邀请码申请加入战队
+     *
+     * @tags team
+     * @name TeamAccept
+     * @summary 申请加入战队
+     * @request POST:/api/team/join
+     * @secure
+     */
+    teamAccept: (data: TeamJoinPayload, params: RequestParams = {}) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "申请已提交，等待队长审核" */
+          message: string;
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/team/join`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 队长获取战队的加入申请列表
+     *
+     * @tags team
+     * @name GetTeamJoinRequests
+     * @summary 获取战队加入申请列表
+     * @request GET:/api/team/{team_id}/requests
+     * @secure
+     */
+    getTeamJoinRequests: (teamId: number, params: RequestParams = {}) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          data: TeamJoinRequestInfo[];
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/team/${teamId}/requests`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 队长批准或拒绝加入申请
+     *
+     * @tags team
+     * @name HandleTeamJoinRequest
+     * @summary 处理加入申请
+     * @request POST:/api/team/request/{request_id}/handle
+     * @secure
+     */
+    handleTeamJoinRequest: (
+      requestId: number,
+      data: HandleJoinRequestPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "申请已处理" */
+          message: string;
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/team/request/${requestId}/handle`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 队长将队长权限转移给其他成员
+     *
+     * @tags team
+     * @name TransferTeamCaptain
+     * @summary 转移队长
+     * @request POST:/api/team/{team_id}/transfer-captain
+     * @secure
+     */
+    transferTeamCaptain: (
+      teamId: number,
+      data: TransferCaptainPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "队长已转移" */
+          message: string;
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/team/${teamId}/transfer-captain`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 队长踢出战队成员
+     *
+     * @tags team
+     * @name RemoveTeamMember
+     * @summary 踢出队员
+     * @request DELETE:/api/team/{team_id}/member/{user_id}
+     * @secure
+     */
+    removeTeamMember: (
+      teamId: number,
+      userId: string,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "队员已移除" */
+          message: string;
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/team/${teamId}/member/${userId}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 队长解散战队
+     *
+     * @tags team
+     * @name DeleteTeam
+     * @summary 解散战队
+     * @request DELETE:/api/team/{team_id}
+     * @secure
+     */
+    deleteTeam: (teamId: number, params: RequestParams = {}) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "战队已解散" */
+          message: string;
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/team/${teamId}`,
+        method: "DELETE",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 队长更新战队信息（只能修改口号）
+     *
+     * @tags team
+     * @name UpdateTeamInfo
+     * @summary 更新战队信息
+     * @request PUT:/api/team/{team_id}
+     * @secure
+     */
+    updateTeamInfo: (
+      teamId: number,
+      data: UpdateTeamInfoPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          /** @example "战队信息已更新" */
+          message: string;
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/team/${teamId}`,
+        method: "PUT",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),

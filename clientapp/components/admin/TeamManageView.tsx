@@ -130,6 +130,8 @@ export function TeamManageView() {
     const [curPage, setCurPage] = React.useState(0);
     const [totalCount, setTotalCount] = React.useState(0);
     const [gameId, setGameId] = React.useState(1);
+    const [searchKeyword, setSearchKeyword] = React.useState("");
+    const [debouncedSearchKeyword, setDebouncedSearchKeyword] = React.useState("");
     
     // 比赛选择相关状态
     const [games, setGames] = React.useState<UserGameSimpleInfo[]>([]);
@@ -143,6 +145,16 @@ export function TeamManageView() {
         description: "",
         onConfirm: () => {},
     });
+
+    // 防抖处理搜索关键词
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchKeyword(searchKeyword);
+            setCurPage(0); // 重置到第一页
+        }, 200); // 200ms 防抖延迟
+
+        return () => clearTimeout(timer);
+    }, [searchKeyword]);
 
     // 获取比赛列表
     const fetchGames = () => {
@@ -431,11 +443,18 @@ export function TeamManageView() {
 
     // 获取队伍列表数据
     const fetchTeams = () => {
-        api.admin.adminListTeams({ 
+        const payload: any = { 
             game_id: gameId, 
             size: pageSize, 
             offset: pageSize * curPage 
-        }).then((res) => {
+        };
+        
+        // 如果有搜索关键词，添加到请求中
+        if (debouncedSearchKeyword.trim()) {
+            payload.search = debouncedSearchKeyword.trim();
+        }
+        
+        api.admin.adminListTeams(payload).then((res) => {
             setTotalCount(res.data.total ?? 0);
             const formattedData: TeamModel[] = res.data.data.map(item => ({
                 team_id: item.team_id,
@@ -455,6 +474,11 @@ export function TeamManageView() {
             toast.error("获取队伍列表失败");
             console.error("获取队伍列表失败:", err);
         });
+    };
+
+    // 处理搜索
+    const handleSearch = (value: string) => {
+        setSearchKeyword(value);
     };
 
     const table = useReactTable({
@@ -479,7 +503,7 @@ export function TeamManageView() {
     React.useEffect(() => {
         table.setPageSize(pageSize);
         fetchTeams();
-    }, [curPage, pageSize, gameId]);
+    }, [curPage, pageSize, gameId, debouncedSearchKeyword]);
 
     return (
         <MacScrollbar className="overflow-hidden w-full">
@@ -511,9 +535,6 @@ export function TeamManageView() {
                                         <CommandEmpty>未找到比赛</CommandEmpty>
                                         <CommandGroup>
                                             {games
-                                                .filter(game => 
-                                                    game.name.toLowerCase().includes(searchValue.toLowerCase())
-                                                )
                                                 .map((game) => (
                                                     <CommandItem
                                                         key={game.game_id}
@@ -569,10 +590,8 @@ export function TeamManageView() {
                     <div className="flex items-center py-4">
                         <Input
                             placeholder="按队伍名称过滤..."
-                            value={(table.getColumn("team_name")?.getFilterValue() as string) ?? ""}
-                            onChange={(event) =>
-                                table.getColumn("team_name")?.setFilterValue(event.target.value)
-                            }
+                            value={searchKeyword}
+                            onChange={(event) => handleSearch(event.target.value)}
                             className="max-w-sm"
                         />
                         <div className="flex gap-2 ml-auto">

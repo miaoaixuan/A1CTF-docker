@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"fmt"
-	"io"
 	"mime"
 	"net/http"
 	"os"
@@ -16,7 +15,7 @@ import (
 
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
-	"a1ctf/src/utils/redis_tool"
+	"a1ctf/src/utils/ristretto_tool"
 )
 
 func UploadFile(c *gin.Context) {
@@ -122,7 +121,7 @@ func DownloadFile(c *gin.Context) {
 		return
 	}
 
-	filesMap, err := redis_tool.CachedFileMap()
+	filesMap, err := ristretto_tool.CachedFileMap()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -157,17 +156,17 @@ func DownloadFile(c *gin.Context) {
 	}
 	defer file.Close()
 
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", uploadRecord.FileName))
-	c.Header("Content-Type", uploadRecord.FileType)
-
-	c.Header("Cache-Control", "public, max-age=36000")
-
-	if _, err := io.Copy(c.Writer, file); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "Error streaming file",
-		})
-	}
+	// 使用 c.DataFromReader 方法，它会正确设置 Content-Length
+	c.DataFromReader(
+		http.StatusOK,
+		uploadRecord.FileSize,
+		uploadRecord.FileType,
+		file,
+		map[string]string{
+			"Content-Disposition": fmt.Sprintf("attachment; filename=%s", uploadRecord.FileName),
+			"Cache-Control":       "public, max-age=36000",
+		},
+	)
 }
 
 // UploadUserAvatar 处理用户头像上传
@@ -302,7 +301,7 @@ func UploadUserAvatar(c *gin.Context) {
 		return
 	}
 
-	redis_tool.DeleteCache("user_list")
+	ristretto_tool.DeleteCache("user_list")
 
 	// 返回成功响应
 	c.JSON(http.StatusOK, gin.H{
@@ -518,7 +517,7 @@ func UploadTeamAvatar(c *gin.Context) {
 		return
 	}
 
-	redis_tool.DeleteCache(fmt.Sprintf("all_teams_for_game_%d", team.GameID))
+	ristretto_tool.DeleteCache(fmt.Sprintf("all_teams_for_game_%d", team.GameID))
 
 	// 返回成功响应
 	c.JSON(http.StatusOK, gin.H{

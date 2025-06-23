@@ -12,8 +12,9 @@ import (
 	clientconfig "a1ctf/src/modules/client_config"
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
-	"a1ctf/src/utils/redis_tool"
+	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/utils/turnstile"
+	"a1ctf/src/webmodels"
 )
 
 // GetProfile 获取用户的基本资料信息
@@ -22,7 +23,7 @@ func GetProfile(c *gin.Context) {
 	claims := jwt.ExtractClaims(c)
 	userID := claims["UserID"].(string)
 
-	userMap, err := redis_tool.CachedMemberMap()
+	userMap, err := ristretto_tool.CachedMemberMap()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -62,7 +63,7 @@ func GetProfile(c *gin.Context) {
 }
 
 func Register(c *gin.Context) {
-	var payload RegisterPayload
+	var payload webmodels.RegisterPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,

@@ -1,8 +1,7 @@
-package controllers
+package webmodels
 
 import (
 	"a1ctf/src/db/models"
-	"a1ctf/src/utils/redis_tool"
 	"time"
 )
 
@@ -90,11 +89,16 @@ type GameNotice struct {
 }
 
 type GameScoreboardData struct {
-	GameID     int64                      `json:"game_id"`
-	Name       string                     `json:"name"`
-	TimeLines  []redis_tool.TimeLineItem  `json:"time_lines"`
-	TeamScores []redis_tool.TeamScoreItem `json:"teams"`
-	YourTeam   *redis_tool.TeamScoreItem  `json:"your_team"`
+	GameID               int64                     `json:"game_id"`
+	Name                 string                    `json:"name"`
+	Top10TimeLines       []TimeLineItem            `json:"top10_timelines"`
+	TeamScores           []TeamScoreItem           `json:"teams"`
+	TeamTimeLines        []TimeLineItem            `json:"team_timelines"`
+	YourTeam             *TeamScoreItem            `json:"your_team"`
+	SimpleGameChallenges []UserSimpleGameChallenge `json:"challenges"`
+	Groups               []GameGroupSimple         `json:"groups"`
+	CurrentGroup         *GameGroupSimple          `json:"current_group"`
+	Pagination           *PaginationInfo           `json:"pagination"`
 }
 
 // Admin User Controller
@@ -137,4 +141,81 @@ type AdminListTeamItem struct {
 	Members    []AdminSimpleTeamMemberInfo `json:"members"`
 	Status     models.ParticipationStatus  `json:"status"`
 	Score      float64                     `json:"score"`
+}
+
+type TimeLineScoreItem struct {
+	RecordTime int64   `json:"record_time"`
+	Score      float64 `json:"score"`
+}
+
+type TimeLineItem struct {
+	TeamID   int64               `json:"team_id"`
+	TeamName string              `json:"team_name"`
+	Scores   []TimeLineScoreItem `json:"scores"`
+}
+
+type TeamSolveItem struct {
+	ChallengeID int64     `json:"challenge_id"`
+	Score       float64   `json:"score"`
+	Solver      string    `json:"solver"`
+	Rank        int64     `json:"rank"`
+	SolveTime   time.Time `json:"solve_time"`
+}
+
+type TeamScoreAdjustmentItem struct {
+	AdjustmentID   int64     `json:"adjustment_id"`
+	AdjustmentType string    `json:"adjustment_type"`
+	ScoreChange    float64   `json:"score_change"`
+	Reason         string    `json:"reason"`
+	CreatedAt      time.Time `json:"created_at"`
+}
+
+type TeamScoreItem struct {
+	TeamID           int64                     `json:"team_id"`
+	TeamName         string                    `json:"team_name"`
+	TeamAvatar       *string                   `json:"team_avatar"`
+	TeamSlogan       *string                   `json:"team_slogan"`
+	TeamDescription  *string                   `json:"team_description"`
+	Rank             int64                     `json:"rank"`
+	Score            float64                   `json:"score"`
+	Penalty          int64                     `json:"penalty"` // 罚时（秒）
+	GroupID          *int64                    `json:"group_id"`
+	GroupName        *string                   `json:"group_name"`
+	SolvedChallenges []TeamSolveItem           `json:"solved_challenges"`
+	ScoreAdjustments []TeamScoreAdjustmentItem `json:"score_adjustments"`
+	LastSolveTime    int64                     `json:"last_solve_time"`
+}
+
+type CachedGameScoreBoardData struct {
+	FinalScoreBoardMap map[int64]TeamScoreItem
+	Top10TimeLines     []TimeLineItem
+	Top10Teams         []TeamScoreItem
+	AllTimeLines       []TimeLineItem
+	TeamRankings       []TeamScoreItem
+}
+
+// Team management responses
+
+type TeamJoinRequestInfo struct {
+	RequestID  int64                    `json:"request_id"`
+	UserID     string                   `json:"user_id"`
+	Username   string                   `json:"username"`
+	UserAvatar *string                  `json:"user_avatar"`
+	Status     models.JoinRequestStatus `json:"status"`
+	CreateTime time.Time                `json:"create_time"`
+	Message    *string                  `json:"message"`
+}
+
+// 分组相关的响应模型
+type GameGroupSimple struct {
+	GroupID   int64  `json:"group_id"`
+	GroupName string `json:"group_name"`
+	TeamCount int64  `json:"team_count"`
+}
+
+type PaginationInfo struct {
+	CurrentPage int64 `json:"current_page"`
+	PageSize    int64 `json:"page_size"`
+	TotalCount  int64 `json:"total_count"`
+	TotalPages  int64 `json:"total_pages"`
 }

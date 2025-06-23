@@ -1,4 +1,4 @@
-package controllers
+package webmodels
 
 import (
 	"a1ctf/src/db/models"
@@ -19,6 +19,7 @@ type UserCreateTeamPayload struct {
 	Name        string `json:"name" binding:"required"`
 	Description string `json:"description"`
 	Slogan      string `json:"slogan"`
+	GroupID     *int64 `json:"group_id"`
 }
 
 type UserSubmitFlagPayload struct {
@@ -52,14 +53,16 @@ type AdminAddGameChallengePayload struct {
 }
 
 type AdminListUsersPayload struct {
-	Size   int `json:"size" binding:"min=0"`
-	Offset int `json:"offset"`
+	Size   int    `json:"size" binding:"min=0"`
+	Offset int    `json:"offset"`
+	Search string `json:"search"`
 }
 
 type AdminListTeamsPayload struct {
-	GameID int `json:"game_id"`
-	Size   int `json:"size" binding:"min=0"`
-	Offset int `json:"offset"`
+	GameID int    `json:"game_id"`
+	Size   int    `json:"size" binding:"min=0"`
+	Offset int    `json:"offset"`
+	Search string `json:"search"`
 }
 
 type AdminTeamOperationPayload struct {
@@ -89,9 +92,10 @@ type AdminUserOperationPayload struct {
 
 // 容器列表请求参数
 type AdminListContainersPayload struct {
-	GameID int64 `json:"game_id" binding:"required"`
-	Size   int   `json:"size" binding:"required"`
-	Offset int   `json:"offset"`
+	GameID int    `json:"game_id"`
+	Size   int    `json:"size" binding:"min=0"`
+	Offset int    `json:"offset"`
+	Search string `json:"search"`
 }
 
 // 容器操作请求参数
@@ -115,4 +119,64 @@ type AdminContainerItem struct {
 	TeamName            string                 `json:"team_name"`
 	GameName            string                 `json:"game_name"`
 	ChallengeName       string                 `json:"challenge_name"`
+}
+
+// Team management payloads
+
+type TeamJoinPayload struct {
+	InviteCode string `json:"invite_code" binding:"required"`
+}
+
+type HandleJoinRequestPayload struct {
+	Action string `json:"action" binding:"required"` // "approve" or "reject"
+}
+
+type TransferCaptainPayload struct {
+	NewCaptainID string `json:"new_captain_id" binding:"required"`
+}
+
+type UpdateTeamInfoPayload struct {
+	TeamSlogan *string `json:"team_slogan"`
+}
+
+// 分组管理相关的请求模型
+type CreateGameGroupPayload struct {
+	GroupName   string `json:"group_name" binding:"required"`
+	Description string `json:"description"`
+}
+
+type UpdateGameGroupPayload struct {
+	GroupName   string `json:"group_name" binding:"required"`
+	Description string `json:"description"`
+}
+
+// 公告管理相关的请求模型
+type AdminCreateNoticePayload struct {
+	GameID  int64  `json:"game_id" binding:"required"`
+	Title   string `json:"title" binding:"required"`
+	Content string `json:"content" binding:"required"`
+}
+
+type AdminListNoticesPayload struct {
+	GameID int `json:"game_id" binding:"required"`
+	Size   int `json:"size" binding:"min=0"`
+	Offset int `json:"offset"`
+}
+
+type AdminDeleteNoticePayload struct {
+	NoticeID int64 `json:"notice_id" binding:"required"`
+}
+
+// 分数修正管理相关的请求模型
+type CreateScoreAdjustmentPayload struct {
+	TeamID         int64   `json:"team_id" binding:"required"`
+	AdjustmentType string  `json:"adjustment_type" binding:"required,oneof=cheat reward other"`
+	ScoreChange    float64 `json:"score_change" binding:"required"`
+	Reason         string  `json:"reason" binding:"required"`
+}
+
+type UpdateScoreAdjustmentPayload struct {
+	AdjustmentType string  `json:"adjustment_type" binding:"required,oneof=cheat reward other"`
+	ScoreChange    float64 `json:"score_change" binding:"required"`
+	Reason         string  `json:"reason" binding:"required"`
 }

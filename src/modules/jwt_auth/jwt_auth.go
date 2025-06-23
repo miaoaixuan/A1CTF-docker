@@ -5,7 +5,7 @@ import (
 	clientconfig "a1ctf/src/modules/client_config"
 	dbtool "a1ctf/src/utils/db_tool"
 	"a1ctf/src/utils/general"
-	"a1ctf/src/utils/redis_tool"
+	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/utils/turnstile"
 	"time"
 
@@ -55,6 +55,14 @@ var PermissionMap = map[string]PermissionSetting{
 	"/api/user/avatar/upload":     {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
 	"/api/team/avatar/upload":     {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
 
+	// 战队管理相关权限
+	"/api/team/join":                       {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	"/api/team/:team_id/requests":          {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	"/api/team/request/:request_id/handle": {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	"/api/team/:team_id/transfer-captain":  {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	"/api/team/:team_id/member/:user_id":   {RequestMethod: []string{"DELETE"}, Permissions: []models.UserRole{}},
+	"/api/team/:team_id":                   {RequestMethod: []string{"DELETE", "PUT"}, Permissions: []models.UserRole{}},
+
 	"/api/admin/challenge/list":          {RequestMethod: []string{"GET", "POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/challenge/create":        {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/challenge/:challenge_id": {RequestMethod: []string{"GET", "PUT", "DELETE"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
@@ -75,12 +83,27 @@ var PermissionMap = map[string]PermissionSetting{
 	"/api/admin/game/create":                           {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/game/:game_id":                         {RequestMethod: []string{"GET", "POST", "PUT"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/game/:game_id/challenge/:challenge_id": {RequestMethod: []string{"PUT"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/game/:game_id/poster/upload":           {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+
+	// 分组管理相关权限
+	"/api/admin/game/:game_id/groups":           {RequestMethod: []string{"GET", "POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/game/:game_id/groups/:group_id": {RequestMethod: []string{"PUT", "DELETE"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+
+	// 分数修正管理相关权限
+	"/api/admin/game/:game_id/score-adjustments":                {RequestMethod: []string{"GET", "POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/game/:game_id/score-adjustments/:adjustment_id": {RequestMethod: []string{"PUT", "DELETE"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+
+	// 公告管理相关权限
+	"/api/admin/game/:game_id/notices":      {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/game/:game_id/notices/list": {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/game/notices":               {RequestMethod: []string{"DELETE"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 
 	"/api/game/list":                             {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
 	"/api/game/:game_id":                         {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
 	"/api/game/:game_id/challenges":              {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
 	"/api/game/:game_id/challenge/:challenge_id": {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
 	"/api/game/:game_id/notices":                 {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	"/api/game/:game_id/groups":                  {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
 	"/api/game/:game_id/createTeam":              {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
 	"/api/game/:game_id/scoreboard":              {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
 	"/api/game/:game_id/container/:challenge_id": {RequestMethod: []string{"POST", "DELETE", "PATCH", "GET"}, Permissions: []models.UserRole{}},
@@ -178,7 +201,7 @@ func authorizator() func(data interface{}, c *gin.Context) bool {
 
 				var all_users map[string]models.User = make(map[string]models.User)
 
-				if err := redis_tool.GetOrCacheSingleFlight("jwt_version_map", &all_users, func() (interface{}, error) {
+				obj, err := ristretto_tool.GetOrCacheSingleFlight("jwt_version_map", func() (interface{}, error) {
 
 					var tmpAllUsers map[string]models.User = make(map[string]models.User)
 					var tmpUser []models.User
@@ -191,9 +214,13 @@ func authorizator() func(data interface{}, c *gin.Context) bool {
 					}
 
 					return tmpAllUsers, nil
-				}, 1*time.Second, true); err != nil {
+				}, 1*time.Second, true)
+
+				if err != nil {
 					return false
 				}
+
+				all_users = obj.(map[string]models.User)
 
 				finalUser, ok := all_users[v.UserID]
 				if !ok {

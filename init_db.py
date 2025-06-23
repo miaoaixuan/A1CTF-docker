@@ -8,8 +8,8 @@ print("注册账号")
 res = session.post(
     url="http://localhost:7777/api/auth/register",
     json={
-        "username": "root",
-        "password": "root",
+        "username": "ctf",
+        "password": "ctf",
         "captcha": "",
         "email": "22233@qq.com",
     },
@@ -19,7 +19,7 @@ print(res.text)
 print("登录账号")
 res = session.post(
     url="http://localhost:7777/api/auth/login",
-    json={"username": "root", "password": "root", "captcha": ""},
+    json={"username": "ctf", "password": "ctf", "captcha": ""},
 )
 
 print(res.text)
@@ -125,7 +125,7 @@ for item in problems:
             "judge_config": {
                 "judge_type": "DYNAMIC",
                 "judge_script": "",
-                "flag_template": "",
+                "flag_template": "flag",
             },
             "name": item[1],
             "type_": 0,

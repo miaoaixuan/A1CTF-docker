@@ -12,7 +12,7 @@ import {
 import { Button } from "./ui/button"
 
 import { AxiosError } from 'axios';
-import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
+import { Dispatch, MutableRefObject, SetStateAction, useEffect, useRef, useState } from "react";
 import { TransitionLink } from "./TransitionLink";
 
 import { MacScrollbar } from 'mac-scrollbar';
@@ -28,11 +28,12 @@ import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import CategoryChallenges from "components/modules/game/CategoryChallenges";
 import { challengeCategoryColorMap, challengeCategoryIcons } from "utils/ClientAssets";
 
-export function CategorySidebar({ gameid, curChallenge, setCurChallenge, gameStatus, setGameStatus, resizeTrigger, setPageSwitching, challenges, setChallenges, challengeSolveStatusList, setChallengeSolveStatusList } : { 
+export function CategorySidebar({ gameid, curChallenge, setCurChallenge, curChallengeRef, gameStatus, setGameStatus, resizeTrigger, setPageSwitching, challenges, setChallenges, challengeSolveStatusList, setChallengeSolveStatusList } : { 
     gameid: string,
     curChallenge: UserDetailGameChallenge | undefined,
     setCurChallenge: Dispatch<SetStateAction<UserDetailGameChallenge | undefined>>,
     gameStatus: string,
+    curChallengeRef: MutableRefObject<UserDetailGameChallenge | undefined>,
     setGameStatus: Dispatch<SetStateAction<string>>,
     resizeTrigger: Dispatch<SetStateAction<number>>,
     setPageSwitching: Dispatch<SetStateAction<boolean>>,
@@ -48,7 +49,7 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, gameSta
     const gameID = parseInt(gameid, 10)
 
     // 为了实时更新
-    const curChallengeRef = useRef<UserDetailGameChallenge>()
+    
 
     // 之前的题目列表
     const prevChallenges = useRef<Record<string, UserSimpleGameChallenge[]>> ()
@@ -258,7 +259,7 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, gameSta
                                 </div>
                                 <div className="flex-1" />
                                 <div className="justify-end">
-                                    <Button className="rounded-3xl p-4 pointer-events-auto w-[100px] mt-[5px] ml-[5px] mb-[10px]" asChild>
+                                    <Button className="rounded-3xl p-4 pointer-events-auto w-[100px] mt-[5px] ml-[5px] mb-[10px] [&_svg]:size-5" asChild>
                                         <TransitionLink className="transition-colors" href={`/games`}>
                                             <CircleArrowLeft/>
                                             <span>Back</span>

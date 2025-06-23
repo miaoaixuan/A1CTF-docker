@@ -3,6 +3,7 @@ package controllers
 import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
+	"a1ctf/src/webmodels"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,21 +12,35 @@ import (
 
 func AdminListTeams(c *gin.Context) {
 
-	var payload AdminListTeamsPayload
+	var payload webmodels.AdminListTeamsPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 		return
 	}
 
+	query := dbtool.DB().Where("game_id = ?", payload.GameID)
+
+	// 如果有搜索关键词，添加搜索条件
+	if payload.Search != "" {
+		searchPattern := "%" + payload.Search + "%"
+		query = query.Where("team_name LIKE ? OR team_slogan LIKE ?", searchPattern, searchPattern)
+	}
+
 	var teams []models.Team
-	if err := dbtool.DB().Where("game_id = ?", payload.GameID).Offset(payload.Offset).Limit(payload.Size).Find(&teams).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
+	if err := query.Offset(payload.Offset).Limit(payload.Size).Find(&teams).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch teams"})
 		return
 	}
 
+	// 计算总数时也要应用搜索条件
 	var count int64
-	if err := dbtool.DB().Model(&models.Team{}).Count(&count).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count users"})
+	countQuery := dbtool.DB().Model(&models.Team{}).Where("game_id = ?", payload.GameID)
+	if payload.Search != "" {
+		searchPattern := "%" + payload.Search + "%"
+		countQuery = countQuery.Where("team_name LIKE ? OR team_slogan LIKE ?", searchPattern, searchPattern)
+	}
+	if err := countQuery.Count(&count).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count teams"})
 		return
 	}
 
@@ -40,15 +55,15 @@ func AdminListTeams(c *gin.Context) {
 		userMap[user.UserID] = user
 	}
 
-	teamItems := make([]AdminListTeamItem, 0, len(teams))
+	teamItems := make([]webmodels.AdminListTeamItem, 0, len(teams))
 
 	for _, team := range teams {
 
-		var tmpMembers []AdminSimpleTeamMemberInfo = make([]AdminSimpleTeamMemberInfo, 0)
+		var tmpMembers []webmodels.AdminSimpleTeamMemberInfo = make([]webmodels.AdminSimpleTeamMemberInfo, 0)
 
 		for _, member := range team.TeamMembers {
 			if user, ok := userMap[member]; ok {
-				tmpMembers = append(tmpMembers, AdminSimpleTeamMemberInfo{
+				tmpMembers = append(tmpMembers, webmodels.AdminSimpleTeamMemberInfo{
 					UserID:   user.UserID,
 					UserName: user.Username,
 					Avatar:   user.Avatar,
@@ -56,7 +71,7 @@ func AdminListTeams(c *gin.Context) {
 			}
 		}
 
-		teamItems = append(teamItems, AdminListTeamItem{
+		teamItems = append(teamItems, webmodels.AdminListTeamItem{
 			TeamID:     team.TeamID,
 			TeamName:   team.TeamName,
 			TeamAvatar: team.TeamAvatar,
@@ -76,7 +91,7 @@ func AdminListTeams(c *gin.Context) {
 
 // AdminApproveTeam 批准队伍（设置状态为Approved）
 func AdminApproveTeam(c *gin.Context) {
-	var payload AdminTeamOperationPayload
+	var payload webmodels.AdminTeamOperationPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -140,7 +155,7 @@ func AdminApproveTeam(c *gin.Context) {
 
 // AdminBanTeam 锁定队伍（设置状态为Banned）
 func AdminBanTeam(c *gin.Context) {
-	var payload AdminTeamOperationPayload
+	var payload webmodels.AdminTeamOperationPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -178,7 +193,7 @@ func AdminBanTeam(c *gin.Context) {
 
 // AdminUnbanTeam 解锁队伍（将Banned状态恢复为Approved）
 func AdminUnbanTeam(c *gin.Context) {
-	var payload AdminTeamOperationPayload
+	var payload webmodels.AdminTeamOperationPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -234,7 +249,7 @@ func AdminUnbanTeam(c *gin.Context) {
 
 // AdminDeleteTeam 删除队伍
 func AdminDeleteTeam(c *gin.Context) {
-	var payload AdminTeamOperationPayload
+	var payload webmodels.AdminTeamOperationPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,

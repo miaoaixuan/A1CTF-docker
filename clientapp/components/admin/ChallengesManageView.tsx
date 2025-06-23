@@ -46,97 +46,190 @@ export function ChallengesManageView() {
     })
 
     return (
-        <div className="w-full h-full flex flex-col p-5 lg:p-10">
+        <div className="w-full h-full flex flex-col bg-gradient-to-br from-background to-muted/30">
             <ConfirmDialog settings={dialogOption} setSettings={setDialogOption} />
-            <div className="flex items-center justify-between mb-6 select-none">
-                <div className="flex gap-4 items-center w-[50%]">
-                    {/* <div className="h-[36px] border-[1px] flex items-center justify-center rounded-lg gap-2 px-3">
-                        <span className="font-bold text-nowrap">{ challenges.length } challenges</span>
-                    </div> */}
-                    <div className="h-[36px] border-[1px] flex items-center justify-center rounded-lg gap-2 px-3">
-                        <Search />
-                        <span className="font-bold text-nowrap">Search in {challenges.length} challengs</span>
-                    </div>
-                    <Input value={searchContent} onChange={(e) => setSearchContent(e.target.value)} placeholder="在这里输入就可以搜索题目标题了"></Input>
-                </div>
-                <Button onClick={() => {
-                    router(`/admin/challenges/create`)
-                }}>
-                    <CirclePlus />
-                    添加题目
-                </Button>
-            </div>
-            <div className="w-full h-full flex overflow-hidden gap-2">
-                <div className="flex flex-col w-[150px] gap-1 select-none flex-none">
-                    <span className="font-bold mb-2">Categories</span>
-                    {Object.keys(cateIcon).map((cat, index) => (
-                        <Button key={index} className={`flex items-center justify-start gap-2 px-2 pt-[6px] pb-[6px] rounded-lg transition-colors duration-300`}
-                            variant={curChoicedCategory === cat ? "default" : "ghost"}
-                            onClick={() => setCurChoicedCategory(cat)}
-                        >
-                            {cateIcon[cat]}
-                            <span className="text-md">{cat.substring(0, 1).toUpperCase() + cat.substring(1)}</span>
-                            <div className="flex-1" />
-                            <Badge className={`p-1 h-[20px] ${curChoicedCategory === cat ? "invert" : ""}`}>{challenges.filter((res) => (cat == "all" || res.category?.toLowerCase() == cat)).length}</Badge>
-                        </Button>
-                    ))}
-                </div>
-                {/* <div className="flex-1 overflow-hidden"> */}
-                {filtedData.length ? (
-                    <MacScrollbar className="overflow-y-auto w-full">
-                        <div className="flex flex-col gap-4 w-full p-6 pt-2">
-                            {
-                                filtedData.map((chal, index) => (
-                                    <div className="w-full flex border-2 shadow-lg rounded-lg p-4 px-6 flex-none justify-between items-center" key={index}>
-                                        <div className="flex gap-3">
-                                            {cateIcon[chal.category?.toLowerCase() || "misc"]}
-                                            <span>{chal.name}</span>
-                                        </div>
-                                        <div className="flex gap-1">
-                                            <Button variant={"ghost"} size={"icon"}>
-                                                <Copy />
-                                            </Button>
-                                            <Button variant={"ghost"} size={"icon"} onClick={() => {
-                                                router(`/admin/challenges/${chal.challenge_id}`)
-                                            }}>
-                                                <Pencil />
-                                            </Button>
-                                            <Button variant={"ghost"} size={"icon"} className="hover:text-red-500" onClick={() => {
-                                                setDialogOption((prev) => (
-                                                    {
-                                                        ...prev,
-                                                        isOpen: true,
-                                                        message: "你确定要删除这道题目吗?",
-                                                        onConfirm: () => {
-                                                            api.admin.deleteChallenge(chal.challenge_id).then(() => {
-                                                                toast.success("删除成功")
-                                                                setChallenges(challenges.filter((res) => res.challenge_id !== chal.challenge_id))
-                                                            }).catch((error: AxiosError) => {
-                                                                if (error.response?.status) {
-                                                                    const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                                                                    toast.error(errorMessage.message)
-                                                                } else {
-                                                                    toast.error("Unknow Error")
-                                                                }
-                                                            })
-                                                        },
-                                                    }
-                                                ))
-                                            }}>
-                                                <Trash2 />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ))
-                            }
+            
+            {/* Header Section */}
+            <div className="backdrop-blur-sm bg-background/80 border-b p-5 lg:p-8 sticky top-0 z-10">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center flex-1">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                                <GalleryVerticalEnd className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold">题目管理</h1>
+                                <p className="text-sm text-muted-foreground">管理和编辑 {challenges.length} 道题目</p>
+                            </div>
                         </div>
-                    </MacScrollbar>
-                ) : (
-                    <div className="flex w-full h-full items-center justify-center">
-                        <span className="font-bold text-xl">No challenges found</span>
+                        
+                        <div className="flex-1 max-w-md">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input 
+                                    value={searchContent} 
+                                    onChange={(e) => setSearchContent(e.target.value)} 
+                                    placeholder="搜索题目标题..."
+                                    className="pl-10 bg-background/50 backdrop-blur-sm"
+                                />
+                            </div>
+                        </div>
                     </div>
-                )}
-                {/* </div> */}
+                    
+                    <Button 
+                        onClick={() => router(`/admin/challenges/create`)}
+                        className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200"
+                    >
+                        <CirclePlus className="h-4 w-4" />
+                        添加题目
+                    </Button>
+                </div>
+            </div>
+
+            <div className="flex-1 flex overflow-hidden">
+                {/* Categories Sidebar */}
+                <div className="w-56 flex-none bg-card/50 backdrop-blur-sm border-r p-4">
+                    <div className="sticky top-0">
+                        <h3 className="font-semibold text-lg mb-4 text-foreground/90">分类筛选</h3>
+                        <div className="space-y-1">
+                            {Object.keys(cateIcon).map((cat, index) => (
+                                <Button 
+                                    key={index} 
+                                    className={`w-full justify-start gap-3 h-11 transition-all duration-200 border ${
+                                        curChoicedCategory === cat 
+                                            ? "bg-gradient-to-r from-primary/20 to-primary/10 border-primary/30 text-primary shadow-sm" 
+                                            : "hover:bg-muted/60 hover:shadow-sm border-transparent"
+                                    }`}
+                                    variant="ghost"
+                                    onClick={() => setCurChoicedCategory(cat)}
+                                >
+                                    <div className={`p-1.5 rounded-lg flex-shrink-0 ${curChoicedCategory === cat ? "bg-primary/20" : "bg-muted/40"}`}>
+                                        {cateIcon[cat]}
+                                    </div>
+                                    <span className="font-medium flex-1 text-left truncate">
+                                        {cat === "all" ? "全部" : cat.substring(0, 1).toUpperCase() + cat.substring(1)}
+                                    </span>
+                                    <Badge 
+                                        variant="secondary" 
+                                        className={`h-6 px-2 text-xs font-semibold flex-shrink-0 ${
+                                            curChoicedCategory === cat ? "bg-primary/20 text-primary" : ""
+                                        }`}
+                                    >
+                                        {challenges.filter((res) => (cat == "all" || res.category?.toLowerCase() == cat)).length}
+                                    </Badge>
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Main Content */}
+                <div className="flex-1 overflow-hidden">
+                    {filtedData.length ? (
+                        <MacScrollbar className="h-full">
+                            <div className="p-6">
+                                <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
+                                    {filtedData.map((chal, index) => (
+                                        <div 
+                                            key={index}
+                                            className="group bg-card/60 backdrop-blur-sm border border-border/50 rounded-xl p-5 hover:shadow-lg hover:border-primary/20 transition-all duration-300 hover:scale-[1.02] hover:bg-card/80"
+                                        >
+                                            {/* Challenge Header */}
+                                            <div className="flex items-start justify-between mb-4">
+                                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                    <div className={`p-2.5 rounded-xl bg-gradient-to-br ${colorMap[chal.category?.toLowerCase() || "misc"] || "from-muted/40 to-muted/20"} flex-shrink-0`}>
+                                                        {cateIcon[chal.category?.toLowerCase() || "misc"]}
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <h3 className="font-semibold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors duration-200">
+                                                            {chal.name}
+                                                        </h3>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <Badge 
+                                                                variant="outline" 
+                                                                className="text-xs font-medium border-muted-foreground/30"
+                                                            >
+                                                                {chal.category?.toUpperCase() || "MISC"}
+                                                            </Badge>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Challenge Actions */}
+                                            <div className="flex items-center justify-end gap-1 pt-3 border-t border-border/30">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm"
+                                                    className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary transition-all duration-200"
+                                                    title="复制题目"
+                                                >
+                                                    <Copy className="h-4 w-4" />
+                                                </Button>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm"
+                                                    className="h-8 w-8 p-0 hover:bg-blue-500/10 hover:text-blue-600 transition-all duration-200"
+                                                    onClick={() => router(`/admin/challenges/${chal.challenge_id}`)}
+                                                    title="编辑题目"
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm"
+                                                    className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
+                                                    onClick={() => {
+                                                        setDialogOption((prev) => ({
+                                                            ...prev,
+                                                            isOpen: true,
+                                                            message: "你确定要删除这道题目吗?",
+                                                            onConfirm: () => {
+                                                                api.admin.deleteChallenge(chal.challenge_id).then(() => {
+                                                                    toast.success("删除成功")
+                                                                    setChallenges(challenges.filter((res) => res.challenge_id !== chal.challenge_id))
+                                                                }).catch((error: AxiosError) => {
+                                                                    if (error.response?.status) {
+                                                                        const errorMessage: ErrorMessage = error.response.data as ErrorMessage
+                                                                        toast.error(errorMessage.message)
+                                                                    } else {
+                                                                        toast.error("Unknow Error")
+                                                                    }
+                                                                })
+                                                            },
+                                                        }))
+                                                    }}
+                                                    title="删除题目"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </MacScrollbar>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-muted/40 to-muted/20 flex items-center justify-center mb-4">
+                                <Search className="h-8 w-8 text-muted-foreground" />
+                            </div>
+                            <h3 className="text-xl font-semibold mb-2">没有找到题目</h3>
+                            <p className="text-muted-foreground max-w-md">
+                                {searchContent ? `没有找到包含 "${searchContent}" 的题目` : "当前分类下没有题目"}
+                            </p>
+                            {searchContent && (
+                                <Button 
+                                    variant="ghost" 
+                                    onClick={() => setSearchContent("")}
+                                    className="mt-4"
+                                >
+                                    清除搜索
+                                </Button>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

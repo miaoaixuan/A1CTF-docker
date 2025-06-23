@@ -1,7 +1,7 @@
 import { SidebarProvider } from "components/ui/sidebar"
 import { CategorySidebar } from "components/CategorySideBar";
 
-import { toastNewNotice } from "utils/ToastUtil";
+import { toastNewNotice, toastNewHint } from "utils/ToastUtil";
 
 
 import {
@@ -55,6 +55,7 @@ import { useSpring } from "@react-spring/web";
 import GameStatusMask from "components/modules/game/GameStatusMask";
 import ChallengeHintPage from "./modules/challenge/ChallengeHintPage";
 import { useTranslation } from "react-i18next";
+import { useLocation, useParams, useSearchParams } from "react-router";
 
 export interface ChallengeSolveStatus {
     solved: boolean;
@@ -147,6 +148,9 @@ export function ChallengesView({ id }: { id: string }) {
 
     const [scoreBoardModel, setScoreBoardModel] = useState<GameScoreboardData | undefined>(undefined)
 
+    const [searchParams, setSearchParams] = useSearchParams()
+    const location = useLocation()
+
 
     // 更新当前选中题目信息, 根据 Websocket 接收到的信息被动调用
     const updateChallenge = () => {
@@ -216,8 +220,6 @@ export function ChallengesView({ id }: { id: string }) {
     }, [refreshContainerTrigger])
 
     useEffect(() => {
-        console.log(curChallenge)
-
         setContainerInfo(curChallenge?.containers ?? [])
         setContainerExpireTime(curChallenge?.container_expiretime
             ? dayjs(curChallenge.container_expiretime)
@@ -254,9 +256,7 @@ export function ChallengesView({ id }: { id: string }) {
         }
     }, [curChallenge]);
 
-    useEffect(() => {
-
-        // 获取比赛信息以及剩余时间
+    const fetchGameInfoWithTeamInfo = () => {
         api.user.userGetGameInfoWithTeamInfo(gameID).then((res) => {
             setGameInfo(res.data.data)
 
@@ -303,14 +303,31 @@ export function ChallengesView({ id }: { id: string }) {
                 }
             }
         })
+    }
+
+    useEffect(() => {
+        // 获取比赛信息以及剩余时间
+        fetchGameInfoWithTeamInfo()
     }, [id])
 
     useEffect(() => {
-        console.log("GameStatus", gameStatus)
         // 根据比赛状态处理事件
         if (gameStatus == "running" || gameStatus == "practiceMode") {
 
-            setTimeout(() => setLoadingVisibility(false), 200)
+            const challengeID = searchParams.get("challenge")
+            if (challengeID) {
+                const challengeIDInt = parseInt(challengeID, 10)
+                api.user.userGetGameChallenge(gameID, challengeIDInt).then((response) => {
+                    // console.log(response)
+                    curChallengeDetail.current = response.data.data
+                    setCurChallenge(response.data.data)
+                    // setPageSwitch(true)
+
+                    setTimeout(() => setLoadingVisibility(false), 200)
+                }).catch((error: AxiosError) => {})
+            } else {
+                setTimeout(() => setLoadingVisibility(false), 200)
+            }
 
             // 获取比赛通知
             api.user.userGetGameNotices(gameID).then((res) => {
@@ -319,12 +336,13 @@ export function ChallengesView({ id }: { id: string }) {
 
                 res.data.data.sort((a, b) => (dayjs(b.create_time).unix() - dayjs(a.create_time).unix()))
 
+                // 这里多次 forEach 是为了让公告优先在最上面
                 res.data.data.forEach((obj) => {
                     if (obj.notice_category == NoticeCategory.NewAnnouncement) filtedNotices[curIndex++] = obj
                 })
 
                 res.data.data.forEach((obj) => {
-                    if ([NoticeCategory.FirstBlood, NoticeCategory.SecondBlood, NoticeCategory.ThirdBlood].includes(obj.notice_category)) filtedNotices[curIndex++] = obj
+                    if ([NoticeCategory.FirstBlood, NoticeCategory.SecondBlood, NoticeCategory.ThirdBlood, NoticeCategory.NewHint].includes(obj.notice_category)) filtedNotices[curIndex++] = obj
                 })
 
                 noticesRef.current = filtedNotices
@@ -332,77 +350,180 @@ export function ChallengesView({ id }: { id: string }) {
             })
 
             // Websocket
-            const socket = new WebSocket(`ws://localhost:3000/api/hub?game=${gameID}`)
-            wsRef.current = socket
+            const baseURL = window.location.host
+            let reconnectAttempts = 0
+            const maxReconnectAttempts = 5
+            const reconnectInterval = 3000 // 3秒重连间隔
+            let reconnectTimer: NodeJS.Timeout | null = null
+            let isManualClose = false
 
-            socket.onopen = () => {
-                console.log('WebSocket connected')
-            }
+            const connectWebSocket = () => {
+                // 显示连接中的toast
+                const connectPromise = new Promise<void>((resolve, reject) => {
+                    const socket = new WebSocket(`ws://${baseURL}/api/hub?game=${gameID}`)
+                    wsRef.current = socket
 
-            socket.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data)
-                    if (data.type === 'Notice') {
-                        const message: GameNotice = data.message
-                        console.log(message)
+                    const connectTimeout = setTimeout(() => {
+                        socket.close()
+                        reject(new Error('连接超时'))
+                    }, 10000) // 10秒连接超时
 
-                        if (message.notice_category == NoticeCategory.NewHint && message.data[0] == prevChallenge.current?.challenge_name) {
-                            // 防止并发
-                            setTimeout(updateChallenge, randomInt(200, 600))
-                        }
+                    socket.onopen = () => {
+                        clearTimeout(connectTimeout)
+                        console.log('WebSocket connected')
+                        reconnectAttempts = 0 // 重置重连次数
+                        resolve()
+                    }
 
-                        if (message.notice_category == NoticeCategory.NewAnnouncement) {
-                            const newNotices: GameNotice[] = []
-                            newNotices[0] = message
-                            noticesRef.current.forEach((ele, index) => {
-                                newNotices[index + 1] = ele
-                            })
+                    socket.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data)
+                            if (data.type === 'Notice') {
+                                const message: GameNotice = data.message
+                                console.log(message)
 
-                            noticesRef.current = newNotices
-                            setNotices(newNotices)
+                                if (message.notice_category == NoticeCategory.NewHint) {
+                                    // 将NewHint通知添加到通知列表
+                                    const newNotices: GameNotice[] = []
+                                    let insertIndex = 0
 
-                            toastNewNotice({
-                                title: message.data[0],
-                                time: new Date(message.create_time).getTime() / 1000,
-                                openNotices: setNoticeOpened
-                            })
-                        }
+                                    // 先添加所有公告
+                                    noticesRef.current.forEach((notice) => {
+                                        if (notice.notice_category === NoticeCategory.NewAnnouncement) {
+                                            newNotices[insertIndex++] = notice
+                                        }
+                                    })
 
-                        if ([NoticeCategory.FirstBlood, NoticeCategory.SecondBlood, NoticeCategory.ThirdBlood].includes(message.notice_category) &&
-                            gameInfo?.team_info?.team_name?.toString().trim() == message.data[0]?.toString().trim()) {
-                            switch (message.notice_category) {
-                                case NoticeCategory.FirstBlood:
-                                    setBloodMessage(`${t("notices_view.congratulations")}${t("notices_view.blood_message_p1")} ${message.data[1]} ${t("notices_view.blood1")}`)
-                                    setBlood("gold")
-                                    break
-                                case NoticeCategory.SecondBlood:
-                                    setBloodMessage(`${t("notices_view.congratulations")}${t("notices_view.blood_message_p1")} ${message.data[1]} ${t("notices_view.blood2")}`)
-                                    setBlood("silver")
-                                    break
-                                case NoticeCategory.ThirdBlood:
-                                    setBloodMessage(`${t("notices_view.congratulations")}${t("notices_view.blood_message_p1")} ${message.data[1]} ${t("notices_view.blood3")}`)
-                                    setBlood("copper")
-                                    break
+                                    // 然后添加新的Hint通知
+                                    newNotices[insertIndex++] = message
+
+                                    // 最后添加其他通知
+                                    noticesRef.current.forEach((notice) => {
+                                        if (![NoticeCategory.NewAnnouncement].includes(notice.notice_category)) {
+                                            newNotices[insertIndex++] = notice
+                                        }
+                                    })
+
+                                    noticesRef.current = newNotices
+                                    setNotices(newNotices)
+
+                                    // 显示toast通知
+                                    toastNewHint({
+                                        challenges: message.data,
+                                        time: dayjs(message.create_time).toDate().getTime() / 1000,
+                                        openNotices: setNoticeOpened
+                                    })
+                                }
+
+                                if (message.notice_category == NoticeCategory.NewAnnouncement) {
+                                    const newNotices: GameNotice[] = []
+                                    newNotices[0] = message
+                                    noticesRef.current.forEach((ele, index) => {
+                                        newNotices[index + 1] = ele
+                                    })
+
+                                    noticesRef.current = newNotices
+                                    setNotices(newNotices)
+
+                                    toastNewNotice({
+                                        title: message.data[0],
+                                        time: dayjs(message.create_time).toDate().getTime() / 1000,
+                                        openNotices: setNoticeOpened
+                                    })
+                                }
+
+                                if ([NoticeCategory.FirstBlood, NoticeCategory.SecondBlood, NoticeCategory.ThirdBlood].includes(message.notice_category) &&
+                                    gameInfo?.team_info?.team_name?.toString().trim() == message.data[0]?.toString().trim()) {
+                                    switch (message.notice_category) {
+                                        case NoticeCategory.FirstBlood:
+                                            setBloodMessage(`${t("notices_view.congratulations")}${t("notices_view.blood_message_p1")} ${message.data[1]} ${t("notices_view.blood1")}`)
+                                            setBlood("gold")
+                                            break
+                                        case NoticeCategory.SecondBlood:
+                                            setBloodMessage(`${t("notices_view.congratulations")}${t("notices_view.blood_message_p1")} ${message.data[1]} ${t("notices_view.blood2")}`)
+                                            setBlood("silver")
+                                            break
+                                        case NoticeCategory.ThirdBlood:
+                                            setBloodMessage(`${t("notices_view.congratulations")}${t("notices_view.blood_message_p1")} ${message.data[1]} ${t("notices_view.blood3")}`)
+                                            setBlood("copper")
+                                            break
+                                    }
+                                }
                             }
+                        } catch (error) {
+                            console.error('Error parsing WebSocket message:', error)
                         }
                     }
-                } catch (error) {
-                    console.error('Error parsing WebSocket message:', error)
-                }
+
+                    socket.onerror = (error) => {
+                        clearTimeout(connectTimeout)
+                        console.error('WebSocket error:', error)
+                        reject(new Error('实时通知服务连接失败'))
+                    }
+
+                    socket.onclose = (event) => {
+                        clearTimeout(connectTimeout)
+                        console.log('WebSocket disconnected', event.code, event.reason)
+                        
+                        // 如果不是手动关闭且重连次数未达到上限，则尝试重连
+                        if (!isManualClose && reconnectAttempts < maxReconnectAttempts) {
+                            reconnectAttempts++
+                            console.log(`WebSocket重连尝试 ${reconnectAttempts}/${maxReconnectAttempts}`)
+                            
+                            reconnectTimer = setTimeout(() => {
+                                toast.promise(
+                                    connectWebSocket(),
+                                    {
+                                        loading: `实时通知服务正在重连... (${reconnectAttempts}/${maxReconnectAttempts})`,
+                                        success: '重连成功！',
+                                        error: (err) => `实时通知服务重连失败: ${err.message}`
+                                    }
+                                )
+                            }, reconnectInterval)
+                        } else if (reconnectAttempts >= maxReconnectAttempts) {
+                            toast.error('WebSocket连接失败，请刷新页面重试')
+                        }
+                    }
+                })
+
+                return connectPromise
             }
 
-            socket.onerror = (error) => {
-                console.error('WebSocket error:', error)
+            // 初始连接
+            setTimeout(() => {
+                toast.promise(
+                    connectWebSocket(),
+                    {
+                        loading: '正在连接实时通知...',
+                        success: '实时通知服务连接成功！',
+                        error: (err) => `连接失败: ${err.message}`
+                    }
+                )
+            }, 1000)
+
+            const updateScoreBoard = () => {
+                api.user.userGetGameScoreboard(gameID).then((res) => {
+                    setScoreBoardModel(res.data.data)
+                })
             }
 
-            socket.onclose = () => {
-                console.log('WebSocket disconnected')
-            }
+            updateScoreBoard()
+
+            const updateScoreBoardInter = setInterval(updateScoreBoard, randomInt(2000, 4000))
 
             return () => {
+                isManualClose = true // 标记为手动关闭
+                
+                if (reconnectTimer) {
+                    clearTimeout(reconnectTimer)
+                    reconnectTimer = null
+                }
+                
                 if (wsRef.current) {
                     wsRef.current.close()
                 }
+
+                if (updateScoreBoardInter) clearInterval(updateScoreBoardInter)
             }
 
         } else if (gameStatus == "unRegistered") {
@@ -471,8 +592,6 @@ export function ChallengesView({ id }: { id: string }) {
         api.user.userCreateContainerForAChallenge(gameID, curChallenge?.challenge_id ?? 0).then((res) => {
             // 开始刷新靶机状态
             setRefreshContainerTrigger(true)
-            // const leftTime = Math.floor(dayjs(res.data.close_time).diff(dayjs()) / 1000)
-            // setContainerLeftTime(formatDuration(leftTime))
         })
     }
 
@@ -529,11 +648,11 @@ export function ChallengesView({ id }: { id: string }) {
         ) : null;
     }, [gameInfo?.description]); // 只依赖游戏描述
 
-    const fade = useSpring({
-        opacity: pageSwitch ? 0 : 1,
-        config: { tension: 320, friction: 50 },
-        immediate: pageSwitch
-    });
+    useEffect(() => {
+        if (curChallenge?.challenge_id) {
+            setSearchParams({ challenge: curChallenge.challenge_id.toString() })
+        }
+    }, [curChallenge?.challenge_id])
 
     const rankColor = (rank: number) => {
         if (rank == 1) return "text-red-400 font-bold"
@@ -562,18 +681,9 @@ export function ChallengesView({ id }: { id: string }) {
                 gameInfo={gameInfo}
                 setScoreBoardVisible={setScoreBoardVisible}
                 startCheckForGameStart={startCheckForGameStart}
+                fetchGameInfoWithTeamInfo={fetchGameInfoWithTeamInfo}
             />
-
-            {/* 记分板 */}
-            <ScoreBoardPage 
-                gmid={gameID} 
-                visible={scoreBoardVisible} 
-                setVisible={setScoreBoardVisible} 
-                gameStatus={gameStatus} 
-                gameInfo={gameInfo} 
-                challenges={challenges} 
-                scoreBoardModel={scoreBoardModel} setScoreBoardModel={setScoreBoardModel}
-            />
+            
             {/* 重定向警告页 */}
             <RedirectNotice redirectURL={redirectURL} setRedirectURL={setRedirectURL} />
             {/* 公告页 */}
@@ -587,6 +697,7 @@ export function ChallengesView({ id }: { id: string }) {
                         curChallenge={curChallenge}
                         setCurChallenge={setCurChallenge}
                         // setGameDetail={setGameDeatail}
+                        curChallengeRef={curChallengeDetail}
                         resizeTrigger={setResizeTrigger}
                         setPageSwitching={setPageSwitch}
                         challenges={challenges || {}}
@@ -649,7 +760,7 @@ export function ChallengesView({ id }: { id: string }) {
                                             <div className="absolute bottom-5 right-7 z-10 flex justify-end flex-col gap-[8px]">
                                                 <div className="flex">
                                                     <div className="flex-1" />
-                                                    {curChallenge && challengeSolveStatusList ? challengeSolveStatusList[curChallenge?.challenge_id ?? 0].solved ? (
+                                                    {curChallenge && challengeSolveStatusList ? (challengeSolveStatusList[curChallenge?.challenge_id ?? 0]?.solved ?? false) ? (
                                                             <Button
                                                                 className="h-[57px] px-5 rounded-3xl backdrop-blur-sm bg-green-600/70 hover:bg-green-800/70 [&_svg]:size-9 gap-2 flex items-center justify-center text-white disabled:opacity-100"
                                                                 onClick={() => { }}

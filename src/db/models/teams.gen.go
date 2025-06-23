@@ -48,6 +48,10 @@ type Team struct {
 	TeamHash        string              `gorm:"column:team_hash;not null" json:"team_hash"`
 	InviteCode      *string             `gorm:"column:invite_code" json:"invite_code"`
 	TeamStatus      ParticipationStatus `gorm:"column:team_status;not null" json:"team_status"`
+	GroupID         *int64              `gorm:"column:group_id" json:"group_id"`
+
+	// 关联
+	Group *GameGroup `gorm:"foreignKey:GroupID;references:group_id" json:"group,omitempty"`
 }
 
 // TableName 获取Team的表名

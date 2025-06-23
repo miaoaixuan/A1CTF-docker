@@ -15,8 +15,8 @@ import (
 	"a1ctf/src/utils"
 	dbtool "a1ctf/src/utils/db_tool"
 	k8stool "a1ctf/src/utils/k8s_tool"
+	"a1ctf/src/utils/ristretto_tool"
 
-	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron/v2"
@@ -81,6 +81,12 @@ func main() {
 	// 初始化数据库连接
 	dbtool.Init()
 
+	// 初始化缓存池
+	ristretto_tool.LoadCacheTime()
+	ristretto_tool.InitCachePool()
+
+	defer ristretto_tool.CloseCachePool()
+
 	// 初始化 db
 	db.InitDB()
 
@@ -124,10 +130,10 @@ func main() {
 	http.Handle("/metrics", promhttp.Handler())
 	go http.ListenAndServe(fmt.Sprintf("%s:%s", viper.GetString("system.prometheus-host"), viper.GetString("system.prometheus-port")), nil)
 
-	// 启动 Gzip 压缩
-	if viper.GetBool("system.gin-gzip-enabled") {
-		r.Use(gzip.Gzip(gzip.DefaultCompression))
-	}
+	// // 启动 Gzip 压缩
+	// if viper.GetBool("system.gin-gzip-enabled") {
+	// 	r.Use(gzip.Gzip(gzip.DefaultCompression))
+	// }
 
 	// JWT 鉴权中间件
 	authMiddleware := jwtauth.InitJwtMiddleWare()
@@ -178,6 +184,18 @@ func main() {
 			teamAvatarGroup.POST("/avatar/upload", controllers.UploadTeamAvatar)
 		}
 
+		// 团队管理接口
+		teamManageGroup := auth.Group("/team")
+		{
+			teamManageGroup.POST("/join", controllers.TeamJoinRequest)
+			teamManageGroup.GET("/:team_id/requests", controllers.GetTeamJoinRequests)
+			teamManageGroup.POST("/request/:request_id/handle", controllers.HandleTeamJoinRequest)
+			teamManageGroup.POST("/:team_id/transfer-captain", controllers.TransferTeamCaptain)
+			teamManageGroup.DELETE("/:team_id/member/:user_id", controllers.RemoveTeamMember)
+			teamManageGroup.DELETE("/:team_id", controllers.DeleteTeam)
+			teamManageGroup.PUT("/:team_id", controllers.UpdateTeamInfo)
+		}
+
 		challengeGroup := auth.Group("/admin/challenge")
 		{
 			challengeGroup.POST("/list", controllers.AdminListChallenges)
@@ -214,6 +232,26 @@ func main() {
 			gameGroup.GET("/:game_id", controllers.AdminGetGame)
 			gameGroup.PUT("/:game_id/challenge/:challenge_id", controllers.AdminAddGameChallenge)
 			gameGroup.PUT("/:game_id", controllers.AdminUpdateGame)
+
+			// 比赛海报上传路由
+			gameGroup.POST("/:game_id/poster/upload", controllers.AdminUploadGamePoster)
+
+			// 分组管理路由
+			gameGroup.GET("/:game_id/groups", controllers.AdminGetGameGroups)
+			gameGroup.POST("/:game_id/groups", controllers.AdminCreateGameGroup)
+			gameGroup.PUT("/:game_id/groups/:group_id", controllers.AdminUpdateGameGroup)
+			gameGroup.DELETE("/:game_id/groups/:group_id", controllers.AdminDeleteGameGroup)
+
+			// 公告管理路由
+			gameGroup.POST("/:game_id/notices", controllers.AdminCreateNotice)
+			gameGroup.POST("/:game_id/notices/list", controllers.AdminListNotices)
+			gameGroup.DELETE("/notices", controllers.AdminDeleteNotice)
+
+			// 分数修正管理路由
+			gameGroup.GET("/:game_id/score-adjustments", controllers.AdminGetGameScoreAdjustments)
+			gameGroup.POST("/:game_id/score-adjustments", controllers.AdminCreateScoreAdjustment)
+			gameGroup.PUT("/:game_id/score-adjustments/:adjustment_id", controllers.AdminUpdateScoreAdjustment)
+			gameGroup.DELETE("/:game_id/score-adjustments/:adjustment_id", controllers.AdminDeleteScoreAdjustment)
 		}
 
 		// 用户相关接口
@@ -222,10 +260,13 @@ func main() {
 			userGameGroup.GET("/:game_id/challenges", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenges)
 
 			// 查询比赛中的某道题
-			userGameGroup.GET("/:game_id/challenge/:challenge_id", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenge)
+			userGameGroup.GET("/:game_id/challenge/:challenge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenge)
 
 			// 比赛通知接口
 			userGameGroup.GET("/:game_id/notices", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameNotices)
+
+			// 用户获取分组列表（公开接口，用于创建团队时选择分组）
+			userGameGroup.GET("/:game_id/groups", controllers.GameStatusMiddleware(true, false), controllers.UserGetGameGroups)
 
 			// 创建比赛队伍
 			userGameGroup.POST("/:game_id/createTeam", controllers.GameStatusMiddleware(false, true), controllers.UserCreateGameTeam)

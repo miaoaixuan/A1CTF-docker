@@ -220,7 +220,7 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: UserT
                             </div>
                             { isLeader() ? (
                                 <UploadImageDialog id={teamModel?.team_id!} type="team" updateTeam={updateTeam}>
-                                    <Avatar className="select-none w-20 h-20 mr-4">
+                                    <Avatar className="select-none w-20 h-20">
                                         { teamModel?.team_avatar ? (
                                             <>
                                                 <AvatarImage src={teamModel?.team_avatar || "#"} alt="@shadcn"
@@ -236,7 +236,7 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: UserT
                                     </Avatar>
                                 </UploadImageDialog>
                             ) : (
-                                <Avatar className="select-none w-20 h-20 mr-4">
+                                <Avatar className="select-none w-20 h-20">
                                     { teamModel?.team_avatar ? (
                                         <>
                                             <AvatarImage src={teamModel?.team_avatar || "#"} alt="@shadcn"

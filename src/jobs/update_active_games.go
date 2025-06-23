@@ -45,10 +45,10 @@ func updateActiveGameScores(game_ids []int64) {
 			return
 		}
 
-		// 更新每支队伍的分数
+		// 更新每支队伍的分数（包含分数修正）
 		if err := dbtool.DB().Exec(`
 			UPDATE teams t
-			SET team_score = COALESCE(team_scores.total_score, 0)
+			SET team_score = COALESCE(team_scores.total_score, 0) + COALESCE(adjustments.adjustment_total, 0)
 			FROM (
 				SELECT 
 					s.team_id,
@@ -59,9 +59,17 @@ func updateActiveGameScores(game_ids []int64) {
 					AND s.solve_status = '"SolveCorrect"'::jsonb
 				GROUP BY s.team_id
 			) team_scores
+			LEFT JOIN (
+				SELECT 
+					sa.team_id,
+					SUM(sa.score_change) as adjustment_total
+				FROM score_adjustments sa
+				WHERE sa.game_id IN ?
+				GROUP BY sa.team_id
+			) adjustments ON team_scores.team_id = adjustments.team_id
 			WHERE t.team_id = team_scores.team_id
 				AND t.game_id IN ?;
-		`, game_ids, game_ids).Error; err != nil {
+		`, game_ids, game_ids, game_ids).Error; err != nil {
 			println("Failed to update team_score")
 			return
 		}
@@ -148,6 +156,32 @@ func UpdateActiveGameScoreBoard() {
 				scoreBoardData.Score += solve.GameChallenge.CurScore
 
 				teamMap[solve.TeamID] = scoreBoardData
+			}
+		}
+
+		// 加载分数修正并应用到队伍分数
+		var adjustments []models.ScoreAdjustment
+		if err := dbtool.DB().Where("game_id = ?", game_id).Find(&adjustments).Error; err != nil {
+			println("Failed to load score adjustments")
+			return
+		}
+
+		for _, adjustment := range adjustments {
+			if scoreBoardData, exists := teamMap[adjustment.TeamID]; exists {
+				scoreBoardData.Score += adjustment.ScoreChange
+				teamMap[adjustment.TeamID] = scoreBoardData
+			} else {
+				// 如果队伍没有解题记录，但有分数修正，也需要创建记录
+				var team models.Team
+				if err := dbtool.DB().Where("team_id = ?", adjustment.TeamID).First(&team).Error; err == nil {
+					scoreBoardData := models.ScoreBoardData{
+						TeamName:             team.TeamName,
+						SolvedChallenges:     make([]string, 0),
+						NewSolvedChallengeID: nil,
+						Score:                adjustment.ScoreChange,
+					}
+					teamMap[adjustment.TeamID] = scoreBoardData
+				}
 			}
 		}
 

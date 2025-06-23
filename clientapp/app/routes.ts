@@ -5,6 +5,8 @@ export default [
     route("", "routes/[lng]/page.tsx"),
     route("games/", "routes/[lng]/games/page.tsx"),
     route("games/:id/", "routes/[lng]/games/[id]/page.tsx"),
+    route("games/:id/scoreboard/", "routes/[lng]/games/[id]/scoreboard/page.tsx"),
+    route("games/:id/team/", "routes/[lng]/games/[id]/team/page.tsx"),
 
     route("about/", "routes/[lng]/about/page.tsx"),
     route("version/", "routes/[lng]/version/page.tsx"),
@@ -22,6 +24,7 @@ export default [
 
     route("admin/games", "routes/[lng]/admin/games/page.tsx"),
     route("admin/games/:game_id", "routes/[lng]/admin/games/[game_id]/page.tsx"),
+    route("admin/games/:game_id/score-adjustments", "routes/[lng]/admin/games/[game_id]/score-adjustments/page.tsx"),
 
     route("admin/containers", "routes/[lng]/admin/containers/page.tsx"),
     route("admin/logs", "routes/[lng]/admin/logs/page.tsx"),
