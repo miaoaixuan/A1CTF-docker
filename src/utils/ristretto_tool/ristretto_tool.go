@@ -118,7 +118,7 @@ func CachedMemberSearchTeamMap(gameID int64) (map[string]models.Team, error) {
 
 	obj, err := GetOrCacheSingleFlight(fmt.Sprintf("all_teams_for_game_%d", gameID), func() (interface{}, error) {
 		var allTeams []models.Team
-		if err := dbtool.DB().Find(&allTeams).Where("game_id = ?", gameID).Preload("Group").Error; err != nil {
+		if err := dbtool.DB().Where("game_id = ?", gameID).Preload("Group").Find(&allTeams).Error; err != nil {
 			return nil, err
 		}
 
@@ -254,7 +254,7 @@ func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, er
 
 		// 获取所有队伍
 		var teams []models.Team
-		if err := dbtool.DB().Where("game_id = ? AND team_status = ?", gameID, models.ParticipateApproved).Find(&teams).Error; err != nil {
+		if err := dbtool.DB().Where("game_id = ? AND team_status = ?", gameID, models.ParticipateApproved).Preload("Group").Find(&teams).Error; err != nil {
 			return nil, errors.New("failed to load teams")
 		}
 
@@ -937,146 +937,210 @@ func CachedChallengeVisibleHints(gameID int64, challengeID int64) (models.Hints,
 	return visibleHints, nil
 }
 
-// CachedContainerStatus 缓存容器状态信息
-// 使用较短的缓存时间（建议200ms）来平衡性能和实时性
-func CachedContainerStatus(gameID int64, challengeID int64, teamID int64) ([]models.Container, error) {
-	var containers []models.Container
+// 缓存所有队伍的容器状态信息
+func CachedAllContainerStatus(gameID int64, challengeID int64) (map[int64][]models.Container, error) {
+	var containersMap map[int64][]models.Container
 
-	obj, err := GetOrCacheSingleFlight(fmt.Sprintf("container_status_%d_%d_%d", gameID, challengeID, teamID), func() (interface{}, error) {
+	obj, err := GetOrCacheSingleFlight(fmt.Sprintf("all_container_status_%d_%d", gameID, challengeID), func() (interface{}, error) {
 		var containerList []models.Container
-		if err := dbtool.DB().Where("game_id = ? AND challenge_id = ? AND team_id = ? AND (container_status = ? OR container_status = ?)",
-			gameID, challengeID, teamID, models.ContainerRunning, models.ContainerQueueing).Find(&containerList).Error; err != nil {
+		if err := dbtool.DB().Where("game_id = ? AND challenge_id = ? AND (container_status = ? OR container_status = ?)",
+			gameID, challengeID, models.ContainerRunning, models.ContainerQueueing).Find(&containerList).Error; err != nil {
 			return nil, errors.New("failed to load containers")
 		}
 
-		return containerList, nil
+		// 将结果按队伍ID分组
+		resultMap := make(map[int64][]models.Container)
+		for _, container := range containerList {
+			if _, exists := resultMap[container.TeamID]; !exists {
+				resultMap[container.TeamID] = make([]models.Container, 0)
+			}
+			resultMap[container.TeamID] = append(resultMap[container.TeamID], container)
+		}
+
+		return resultMap, nil
 	}, containerStatusCacheTime, true)
 
 	if err != nil {
 		return nil, err
 	}
 
-	containers = obj.([]models.Container)
+	containersMap = obj.(map[int64][]models.Container)
+	return containersMap, nil
+}
+
+// CachedContainerStatus 获取特定队伍的容器状态（兼容性函数）
+// 建议使用 CachedAllContainerStatus 来减少数据库查询
+func CachedContainerStatus(gameID int64, challengeID int64, teamID int64) ([]models.Container, error) {
+	allContainers, err := CachedAllContainerStatus(gameID, challengeID)
+	if err != nil {
+		return nil, err
+	}
+
+	containers, exists := allContainers[teamID]
+	if !exists {
+		return make([]models.Container, 0), nil
+	}
+
 	return containers, nil
 }
 
-// CachedTeamFlag 缓存队伍Flag信息，解决高并发查询team_flags表的性能问题
-func CachedTeamFlag(gameID int64, teamID int64, challengeID int64, flagTemplate string) (*models.TeamFlag, error) {
-	var teamFlag *models.TeamFlag
+// 缓存所有队伍的Flag信息，解决高并发查询team_flags表的性能问题
+func CachedAllTeamFlags(gameID int64, challengeID int64) (map[int64]*models.TeamFlag, error) {
+	var teamFlagsMap map[int64]*models.TeamFlag
 
-	obj, err := GetOrCacheSingleFlight(fmt.Sprintf("team_flag_%d_%d_%d", gameID, teamID, challengeID), func() (interface{}, error) {
-		// 首先尝试从数据库查询现有的Flag
-		var flag models.TeamFlag
-		err := dbtool.DB().Where("game_id = ? AND team_id = ? AND challenge_id = ?", gameID, teamID, challengeID).First(&flag).Error
-
-		if err != nil {
-			if err == gorm.ErrRecordNotFound {
-				// Flag不存在，创建新的Flag
-				newFlag := models.TeamFlag{
-					FlagID:      0,
-					FlagContent: flagTemplate,
-					TeamID:      teamID,
-					GameID:      gameID,
-					ChallengeID: challengeID,
-				}
-
-				// 使用事务创建Flag，避免并发重复创建
-				tx := dbtool.DB().Begin()
-				defer func() {
-					if r := recover(); r != nil {
-						tx.Rollback()
-					}
-				}()
-
-				if err := tx.Create(&newFlag).Error; err != nil {
-					tx.Rollback()
-					// 可能是并发创建导致的唯一键冲突，再次尝试查询
-					if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND challenge_id = ?", gameID, teamID, challengeID).First(&flag).Error; err != nil {
-						return nil, errors.New("failed to create or find team flag")
-					}
-					return &flag, nil
-				}
-
-				if err := tx.Commit().Error; err != nil {
-					tx.Rollback()
-					return nil, errors.New("failed to commit team flag creation")
-				}
-
-				return &newFlag, nil
-			} else {
-				return nil, errors.New("failed to query team flag")
-			}
+	obj, err := GetOrCacheSingleFlight(fmt.Sprintf("all_team_flags_%d_%d", gameID, challengeID), func() (interface{}, error) {
+		var flags []models.TeamFlag
+		if err := dbtool.DB().Where("game_id = ? AND challenge_id = ?", gameID, challengeID).Find(&flags).Error; err != nil {
+			return nil, errors.New("failed to query team flags")
 		}
 
-		return &flag, nil
+		// 将结果按队伍ID分组
+		resultMap := make(map[int64]*models.TeamFlag)
+		for i, flag := range flags {
+			resultMap[flag.TeamID] = &flags[i] // 使用索引避免循环变量地址问题
+		}
+
+		return resultMap, nil
 	}, teamFlagCacheTime, true)
 
 	if err != nil {
 		return nil, err
 	}
 
-	teamFlag = obj.(*models.TeamFlag)
-	return teamFlag, nil
+	teamFlagsMap = obj.(map[int64]*models.TeamFlag)
+	return teamFlagsMap, nil
 }
 
-// CachedTeamSolveStatus 缓存队伍解题状态，用于快速检查是否已解决
-func CachedTeamSolveStatus(gameID int64, teamID int64, challengeID int64) (bool, error) {
-	obj, err := GetOrCacheSingleFlight(fmt.Sprintf("team_solve_status_%d_%d_%d", gameID, teamID, challengeID), func() (interface{}, error) {
-		var solve models.Solve
-		err := dbtool.DB().Where("game_id = ? AND team_id = ? AND challenge_id = ?", gameID, teamID, challengeID).First(&solve).Error
+// 缓存队伍Flag信息
+func CachedTeamFlag(gameID int64, teamID int64, challengeID int64, flagTemplate string) (*models.TeamFlag, error) {
+	allFlags, err := CachedAllTeamFlags(gameID, challengeID)
+	if err != nil {
+		return nil, err
+	}
 
-		if err != nil {
-			if err == gorm.ErrRecordNotFound {
-				return false, nil // 未解决
-			}
-			return false, errors.New("failed to query solve status")
+	// 如果缓存中存在该队伍的Flag，直接返回
+	if flag, exists := allFlags[teamID]; exists {
+		return flag, nil
+	}
+
+	// 缓存中不存在，需要创建新的Flag
+	newFlag := models.TeamFlag{
+		FlagID:      0,
+		FlagContent: flagTemplate,
+		TeamID:      teamID,
+		GameID:      gameID,
+		ChallengeID: challengeID,
+	}
+
+	// 使用事务创建Flag，避免并发重复创建
+	tx := dbtool.DB().Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if err := tx.Create(&newFlag).Error; err != nil {
+		tx.Rollback()
+		// 可能是并发创建导致的唯一键冲突，再次尝试查询
+		var flag models.TeamFlag
+		if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND challenge_id = ?", gameID, teamID, challengeID).First(&flag).Error; err != nil {
+			return nil, errors.New("failed to create or find team flag")
+		}
+		// 清除缓存以确保下次查询时能获取到最新数据
+		cachePool.Del(fmt.Sprintf("all_team_flags_%d_%d", gameID, challengeID))
+		return &flag, nil
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return nil, errors.New("failed to commit team flag creation")
+	}
+
+	// 清除缓存以确保下次查询时能获取到最新数据
+	cachePool.Del(fmt.Sprintf("all_team_flags_%d_%d", gameID, challengeID))
+	return &newFlag, nil
+}
+
+// 缓存所有队伍的解题状态，用于快速检查是否已解决
+func CachedAllTeamSolveStatus(gameID int64, challengeID int64) (map[int64]bool, error) {
+	var teamSolveStatusMap map[int64]bool
+
+	obj, err := GetOrCacheSingleFlight(fmt.Sprintf("all_team_solve_status_%d_%d", gameID, challengeID), func() (interface{}, error) {
+		var solves []models.Solve
+		if err := dbtool.DB().Where("game_id = ? AND challenge_id = ?", gameID, challengeID).Find(&solves).Error; err != nil {
+			return nil, errors.New("failed to query solve status")
 		}
 
-		return true, nil // 已解决
+		// 将结果按队伍ID分组
+		resultMap := make(map[int64]bool)
+		for _, solve := range solves {
+			resultMap[solve.TeamID] = true // 只要有solve记录就表示已解决
+		}
+
+		return resultMap, nil
 	}, teamSolveStatusCacheTime, true)
 
+	if err != nil {
+		return nil, err
+	}
+
+	teamSolveStatusMap = obj.(map[int64]bool)
+	return teamSolveStatusMap, nil
+}
+
+func CachedTeamSolveStatus(gameID int64, teamID int64, challengeID int64) (bool, error) {
+	allSolveStatus, err := CachedAllTeamSolveStatus(gameID, challengeID)
 	if err != nil {
 		return false, err
 	}
 
-	hasSolved := obj.(bool)
+	hasSolved, exists := allSolveStatus[teamID]
+	if !exists {
+		return false, nil // 未解决
+	}
+
 	return hasSolved, nil
 }
 
-// CachedJudgeResult 缓存判题结果，使用短时缓存减少数据库压力
-func CachedJudgeResult(judgeID string, teamID int64) (*models.Judge, error) {
-	var judge *models.Judge
+// 缓存所有队伍的判题结果
+func CachedAllJudgeResults(teamID int64) (map[string]*models.Judge, error) {
+	var judgeResultsMap map[string]*models.Judge
 
-	obj, err := GetOrCacheSingleFlight(fmt.Sprintf("judge_result_%s_%d", judgeID, teamID), func() (interface{}, error) {
-		var judgeRecord models.Judge
-		err := dbtool.DB().Where("judge_id = ? AND team_id = ?", judgeID, teamID).First(&judgeRecord).Error
-
-		if err != nil {
-			if err == gorm.ErrRecordNotFound {
-				return nil, errors.New("judge not found")
-			}
-			return nil, errors.New("failed to query judge result")
+	obj, err := GetOrCacheSingleFlight(fmt.Sprintf("all_judge_results_%d", teamID), func() (interface{}, error) {
+		var judges []models.Judge
+		if err := dbtool.DB().Where("team_id = ?", teamID).Find(&judges).Error; err != nil {
+			return nil, errors.New("failed to query judge results")
 		}
 
-		return &judgeRecord, nil
+		// 将结果按判题ID分组
+		resultMap := make(map[string]*models.Judge)
+		for i, judge := range judges {
+			resultMap[judge.JudgeID] = &judges[i] // 使用索引避免循环变量地址问题
+		}
+
+		return resultMap, nil
 	}, judgeResultCacheTime, true)
 
 	if err != nil {
 		return nil, err
 	}
 
-	judge = obj.(*models.Judge)
+	judgeResultsMap = obj.(map[string]*models.Judge)
+	return judgeResultsMap, nil
+}
+
+// 缓存判题结果
+func CachedJudgeResult(judgeID string, teamID int64) (*models.Judge, error) {
+	allResults, err := CachedAllJudgeResults(teamID)
+	if err != nil {
+		return nil, err
+	}
+
+	judge, exists := allResults[judgeID]
+	if !exists {
+		return nil, errors.New("judge not found")
+	}
+
 	return judge, nil
-}
-
-// InvalidateTeamSolveStatus 清除队伍解题状态缓存（当解题成功时调用）
-func InvalidateTeamSolveStatus(gameID int64, teamID int64, challengeID int64) {
-	cacheKey := fmt.Sprintf("team_solve_status_%d_%d_%d", gameID, teamID, challengeID)
-	cachePool.Del(cacheKey)
-}
-
-// InvalidateJudgeResult 清除判题结果缓存（当判题状态更新时调用）
-func InvalidateJudgeResult(judgeID string, teamID int64) {
-	cacheKey := fmt.Sprintf("judge_result_%s_%d", judgeID, teamID)
-	cachePool.Del(cacheKey)
 }

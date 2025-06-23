@@ -183,7 +183,7 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 				teamInfo["rank"] = teamSatus.Rank
 				teamInfo["penalty"] = teamSatus.Penalty
 
-				if curTeam.GroupID != nil {
+				if curTeam.Group != nil {
 					teamInfo["group_name"] = curTeam.Group.GroupName
 				}
 			}

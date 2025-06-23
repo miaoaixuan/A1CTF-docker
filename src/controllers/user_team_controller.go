@@ -31,6 +31,22 @@ func UserCreateGameTeam(c *gin.Context) {
 		return
 	}
 
+	// 检查队伍名称是否已经存在
+	var existingTeam models.Team
+	if err := dbtool.DB().Where("game_id = ? AND team_name = ?", game.GameID, payload.Name).First(&existingTeam).Error; err == nil {
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+			Code:    400,
+			Message: "Team name already exists",
+		})
+		return
+	} else if err != gorm.ErrRecordNotFound {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: "Failed to check team name",
+		})
+		return
+	}
+
 	// 如果指定了分组ID，验证分组是否存在
 	if payload.GroupID != nil {
 		var group models.GameGroup
