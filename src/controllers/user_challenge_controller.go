@@ -3,6 +3,7 @@ package controllers
 import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
+	"a1ctf/src/utils/general"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/webmodels"
 	"net/http"
@@ -218,6 +219,7 @@ func UserGetGameChallenge(c *gin.Context) {
 func UserGameChallengeSubmitFlag(c *gin.Context) {
 	game := c.MustGet("game").(models.Game)
 	team := c.MustGet("team").(models.Team)
+	user := c.MustGet("user").(models.User)
 
 	var payload webmodels.UserSubmitFlagPayload = webmodels.UserSubmitFlagPayload{}
 	if err := c.ShouldBindJSON(&payload); err != nil {
@@ -293,12 +295,30 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	}
 
 	if err := dbtool.DB().Create(&newJudge).Error; err != nil {
+		// 记录失败日志
+		general.GetLogHelper().LogUserOperationWithError(c, models.ActionSubmitFlag, models.ResourceTypeChallenge, &challengeIDStr, map[string]interface{}{
+			"game_id":        game.GameID,
+			"team_id":        team.TeamID,
+			"user_id":        user.UserID,
+			"challenge_name": gameChallenge.Challenge.Name,
+			"flag_content":   payload.FlagContent,
+		}, err)
+
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
 			Message: "System error",
 		})
 		return
 	}
+
+	general.GetLogHelper().LogUserOperation(c, models.ActionSubmitFlag, models.ResourceTypeChallenge, &challengeIDStr, map[string]interface{}{
+		"game_id":        game.GameID,
+		"team_id":        team.TeamID,
+		"user_id":        user.UserID,
+		"challenge_name": gameChallenge.Challenge.Name,
+		"judge_id":       newJudge.JudgeID,
+		"flag_content":   payload.FlagContent, // 只记录前50个字符
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,

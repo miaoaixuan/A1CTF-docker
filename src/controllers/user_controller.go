@@ -102,6 +102,22 @@ func Register(c *gin.Context) {
 	}
 
 	if len(existingUsers) > 0 {
+		// 记录注册失败日志（用户名或邮箱已存在）
+		if general.GetLogHelper() != nil {
+			general.GetLogHelper().LogFromGinContext(c, general.LogEntry{
+				Category:     models.LogCategorySecurity,
+				Action:       "REGISTER_FAILED",
+				ResourceType: models.ResourceTypeUser,
+				ResourceID:   &payload.Username,
+				Details: map[string]interface{}{
+					"username": payload.Username,
+					"email":    payload.Email,
+					"reason":   "username_or_email_exists",
+				},
+				Status: models.LogStatusFailed,
+			})
+		}
+
 		c.JSON(http.StatusNotAcceptable, gin.H{
 			"code":    500,
 			"message": "Username or email has registered",
@@ -132,12 +148,43 @@ func Register(c *gin.Context) {
 	}
 
 	if err := dbtool.DB().Create(&newUser).Error; err != nil {
+		// 记录注册失败日志
+		if general.GetLogHelper() != nil {
+			errMsg := err.Error()
+			general.GetLogHelper().LogFromGinContext(c, general.LogEntry{
+				Category:     models.LogCategorySecurity,
+				Action:       "REGISTER_FAILED",
+				ResourceType: models.ResourceTypeUser,
+				ResourceID:   &newUser.UserID,
+				Details: map[string]interface{}{
+					"username": payload.Username,
+					"email":    payload.Email,
+					"reason":   "database_error",
+				},
+				Status:       models.LogStatusFailed,
+				ErrorMessage: &errMsg,
+			})
+		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    501,
 			"message": "System error",
 		})
 		return
 	}
+
+	// 记录注册成功日志
+	general.GetLogHelper().LogFromGinContext(c, general.LogEntry{
+		Category:     models.LogCategoryUser,
+		Action:       "REGISTER",
+		ResourceType: models.ResourceTypeUser,
+		ResourceID:   &newUser.UserID,
+		Details: map[string]interface{}{
+			"username": payload.Username,
+			"email":    payload.Email,
+		},
+		Status: models.LogStatusSuccess,
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,

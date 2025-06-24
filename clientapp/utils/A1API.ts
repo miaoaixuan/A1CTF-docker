@@ -11,6 +11,24 @@
  */
 
 /**
+ * 日志类别:
+ * - ADMIN: 管理员操作
+ * - USER: 用户操作
+ * - SYSTEM: 系统操作
+ * - CONTAINER: 容器操作
+ * - JUDGE: 判题操作
+ * - SECURITY: 安全相关
+ */
+export enum LogCategory {
+  ADMIN = "ADMIN",
+  USER = "USER",
+  SYSTEM = "SYSTEM",
+  CONTAINER = "CONTAINER",
+  JUDGE = "JUDGE",
+  SECURITY = "SECURITY",
+}
+
+/**
  * User role enumeration:
  * - ADMIN - Administrator
  * - USER - Regular user
@@ -895,6 +913,97 @@ export interface UpdateScoreAdjustmentPayload {
 export interface DeleteChallengeSolvesPayload {
   /** 队伍ID（可选，不提供则删除所有解题记录） */
   team_id?: number;
+}
+
+export interface SystemLogItem {
+  /**
+   * 日志ID
+   * @format int64
+   */
+  log_id: number;
+  /**
+   * 日志类别:
+   * - ADMIN: 管理员操作
+   * - USER: 用户操作
+   * - SYSTEM: 系统操作
+   * - CONTAINER: 容器操作
+   * - JUDGE: 判题操作
+   * - SECURITY: 安全相关
+   */
+  log_category: LogCategory;
+  /** 用户ID */
+  user_id?: string | null;
+  /** 用户名 */
+  username?: string | null;
+  /** 操作类型 */
+  action: string;
+  /** 资源类型 */
+  resource_type: string;
+  /** 资源ID */
+  resource_id?: string | null;
+  /** 详细信息 */
+  details?: object | null;
+  /** IP地址 */
+  ip_address?: string | null;
+  /** 用户代理 */
+  user_agent?: string | null;
+  /** 状态 */
+  status: "SUCCESS" | "FAILED" | "WARNING";
+  /** 错误信息 */
+  error_message?: string | null;
+  /**
+   * 创建时间
+   * @format date-time
+   */
+  create_time: string;
+  /**
+   * 游戏ID
+   * @format int64
+   */
+  game_id?: number | null;
+  /**
+   * 挑战ID
+   * @format int64
+   */
+  challenge_id?: number | null;
+  /**
+   * 队伍ID
+   * @format int64
+   */
+  team_id?: number | null;
+}
+
+export interface SystemLogStats {
+  /**
+   * 总日志数（最近24小时）
+   * @format int64
+   */
+  total_logs: number;
+  /**
+   * 成功日志数
+   * @format int64
+   */
+  success_logs: number;
+  /**
+   * 失败日志数
+   * @format int64
+   */
+  failed_logs: number;
+  /**
+   * 管理员操作日志数
+   * @format int64
+   */
+  admin_logs: number;
+  /**
+   * 用户操作日志数
+   * @format int64
+   */
+  user_logs: number;
+  /**
+   * 安全相关日志数
+   * @format int64
+   */
+  security_logs: number;
 }
 
 import type {
@@ -2571,6 +2680,107 @@ export class Api<
         method: "POST",
         body: data,
         type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 管理员获取系统操作日志，支持分页和筛选
+     *
+     * @tags admin
+     * @name AdminGetSystemLogs
+     * @summary 获取系统日志
+     * @request GET:/api/admin/system/logs
+     * @secure
+     */
+    adminGetSystemLogs: (
+      query?: {
+        /**
+         * 偏移量
+         * @default 0
+         */
+        offset?: number;
+        /**
+         * 每页大小
+         * @max 100
+         * @default 20
+         */
+        size?: number;
+        /** 日志类别 */
+        category?: LogCategory;
+        /** 用户ID */
+        user_id?: string;
+        /** 操作类型 */
+        action?: string;
+        /** 资源类型 */
+        resource_type?: string;
+        /** 状态 */
+        status?: "SUCCESS" | "FAILED" | "WARNING";
+        /** IP地址 */
+        ip_address?: string;
+        /** 游戏ID */
+        game_id?: number;
+        /** 关键词搜索 */
+        keyword?: string;
+        /**
+         * 开始时间
+         * @format date-time
+         */
+        start_time?: string;
+        /**
+         * 结束时间
+         * @format date-time
+         */
+        end_time?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          data: {
+            logs: SystemLogItem[];
+            /** 总记录数 */
+            total: number;
+            pagination: {
+              offset: number;
+              size: number;
+              total: number;
+            };
+          };
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/admin/system/logs`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 管理员获取系统日志统计信息（最近24小时）
+     *
+     * @tags admin
+     * @name AdminGetSystemLogStats
+     * @summary 获取系统日志统计
+     * @request GET:/api/admin/system/logs/stats
+     * @secure
+     */
+    adminGetSystemLogStats: (params: RequestParams = {}) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          data: SystemLogStats;
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/admin/system/logs/stats`,
+        method: "GET",
+        secure: true,
         format: "json",
         ...params,
       }),

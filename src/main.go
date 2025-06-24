@@ -314,6 +314,9 @@ func main() {
 			systemGroup.POST("/settings", controllers.UpdateSystemSettings)
 			systemGroup.POST("/upload", controllers.UploadSystemFile)
 			systemGroup.POST("/test-smtp", controllers.TestSMTPSettings)
+
+			systemGroup.GET("/logs", controllers.GetSystemLogs)
+			systemGroup.GET("/logs/stats", controllers.GetSystemLogStats)
 		}
 	}
 

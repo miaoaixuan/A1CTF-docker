@@ -2822,6 +2822,192 @@ paths:
           description: 请求参数错误
         '500':
           description: 服务器内部错误
+  /api/admin/system/logs:
+    get:
+      tags: [admin]
+      operationId: adminGetSystemLogs
+      summary: 获取系统日志
+      description: 管理员获取系统操作日志，支持分页和筛选
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: offset
+          in: query
+          required: false
+          description: 偏移量
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          required: false
+          description: 每页大小
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: category
+          in: query
+          required: false
+          description: 日志类别
+          schema:
+            $ref: '#/components/schemas/LogCategory'
+        - name: user_id
+          in: query
+          required: false
+          description: 用户ID
+          schema:
+            type: string
+        - name: action
+          in: query
+          required: false
+          description: 操作类型
+          schema:
+            type: string
+        - name: resource_type
+          in: query
+          required: false
+          description: 资源类型
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          description: 状态
+          schema:
+            type: string
+            enum: [SUCCESS, FAILED, WARNING]
+        - name: ip_address
+          in: query
+          required: false
+          description: IP地址
+          schema:
+            type: string
+        - name: game_id
+          in: query
+          required: false
+          description: 游戏ID
+          schema:
+            type: integer
+        - name: keyword
+          in: query
+          required: false
+          description: 关键词搜索
+          schema:
+            type: string
+        - name: start_time
+          in: query
+          required: false
+          description: 开始时间
+          schema:
+            type: string
+            format: date-time
+        - name: end_time
+          in: query
+          required: false
+          description: 结束时间
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: 成功获取系统日志
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      logs:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SystemLogItem'
+                      total:
+                        type: integer
+                        description: 总记录数
+                      pagination:
+                        type: object
+                        properties:
+                          offset:
+                            type: integer
+                          size:
+                            type: integer
+                          total:
+                            type: integer
+                        required:
+                          - offset
+                          - size
+                          - total
+                    required:
+                      - logs
+                      - total
+                      - pagination
+                required:
+                  - code
+                  - data
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '401':
+          description: 未授权，用户未登录
+        '403':
+          description: 权限不足，非管理员
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+  /api/admin/system/logs/stats:
+    get:
+      tags: [admin]
+      operationId: adminGetSystemLogStats
+      summary: 获取系统日志统计
+      description: 管理员获取系统日志统计信息（最近24小时）
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: 成功获取系统日志统计
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    $ref: '#/components/schemas/SystemLogStats'
+                required:
+                  - code
+                  - data
+        '401':
+          description: 未授权，用户未登录
+        '403':
+          description: 权限不足，非管理员
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
   /api/admin/game/notices:
     delete:
       tags: [admin]
@@ -4389,3 +4575,127 @@ components:
           type: integer
           description: 队伍ID（可选，不提供则删除所有解题记录）
       required: []
+    LogCategory:
+      type: string
+      enum:
+        - ADMIN
+        - USER
+        - SYSTEM
+        - CONTAINER
+        - JUDGE
+        - SECURITY
+      description: |
+        日志类别:
+        - ADMIN: 管理员操作
+        - USER: 用户操作
+        - SYSTEM: 系统操作
+        - CONTAINER: 容器操作
+        - JUDGE: 判题操作
+        - SECURITY: 安全相关
+    SystemLogItem:
+      type: object
+      properties:
+        log_id:
+          type: integer
+          format: int64
+          description: 日志ID
+        log_category:
+          $ref: '#/components/schemas/LogCategory'
+        user_id:
+          type: string
+          nullable: true
+          description: 用户ID
+        username:
+          type: string
+          nullable: true
+          description: 用户名
+        action:
+          type: string
+          description: 操作类型
+        resource_type:
+          type: string
+          description: 资源类型
+        resource_id:
+          type: string
+          nullable: true
+          description: 资源ID
+        details:
+          type: object
+          nullable: true
+          description: 详细信息
+        ip_address:
+          type: string
+          nullable: true
+          description: IP地址
+        user_agent:
+          type: string
+          nullable: true
+          description: 用户代理
+        status:
+          type: string
+          enum: [SUCCESS, FAILED, WARNING]
+          description: 状态
+        error_message:
+          type: string
+          nullable: true
+          description: 错误信息
+        create_time:
+          type: string
+          format: date-time
+          description: 创建时间
+        game_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: 游戏ID
+        challenge_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: 挑战ID
+        team_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: 队伍ID
+      required:
+        - log_id
+        - log_category
+        - action
+        - resource_type
+        - status
+        - create_time
+    SystemLogStats:
+      type: object
+      properties:
+        total_logs:
+          type: integer
+          format: int64
+          description: 总日志数（最近24小时）
+        success_logs:
+          type: integer
+          format: int64
+          description: 成功日志数
+        failed_logs:
+          type: integer
+          format: int64
+          description: 失败日志数
+        admin_logs:
+          type: integer
+          format: int64
+          description: 管理员操作日志数
+        user_logs:
+          type: integer
+          format: int64
+          description: 用户操作日志数
+        security_logs:
+          type: integer
+          format: int64
+          description: 安全相关日志数
+      required:
+        - total_logs
+        - success_logs
+        - failed_logs
+        - admin_logs
+        - user_logs
+        - security_logs

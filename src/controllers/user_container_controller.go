@@ -3,6 +3,7 @@ package controllers
 import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
+	"a1ctf/src/utils/general"
 	"a1ctf/src/webmodels"
 	"log"
 	"net/http"
@@ -17,6 +18,7 @@ import (
 func UserCreateGameContainer(c *gin.Context) {
 	game := c.MustGet("game").(models.Game)
 	team := c.MustGet("team").(models.Team)
+	user := c.MustGet("user").(models.User)
 
 	challengeIDStr := c.Param("challenge_id")
 	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
@@ -134,12 +136,31 @@ func UserCreateGameContainer(c *gin.Context) {
 	}
 
 	if err := dbtool.DB().Create(&newContainer).Error; err != nil {
+		// 记录创建容器失败日志
+		general.GetLogHelper().LogUserOperationWithError(c, models.ActionStartContainer, models.ResourceTypeContainer, &newContainer.ContainerID, map[string]interface{}{
+			"game_id":        game.GameID,
+			"user_id":        user.UserID,
+			"team_id":        team.TeamID,
+			"challenge_id":   challengeID,
+			"challenge_name": gameChallenge.Challenge.Name,
+		}, err)
+
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    501,
 			Message: "System error",
 		})
 		return
 	}
+
+	// 记录创建容器请求
+	general.GetLogHelper().LogUserOperation(c, models.ActionStartContainer, models.ResourceTypeContainer, &newContainer.ContainerID, map[string]interface{}{
+		"game_id":        game.GameID,
+		"user_id":        user.UserID,
+		"team_id":        team.TeamID,
+		"challenge_id":   challengeID,
+		"challenge_name": gameChallenge.Challenge.Name,
+		"expire_time":    newContainer.ExpireTime,
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
@@ -148,8 +169,9 @@ func UserCreateGameContainer(c *gin.Context) {
 }
 
 func UserCloseGameContainer(c *gin.Context) {
-	_ = c.MustGet("game").(models.Game)
+	game := c.MustGet("game").(models.Game)
 	team := c.MustGet("team").(models.Team)
+	user := c.MustGet("user").(models.User)
 
 	challengeIDStr := c.Param("challenge_id")
 	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
@@ -192,12 +214,32 @@ func UserCloseGameContainer(c *gin.Context) {
 	if err := dbtool.DB().Model(&curContainer).Updates(map[string]interface{}{
 		"container_status": models.ContainerStopping,
 	}).Error; err != nil {
+		// 记录停止容器失败日志
+		general.GetLogHelper().LogUserOperationWithError(c, models.ActionStopContainer, models.ResourceTypeContainer, &curContainer.ContainerID, map[string]interface{}{
+			"game_id":        game.GameID,
+			"user_id":        user.UserID,
+			"team_id":        team.TeamID,
+			"challenge_id":   challengeID,
+			"challenge_name": curContainer.ChallengeName,
+			"container_id":   curContainer.ContainerID,
+		}, err)
+
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    501,
 			Message: "System error",
 		})
 		return
 	}
+
+	// 记录停止容器成功日志
+	general.GetLogHelper().LogUserOperation(c, models.ActionStopContainer, models.ResourceTypeContainer, &curContainer.ContainerID, map[string]interface{}{
+		"game_id":        game.GameID,
+		"user_id":        user.UserID,
+		"team_id":        team.TeamID,
+		"challenge_id":   challengeID,
+		"challenge_name": curContainer.ChallengeName,
+		"container_id":   curContainer.ContainerID,
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
@@ -206,8 +248,9 @@ func UserCloseGameContainer(c *gin.Context) {
 }
 
 func UserExtendGameContainer(c *gin.Context) {
-	_ = c.MustGet("game").(models.Game)
+	game := c.MustGet("game").(models.Game)
 	team := c.MustGet("team").(models.Team)
+	user := c.MustGet("user").(models.User)
 
 	challengeIDStr := c.Param("challenge_id")
 	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
@@ -247,23 +290,40 @@ func UserExtendGameContainer(c *gin.Context) {
 
 	curContainer := containers[0]
 
-	if curContainer.ExpireTime.Sub(time.Now().UTC()).Minutes() > 30 {
-		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
-			Code:    400,
-			Message: "You cannot extend the container now.",
-		})
-		return
-	}
+	// 延长时间为当前时间的2小时之后
+	newExpireTime := time.Now().Add(time.Duration(2) * time.Hour).UTC()
 
 	if err := dbtool.DB().Model(&curContainer).Updates(map[string]interface{}{
-		"expire_time": curContainer.ExpireTime.Add(time.Duration(2) * time.Hour),
+		"expire_time": newExpireTime,
 	}).Error; err != nil {
+		general.GetLogHelper().LogUserOperationWithError(c, models.ActionExtendContainer, models.ResourceTypeContainer, &curContainer.ContainerID, map[string]interface{}{
+			"game_id":         game.GameID,
+			"team_id":         team.TeamID,
+			"user_id":         user.UserID,
+			"challenge_id":    challengeID,
+			"challenge_name":  curContainer.ChallengeName,
+			"container_id":    curContainer.ContainerID,
+			"old_expire_time": curContainer.ExpireTime,
+			"new_expire_time": newExpireTime,
+		}, err)
+
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    501,
 			Message: "System error",
 		})
 		return
 	}
+
+	general.GetLogHelper().LogUserOperation(c, models.ActionExtendContainer, models.ResourceTypeContainer, &curContainer.ContainerID, map[string]interface{}{
+		"game_id":         game.GameID,
+		"team_id":         team.TeamID,
+		"user_id":         user.UserID,
+		"challenge_id":    challengeID,
+		"challenge_name":  curContainer.ChallengeName,
+		"container_id":    curContainer.ContainerID,
+		"old_expire_time": curContainer.ExpireTime,
+		"new_expire_time": newExpireTime,
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,

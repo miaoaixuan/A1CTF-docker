@@ -112,11 +112,25 @@ func AdminUpdateUser(c *gin.Context) {
 	user.Role = payload.Role
 
 	if err := dbtool.DB().Save(&user).Error; err != nil {
+		// 记录失败日志
+		if general.GetLogHelper() != nil {
+			general.GetLogHelper().LogAdminOperationWithError(c, models.ActionUpdate, models.ResourceTypeUser, &payload.UserID, payload, err)
+		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"message": "更新用户信息失败",
 		})
 		return
+	}
+
+	// 记录成功日志
+	if general.GetLogHelper() != nil {
+		general.GetLogHelper().LogAdminOperation(c, models.ActionUpdate, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
+			"updated_fields": []string{"username", "realname", "student_number", "phone", "slogan", "email", "avatar", "role"},
+			"old_username":   user.Username,
+			"new_username":   payload.UserName,
+		})
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -165,11 +179,26 @@ func AdminResetUserPassword(c *gin.Context) {
 	user.JWTVersion = general.RandomPassword(16)
 
 	if err := dbtool.DB().Save(&user).Error; err != nil {
+		// 记录失败日志
+		if general.GetLogHelper() != nil {
+			general.GetLogHelper().LogAdminOperationWithError(c, models.ActionResetPassword, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
+				"target_user": user.Username,
+			}, err)
+		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"message": "重置密码失败",
 		})
 		return
+	}
+
+	// 记录成功日志
+	if general.GetLogHelper() != nil {
+		general.GetLogHelper().LogAdminOperation(c, models.ActionResetPassword, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
+			"target_user": user.Username,
+			"action":      "password_reset_success",
+		})
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -219,6 +248,14 @@ func AdminDeleteUser(c *gin.Context) {
 	// 删除用户
 	if err := tx.Delete(&user).Error; err != nil {
 		tx.Rollback()
+
+		// 记录失败日志
+		if general.GetLogHelper() != nil {
+			general.GetLogHelper().LogAdminOperationWithError(c, models.ActionDelete, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
+				"target_user": user.Username,
+			}, err)
+		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"message": "删除用户失败",
@@ -228,11 +265,27 @@ func AdminDeleteUser(c *gin.Context) {
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
+		// 记录失败日志
+		if general.GetLogHelper() != nil {
+			general.GetLogHelper().LogAdminOperationWithError(c, models.ActionDelete, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
+				"target_user": user.Username,
+				"error_type":  "commit_transaction_failed",
+			}, err)
+		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"message": "提交事务失败",
 		})
 		return
+	}
+
+	// 记录成功日志
+	if general.GetLogHelper() != nil {
+		general.GetLogHelper().LogAdminOperation(c, models.ActionDelete, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
+			"deleted_user": user.Username,
+			"action":       "user_delete_success",
+		})
 	}
 
 	c.JSON(http.StatusOK, gin.H{

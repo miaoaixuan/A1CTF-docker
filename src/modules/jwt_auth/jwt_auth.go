@@ -251,6 +251,9 @@ var PermissionMap = map[string]PermissionSetting{
 	"/api/admin/system/upload":    {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/system/test-smtp": {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/client-config":          {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+
+	"/api/admin/system/logs":       {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/system/logs/stats": {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 }
 
 var RequestMethodMaskMap = map[string]uint64{
@@ -357,6 +360,8 @@ func authorizator() func(data interface{}, c *gin.Context) bool {
 					return false
 				}
 
+				c.Set("user", finalUser)
+
 				if finalUser.JWTVersion != v.JWTVersion {
 					c.SetCookie("a1token", "", -1, "/", "", false, false)
 					return false
@@ -416,6 +421,19 @@ func Login() func(c *gin.Context) (interface{}, error) {
 				}).Error; err != nil {
 					return nil, jwt.ErrFailedAuthentication
 				}
+
+				general.GetLogHelper().LogFromGinContext(c, general.LogEntry{
+					Category:     models.LogCategoryUser,
+					Action:       models.LoginSuccess,
+					ResourceType: models.ResourceTypeUser,
+					UserID:       &user_result.UserID,
+					Username:     &user_result.Username,
+					Details: map[string]interface{}{
+						"username":   user_result.Username,
+						"login_time": time.Now().UTC(),
+					},
+					Status: models.LogStatusSuccess,
+				})
 
 				return &models.JWTUser{
 					UserName:   user_result.Username,
