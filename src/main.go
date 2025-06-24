@@ -1,9 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"a1ctf/src/controllers"
@@ -14,6 +18,7 @@ import (
 	"a1ctf/src/modules/monitoring"
 	"a1ctf/src/utils"
 	dbtool "a1ctf/src/utils/db_tool"
+	"a1ctf/src/utils/general"
 	k8stool "a1ctf/src/utils/k8s_tool"
 	"a1ctf/src/utils/ristretto_tool"
 
@@ -334,7 +339,44 @@ func main() {
 	// 任务线程
 	StartLoopEvent()
 
-	log.Fatal(r.Run(fmt.Sprintf("%s:%s", viper.GetString("system.gin-host"), viper.GetString("system.gin-port"))))
+	// 创建HTTP服务器
+	srv := &http.Server{
+		Addr:    fmt.Sprintf("%s:%s", viper.GetString("system.gin-host"), viper.GetString("system.gin-port")),
+		Handler: r,
+	}
 
-	// k8stool.TestCreate()
+	// 在独立的goroutine中启动服务器
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Failed to start server: %v", err)
+		}
+	}()
+
+	log.Printf("Server started on %s", srv.Addr)
+
+	// 等待中断信号以优雅地关闭服务器
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("Shutting down server...")
+
+	// 设置关闭超时时间
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// 关闭日志系统
+	logHelper := general.GetLogHelper()
+	if logHelper != nil {
+		logHelper.Shutdown()
+	}
+
+	// 关闭缓存
+	ristretto_tool.CloseCachePool()
+
+	// 关闭HTTP服务器
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server forced to shutdown:", err)
+	}
+
+	log.Println("Server exiting")
 }

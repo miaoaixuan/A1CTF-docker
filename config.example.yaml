@@ -55,3 +55,16 @@ job-intervals:
   update-active-game-score-board: 5s
   container-operations: 2s
   flag-judge: 1s
+
+# 日志系统配置
+logging:
+  # 是否启用异步队列日志
+  async-enabled: true
+  # 日志队列缓冲区大小
+  queue-buffer-size: 1000
+  # worker 协程数量
+  worker-count: 3
+  # 批量写入大小
+  batch-size: 10
+  # 强制刷写间隔
+  flush-interval: 5s
