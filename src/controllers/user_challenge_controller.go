@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"a1ctf/src/db/models"
+	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	"a1ctf/src/utils/general"
 	"a1ctf/src/utils/ristretto_tool"
@@ -106,15 +107,19 @@ func UserGetGameChallenge(c *gin.Context) {
 		return
 	}
 
-	// 5. Flag 处理 - 使用缓存优化高并发查询性能，防止重复创建
-	// 这里我们预创建 flag 以确保存在，但在 UserGetGameChallenge 接口中不需要返回具体内容
-	_, err = ristretto_tool.CachedTeamFlag(game.GameID, team.TeamID, *gameChallenge.Challenge.ChallengeID, *gameChallenge.JudgeConfig.FlagTemplate)
+	// 5. Flag 处理，对于没有 flag 的队伍，需要添加到 flag 创建队列里
+	allFlags, err := ristretto_tool.CachedAllTeamFlags(game.GameID, challengeID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to get team flag",
+			Message: "System error",
 		})
 		return
+	}
+
+	if _, exists := allFlags[team.TeamID]; !exists {
+		// 缓存不存在，添加到任务队列
+		_ = tasks.NewTeamFlagCreateTask(*gameChallenge.JudgeConfig.FlagTemplate, team.TeamID, game.GameID, challengeID, team.TeamHash, team.TeamName)
 	}
 
 	// 3. 使用缓存获取附件信息

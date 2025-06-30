@@ -19,6 +19,7 @@ func processQueuedContainer(task models.Container) error {
 			"team_hash": task.TeamHash,
 			"ingame_id": fmt.Sprintf("%d", task.InGameID),
 		},
+		Flag: task.TeamFlag.FlagContent,
 	}
 
 	err := k8stool.CreatePod(&podInfo)
@@ -57,6 +58,7 @@ func processStartingContainer(task models.Container) error {
 			"team_hash": task.TeamHash,
 			"ingame_id": fmt.Sprintf("%d", task.InGameID),
 		},
+		Flag: task.TeamFlag.FlagContent,
 	}
 
 	ports, err := k8stool.GetPodPorts(&podInfo)
@@ -119,6 +121,7 @@ func processStoppingContainer(task models.Container) error {
 			"team_hash": task.TeamHash,
 			"ingame_id": fmt.Sprintf("%d", task.InGameID),
 		},
+		Flag: task.TeamFlag.FlagContent,
 	}
 
 	err := k8stool.DeletePod(&podInfo)
@@ -158,6 +161,7 @@ func processRunningContainer(task models.Container) error {
 			"team_hash": task.TeamHash,
 			"ingame_id": fmt.Sprintf("%d", task.InGameID),
 		},
+		Flag: task.TeamFlag.FlagContent,
 	}
 
 	if task.ExpireTime.After(time.Now().UTC()) {

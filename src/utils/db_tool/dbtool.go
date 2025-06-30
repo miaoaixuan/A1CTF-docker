@@ -44,13 +44,14 @@ func Init() {
 
 	// Init DB
 
-	_ = logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags), // 使用标准输出
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
 		logger.Config{
-			SlowThreshold:             time.Second, // 慢查询阈值（例如 1 秒）
-			LogLevel:                  logger.Info, // 日志级别设为 Info，记录所有 SQL
-			IgnoreRecordNotFoundError: true,        // 忽略 "记录未找到" 错误
-			Colorful:                  true,        // 启用彩色日志（可选）
+			SlowThreshold:             time.Second,   // Slow SQL threshold
+			LogLevel:                  logger.Silent, // Log level
+			IgnoreRecordNotFoundError: true,          // Ignore ErrRecordNotFound error for logger
+			ParameterizedQueries:      true,          // Don't include params in the SQL log
+			Colorful:                  false,         // Disable color
 		},
 	)
 
@@ -62,7 +63,7 @@ func Init() {
 		viper.GetString("postgres.port"),
 		viper.GetString("postgres.sslmode"))
 	db_local, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		// Logger: newLogger, // 设置自定义 Logger
+		Logger: newLogger, // 设置自定义 Logger
 	})
 	if err != nil {
 		panic(err)

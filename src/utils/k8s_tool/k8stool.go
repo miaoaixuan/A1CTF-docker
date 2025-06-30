@@ -111,6 +111,7 @@ type PodInfo struct {
 	TeamHash   string
 	Labels     map[string]string
 	Containers []A1Container
+	Flag       string
 }
 
 func GetClient() (*kubernetes.Clientset, error) {

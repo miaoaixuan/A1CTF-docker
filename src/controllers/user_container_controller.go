@@ -93,22 +93,11 @@ func UserCreateGameContainer(c *gin.Context) {
 	var flag models.TeamFlag
 	if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND challenge_id = ?", game.GameID, team.TeamID, gameChallenge.Challenge.ChallengeID).First(&flag).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			// 生成 Flag
-			flag = models.TeamFlag{
-				FlagID:      0,
-				FlagContent: *gameChallenge.JudgeConfig.FlagTemplate,
-				TeamID:      team.TeamID,
-				GameID:      game.GameID,
-				ChallengeID: *gameChallenge.Challenge.ChallengeID,
-			}
-
-			if err := dbtool.DB().Create(&flag).Error; err != nil {
-				c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-					Code:    500,
-					Message: "System error",
-				})
-				return
-			}
+			c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
+				Code:    403,
+				Message: "Flag haven't been created yet, please wait.",
+			})
+			return
 		} else {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,

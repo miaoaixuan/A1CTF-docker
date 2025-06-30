@@ -16,6 +16,7 @@ import (
 	clientconfig "a1ctf/src/modules/client_config"
 	jwtauth "a1ctf/src/modules/jwt_auth"
 	"a1ctf/src/modules/monitoring"
+	"a1ctf/src/tasks"
 	"a1ctf/src/utils"
 	dbtool "a1ctf/src/utils/db_tool"
 	"a1ctf/src/utils/general"
@@ -104,6 +105,8 @@ func main() {
 		systemMonitor.Start()
 		defer systemMonitor.Stop()
 	}
+
+	tasks.InitTaskQueue()
 
 	memoryStore := persist.NewMemoryStore(1 * time.Minute)
 
@@ -359,6 +362,8 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("Shutting down server...")
+
+	tasks.CloseTaskQueue()
 
 	// 设置关闭超时时间
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
