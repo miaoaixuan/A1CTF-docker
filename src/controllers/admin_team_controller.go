@@ -2,8 +2,8 @@ package controllers
 
 import (
 	"a1ctf/src/db/models"
+	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
-	"a1ctf/src/utils/general"
 	"a1ctf/src/webmodels"
 	"net/http"
 
@@ -122,14 +122,12 @@ func AdminApproveTeam(c *gin.Context) {
 	oldStatus := team.TeamStatus
 	if err := dbtool.DB().Model(&team).Update("team_status", models.ParticipateApproved).Error; err != nil {
 		// 记录批准队伍失败日志
-		if general.GetLogHelper() != nil {
-			general.GetLogHelper().LogAdminOperationWithError(c, models.ActionApprove, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
-				"team_id":    team.TeamID,
-				"team_name":  team.TeamName,
-				"game_id":    team.GameID,
-				"old_status": oldStatus,
-			}, err)
-		}
+		tasks.LogAdminOperationWithError(c, models.ActionApprove, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+			"team_id":    team.TeamID,
+			"team_name":  team.TeamName,
+			"game_id":    team.GameID,
+			"old_status": oldStatus,
+		}, err)
 
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
@@ -139,15 +137,13 @@ func AdminApproveTeam(c *gin.Context) {
 	}
 
 	// 记录批准队伍成功日志
-	if general.GetLogHelper() != nil {
-		general.GetLogHelper().LogAdminOperation(c, models.ActionApprove, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
-			"team_id":    team.TeamID,
-			"team_name":  team.TeamName,
-			"game_id":    team.GameID,
-			"old_status": oldStatus,
-			"new_status": models.ParticipateApproved,
-		})
-	}
+	tasks.LogAdminOperation(c, models.ActionApprove, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+		"team_id":    team.TeamID,
+		"team_name":  team.TeamName,
+		"game_id":    team.GameID,
+		"old_status": oldStatus,
+		"new_status": models.ParticipateApproved,
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
@@ -187,14 +183,12 @@ func AdminBanTeam(c *gin.Context) {
 	oldStatus := team.TeamStatus
 	if err := dbtool.DB().Model(&team).Update("team_status", models.ParticipateBanned).Error; err != nil {
 		// 记录禁赛队伍失败日志
-		if general.GetLogHelper() != nil {
-			general.GetLogHelper().LogAdminOperationWithError(c, models.ActionBan, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
-				"team_id":    team.TeamID,
-				"team_name":  team.TeamName,
-				"game_id":    team.GameID,
-				"old_status": oldStatus,
-			}, err)
-		}
+		tasks.LogAdminOperationWithError(c, models.ActionBan, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+			"team_id":    team.TeamID,
+			"team_name":  team.TeamName,
+			"game_id":    team.GameID,
+			"old_status": oldStatus,
+		}, err)
 
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
@@ -204,15 +198,13 @@ func AdminBanTeam(c *gin.Context) {
 	}
 
 	// 记录禁赛队伍成功日志
-	if general.GetLogHelper() != nil {
-		general.GetLogHelper().LogAdminOperation(c, models.ActionBan, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
-			"team_id":    team.TeamID,
-			"team_name":  team.TeamName,
-			"game_id":    team.GameID,
-			"old_status": oldStatus,
-			"new_status": models.ParticipateBanned,
-		})
-	}
+	tasks.LogAdminOperation(c, models.ActionBan, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+		"team_id":    team.TeamID,
+		"team_name":  team.TeamName,
+		"game_id":    team.GameID,
+		"old_status": oldStatus,
+		"new_status": models.ParticipateBanned,
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
@@ -261,14 +253,12 @@ func AdminUnbanTeam(c *gin.Context) {
 	oldStatus := team.TeamStatus
 	if err := dbtool.DB().Model(&team).Update("team_status", models.ParticipateApproved).Error; err != nil {
 		// 记录解禁队伍失败日志
-		if general.GetLogHelper() != nil {
-			general.GetLogHelper().LogAdminOperationWithError(c, models.ActionUnban, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
-				"team_id":    team.TeamID,
-				"team_name":  team.TeamName,
-				"game_id":    team.GameID,
-				"old_status": oldStatus,
-			}, err)
-		}
+		tasks.LogAdminOperationWithError(c, models.ActionUnban, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+			"team_id":    team.TeamID,
+			"team_name":  team.TeamName,
+			"game_id":    team.GameID,
+			"old_status": oldStatus,
+		}, err)
 
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
@@ -278,15 +268,13 @@ func AdminUnbanTeam(c *gin.Context) {
 	}
 
 	// 记录解禁队伍成功日志
-	if general.GetLogHelper() != nil {
-		general.GetLogHelper().LogAdminOperation(c, models.ActionUnban, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
-			"team_id":    team.TeamID,
-			"team_name":  team.TeamName,
-			"game_id":    team.GameID,
-			"old_status": oldStatus,
-			"new_status": models.ParticipateApproved,
-		})
-	}
+	tasks.LogAdminOperation(c, models.ActionUnban, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+		"team_id":    team.TeamID,
+		"team_name":  team.TeamName,
+		"game_id":    team.GameID,
+		"old_status": oldStatus,
+		"new_status": models.ParticipateApproved,
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
@@ -345,14 +333,12 @@ func AdminDeleteTeam(c *gin.Context) {
 		tx.Rollback()
 
 		// 记录删除队伍失败日志
-		if general.GetLogHelper() != nil {
-			general.GetLogHelper().LogAdminOperationWithError(c, models.ActionDelete, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
-				"team_id":     team.TeamID,
-				"team_name":   team.TeamName,
-				"game_id":     team.GameID,
-				"team_status": team.TeamStatus,
-			}, err)
-		}
+		tasks.LogAdminOperationWithError(c, models.ActionDelete, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+			"team_id":     team.TeamID,
+			"team_name":   team.TeamName,
+			"game_id":     team.GameID,
+			"team_status": team.TeamStatus,
+		}, err)
 
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
@@ -371,15 +357,13 @@ func AdminDeleteTeam(c *gin.Context) {
 	}
 
 	// 记录删除队伍成功日志
-	if general.GetLogHelper() != nil {
-		general.GetLogHelper().LogAdminOperation(c, models.ActionDelete, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
-			"team_id":      team.TeamID,
-			"team_name":    team.TeamName,
-			"game_id":      team.GameID,
-			"team_status":  team.TeamStatus,
-			"member_count": len(team.TeamMembers),
-		})
-	}
+	tasks.LogAdminOperation(c, models.ActionDelete, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+		"team_id":      team.TeamID,
+		"team_name":    team.TeamName,
+		"game_id":      team.GameID,
+		"team_status":  team.TeamStatus,
+		"member_count": len(team.TeamMembers),
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,

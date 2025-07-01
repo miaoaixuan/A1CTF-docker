@@ -34,7 +34,7 @@ func InitTaskQueue() {
 			},
 			asynq.Config{
 				// Specify how many concurrent workers to use
-				Concurrency: 10,
+				Concurrency: 0,
 				// Optionally specify multiple queues with different priority.
 				Queues: map[string]int{
 					"critical": 6,
@@ -47,6 +47,7 @@ func InitTaskQueue() {
 
 		mux := asynq.NewServeMux()
 		mux.HandleFunc(TypeNewTeamFlag, HandleTeamCreateTask)
+		mux.HandleFunc(TypeNewSystemLog, HandleSystemLogTask)
 
 		if err := server.Run(mux); err != nil {
 			log.Fatalf("could not run server: %v", err)
@@ -60,5 +61,6 @@ func CloseTaskQueue() {
 }
 
 const (
-	TypeNewTeamFlag = "teamFlag:create"
+	TypeNewTeamFlag  = "teamFlag:create"
+	TypeNewSystemLog = "systemLog:create"
 )

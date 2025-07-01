@@ -16,8 +16,8 @@ import (
 	"gorm.io/gorm"
 
 	"a1ctf/src/db/models"
+	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
-	"a1ctf/src/utils/general"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/webmodels"
 )
@@ -65,13 +65,11 @@ func UploadFile(c *gin.Context) {
 
 	if err := saveUploadedFile(file, savedPath); err != nil {
 		// 记录文件上传失败日志
-		if general.GetLogHelper() != nil {
-			general.GetLogHelper().LogUserOperationWithError(c, models.ActionUpload, models.ResourceTypeFile, &fileID, map[string]interface{}{
-				"original_filename": file.Filename,
-				"file_size":         file.Size,
-				"file_extension":    fileExt,
-			}, err)
-		}
+		tasks.LogUserOperationWithError(c, models.ActionUpload, models.ResourceTypeFile, &fileID, map[string]interface{}{
+			"original_filename": file.Filename,
+			"file_size":         file.Size,
+			"file_extension":    fileExt,
+		}, err)
 
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
@@ -96,14 +94,12 @@ func UploadFile(c *gin.Context) {
 		os.Remove(savedPath)
 
 		// 记录数据库保存失败日志
-		if general.GetLogHelper() != nil {
-			general.GetLogHelper().LogUserOperationWithError(c, models.ActionUpload, models.ResourceTypeFile, &fileID, map[string]interface{}{
-				"original_filename": file.Filename,
-				"file_size":         file.Size,
-				"file_extension":    fileExt,
-				"error_type":        "database_save_failed",
-			}, err)
-		}
+		tasks.LogUserOperationWithError(c, models.ActionUpload, models.ResourceTypeFile, &fileID, map[string]interface{}{
+			"original_filename": file.Filename,
+			"file_size":         file.Size,
+			"file_extension":    fileExt,
+			"error_type":        "database_save_failed",
+		}, err)
 
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
@@ -113,14 +109,12 @@ func UploadFile(c *gin.Context) {
 	}
 
 	// 记录文件上传成功日志
-	if general.GetLogHelper() != nil {
-		general.GetLogHelper().LogUserOperation(c, models.ActionUpload, models.ResourceTypeFile, &fileID, map[string]interface{}{
-			"original_filename": file.Filename,
-			"file_size":         file.Size,
-			"file_extension":    fileExt,
-			"saved_path":        savedPath,
-		})
-	}
+	tasks.LogUserOperation(c, models.ActionUpload, models.ResourceTypeFile, &fileID, map[string]interface{}{
+		"original_filename": file.Filename,
+		"file_size":         file.Size,
+		"file_extension":    fileExt,
+		"saved_path":        savedPath,
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,

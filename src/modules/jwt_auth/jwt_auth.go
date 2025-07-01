@@ -3,6 +3,7 @@ package jwtauth
 import (
 	"a1ctf/src/db/models"
 	clientconfig "a1ctf/src/modules/client_config"
+	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	"a1ctf/src/utils/general"
 	"a1ctf/src/utils/ristretto_tool"
@@ -422,7 +423,7 @@ func Login() func(c *gin.Context) (interface{}, error) {
 					return nil, jwt.ErrFailedAuthentication
 				}
 
-				general.GetLogHelper().LogFromGinContext(c, general.LogEntry{
+				tasks.LogFromGinContext(c, tasks.LogEntry{
 					Category:     models.LogCategoryUser,
 					Action:       models.LoginSuccess,
 					ResourceType: models.ResourceTypeUser,

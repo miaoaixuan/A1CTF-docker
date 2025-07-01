@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"a1ctf/src/db/models"
+	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
 	"a1ctf/src/webmodels"
@@ -113,9 +114,7 @@ func AdminUpdateUser(c *gin.Context) {
 
 	if err := dbtool.DB().Save(&user).Error; err != nil {
 		// 记录失败日志
-		if general.GetLogHelper() != nil {
-			general.GetLogHelper().LogAdminOperationWithError(c, models.ActionUpdate, models.ResourceTypeUser, &payload.UserID, payload, err)
-		}
+		tasks.LogAdminOperationWithError(c, models.ActionUpdate, models.ResourceTypeUser, &payload.UserID, payload, err)
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -125,13 +124,11 @@ func AdminUpdateUser(c *gin.Context) {
 	}
 
 	// 记录成功日志
-	if general.GetLogHelper() != nil {
-		general.GetLogHelper().LogAdminOperation(c, models.ActionUpdate, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
-			"updated_fields": []string{"username", "realname", "student_number", "phone", "slogan", "email", "avatar", "role"},
-			"old_username":   user.Username,
-			"new_username":   payload.UserName,
-		})
-	}
+	tasks.LogAdminOperation(c, models.ActionUpdate, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
+		"updated_fields": []string{"username", "realname", "student_number", "phone", "slogan", "email", "avatar", "role"},
+		"old_username":   user.Username,
+		"new_username":   payload.UserName,
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
@@ -180,11 +177,9 @@ func AdminResetUserPassword(c *gin.Context) {
 
 	if err := dbtool.DB().Save(&user).Error; err != nil {
 		// 记录失败日志
-		if general.GetLogHelper() != nil {
-			general.GetLogHelper().LogAdminOperationWithError(c, models.ActionResetPassword, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
-				"target_user": user.Username,
-			}, err)
-		}
+		tasks.LogAdminOperationWithError(c, models.ActionResetPassword, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
+			"target_user": user.Username,
+		}, err)
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -194,12 +189,10 @@ func AdminResetUserPassword(c *gin.Context) {
 	}
 
 	// 记录成功日志
-	if general.GetLogHelper() != nil {
-		general.GetLogHelper().LogAdminOperation(c, models.ActionResetPassword, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
-			"target_user": user.Username,
-			"action":      "password_reset_success",
-		})
-	}
+	tasks.LogAdminOperation(c, models.ActionResetPassword, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
+		"target_user": user.Username,
+		"action":      "password_reset_success",
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":         200,
@@ -250,11 +243,9 @@ func AdminDeleteUser(c *gin.Context) {
 		tx.Rollback()
 
 		// 记录失败日志
-		if general.GetLogHelper() != nil {
-			general.GetLogHelper().LogAdminOperationWithError(c, models.ActionDelete, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
-				"target_user": user.Username,
-			}, err)
-		}
+		tasks.LogAdminOperationWithError(c, models.ActionDelete, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
+			"target_user": user.Username,
+		}, err)
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -266,12 +257,10 @@ func AdminDeleteUser(c *gin.Context) {
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
 		// 记录失败日志
-		if general.GetLogHelper() != nil {
-			general.GetLogHelper().LogAdminOperationWithError(c, models.ActionDelete, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
-				"target_user": user.Username,
-				"error_type":  "commit_transaction_failed",
-			}, err)
-		}
+		tasks.LogAdminOperationWithError(c, models.ActionDelete, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
+			"target_user": user.Username,
+			"error_type":  "commit_transaction_failed",
+		}, err)
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -281,12 +270,10 @@ func AdminDeleteUser(c *gin.Context) {
 	}
 
 	// 记录成功日志
-	if general.GetLogHelper() != nil {
-		general.GetLogHelper().LogAdminOperation(c, models.ActionDelete, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
-			"deleted_user": user.Username,
-			"action":       "user_delete_success",
-		})
-	}
+	tasks.LogAdminOperation(c, models.ActionDelete, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
+		"deleted_user": user.Username,
+		"action":       "user_delete_success",
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,

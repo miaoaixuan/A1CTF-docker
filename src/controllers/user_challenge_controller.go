@@ -4,7 +4,6 @@ import (
 	"a1ctf/src/db/models"
 	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
-	"a1ctf/src/utils/general"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/webmodels"
 	"net/http"
@@ -301,7 +300,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 
 	if err := dbtool.DB().Create(&newJudge).Error; err != nil {
 		// 记录失败日志
-		general.GetLogHelper().LogUserOperationWithError(c, models.ActionSubmitFlag, models.ResourceTypeChallenge, &challengeIDStr, map[string]interface{}{
+		tasks.LogUserOperationWithError(c, models.ActionSubmitFlag, models.ResourceTypeChallenge, &challengeIDStr, map[string]interface{}{
 			"game_id":        game.GameID,
 			"team_id":        team.TeamID,
 			"user_id":        user.UserID,
@@ -316,7 +315,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 		return
 	}
 
-	general.GetLogHelper().LogUserOperation(c, models.ActionSubmitFlag, models.ResourceTypeChallenge, &challengeIDStr, map[string]interface{}{
+	tasks.LogUserOperation(c, models.ActionSubmitFlag, models.ResourceTypeChallenge, &challengeIDStr, map[string]interface{}{
 		"game_id":        game.GameID,
 		"team_id":        team.TeamID,
 		"user_id":        user.UserID,

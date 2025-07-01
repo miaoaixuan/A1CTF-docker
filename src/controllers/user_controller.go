@@ -10,6 +10,7 @@ import (
 
 	"a1ctf/src/db/models"
 	clientconfig "a1ctf/src/modules/client_config"
+	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
 	"a1ctf/src/utils/ristretto_tool"
@@ -103,20 +104,18 @@ func Register(c *gin.Context) {
 
 	if len(existingUsers) > 0 {
 		// 记录注册失败日志（用户名或邮箱已存在）
-		if general.GetLogHelper() != nil {
-			general.GetLogHelper().LogFromGinContext(c, general.LogEntry{
-				Category:     models.LogCategorySecurity,
-				Action:       "REGISTER_FAILED",
-				ResourceType: models.ResourceTypeUser,
-				ResourceID:   &payload.Username,
-				Details: map[string]interface{}{
-					"username": payload.Username,
-					"email":    payload.Email,
-					"reason":   "username_or_email_exists",
-				},
-				Status: models.LogStatusFailed,
-			})
-		}
+		tasks.LogFromGinContext(c, tasks.LogEntry{
+			Category:     models.LogCategorySecurity,
+			Action:       "REGISTER_FAILED",
+			ResourceType: models.ResourceTypeUser,
+			ResourceID:   &payload.Username,
+			Details: map[string]interface{}{
+				"username": payload.Username,
+				"email":    payload.Email,
+				"reason":   "username_or_email_exists",
+			},
+			Status: models.LogStatusFailed,
+		})
 
 		c.JSON(http.StatusNotAcceptable, gin.H{
 			"code":    500,
@@ -149,22 +148,20 @@ func Register(c *gin.Context) {
 
 	if err := dbtool.DB().Create(&newUser).Error; err != nil {
 		// 记录注册失败日志
-		if general.GetLogHelper() != nil {
-			errMsg := err.Error()
-			general.GetLogHelper().LogFromGinContext(c, general.LogEntry{
-				Category:     models.LogCategorySecurity,
-				Action:       "REGISTER_FAILED",
-				ResourceType: models.ResourceTypeUser,
-				ResourceID:   &newUser.UserID,
-				Details: map[string]interface{}{
-					"username": payload.Username,
-					"email":    payload.Email,
-					"reason":   "database_error",
-				},
-				Status:       models.LogStatusFailed,
-				ErrorMessage: &errMsg,
-			})
-		}
+		errMsg := err.Error()
+		tasks.LogFromGinContext(c, tasks.LogEntry{
+			Category:     models.LogCategorySecurity,
+			Action:       "REGISTER_FAILED",
+			ResourceType: models.ResourceTypeUser,
+			ResourceID:   &newUser.UserID,
+			Details: map[string]interface{}{
+				"username": payload.Username,
+				"email":    payload.Email,
+				"reason":   "database_error",
+			},
+			Status:       models.LogStatusFailed,
+			ErrorMessage: &errMsg,
+		})
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    501,
@@ -174,7 +171,7 @@ func Register(c *gin.Context) {
 	}
 
 	// 记录注册成功日志
-	general.GetLogHelper().LogFromGinContext(c, general.LogEntry{
+	tasks.LogFromGinContext(c, tasks.LogEntry{
 		Category:     models.LogCategoryUser,
 		Action:       "REGISTER",
 		ResourceType: models.ResourceTypeUser,

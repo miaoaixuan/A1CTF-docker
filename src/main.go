@@ -19,7 +19,6 @@ import (
 	"a1ctf/src/tasks"
 	"a1ctf/src/utils"
 	dbtool "a1ctf/src/utils/db_tool"
-	"a1ctf/src/utils/general"
 	k8stool "a1ctf/src/utils/k8s_tool"
 	"a1ctf/src/utils/ristretto_tool"
 
@@ -368,12 +367,6 @@ func main() {
 	// 设置关闭超时时间
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-
-	// 关闭日志系统
-	logHelper := general.GetLogHelper()
-	if logHelper != nil {
-		logHelper.Shutdown()
-	}
 
 	// 关闭缓存
 	ristretto_tool.CloseCachePool()

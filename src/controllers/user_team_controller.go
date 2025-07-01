@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"a1ctf/src/db/models"
+	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
 	"a1ctf/src/utils/ristretto_tool"
@@ -86,7 +87,7 @@ func UserCreateGameTeam(c *gin.Context) {
 
 	if err := dbtool.DB().Create(&newTeam).Error; err != nil {
 		// 记录创建队伍失败日志
-		general.GetLogHelper().LogUserOperationWithError(c, models.ActionCreate, models.ResourceTypeTeam, nil, map[string]interface{}{
+		tasks.LogUserOperationWithError(c, models.ActionCreate, models.ResourceTypeTeam, nil, map[string]interface{}{
 			"game_id":   game.GameID,
 			"team_name": payload.Name,
 			"group_id":  payload.GroupID,
@@ -99,7 +100,7 @@ func UserCreateGameTeam(c *gin.Context) {
 		return
 	}
 
-	general.GetLogHelper().LogUserOperation(c, models.ActionCreate, models.ResourceTypeTeam, nil, map[string]interface{}{
+	tasks.LogUserOperation(c, models.ActionCreate, models.ResourceTypeTeam, nil, map[string]interface{}{
 		"game_id":     game.GameID,
 		"team_name":   payload.Name,
 		"team_id":     newTeam.TeamID,
@@ -179,7 +180,7 @@ func TeamJoinRequest(c *gin.Context) {
 
 	if err := dbtool.DB().Create(&newRequest).Error; err != nil {
 		// 记录加入队伍申请失败日志
-		general.GetLogHelper().LogUserOperationWithError(c, models.ActionJoinTeam, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+		tasks.LogUserOperationWithError(c, models.ActionJoinTeam, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
 			"team_id":     team.TeamID,
 			"team_name":   team.TeamName,
 			"game_id":     team.GameID,
@@ -193,7 +194,7 @@ func TeamJoinRequest(c *gin.Context) {
 		return
 	}
 
-	general.GetLogHelper().LogUserOperation(c, models.ActionJoinTeam, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+	tasks.LogUserOperation(c, models.ActionJoinTeam, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
 		"team_id":     team.TeamID,
 		"team_name":   team.TeamName,
 		"game_id":     team.GameID,
@@ -406,7 +407,7 @@ func HandleTeamJoinRequest(c *gin.Context) {
 		return
 	}
 
-	general.GetLogHelper().LogUserOperation(c, actionStr, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+	tasks.LogUserOperation(c, actionStr, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
 		"team_id":      team.TeamID,
 		"team_name":    team.TeamName,
 		"request_id":   requestID,
@@ -505,7 +506,7 @@ func TransferTeamCaptain(c *gin.Context) {
 	// 更新队伍成员列表
 	if err := dbtool.DB().Model(&team).Update("team_members", pq.StringArray(newMembers)).Error; err != nil {
 		// 记录转移队长失败日志
-		general.GetLogHelper().LogUserOperationWithError(c, models.ActionTransfer, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+		tasks.LogUserOperationWithError(c, models.ActionTransfer, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
 			"team_id":        team.TeamID,
 			"team_name":      team.TeamName,
 			"old_captain_id": currentCaptainID,
@@ -520,7 +521,7 @@ func TransferTeamCaptain(c *gin.Context) {
 		return
 	}
 
-	general.GetLogHelper().LogUserOperation(c, models.ActionTransfer, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+	tasks.LogUserOperation(c, models.ActionTransfer, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
 		"team_id":        team.TeamID,
 		"team_name":      team.TeamName,
 		"user_id":        user.UserID,
@@ -614,7 +615,7 @@ func RemoveTeamMember(c *gin.Context) {
 
 	// 更新队伍成员列表
 	if err := dbtool.DB().Model(&team).Update("team_members", pq.StringArray(newMembers)).Error; err != nil {
-		general.GetLogHelper().LogUserOperationWithError(c, "REMOVE_MEMBER", models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+		tasks.LogUserOperationWithError(c, "REMOVE_MEMBER", models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
 			"team_id":         team.TeamID,
 			"team_name":       team.TeamName,
 			"removed_user_id": targetUserID,
@@ -628,7 +629,7 @@ func RemoveTeamMember(c *gin.Context) {
 		return
 	}
 
-	general.GetLogHelper().LogUserOperation(c, "REMOVE_MEMBER", models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+	tasks.LogUserOperation(c, "REMOVE_MEMBER", models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
 		"team_id":         team.TeamID,
 		"team_name":       team.TeamName,
 		"removed_user_id": targetUserID,
@@ -705,7 +706,7 @@ func DeleteTeam(c *gin.Context) {
 		tx.Rollback()
 
 		// 记录删除队伍失败日志
-		general.GetLogHelper().LogUserOperationWithError(c, models.ActionDelete, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+		tasks.LogUserOperationWithError(c, models.ActionDelete, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
 			"team_id":   team.TeamID,
 			"team_name": team.TeamName,
 			"game_id":   team.GameID,
@@ -727,7 +728,7 @@ func DeleteTeam(c *gin.Context) {
 		return
 	}
 
-	general.GetLogHelper().LogUserOperation(c, models.ActionDelete, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+	tasks.LogUserOperation(c, models.ActionDelete, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
 		"team_id":      team.TeamID,
 		"team_name":    team.TeamName,
 		"game_id":      team.GameID,
@@ -801,7 +802,7 @@ func UpdateTeamInfo(c *gin.Context) {
 
 	// 更新队伍信息
 	if err := dbtool.DB().Model(&team).Update("team_slogan", payload.TeamSlogan).Error; err != nil {
-		general.GetLogHelper().LogUserOperationWithError(c, models.ActionUpdate, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+		tasks.LogUserOperationWithError(c, models.ActionUpdate, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
 			"team_id":    team.TeamID,
 			"team_name":  team.TeamName,
 			"old_slogan": oldSlogan,
@@ -816,7 +817,7 @@ func UpdateTeamInfo(c *gin.Context) {
 		return
 	}
 
-	general.GetLogHelper().LogUserOperation(c, models.ActionUpdate, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+	tasks.LogUserOperation(c, models.ActionUpdate, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
 		"team_id":    team.TeamID,
 		"team_name":  team.TeamName,
 		"old_slogan": oldSlogan,

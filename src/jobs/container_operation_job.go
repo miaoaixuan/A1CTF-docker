@@ -2,8 +2,8 @@ package jobs
 
 import (
 	"a1ctf/src/db/models"
+	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
-	"a1ctf/src/utils/general"
 	k8stool "a1ctf/src/utils/k8s_tool"
 	"fmt"
 	"log"
@@ -25,7 +25,7 @@ func processQueuedContainer(task models.Container) error {
 	err := k8stool.CreatePod(&podInfo)
 	if err != nil {
 		// 记录容器创建失败日志
-		general.GetLogHelper().LogContainerOperation(nil, nil, models.ActionContainerStarting, task.ContainerID, map[string]interface{}{
+		tasks.LogContainerOperation(nil, nil, models.ActionContainerStarting, task.ContainerID, map[string]interface{}{
 			"team_hash":    task.TeamHash,
 			"ingame_id":    task.InGameID,
 			"pod_name":     podInfo.Name,
@@ -39,7 +39,7 @@ func processQueuedContainer(task models.Container) error {
 		}
 	}
 
-	general.GetLogHelper().LogContainerOperation(nil, nil, models.ActionContainerStarted, task.ContainerID, map[string]interface{}{
+	tasks.LogContainerOperation(nil, nil, models.ActionContainerStarted, task.ContainerID, map[string]interface{}{
 		"team_hash":    task.TeamHash,
 		"ingame_id":    task.InGameID,
 		"pod_name":     podInfo.Name,
@@ -101,7 +101,7 @@ func processStartingContainer(task models.Container) error {
 			return fmt.Errorf("failed to update container status: %v", err)
 		}
 
-		general.GetLogHelper().LogContainerOperation(nil, nil, models.ActionContainerStarted, task.ContainerID, map[string]interface{}{
+		tasks.LogContainerOperation(nil, nil, models.ActionContainerStarted, task.ContainerID, map[string]interface{}{
 			"team_hash":    task.TeamHash,
 			"ingame_id":    task.InGameID,
 			"pod_name":     podInfo.Name,
@@ -126,7 +126,7 @@ func processStoppingContainer(task models.Container) error {
 
 	err := k8stool.DeletePod(&podInfo)
 	if err != nil {
-		general.GetLogHelper().LogContainerOperation(nil, nil, models.ActionContainerStopping, task.ContainerID, map[string]interface{}{
+		tasks.LogContainerOperation(nil, nil, models.ActionContainerStopping, task.ContainerID, map[string]interface{}{
 			"team_hash":    task.TeamHash,
 			"ingame_id":    task.InGameID,
 			"pod_name":     podInfo.Name,
@@ -140,7 +140,7 @@ func processStoppingContainer(task models.Container) error {
 			return fmt.Errorf("failed to update container status: %v", err)
 		}
 
-		general.GetLogHelper().LogContainerOperation(nil, nil, models.ActionContainerStopped, task.ContainerID, map[string]interface{}{
+		tasks.LogContainerOperation(nil, nil, models.ActionContainerStopped, task.ContainerID, map[string]interface{}{
 			"team_hash":    task.TeamHash,
 			"ingame_id":    task.InGameID,
 			"pod_name":     podInfo.Name,
@@ -170,7 +170,7 @@ func processRunningContainer(task models.Container) error {
 
 	err := k8stool.DeletePod(&podInfo)
 	if err != nil {
-		general.GetLogHelper().LogContainerOperation(nil, nil, models.ActionContainerStopping, task.ContainerID, map[string]interface{}{
+		tasks.LogContainerOperation(nil, nil, models.ActionContainerStopping, task.ContainerID, map[string]interface{}{
 			"team_hash":    task.TeamHash,
 			"ingame_id":    task.InGameID,
 			"pod_name":     podInfo.Name,
@@ -185,7 +185,7 @@ func processRunningContainer(task models.Container) error {
 		}
 	}
 
-	general.GetLogHelper().LogContainerOperation(nil, nil, models.ActionContainerStopped, task.ContainerID, map[string]interface{}{
+	tasks.LogContainerOperation(nil, nil, models.ActionContainerStopped, task.ContainerID, map[string]interface{}{
 		"team_hash":    task.TeamHash,
 		"ingame_id":    task.InGameID,
 		"pod_name":     podInfo.Name,

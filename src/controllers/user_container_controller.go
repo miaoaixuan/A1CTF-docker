@@ -2,8 +2,8 @@ package controllers
 
 import (
 	"a1ctf/src/db/models"
+	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
-	"a1ctf/src/utils/general"
 	"a1ctf/src/webmodels"
 	"log"
 	"net/http"
@@ -126,7 +126,7 @@ func UserCreateGameContainer(c *gin.Context) {
 
 	if err := dbtool.DB().Create(&newContainer).Error; err != nil {
 		// 记录创建容器失败日志
-		general.GetLogHelper().LogUserOperationWithError(c, models.ActionStartContainer, models.ResourceTypeContainer, &newContainer.ContainerID, map[string]interface{}{
+		tasks.LogUserOperationWithError(c, models.ActionStartContainer, models.ResourceTypeContainer, &newContainer.ContainerID, map[string]interface{}{
 			"game_id":        game.GameID,
 			"user_id":        user.UserID,
 			"team_id":        team.TeamID,
@@ -142,7 +142,7 @@ func UserCreateGameContainer(c *gin.Context) {
 	}
 
 	// 记录创建容器请求
-	general.GetLogHelper().LogUserOperation(c, models.ActionStartContainer, models.ResourceTypeContainer, &newContainer.ContainerID, map[string]interface{}{
+	tasks.LogUserOperation(c, models.ActionStartContainer, models.ResourceTypeContainer, &newContainer.ContainerID, map[string]interface{}{
 		"game_id":        game.GameID,
 		"user_id":        user.UserID,
 		"team_id":        team.TeamID,
@@ -204,7 +204,7 @@ func UserCloseGameContainer(c *gin.Context) {
 		"container_status": models.ContainerStopping,
 	}).Error; err != nil {
 		// 记录停止容器失败日志
-		general.GetLogHelper().LogUserOperationWithError(c, models.ActionStopContainer, models.ResourceTypeContainer, &curContainer.ContainerID, map[string]interface{}{
+		tasks.LogUserOperationWithError(c, models.ActionStopContainer, models.ResourceTypeContainer, &curContainer.ContainerID, map[string]interface{}{
 			"game_id":        game.GameID,
 			"user_id":        user.UserID,
 			"team_id":        team.TeamID,
@@ -221,7 +221,7 @@ func UserCloseGameContainer(c *gin.Context) {
 	}
 
 	// 记录停止容器成功日志
-	general.GetLogHelper().LogUserOperation(c, models.ActionStopContainer, models.ResourceTypeContainer, &curContainer.ContainerID, map[string]interface{}{
+	tasks.LogUserOperation(c, models.ActionStopContainer, models.ResourceTypeContainer, &curContainer.ContainerID, map[string]interface{}{
 		"game_id":        game.GameID,
 		"user_id":        user.UserID,
 		"team_id":        team.TeamID,
@@ -285,7 +285,7 @@ func UserExtendGameContainer(c *gin.Context) {
 	if err := dbtool.DB().Model(&curContainer).Updates(map[string]interface{}{
 		"expire_time": newExpireTime,
 	}).Error; err != nil {
-		general.GetLogHelper().LogUserOperationWithError(c, models.ActionExtendContainer, models.ResourceTypeContainer, &curContainer.ContainerID, map[string]interface{}{
+		tasks.LogUserOperationWithError(c, models.ActionExtendContainer, models.ResourceTypeContainer, &curContainer.ContainerID, map[string]interface{}{
 			"game_id":         game.GameID,
 			"team_id":         team.TeamID,
 			"user_id":         user.UserID,
@@ -303,7 +303,7 @@ func UserExtendGameContainer(c *gin.Context) {
 		return
 	}
 
-	general.GetLogHelper().LogUserOperation(c, models.ActionExtendContainer, models.ResourceTypeContainer, &curContainer.ContainerID, map[string]interface{}{
+	tasks.LogUserOperation(c, models.ActionExtendContainer, models.ResourceTypeContainer, &curContainer.ContainerID, map[string]interface{}{
 		"game_id":         game.GameID,
 		"team_id":         team.TeamID,
 		"user_id":         user.UserID,

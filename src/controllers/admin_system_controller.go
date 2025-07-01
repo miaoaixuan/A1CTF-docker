@@ -3,6 +3,7 @@ package controllers
 import (
 	"a1ctf/src/db/models"
 	clientconfig "a1ctf/src/modules/client_config"
+	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	"a1ctf/src/utils/general"
 	"io"
@@ -48,9 +49,7 @@ func UpdateSystemSettings(c *gin.Context) {
 	// 保存设置
 	if err := clientconfig.SaveSystemSettings(settings); err != nil {
 		// 记录日志
-		if general.GetLogHelper() != nil {
-			general.GetLogHelper().LogAdminOperationWithError(c, models.ActionUpdate, models.ResourceTypeSystem, nil, settings, err)
-		}
+		tasks.LogAdminOperationWithError(c, models.ActionUpdate, models.ResourceTypeSystem, nil, settings, err)
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -60,9 +59,7 @@ func UpdateSystemSettings(c *gin.Context) {
 	}
 
 	// 记录成功日志
-	if general.GetLogHelper() != nil {
-		general.GetLogHelper().LogAdminOperation(c, models.ActionUpdate, models.ResourceTypeSystem, nil, settings)
-	}
+	tasks.LogAdminOperation(c, models.ActionUpdate, models.ResourceTypeSystem, nil, settings)
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
@@ -108,12 +105,10 @@ func UploadSystemFile(c *gin.Context) {
 	// 保存文件
 	if err := saveUploadedFile(file, filePath); err != nil {
 		// 记录失败日志
-		if general.GetLogHelper() != nil {
-			general.GetLogHelper().LogAdminOperationWithError(c, models.ActionUpload, models.ResourceTypeFile, &fileName, map[string]interface{}{
-				"original_filename": file.Filename,
-				"file_size":         file.Size,
-			}, err)
-		}
+		tasks.LogAdminOperationWithError(c, models.ActionUpload, models.ResourceTypeFile, &fileName, map[string]interface{}{
+			"original_filename": file.Filename,
+			"file_size":         file.Size,
+		}, err)
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -123,13 +118,11 @@ func UploadSystemFile(c *gin.Context) {
 	}
 
 	// 记录成功日志
-	if general.GetLogHelper() != nil {
-		general.GetLogHelper().LogAdminOperation(c, models.ActionUpload, models.ResourceTypeFile, &fileName, map[string]interface{}{
-			"original_filename": file.Filename,
-			"file_size":         file.Size,
-			"saved_path":        filePath,
-		})
-	}
+	tasks.LogAdminOperation(c, models.ActionUpload, models.ResourceTypeFile, &fileName, map[string]interface{}{
+		"original_filename": file.Filename,
+		"file_size":         file.Size,
+		"saved_path":        filePath,
+	})
 
 	// 返回文件URL
 	fileURL := "/data/uploads/system/" + fileName
@@ -163,13 +156,11 @@ func TestSMTPSettings(c *gin.Context) {
 	// TODO: 实现SMTP测试逻辑
 
 	// 记录测试日志
-	if general.GetLogHelper() != nil {
-		general.GetLogHelper().LogAdminOperation(c, "TEST_SMTP", models.ResourceTypeSystem, nil, map[string]interface{}{
-			"host": smtpConfig.Host,
-			"port": smtpConfig.Port,
-			"to":   smtpConfig.To,
-		})
-	}
+	tasks.LogAdminOperation(c, "TEST_SMTP", models.ResourceTypeSystem, nil, map[string]interface{}{
+		"host": smtpConfig.Host,
+		"port": smtpConfig.Port,
+		"to":   smtpConfig.To,
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
@@ -179,13 +170,6 @@ func TestSMTPSettings(c *gin.Context) {
 
 // GetSystemLogs 获取系统日志
 func GetSystemLogs(c *gin.Context) {
-	if general.GetLogHelper() == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "系统未初始化",
-		})
-		return
-	}
 
 	// 解析查询参数
 	var params general.QueryLogParams
@@ -258,7 +242,7 @@ func GetSystemLogs(c *gin.Context) {
 	}
 
 	// 查询日志
-	logs, total, err := general.GetLogHelper().QuerySystemLogs(params)
+	logs, total, err := general.QuerySystemLogs(params)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
