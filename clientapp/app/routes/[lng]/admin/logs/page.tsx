@@ -4,7 +4,7 @@ import { AdminSystemLogs } from "components/admin/AdminSystemLogs";
 export default function Home () {
 
     return (
-        <div className="w-screen h-screen flex flex-col">
+        <div className="w-screen h-screen flex flex-col overflow-hidden">
             <AdminHeader />
             <div className="p-10">
                 <AdminSystemLogs />

@@ -174,6 +174,7 @@ func CreatePod(podInfo *PodInfo) error {
 		container := corev1.Container{
 			Name:  containerName,
 			Image: c.Image,
+			Env:   []v1.EnvVar{},
 		}
 		if len(c.Command) > 0 {
 			container.Command = c.Command
@@ -181,6 +182,13 @@ func CreatePod(podInfo *PodInfo) error {
 		if len(c.Env) > 0 {
 			container.Env = c.Env
 		}
+
+		// add the flag env
+		container.Env = append(container.Env, corev1.EnvVar{
+			Name:  "A1CTF_FLAG",
+			Value: podInfo.Flag,
+		})
+
 		if len(c.ExposePorts) > 0 {
 			var containerPorts []corev1.ContainerPort
 			for _, port := range c.ExposePorts {
@@ -230,7 +238,6 @@ func CreatePod(podInfo *PodInfo) error {
 	if err != nil {
 		return fmt.Errorf("error creating pod: %v", err)
 	}
-	fmt.Println("Pod created")
 
 	// 构造 Service 的端口配置
 	var servicePorts []corev1.ServicePort

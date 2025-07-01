@@ -207,7 +207,7 @@ func ContainerOperationsJob() {
 
 	// 获取所有存活容器
 	var containers []models.Container
-	if err := dbtool.DB().Where("container_status != ? AND container_status != ?", models.ContainerError, models.ContainerStopped).Preload("Challenge").Find(&containers).Error; err != nil {
+	if err := dbtool.DB().Where("container_status != ? AND container_status != ?", models.ContainerError, models.ContainerStopped).Preload("Challenge").Preload("TeamFlag").Find(&containers).Error; err != nil {
 		log.Fatalf("Failed to find queued containers: %v\n", err)
 	}
 
