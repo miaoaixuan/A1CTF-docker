@@ -46,6 +46,7 @@ import { toast } from "sonner";
 import { AxiosError } from "axios";
 import { useNavigate } from "react-router";
 import { UploadFileDialog } from "components/dialogs/UploadFileDialog";
+import { Switch } from "components/ui/switch";
 
 interface ContainerFormProps {
     control: any;
@@ -406,7 +407,7 @@ function AttachmentForm({ control, index, form, removeAttachment, onFormSubmit }
                             form.setValue(`attachments.${index}.attach_hash`, fileId);
                             form.setValue(`attachments.${index}.attach_name`, fileName);
                             toast.success(`文件 "${fileName}" 上传成功`);
-                            
+
                             // 自动保存表单
                             try {
                                 await onFormSubmit();
@@ -427,7 +428,7 @@ function AttachmentForm({ control, index, form, removeAttachment, onFormSubmit }
     );
 }
 
-export function EditChallengeView({ challenge_info } : { challenge_info: AdminChallengeConfig }) {
+export function EditChallengeView({ challenge_info }: { challenge_info: AdminChallengeConfig }) {
 
     const categories: { [key: string]: any } = {
         "MISC": <Radar size={21} />,
@@ -459,6 +460,8 @@ export function EditChallengeView({ challenge_info } : { challenge_info: AdminCh
             judge_script: z.string().optional(),
             flag_template: z.string().optional(),
         }),
+        allow_wan: z.boolean(),
+        allow_dns: z.boolean(),
         // 新增 container_config 部分
         container_config: z.array(
             z.object({
@@ -509,7 +512,7 @@ export function EditChallengeView({ challenge_info } : { challenge_info: AdminCh
             const [name, value] = item.split("=")
             env.push({ name, value })
         })
-        
+
         return env
     }
 
@@ -520,6 +523,8 @@ export function EditChallengeView({ challenge_info } : { challenge_info: AdminCh
             description: challenge_info.description,
             category: challenge_info.category,
             challenge_id: 0,
+            allow_wan: challenge_info.allow_wan,
+            allow_dns: challenge_info.allow_dns,
             judge_config: {
                 judge_type: challenge_info.judge_config.judge_type,
                 judge_script: challenge_info.judge_config.judge_script || "",
@@ -576,6 +581,8 @@ export function EditChallengeView({ challenge_info } : { challenge_info: AdminCh
             attachments: values.attachments,
             category: values.category.toUpperCase(),
             challenge_id: challenge_info.challenge_id,
+            allow_wan: values.allow_wan,
+            allow_dns: values.allow_dns,
             container_config: values.container_config.map((e) => ({
                 name: e.name,
                 image: e.image,
@@ -592,7 +599,7 @@ export function EditChallengeView({ challenge_info } : { challenge_info: AdminCh
             name: values.name,
             type_: challenge_info.type_,
         };
-        
+
         try {
             await api.admin.updateChallenge(challenge_info.challenge_id!, finalData as AdminChallengeConfig);
             toast.success("更新成功");
@@ -627,7 +634,7 @@ export function EditChallengeView({ challenge_info } : { challenge_info: AdminCh
                                 Back to challenges
                             </Button>
                         </div>
-                        <span className="text-3xl font-bold">Edit - { challenge_info.name }</span>
+                        <span className="text-3xl font-bold">Edit - {challenge_info.name}</span>
                         <span className="text-lg font-semibold">基本信息</span>
                         <div className="flex gap-10 items-center">
                             <div className="w-1/3">
@@ -808,6 +815,49 @@ export function EditChallengeView({ challenge_info } : { challenge_info: AdminCh
                                 )}
                             />
                         )}
+
+                        <div className="grid grid-cols-3 gap-4 mt-4">
+                            <FormField
+                                control={form.control}
+                                name="allow_wan"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/50 p-4 shadow-sm bg-background/30">
+                                        <div className="space-y-0.5">
+                                            <FormLabel>允许外网</FormLabel>
+                                            <FormDescription>
+                                                如果关闭, 则容器无法访问外部网络
+                                            </FormDescription>
+                                        </div>
+                                        <FormControl>
+                                            <Switch
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="allow_dns"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/50 p-4 shadow-sm bg-background/30">
+                                        <div className="space-y-0.5">
+                                            <FormLabel>DNS出网</FormLabel>
+                                            <FormDescription>
+                                                只有不出网时该选项才生效
+                                            </FormDescription>
+                                        </div>
+                                        <FormControl>
+                                            <Switch
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
 
                         {/* 动态容器列表 */}
                         <div className="mt-6">

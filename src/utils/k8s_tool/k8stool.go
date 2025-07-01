@@ -13,6 +13,8 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -112,6 +114,8 @@ type PodInfo struct {
 	Labels     map[string]string
 	Containers []A1Container
 	Flag       string
+	AllowWAN   bool
+	AllowDNS   bool
 }
 
 func GetClient() (*kubernetes.Clientset, error) {
@@ -259,6 +263,95 @@ func CreatePod(podInfo *PodInfo) error {
 		return fmt.Errorf("error creating service: %v", err)
 	}
 
+	allowedPorts := []networkingv1.NetworkPolicyPort{}
+	for _, c := range podInfo.Containers {
+		for _, port := range c.ExposePorts {
+			allowedPorts = append(allowedPorts, networkingv1.NetworkPolicyPort{
+				// all the protocols
+				// Protocol: func() *v1.Protocol {
+				// 	p := v1.ProtocolTCP
+				// 	return &p
+				// }(),
+				Port: &intstr.IntOrString{IntVal: port.Port},
+			})
+		}
+	}
+
+	if !podInfo.AllowWAN {
+		// 创建 network-policy
+		networkPolicy := &networkingv1.NetworkPolicy{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: podName,
+			},
+			Spec: networkingv1.NetworkPolicySpec{
+				PodSelector: metav1.LabelSelector{
+					MatchLabels: podInfo.Labels,
+				},
+				PolicyTypes: []networkingv1.PolicyType{
+					networkingv1.PolicyTypeIngress,
+					networkingv1.PolicyTypeEgress,
+				},
+				Ingress: []networkingv1.NetworkPolicyIngressRule{
+					{
+						From: []networkingv1.NetworkPolicyPeer{
+							{
+								// forbid all traffic to 10.0.0.0/8
+								IPBlock: &networkingv1.IPBlock{
+									CIDR: "0.0.0.0/0",
+									Except: []string{
+										"10.0.0.0/8",
+									},
+								},
+							},
+						},
+						Ports: allowedPorts,
+					},
+				},
+				Egress: []networkingv1.NetworkPolicyEgressRule{},
+			},
+		}
+
+		if podInfo.AllowDNS {
+			networkPolicy.Spec.Egress = append(networkPolicy.Spec.Egress, networkingv1.NetworkPolicyEgressRule{
+				To: []networkingv1.NetworkPolicyPeer{
+					{
+						NamespaceSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"kubernetes.io/metadata.name": "kube-system",
+							},
+						},
+						PodSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"k8s-app": "kube-dns",
+							},
+						},
+					},
+				},
+				Ports: []networkingv1.NetworkPolicyPort{
+					{
+						Protocol: func() *v1.Protocol {
+							p := v1.ProtocolUDP
+							return &p
+						}(),
+						Port: &intstr.IntOrString{IntVal: 53},
+					},
+					{
+						Protocol: func() *v1.Protocol {
+							p := v1.ProtocolTCP
+							return &p
+						}(),
+						Port: &intstr.IntOrString{IntVal: 53},
+					},
+				},
+			})
+		}
+
+		_, err = clientset.NetworkingV1().NetworkPolicies(namespace).Create(context.Background(), networkPolicy, metav1.CreateOptions{})
+		if err != nil {
+			return fmt.Errorf("error creating network policy: %v", err)
+		}
+	}
+
 	return nil
 }
 
@@ -325,6 +418,14 @@ func DeletePod(podInfo *PodInfo) error {
 	err = clientset.CoreV1().Services(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("error deleting service: %v", err)
+	}
+
+	if !podInfo.AllowWAN {
+		// 删除 NetworkPolicy
+		err = clientset.NetworkingV1().NetworkPolicies(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
+		if err != nil {
+			return fmt.Errorf("error deleting network policy: %v", err)
+		}
 	}
 
 	return nil

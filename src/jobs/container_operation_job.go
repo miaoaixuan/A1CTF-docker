@@ -19,7 +19,9 @@ func processQueuedContainer(task models.Container) error {
 			"team_hash": task.TeamHash,
 			"ingame_id": fmt.Sprintf("%d", task.InGameID),
 		},
-		Flag: task.TeamFlag.FlagContent,
+		Flag:     task.TeamFlag.FlagContent,
+		AllowWAN: task.Challenge.AllowWAN,
+		AllowDNS: task.Challenge.AllowDNS,
 	}
 
 	err := k8stool.CreatePod(&podInfo)
@@ -58,7 +60,9 @@ func processStartingContainer(task models.Container) error {
 			"team_hash": task.TeamHash,
 			"ingame_id": fmt.Sprintf("%d", task.InGameID),
 		},
-		Flag: task.TeamFlag.FlagContent,
+		Flag:     task.TeamFlag.FlagContent,
+		AllowWAN: task.Challenge.AllowWAN,
+		AllowDNS: task.Challenge.AllowDNS,
 	}
 
 	ports, err := k8stool.GetPodPorts(&podInfo)
@@ -121,7 +125,9 @@ func processStoppingContainer(task models.Container) error {
 			"team_hash": task.TeamHash,
 			"ingame_id": fmt.Sprintf("%d", task.InGameID),
 		},
-		Flag: task.TeamFlag.FlagContent,
+		Flag:     task.TeamFlag.FlagContent,
+		AllowWAN: task.Challenge.AllowWAN,
+		AllowDNS: task.Challenge.AllowDNS,
 	}
 
 	err := k8stool.DeletePod(&podInfo)
@@ -161,7 +167,9 @@ func processRunningContainer(task models.Container) error {
 			"team_hash": task.TeamHash,
 			"ingame_id": fmt.Sprintf("%d", task.InGameID),
 		},
-		Flag: task.TeamFlag.FlagContent,
+		Flag:     task.TeamFlag.FlagContent,
+		AllowWAN: task.Challenge.AllowWAN,
+		AllowDNS: task.Challenge.AllowDNS,
 	}
 
 	if task.ExpireTime.After(time.Now().UTC()) {
@@ -199,7 +207,7 @@ func ContainerOperationsJob() {
 
 	// 获取所有存活容器
 	var containers []models.Container
-	if err := dbtool.DB().Where("container_status != ? AND container_status != ?", models.ContainerError, models.ContainerStopped).Find(&containers).Error; err != nil {
+	if err := dbtool.DB().Where("container_status != ? AND container_status != ?", models.ContainerError, models.ContainerStopped).Preload("Challenge").Find(&containers).Error; err != nil {
 		log.Fatalf("Failed to find queued containers: %v\n", err)
 	}
 

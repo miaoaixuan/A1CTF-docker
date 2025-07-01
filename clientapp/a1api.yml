@@ -3219,6 +3219,10 @@ components:
           $ref: '#/components/schemas/ChallengeCategory'
         challenge_id:
           type: integer
+        allow_wan:
+          type: boolean
+        allow_dns:
+          type: boolean
         container_config:
           type: array
           items:

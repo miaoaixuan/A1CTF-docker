@@ -197,6 +197,8 @@ export interface AdminChallengeConfig {
   attachments?: Attachment[];
   category: ChallengeCategory;
   challenge_id?: number;
+  allow_wan?: boolean;
+  allow_dns?: boolean;
   container_config: Container[];
   /** @format date-time */
   create_time?: string;

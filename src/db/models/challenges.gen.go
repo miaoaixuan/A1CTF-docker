@@ -140,6 +140,8 @@ type Challenge struct {
 	ContainerConfig *k8stool.A1Containers  `gorm:"column:container_config" json:"container_config"`
 	CreateTime      time.Time              `gorm:"column:create_time;not null" json:"create_time"`
 	JudgeConfig     *JudgeConfig           `gorm:"column:judge_config" json:"judge_config"`
+	AllowWAN        bool                   `gorm:"column:allow_wan;not null" json:"allow_wan"`
+	AllowDNS        bool                   `gorm:"column:allow_dns;not null" json:"allow_dns"`
 }
 
 // TableName Challenge's table name

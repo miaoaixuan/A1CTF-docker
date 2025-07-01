@@ -227,7 +227,7 @@ func AdminUpdateChallenge(c *gin.Context) {
 		return
 	}
 
-	if err := dbtool.DB().Model(&models.Challenge{}).Where("challenge_id = ?", payload.ChallengeID).Updates(payload).Error; err != nil {
+	if err := dbtool.DB().Model(&models.Challenge{}).Where("challenge_id = ?", payload.ChallengeID).Select("*").Updates(payload).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"message": "Failed to update challenge",

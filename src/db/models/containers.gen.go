@@ -82,6 +82,8 @@ type Container struct {
 	FlagID               int64                `gorm:"column:flag_id;not null" json:"flag_id"`
 	ChallengeID          int64                `gorm:"column:challenge_id;not null" json:"challenge_id"`
 	InGameID             int64                `gorm:"column:ingame_id;not null" json:"ingame_id"`
+	GameChallenge        GameChallenge        `gorm:"foreignKey:InGameID;references:ingame_id" json:"-"`
+	Challenge            Challenge            `gorm:"foreignKey:ChallengeID;references:challenge_id" json:"-"`
 	StartTime            time.Time            `gorm:"column:start_time;not null" json:"start_time"`
 	ExpireTime           time.Time            `gorm:"column:expire_time;not null" json:"expire_time"`
 	ContainerExposeInfos ContainerExposeInfos `gorm:"column:expose_ports;not null" json:"expose_ports"`
