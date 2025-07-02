@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bytedance/sonic"
 	"github.com/gin-gonic/gin"
 	"github.com/hibiken/asynq"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 type LogEntry struct {
@@ -216,7 +216,7 @@ func LogSecurityOperation(c *gin.Context, action string, details interface{}, er
 }
 
 func NewSystemLogTask(entry TaskLogEntry) error {
-	payload, err := sonic.Marshal(entry)
+	payload, err := msgpack.Marshal(entry)
 	if err != nil {
 		return err
 	}
@@ -229,7 +229,7 @@ func NewSystemLogTask(entry TaskLogEntry) error {
 
 func HandleSystemLogTask(ctx context.Context, t *asynq.Task) error {
 	var p TaskLogEntry
-	if err := sonic.Unmarshal(t.Payload(), &p); err != nil {
+	if err := msgpack.Unmarshal(t.Payload(), &p); err != nil {
 		return fmt.Errorf("json.Unmarshal failed: %v: %w", err, asynq.SkipRetry)
 	}
 

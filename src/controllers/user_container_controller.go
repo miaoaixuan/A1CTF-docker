@@ -5,7 +5,6 @@ import (
 	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	"a1ctf/src/webmodels"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -64,7 +63,6 @@ func UserCreateGameContainer(c *gin.Context) {
 	}
 
 	for _, container := range containers {
-		log.Printf("container: %+v\n", container)
 		if container.ChallengeID == *gameChallenge.Challenge.ChallengeID && container.ContainerStatus == models.ContainerRunning {
 			c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 				Code:    400,

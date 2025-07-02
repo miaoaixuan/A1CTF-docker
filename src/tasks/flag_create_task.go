@@ -11,8 +11,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/bytedance/sonic"
 	"github.com/hibiken/asynq"
+	"github.com/vmihailenco/msgpack/v5"
 	"gorm.io/gorm"
 )
 
@@ -26,14 +26,14 @@ type CreateTeamFlagPayload struct {
 }
 
 func NewTeamFlagCreateTask(flagTemplate string, teamID int64, gameID int64, challengeID int64, teamHash string, teamName string) error {
-	payload, err := sonic.Marshal(CreateTeamFlagPayload{FlagTemplate: flagTemplate, TeamID: teamID, GameID: gameID, ChallengeID: challengeID, TeamHash: teamHash, TeamName: teamName})
+	payload, err := msgpack.Marshal(CreateTeamFlagPayload{FlagTemplate: flagTemplate, TeamID: teamID, GameID: gameID, ChallengeID: challengeID, TeamHash: teamHash, TeamName: teamName})
 	if err != nil {
 		return err
 	}
 
 	task := asynq.NewTask(TypeNewTeamFlag, payload)
 	// taskID 是为了防止重复创建任务
-	_, err = client.Enqueue(task, asynq.TaskID(fmt.Sprintf("teamFlag:create:%d_%d_%d", teamID, gameID, challengeID)),
+	_, err = client.Enqueue(task, asynq.TaskID(fmt.Sprintf("teamFlag_create_%d_%d_%d", teamID, gameID, challengeID)),
 		asynq.MaxRetry(100),
 		asynq.Timeout(10*time.Second),
 	)
@@ -43,7 +43,7 @@ func NewTeamFlagCreateTask(flagTemplate string, teamID int64, gameID int64, chal
 
 func HandleTeamCreateTask(ctx context.Context, t *asynq.Task) error {
 	var p CreateTeamFlagPayload
-	if err := sonic.Unmarshal(t.Payload(), &p); err != nil {
+	if err := msgpack.Unmarshal(t.Payload(), &p); err != nil {
 		return fmt.Errorf("json.Unmarshal failed: %v: %w", err, asynq.SkipRetry)
 	}
 

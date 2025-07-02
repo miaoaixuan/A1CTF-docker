@@ -64,15 +64,15 @@ func StartLoopEvent() {
 		gocron.WithSingletonMode(gocron.LimitModeWait),
 	)
 
-	s.NewJob(
-		gocron.DurationJob(
-			viper.GetDuration("job-intervals.flag-judge"),
-		),
-		gocron.NewTask(
-			jobs.FlagJudgeJob,
-		),
-		gocron.WithSingletonMode(gocron.LimitModeWait),
-	)
+	// s.NewJob(
+	// 	gocron.DurationJob(
+	// 		viper.GetDuration("job-intervals.flag-judge"),
+	// 	),
+	// 	gocron.NewTask(
+	// 		jobs.FlagJudgeJob,
+	// 	),
+	// 	gocron.WithSingletonMode(gocron.LimitModeWait),
+	// )
 
 	s.Start()
 }

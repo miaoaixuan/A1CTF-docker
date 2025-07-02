@@ -274,8 +274,9 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	}
 
 	// 3. 使用缓存获取 teamFlag，提升性能
-	teamFlag, err := ristretto_tool.CachedTeamFlag(game.GameID, team.TeamID, challengeID, *gameChallenge.JudgeConfig.FlagTemplate)
-	if err != nil {
+	teamFlagMap, err := ristretto_tool.CachedAllTeamFlags(game.GameID, challengeID)
+	teamFlag, exsist := teamFlagMap[team.TeamID]
+	if !exsist || err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
 			Message: "Failed to get team flag",
@@ -323,6 +324,17 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 		"judge_id":       newJudge.JudgeID,
 		"flag_content":   payload.FlagContent, // 只记录前50个字符
 	})
+
+	dbtool.DB().Model(&models.Judge{}).Preload("TeamFlag").Where("judge_id = ?", newJudge.JudgeID).First(&newJudge)
+
+	err = tasks.NewJudgeFlagTask(newJudge)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+			Code:    400,
+			Message: "You have a judge in queue, please wait for a moment",
+		})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,

@@ -1011,57 +1011,6 @@ func CachedAllTeamFlags(gameID int64, challengeID int64) (map[int64]*models.Team
 	return teamFlagsMap, nil
 }
 
-// 缓存队伍Flag信息
-func CachedTeamFlag(gameID int64, teamID int64, challengeID int64, flagTemplate string) (*models.TeamFlag, error) {
-	allFlags, err := CachedAllTeamFlags(gameID, challengeID)
-	if err != nil {
-		return nil, err
-	}
-
-	// 如果缓存中存在该队伍的Flag，直接返回
-	if flag, exists := allFlags[teamID]; exists {
-		return flag, nil
-	}
-
-	// 缓存中不存在，需要创建新的Flag
-	newFlag := models.TeamFlag{
-		FlagID:      0,
-		FlagContent: flagTemplate,
-		TeamID:      teamID,
-		GameID:      gameID,
-		ChallengeID: challengeID,
-	}
-
-	// 使用事务创建Flag，避免并发重复创建
-	tx := dbtool.DB().Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
-	if err := tx.Create(&newFlag).Error; err != nil {
-		tx.Rollback()
-		// 可能是并发创建导致的唯一键冲突，再次尝试查询
-		var flag models.TeamFlag
-		if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND challenge_id = ?", gameID, teamID, challengeID).First(&flag).Error; err != nil {
-			return nil, errors.New("failed to create or find team flag")
-		}
-		// 清除缓存以确保下次查询时能获取到最新数据
-		cachePool.Del(fmt.Sprintf("all_team_flags_%d_%d", gameID, challengeID))
-		return &flag, nil
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		tx.Rollback()
-		return nil, errors.New("failed to commit team flag creation")
-	}
-
-	// 清除缓存以确保下次查询时能获取到最新数据
-	cachePool.Del(fmt.Sprintf("all_team_flags_%d_%d", gameID, challengeID))
-	return &newFlag, nil
-}
-
 // 缓存所有队伍的解题状态，用于快速检查是否已解决
 func CachedAllTeamSolveStatus(gameID int64, challengeID int64) (map[int64]bool, error) {
 	var teamSolveStatusMap map[int64]bool

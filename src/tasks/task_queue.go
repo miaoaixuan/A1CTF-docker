@@ -48,6 +48,8 @@ func InitTaskQueue() {
 		mux := asynq.NewServeMux()
 		mux.HandleFunc(TypeNewTeamFlag, HandleTeamCreateTask)
 		mux.HandleFunc(TypeNewSystemLog, HandleSystemLogTask)
+		mux.HandleFunc(TypeJudgeFlag, HandleFlagJudgeTask)
+		mux.HandleFunc(TypeCalculateRanks, HandleCalculateRanksTask)
 
 		if err := server.Run(mux); err != nil {
 			log.Fatalf("could not run server: %v", err)
@@ -61,6 +63,8 @@ func CloseTaskQueue() {
 }
 
 const (
-	TypeNewTeamFlag  = "teamFlag:create"
-	TypeNewSystemLog = "systemLog:create"
+	TypeNewTeamFlag    = "teamFlag:create"
+	TypeNewSystemLog   = "systemLog:create"
+	TypeJudgeFlag      = "judgeFlag:create"
+	TypeCalculateRanks = "ranks:calculate"
 )
