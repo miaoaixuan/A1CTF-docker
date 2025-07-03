@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"a1ctf/src/db/models"
+	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	noticetool "a1ctf/src/utils/notice_tool"
 	"fmt"
@@ -48,13 +49,42 @@ func processQueueingJudge(judge *models.Judge) error {
 				}
 
 				var noticeCate models.NoticeCategory
+				var rewardScore float64
+				var rewardReason string
 
 				if newSolve.Rank == 1 {
 					noticeCate = models.NoticeFirstBlood
+					rewardScore = 50
+					rewardReason = "First Blood Reward"
 				} else if newSolve.Rank == 2 {
 					noticeCate = models.NoticeSecondBlood
+					rewardScore = 30
+					rewardReason = "Second Blood Reward"
 				} else {
 					noticeCate = models.NoticeThirdBlood
+					rewardScore = 10
+					rewardReason = "Third Blood Reward"
+				}
+
+				rewardReason = fmt.Sprintf("%s for %s", rewardReason, judge.Challenge.Name)
+
+				adjustment := models.ScoreAdjustment{
+					TeamID:         judge.TeamID,
+					GameID:         judge.GameID,
+					AdjustmentType: models.AdjustmentTypeReward,
+					ScoreChange:    rewardScore,
+					Reason:         rewardReason,
+					CreatedBy:      uuid.MustParse(judge.SubmiterID),
+					CreatedAt:      time.Now(),
+					UpdatedAt:      time.Now(),
+				}
+
+				if err := dbtool.DB().Create(&adjustment).Error; err != nil {
+					tasks.LogJudgeOperation(nil, nil, models.ActionJudge, judge.JudgeID, map[string]interface{}{
+						"team_id":      judge.TeamID,
+						"game_id":      judge.GameID,
+						"score_change": adjustment.ScoreChange,
+					}, err)
 				}
 
 				go func() {
@@ -82,7 +112,7 @@ func FlagJudgeJob() {
 	if err := dbtool.DB().Where(
 		"judge_status IN (?)",
 		[]interface{}{models.JudgeQueueing, models.JudgeRunning},
-	).Preload("TeamFlag").Find(&judges).Error; err != nil {
+	).Preload("TeamFlag").Preload("Challenge").Find(&judges).Error; err != nil {
 		fmt.Printf("database error: %v\n", err)
 		return
 	}
