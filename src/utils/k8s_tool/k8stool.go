@@ -6,8 +6,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
-	"time"
 
 	"github.com/bytedance/sonic"
 	"github.com/go-playground/validator/v10"
@@ -142,22 +140,19 @@ func GetClient() (*kubernetes.Clientset, error) {
 	return clientsetLocal, nil
 }
 
-func ListPods() error {
+func ListPods() (*v1.PodList, error) {
 	clientset, err := GetClient()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	namespace := "a1ctf-challenges"
 
 	podList, err := clientset.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		return fmt.Errorf("error listing pods: %v", err)
+		return nil, fmt.Errorf("error listing pods: %v", err)
 	}
 
-	for _, pod := range podList.Items {
-		fmt.Printf("Found pod: %s\n", pod.Name)
-	}
-	return nil
+	return podList, nil
 }
 
 func CreatePod(podInfo *PodInfo) error {
@@ -200,23 +195,23 @@ func CreatePod(podInfo *PodInfo) error {
 			container.Ports = containerPorts
 		}
 
-		// 限制资源
+		// 只限制资源，不申请资源
 		limits := corev1.ResourceList{
 			corev1.ResourceCPU:              *resource.NewMilliQuantity(c.CPULimit, resource.DecimalSI),         // 100m = 0.1 CPU
 			corev1.ResourceMemory:           *resource.NewQuantity(c.MemoryLimit*1024*1024, resource.BinarySI),  // 64Mi
 			corev1.ResourceEphemeralStorage: *resource.NewQuantity(c.StorageLimit*1024*1024, resource.BinarySI), // 128Mi
 		}
 
-		// 设置资源请求（通常与限制相同）
-		// requests := corev1.ResourceList{
-		// 	corev1.ResourceCPU:              *resource.NewMilliQuantity(c.CPULimit, resource.DecimalSI),
-		// 	corev1.ResourceMemory:           *resource.NewQuantity(c.MemoryLimit*1024*1024, resource.BinarySI),
-		// 	corev1.ResourceEphemeralStorage: *resource.NewQuantity(c.StorageLimit*1024*1024, resource.BinarySI),
-		// }
+		// 明确设置资源请求为 0
+		requests := corev1.ResourceList{
+			corev1.ResourceCPU:              *resource.NewMilliQuantity(0, resource.DecimalSI),
+			corev1.ResourceMemory:           *resource.NewQuantity(0, resource.BinarySI),
+			corev1.ResourceEphemeralStorage: *resource.NewQuantity(0, resource.BinarySI),
+		}
 
 		container.Resources = corev1.ResourceRequirements{
-			Limits: limits,
-			// Requests: requests,
+			Limits:   limits,
+			Requests: requests,
 		}
 
 		containers = append(containers, container)
@@ -463,50 +458,4 @@ func InitNamespace() error {
 	}
 
 	return nil
-}
-
-func TestCreate() {
-	// 初始化命名空间
-	if err := InitNamespace(); err != nil {
-		log.Fatalf("initNamespace error: %v", err)
-	}
-
-	// 列出命名空间下的 Pod
-	if err := ListPods(); err != nil {
-		log.Fatalf("listPods error: %v", err)
-	}
-
-	// 构造示例 PodInfo
-	podInfo := &PodInfo{
-		Name:     "example-pod",
-		TeamHash: "abc123",
-		Containers: []A1Container{
-			{
-				Name:  "app",
-				Image: "127.0.0.1:6440/ez_include",
-				ExposePorts: []PortName{
-					{Name: "http", Port: 80},
-				},
-			},
-		},
-	}
-
-	// 创建 Pod 和 Service
-	if err := CreatePod(podInfo); err != nil {
-		log.Fatalf("createPod error: %v", err)
-	}
-
-	// 等待一段时间使 Pod 被调度并创建好 Service
-	time.Sleep(10 * time.Second)
-
-	// 查询 Service 的端口映射信息
-	if _, err := GetPodPorts(podInfo); err != nil {
-		log.Fatalf("getPodPorts error: %v", err)
-	}
-
-	// 等待一段时间后删除 Pod 和 Service
-	time.Sleep(30 * time.Second)
-	if err := DeletePod(podInfo); err != nil {
-		log.Fatalf("deletePod error: %v", err)
-	}
 }

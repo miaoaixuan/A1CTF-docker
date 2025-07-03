@@ -325,16 +325,16 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 		"flag_content":   payload.FlagContent, // 只记录前50个字符
 	})
 
-	dbtool.DB().Model(&models.Judge{}).Preload("TeamFlag").Where("judge_id = ?", newJudge.JudgeID).First(&newJudge)
+	// dbtool.DB().Model(&models.Judge{}).Preload("TeamFlag").Where("judge_id = ?", newJudge.JudgeID).First(&newJudge)
 
-	err = tasks.NewJudgeFlagTask(newJudge)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
-			Code:    400,
-			Message: "You have a judge in queue, please wait for a moment",
-		})
-		return
-	}
+	// err = tasks.NewJudgeFlagTask(newJudge)
+	// if err != nil {
+	// 	c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+	// 		Code:    400,
+	// 		Message: "You have a judge in queue, please wait for a moment",
+	// 	})
+	// 	return
+	// }
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,

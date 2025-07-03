@@ -27,7 +27,7 @@ func AdminListContainers(c *gin.Context) {
 
 	// 如果提供了游戏ID，则按游戏ID过滤
 	if payload.GameID > 0 {
-		query = query.Where("game_id = ? AND container_status NOT IN ?", payload.GameID, []models.ContainerStatus{models.ContainerStopped})
+		query = query.Where("game_id = ? AND container_status NOT IN ?", payload.GameID, []models.ContainerStatus{models.ContainerStopped}).Order("team_id ASC")
 	}
 
 	// 如果有搜索关键词，添加搜索条件
@@ -132,7 +132,7 @@ func AdminListContainers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":  200,
 		"data":  containerItems,
-		"total": int64(len(containerItems)), // 返回过滤后的总数
+		"total": total, // 返回过滤后的总数
 	})
 }
 

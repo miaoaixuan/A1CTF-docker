@@ -27,6 +27,7 @@ import (
 	"github.com/go-co-op/gocron/v2"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
+	"golang.org/x/time/rate"
 
 	cache "github.com/chenyahui/gin-cache"
 	"github.com/chenyahui/gin-cache/persist"
@@ -56,25 +57,40 @@ func StartLoopEvent() {
 
 	s.NewJob(
 		gocron.DurationJob(
-			viper.GetDuration("job-intervals.container-operations"),
+			viper.GetDuration("job-intervals.container-updating"),
 		),
 		gocron.NewTask(
-			jobs.ContainerOperationsJob,
+			jobs.UpdateLivingContainers,
 		),
 		gocron.WithSingletonMode(gocron.LimitModeWait),
 	)
 
-	// s.NewJob(
-	// 	gocron.DurationJob(
-	// 		viper.GetDuration("job-intervals.flag-judge"),
-	// 	),
-	// 	gocron.NewTask(
-	// 		jobs.FlagJudgeJob,
-	// 	),
-	// 	gocron.WithSingletonMode(gocron.LimitModeWait),
-	// )
+	s.NewJob(
+		gocron.DurationJob(
+			viper.GetDuration("job-intervals.flag-judge"),
+		),
+		gocron.NewTask(
+			jobs.FlagJudgeJob,
+		),
+		gocron.WithSingletonMode(gocron.LimitModeWait),
+	)
 
 	s.Start()
+}
+
+func RateLimiter(rateLimit int, rateInterval time.Duration) gin.HandlerFunc {
+	limiter := rate.NewLimiter(rate.Every(rateInterval), rateLimit)
+
+	return func(c *gin.Context) {
+		if !limiter.Allow() {
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"message": "Too many requests, please try again later",
+			})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
 }
 
 func main() {
@@ -288,7 +304,7 @@ func main() {
 			userGameGroup.GET("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallengeContainerInfo)
 
 			// 提交 Flag
-			userGameGroup.POST("/:game_id/flag/:challenge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGameChallengeSubmitFlag)
+			userGameGroup.POST("/:game_id/flag/:challenge_id", RateLimiter(100, 1*time.Second), controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGameChallengeSubmitFlag)
 			userGameGroup.GET("/:game_id/flag/:judge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGameGetJudgeResult)
 		}
 

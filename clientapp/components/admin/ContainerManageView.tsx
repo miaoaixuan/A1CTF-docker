@@ -194,6 +194,51 @@ export function ContainerManageView() {
             }
         });
     };
+
+    // 处理批量停止容器
+    const handleBatchDeleteContainers = () => {
+        const selectedRows = table.getFilteredSelectedRowModel().rows;
+        const selectedContainerIds = selectedRows.map(row => row.original.ID);
+        
+        if (selectedContainerIds.length === 0) {
+            toast.error("请至少选择一个容器");
+            return;
+        }
+
+        setConfirmDialog({
+            isOpen: true,
+            title: "确认批量停止",
+            description: `您确定要停止选中的 ${selectedContainerIds.length} 个容器吗？`,
+            onConfirm: () => {
+                // 批量停止容器
+                const promises = selectedContainerIds.map(containerId => 
+                    api.admin.adminDeleteContainer({ container_id: containerId })
+                );
+                
+                toast.promise(
+                    Promise.allSettled(promises),
+                    {
+                        loading: `正在停止 ${selectedContainerIds.length} 个容器...`,
+                        success: (results) => {
+                            const successCount = results.filter(result => result.status === 'fulfilled').length;
+                            const failCount = results.length - successCount;
+                            
+                            fetchContainers(); // 刷新数据
+                            setRowSelection({}); // 清空选择
+                            setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                            
+                            if (failCount === 0) {
+                                return `成功停止 ${successCount} 个容器`;
+                            } else {
+                                return `成功停止 ${successCount} 个容器，${failCount} 个失败`;
+                            }
+                        },
+                        error: '批量停止容器失败'
+                    }
+                );
+            }
+        });
+    };
     
     // 提交延长容器生命周期
     const submitExtendContainer = (containerId: string) => {
@@ -597,11 +642,20 @@ export function ContainerManageView() {
                             onChange={(event) => handleSearch(event.target.value)}
                             className="max-w-sm"
                         />
-                        <div className="flex gap-2 ml-auto">
+                        <div className="flex gap-2 ml-auto items-center">
+                            <Button
+                                variant="destructive"
+                                className="select-none"
+                                onClick={handleBatchDeleteContainers}
+                                disabled={table.getFilteredSelectedRowModel().rows.length === 0}
+                            >
+                                <ZapOff className="h-4 w-4 mr-2" />
+                                批量停止 ({table.getFilteredSelectedRowModel().rows.length})
+                            </Button>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline">
-                                        列 <ChevronDown />
+                                        显示项目 <ChevronDown />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="select-none">
