@@ -23,6 +23,7 @@ import { EditGameFormSchema } from './EditGameSchema';
 import * as z from 'zod';
 import { api } from 'utils/ApiHelper';
 import { AdminFullGameInfo } from 'utils/A1API';
+import { Slider } from 'components/ui/slider';
 
 interface DetailedSettingsModuleProps {
     form: UseFormReturn<z.infer<typeof EditGameFormSchema>>;
@@ -215,7 +216,17 @@ export function DetailedSettingsModule({
                                     <FormMessage className="text-[14px]" />
                                 </div>
                                 <FormControl>
-                                    <Input {...field} />
+                                    <div className='flex items-center gap-2'>
+                                        <Slider
+                                            min={1}
+                                            max={100}
+                                            step={1}
+                                            value={[field.value]}
+                                            onValueChange={field.onChange}
+                                        />
+                                        <div className='flex-1' />
+                                        <span className='w-8'>{field.value}</span>
+                                    </div>
                                 </FormControl>
                                 <FormDescription>队伍人数限制</FormDescription>
                             </FormItem>
@@ -234,7 +245,17 @@ export function DetailedSettingsModule({
                                     <FormMessage className="text-[14px]" />
                                 </div>
                                 <FormControl>
-                                    <Input {...field} />
+                                    <div className='flex items-center gap-2'>
+                                        <Slider
+                                            min={1}
+                                            max={10}
+                                            step={1}
+                                            value={[field.value]}
+                                            onValueChange={field.onChange}
+                                        />
+                                        <div className='flex-1' />
+                                        <span className='w-8'>{field.value}</span>
+                                    </div>
                                 </FormControl>
                                 <FormDescription>队伍容器数量限制</FormDescription>
                             </FormItem>

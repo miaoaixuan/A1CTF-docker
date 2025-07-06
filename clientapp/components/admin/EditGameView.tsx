@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button } from 'components/ui/button';
 import { Form } from 'components/ui/form';
 import { MacScrollbar } from 'mac-scrollbar';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
 
@@ -25,10 +25,21 @@ import { AdminFullGameInfo } from 'utils/A1API';
 import { GameManagePage } from './GameManagePage';
 import { TeamManageView } from './game/TeamManageView';
 import { ContainerManageView } from './game/ContainerManageView';
-
-// 原 categories 与 EditGameFormSchema 已迁移到 ./game/EditGameSchema 以避免影响 React Fast Refresh
+import { useTheme } from 'next-themes';
 
 export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
+
+    const [searchParams, setSearchParams] = useSearchParams()
+    const [formEdited, setFormEdited] = useState(false)
+
+    // 添加状态来管理当前选中的模块
+    const [activeModule, setActiveModule] = useState(searchParams.get("module") ?? 'basic');
+
+    useEffect(() => {
+        setSearchParams({ module: activeModule })
+    }, [activeModule])
+
+    const { theme } = useTheme()
 
     const env_to_string = (data: { name: string, value: string }[]) => {
         console.log(data)
@@ -96,7 +107,21 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
         }
     })
 
-    
+    const formJsonRef = useRef<string>("")
+
+    useEffect(() => {
+        const json = JSON.stringify(form.watch())
+        if (json !== formJsonRef.current) {
+            if (formJsonRef.current === "") {
+                formJsonRef.current = json
+                setFormEdited(false)
+            } else {
+                setFormEdited(true)
+            }
+        } else {
+            setFormEdited(false)
+        }
+    }, [form.watch()])
 
     const format_date = (dt: Date) => {
         return dt.toISOString();
@@ -152,9 +177,6 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
         form.setValue(field_name, newDate);
     }
 
-    // 添加状态来管理当前选中的模块
-    const [activeModule, setActiveModule] = useState('basic');
-
     // 定义模块配置
     const modules = [
         {
@@ -202,9 +224,31 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
     return (
         <Form {...form}>
             {/* Header Section */}
-            <div className="absolute top-0 z-50 backdrop-blur-sm bg-background/20 border-b px-6 w-full h-20 flex flex-col justify-center">
-                <div className="flex items-center justify-between">
+            <div className="absolute top-0 z-10 backdrop-blur-sm bg-background/20 border-b px-6 w-full h-20 flex flex-col justify-center">
+                <div className="flex items-center justify-between select-none">
                     <div className="flex items-center gap-4">
+                        <span className="font-bold text-xl">编辑比赛</span>
+                        <div className="h-8 w-px bg-border" />
+                        <div className='flex gap-2 items-center'>
+                            <span className="text-xl text-muted-foreground">
+                                {game_info.name}
+                            </span>
+                        </div>
+                    </div>
+                    <div className='flex gap-4 items-center'>
+                        {
+                            formEdited && (
+                                <span className='text-red-500'>* 有未保存的修改</span>
+                            )
+                        }
+                        <Button
+                            type="submit"
+                            form="game-edit-form"
+                            disabled={!formEdited}
+                        >
+                            <Save className="h-4 w-4" />
+                            保存设置
+                        </Button>
                         <Button
                             type="button"
                             variant="outline"
@@ -214,22 +258,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                             <CircleArrowLeft className="h-4 w-4" />
                             返回比赛列表
                         </Button>
-                        <div className="h-8 w-px bg-border" />
-                        <div>
-                            <span className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                                编辑比赛
-                            </span>
-                            <p className="text-muted-foreground">{game_info.name}</p>
-                        </div>
                     </div>
-                    <Button
-                        type="submit"
-                        form="game-edit-form"
-                        className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-200"
-                    >
-                        <Save className="h-4 w-4" />
-                        保存设置
-                    </Button>
                 </div>
             </div>
 
@@ -257,7 +286,10 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
 
                 {/* 右侧内容区域 */}
                 <div className="flex-1 overflow-hidden">
-                    <MacScrollbar className="h-full">
+                    <MacScrollbar 
+                        className="h-full"
+                        skin={theme == "light" ? "light" : "dark"}
+                    >
                         <div className="pl-6 pr-10 pt-32">
                             <form id="game-edit-form" onSubmit={form.handleSubmit(onSubmit)}>
                                 {/* 基本信息 Section */}
