@@ -32,8 +32,8 @@ export default function Home ({ params }: { params: Promise<{ lng: string, game_
     }
 
     return (
-        <MacScrollbar className="fixed inset-0">
+        <div className="w-screen h-screen">
             <EditGameView game_info={gameInfo} />
-        </MacScrollbar>
+        </div>
     );
 }
