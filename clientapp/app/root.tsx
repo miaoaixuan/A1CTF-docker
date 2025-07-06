@@ -14,18 +14,14 @@ import "app/css/sonner.css";
 import 'mac-scrollbar/dist/mac-scrollbar.css';
 
 import { TransitionProvider } from 'contexts/TransitionContext'
-import { TransitionLayout } from 'components/TransitionLayout'
 
 import { ClientToaster } from 'components/ClientToaster';
 import { GameSwitchProvider } from 'contexts/GameSwitchContext';
 import { CookiesProvider } from 'react-cookie';
 import { GlobalVariableProvider } from 'contexts/GlobalVariableContext';
-import { Tooltip } from 'react-tooltip';
-import SafeComponent from 'components/SafeComponent';
 import { CanvasProvider } from 'contexts/CanvasProvider';
 import { ThemeProvider } from "components/ThemeProvider";
 import FancyBackground from 'components/modules/FancyBackground';
-import LanguageProvider from 'components/LanguageProvider';
 import { I18nextProvider } from "react-i18next";
 
 import i18n from 'i18n';
@@ -63,7 +59,7 @@ const AnimationPresent = (path: string) => {
     return true;
 }
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export function Layout({ children }: { children: React.ReactNode }) {
 
     const href = useLocation().pathname
     const animationPresent = AnimationPresent(href)
@@ -92,7 +88,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                                 <ClientToaster />
                                                 {animationPresent && <FancyBackground />}
                                                 {children}
-                                                <Outlet />
                                             </CanvasProvider>
                                         </GameSwitchProvider>
                                     </GlobalVariableProvider>
@@ -108,6 +103,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </html>
     );
 }
+
+export default function App() {
+    return <Outlet />;
+}
+  
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     let message = "Oops!";
