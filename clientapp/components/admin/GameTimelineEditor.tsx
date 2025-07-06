@@ -13,7 +13,7 @@ import { format } from "date-fns";
 import { CalendarIcon, Clock, Plus, Edit, Trash2, GripVertical } from "lucide-react";
 import { challengeCategoryIcons } from "utils/ClientAssets";
 import dayjs from "dayjs";
-import { EditGameFormSchema } from './EditGameView';
+import { EditGameFormSchema } from './game/EditGameSchema';
 import { UseFormReturn, useWatch } from 'react-hook-form';
 
 import * as z from 'zod';

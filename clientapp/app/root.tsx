@@ -11,9 +11,6 @@ import {
 import type { Route } from "./+types/root";
 import "./app.css";
 import "app/css/sonner.css";
-
-// 引入i18next相关
-
 import 'mac-scrollbar/dist/mac-scrollbar.css';
 
 import { TransitionProvider } from 'contexts/TransitionContext'

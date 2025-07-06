@@ -10,7 +10,8 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import dayjs from 'dayjs';
-import { CalendarIcon, CircleArrowLeft, Save, Radar, MessageSquareLock, Bug, GlobeLock, Binary, FileSearch, HardDrive, Smartphone, SquareCode, Bot, BadgeCent, Github, FilePenLine, Settings, Trophy, Users } from 'lucide-react';
+import { CalendarIcon, CircleArrowLeft, Save, FilePenLine, Settings, Trophy, Users, Package, PackageSearch, MessageSquareLock } from 'lucide-react';
+import { EditGameFormSchema } from './game/EditGameSchema';
 import { AxiosError } from 'axios';
 import { api } from 'utils/ApiHelper';
 
@@ -21,70 +22,11 @@ import { BasicInfoModule } from './game/BasicInfoModule';
 import { DetailedSettingsModule } from './game/DetailedSettingsModule';
 import EditGameChallengesModule from './game/EditGameChallengesModule';
 import { AdminFullGameInfo } from 'utils/A1API';
+import { GameManagePage } from './GameManagePage';
+import { TeamManageView } from './game/TeamManageView';
+import { ContainerManageView } from './game/ContainerManageView';
 
-const categories: { [key: string]: any } = {
-    "MISC": <Radar size={21} />,
-    "CRYPTO": <MessageSquareLock size={21} />,
-    "PWN": <Bug size={21} />,
-    "WEB": <GlobeLock size={21} />,
-    "REVERSE": <Binary size={21} />,
-    "FORENSICS": <FileSearch size={21} />,
-    "HARDWARE": <HardDrive size={21} />,
-    "MOBILE": <Smartphone size={21} />,
-    "PPC": <SquareCode size={21} />,
-    "AI": <Bot size={21} />,
-    "PENTENT": <BadgeCent size={21} />,
-    "OSINT": <Github size={21} />
-};
-
-export const EditGameFormSchema = z.object({
-    name: z.string().min(2, { message: "名字最短要两个字符" }),
-    summary: z.string().optional(),
-    description: z.string().optional(),
-    poster: z.string().optional(),
-    invite_code: z.string().optional(),
-    start_time: z.date().optional(),
-    end_time: z.date().optional(),
-    practice_mode: z.boolean(),
-    team_number_limit: z.coerce.number().min(1),
-    container_number_limit: z.coerce.number().min(1),
-    require_wp: z.boolean(),
-    wp_expire_time: z.date().optional(),
-    stages: z.array(
-        z.object({
-            stage_name: z.string().nonempty(),
-            start_time: z.date(),
-            end_time: z.date(),
-        })
-    ).optional(),
-    visible: z.boolean(),
-    challenges: z.array(
-        z.object({
-            challenge_id: z.number(),
-            challenge_name: z.string(),
-            category: z.enum(Object.keys(categories) as [string, ...string[]], {
-                errorMap: () => ({ message: "需要选择一个有效的题目类别" })
-            }),
-            total_score: z.coerce.number().min(1, "请输入一个有效的数字"),
-            cur_score: z.number(),
-            solve_count: z.number(),
-            hints: z.array(z.object({
-                content: z.string(),
-                create_time: z.date(),
-                visible: z.boolean()
-            })),
-            visible: z.boolean(),
-            belong_stage: z.string().nullable(),
-            judge_config: z.object({
-                judge_type: z.enum(["DYNAMIC", "SCRIPT"], {
-                    errorMap: () => ({ message: "需要选择一个有效的题目类别" })
-                }),
-                judge_script: z.string().optional(),
-                flag_template: z.string().optional(),
-            })
-        })
-    )
-});
+// 原 categories 与 EditGameFormSchema 已迁移到 ./game/EditGameSchema 以避免影响 React Fast Refresh
 
 export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
 
@@ -154,8 +96,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
         }
     })
 
-
-    const [showScript, setShowScript] = useState(false);
+    
 
     const format_date = (dt: Date) => {
         return dt.toISOString();
@@ -219,38 +160,42 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
         {
             id: 'basic',
             name: '基本信息',
-            icon: <FilePenLine className="h-4 w-4" />,
-            description: '比赛基本设置'
+            icon: <FilePenLine className="h-4 w-4" />
         },
         {
             id: 'settings',
             name: '详细设置',
-            icon: <Settings className="h-4 w-4" />,
-            description: '高级配置选项'
+            icon: <Settings className="h-4 w-4" />
         },
         {
             id: 'timeline',
             name: '时间线',
-            icon: <CalendarIcon className="h-4 w-4" />,
-            description: '时间线与题目分配'
+            icon: <CalendarIcon className="h-4 w-4" />
         },
         {
             id: 'groups',
             name: '分组管理',
-            icon: <Users className="h-4 w-4" />,
-            description: '队伍分组设置'
+            icon: <Users className="h-4 w-4" />
         },
         {
             id: 'notices',
             name: '公告管理',
-            icon: <MessageSquareLock className="h-4 w-4" />,
-            description: '比赛公告发布'
+            icon: <MessageSquareLock className="h-4 w-4" />
         },
         {
             id: 'challenges',
             name: '题目设置',
-            icon: <Trophy className="h-4 w-4" />,
-            description: '题目管理配置'
+            icon: <Trophy className="h-4 w-4" />
+        },
+        {
+            id: "teams",
+            name: "队伍管理",
+            icon: <Users className="h-4 w-4" />
+        },
+        {
+            id: "containers",
+            name: "容器管理",
+            icon: <PackageSearch className="h-4 w-4" />
         }
     ];
 
@@ -313,7 +258,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                 {/* 右侧内容区域 */}
                 <div className="flex-1 overflow-hidden">
                     <MacScrollbar className="h-full">
-                        <div className="px-6 pt-32">
+                        <div className="pl-6 pr-10 pt-32">
                             <form id="game-edit-form" onSubmit={form.handleSubmit(onSubmit)}>
                                 {/* 基本信息 Section */}
                                 {activeModule === 'basic' && (
@@ -389,6 +334,36 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                                         <EditGameChallengesModule
                                             form={form}
                                             game_info={game_info}
+                                        />
+                                    </div>
+                                )}
+
+                                {/* 队伍管理 */}
+                                {activeModule === 'teams' && (
+                                    <div>
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
+                                                <Users className="h-4 w-4 text-blue-600" />
+                                            </div>
+                                            <h2 className="text-xl font-semibold">队伍管理</h2>
+                                        </div>
+                                        <TeamManageView
+                                            gameId={game_info.game_id}
+                                        />
+                                    </div>
+                                )}
+
+                                {/* 容器管理 */}
+                                {activeModule === 'containers' && (
+                                    <div>
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/10 flex items-center justify-center">
+                                                <PackageSearch className="h-4 w-4 text-green-600" />
+                                            </div>
+                                            <h2 className="text-xl font-semibold">容器管理</h2>
+                                        </div>
+                                        <ContainerManageView
+                                            gameId={game_info.game_id}
                                         />
                                     </div>
                                 )}

@@ -19,7 +19,7 @@ import { cn } from 'lib/utils';
 import { useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useFieldArray, UseFormReturn } from 'react-hook-form';
-import { EditGameFormSchema } from '../EditGameView';
+import { EditGameFormSchema } from './EditGameSchema';
 import * as z from 'zod';
 import { api } from 'utils/ApiHelper';
 import { AdminFullGameInfo } from 'utils/A1API';

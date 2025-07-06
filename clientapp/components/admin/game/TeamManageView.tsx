@@ -39,13 +39,13 @@ import {
 
 import { MacScrollbar } from "mac-scrollbar";
 
-import { Badge } from "../ui/badge";
+import { Badge } from "../../ui/badge";
 import { AdminListTeamItem, ParticipationStatus, UserGameSimpleInfo } from "utils/A1API";
 
 import { api, ErrorMessage } from "utils/ApiHelper";
-import AvatarUsername from "../modules/AvatarUsername";
+import AvatarUsername from "../../modules/AvatarUsername";
 import { toast } from "sonner";
-import { 
+import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -116,7 +116,13 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     );
 };
 
-export function TeamManageView() {
+export function TeamManageView(
+    {
+        gameId,
+    }: {
+        gameId: number
+    }
+) {
     const [data, setData] = React.useState<TeamModel[]>([])
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -129,21 +135,20 @@ export function TeamManageView() {
     const [pageSize, setPageSize] = React.useState(30);
     const [curPage, setCurPage] = React.useState(0);
     const [totalCount, setTotalCount] = React.useState(0);
-    const [gameId, setGameId] = React.useState(1);
     const [searchKeyword, setSearchKeyword] = React.useState("");
     const [debouncedSearchKeyword, setDebouncedSearchKeyword] = React.useState("");
-    
+
     // 比赛选择相关状态
     const [games, setGames] = React.useState<UserGameSimpleInfo[]>([]);
     const [open, setOpen] = React.useState(false);
     const [searchValue, setSearchValue] = React.useState("");
-    
+
     // 对话框状态
     const [confirmDialog, setConfirmDialog] = React.useState({
         isOpen: false,
         title: "",
         description: "",
-        onConfirm: () => {},
+        onConfirm: () => { },
     });
 
     // 防抖处理搜索关键词
@@ -156,32 +161,13 @@ export function TeamManageView() {
         return () => clearTimeout(timer);
     }, [searchKeyword]);
 
-    // 获取比赛列表
-    const fetchGames = () => {
-        api.admin.listGames({ size: 100, offset: 0 }).then((res: AxiosResponse<{ code: number; data: UserGameSimpleInfo[] }>) => {
-            if (res.data.code === 200) {
-                setGames(res.data.data);
-            } else {
-                toast.error("获取比赛列表失败");
-            }
-        }).catch((err: Error) => {
-            toast.error("获取比赛列表失败");
-            console.error("获取比赛列表失败:", err);
-        });
-    };
-
-    // 在组件加载时获取比赛列表
-    React.useEffect(() => {
-        fetchGames();
-    }, []);
-
     // 处理队伍状态变更
     const handleUpdateTeamStatus = (teamId: number, action: 'approve' | 'ban' | 'unban') => {
         // 根据不同操作调用不同API
         let apiCall;
         let loadingMessage;
-        
-        switch(action) {
+
+        switch (action) {
             case 'approve':
                 apiCall = api.admin.adminApproveTeam({ team_id: teamId, game_id: gameId });
                 loadingMessage = '正在批准队伍...';
@@ -195,7 +181,7 @@ export function TeamManageView() {
                 loadingMessage = '正在解锁队伍...';
                 break;
         }
-            
+
         // 使用toast.promise包装API调用
         toast.promise(apiCall, {
             loading: loadingMessage,
@@ -247,7 +233,7 @@ export function TeamManageView() {
             }
         });
     };
-    
+
     // 设置队伍从禁赛状态解锁
     const handleUnbanTeam = (teamId: number) => {
         setConfirmDialog({
@@ -322,7 +308,7 @@ export function TeamManageView() {
                 const status = row.getValue("status") as ParticipationStatus;
                 const { color, text } = getStatusColorAndText(status);
                 return (
-                    <Badge 
+                    <Badge
                         className="capitalize w-[60px] px-[5px] flex justify-center select-none"
                         style={{ backgroundColor: color }}
                     >
@@ -359,9 +345,9 @@ export function TeamManageView() {
                                 data-tooltip-content={member.user_name}
                                 data-tooltip-place="top"
                             >
-                                <AvatarUsername 
-                                    avatar_url={member.avatar} 
-                                    username={member.user_name} 
+                                <AvatarUsername
+                                    avatar_url={member.avatar}
+                                    username={member.user_name}
                                 />
                             </div>
                         ))}
@@ -380,11 +366,11 @@ export function TeamManageView() {
             enableHiding: false,
             cell: ({ row }) => {
                 const team = row.original;
-                
+
                 return (
                     <div className="flex gap-2">
-                        <Button 
-                            variant="ghost" 
+                        <Button
+                            variant="ghost"
                             className="h-8 w-8 p-0"
                             onClick={() => handleApproveTeam(team.team_id)}
                             disabled={team.status !== ParticipationStatus.Pending}
@@ -443,17 +429,17 @@ export function TeamManageView() {
 
     // 获取队伍列表数据
     const fetchTeams = () => {
-        const payload: any = { 
-            game_id: gameId, 
-            size: pageSize, 
-            offset: pageSize * curPage 
+        const payload: any = {
+            game_id: gameId,
+            size: pageSize,
+            offset: pageSize * curPage
         };
-        
+
         // 如果有搜索关键词，添加到请求中
         if (debouncedSearchKeyword.trim()) {
             payload.search = debouncedSearchKeyword.trim();
         }
-        
+
         api.admin.adminListTeams(payload).then((res) => {
             setTotalCount(res.data.total ?? 0);
             const formattedData: TeamModel[] = res.data.data.map(item => ({
@@ -506,176 +492,123 @@ export function TeamManageView() {
     }, [curPage, pageSize, gameId, debouncedSearchKeyword]);
 
     return (
-        <MacScrollbar className="overflow-hidden w-full">
-            <div className="w-full flex justify-center pb-10 pt-4">
-                <div className="w-[80%]">
-                    <div className="flex items-center justify-between space-x-2 select-none mb-4">
-                        <div className="flex items-center space-x-2">
-                            <Popover open={open} onOpenChange={setOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        role="combobox"
-                                        aria-expanded={open}
-                                        className="w-[300px] justify-between"
-                                    >
-                                        {gameId
-                                            ? games.find((game) => game.game_id === gameId)?.name
-                                            : "选择比赛..."}
-                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[300px] p-0">
-                                    <Command>
-                                        <CommandInput 
-                                            placeholder="搜索比赛..." 
-                                            value={searchValue}
-                                            onValueChange={setSearchValue}
-                                        />
-                                        <CommandEmpty>未找到比赛</CommandEmpty>
-                                        <CommandGroup>
-                                            {games
-                                                .map((game) => (
-                                                    <CommandItem
-                                                        key={game.game_id}
-                                                        value={game.name}
-                                                        onSelect={() => {
-                                                            setGameId(game.game_id);
-                                                            setOpen(false);
-                                                            setSearchValue("");
-                                                        }}
-                                                    >
-                                                        <Check
-                                                            className={cn(
-                                                                "mr-2 h-4 w-4",
-                                                                gameId === game.game_id ? "opacity-100" : "opacity-0"
-                                                            )}
-                                                        />
-                                                        {game.name}
-                                                    </CommandItem>
-                                                ))}
-                                        </CommandGroup>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <div className="flex-1 text-sm text-muted-foreground flex items-center">
-                                {table.getFilteredSelectedRowModel().rows.length} of{" "}
-                                {table.getFilteredRowModel().rows.length} 行已选择
-                            </div>
-                            <div className="flex gap-3 items-center">
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => setCurPage( curPage - 1 )}
-                                    disabled={ curPage == 0 }
-                                >
-                                    <ArrowLeft />
-                                </Button>
-                                <div className="text-sm text-muted-foreground">
-                                    {curPage + 1} / {Math.ceil(totalCount / pageSize)}
-                                </div>
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => setCurPage( curPage + 1 )}
-                                    disabled={ curPage >= Math.ceil(totalCount / pageSize) - 1 }
-                                >
-                                    <ArrowRight />
-                                </Button>
-                            </div>
-                        </div>
+        <>
+            <div className="w-full flex flex-col gap-4 pb-4">
+                <div className="flex items-center space-x-2">
+                    <div className="flex-1 text-sm text-muted-foreground flex items-center">
+                        {table.getFilteredSelectedRowModel().rows.length} / {" "}
+                        {table.getFilteredRowModel().rows.length} 行已选择
                     </div>
-                    <div className="flex items-center py-4">
-                        <Input
-                            placeholder="按队伍名称过滤..."
-                            value={searchKeyword}
-                            onChange={(event) => handleSearch(event.target.value)}
-                            className="max-w-sm"
-                        />
-                        <div className="flex gap-2 ml-auto">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline">
-                                        列 <ChevronDown />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="select-none">
-                                    { table
-                                        .getAllColumns()
-                                        .filter((column) => column.getCanHide())
-                                        .map((column) => {
-                                            return (
-                                                <DropdownMenuCheckboxItem
-                                                    key={column.id}
-                                                    className="capitalize"
-                                                    checked={column.getIsVisible()}
-                                                    onCheckedChange={(value) =>
-                                                        column.toggleVisibility(!!value)
-                                                    }
-                                                >
-                                                    {column.id}
-                                                </DropdownMenuCheckboxItem>
-                                            )
-                                        }) }
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            <Button variant="outline" size={"icon"} onClick={() => fetchTeams()}>
-                                <RefreshCw />
-                            </Button>
+                    <div className="flex gap-3 items-center">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setCurPage(curPage - 1)}
+                            disabled={curPage == 0}
+                        >
+                            <ArrowLeft />
+                        </Button>
+                        <div className="text-sm text-muted-foreground">
+                            {curPage + 1} / {Math.ceil(totalCount / pageSize)}
                         </div>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setCurPage(curPage + 1)}
+                            disabled={curPage >= Math.ceil(totalCount / pageSize) - 1}
+                        >
+                            <ArrowRight />
+                        </Button>
                     </div>
-                    <div className="rounded-md border">
-                        <Table>
-                            <TableHeader>
-                                {table.getHeaderGroups().map((headerGroup) => (
-                                    <TableRow key={headerGroup.id}>
-                                        {headerGroup.headers.map((header) => {
-                                            return (
-                                                <TableHead key={header.id}>
-                                                    {header.isPlaceholder
-                                                        ? null
-                                                        : flexRender(
-                                                            header.column.columnDef.header,
-                                                            header.getContext()
-                                                        )}
-                                                </TableHead>
-                                            )
-                                        })}
-                                    </TableRow>
-                                ))}
-                            </TableHeader>
-                            <TableBody>
-                                {table.getRowModel().rows?.length ? (
-                                    table.getRowModel().rows.map((row) => (
-                                        <TableRow
-                                            key={row.id}
-                                            data-state={row.getIsSelected() && "selected"}
-                                        >
-                                            {row.getVisibleCells().map((cell) => (
-                                                <TableCell key={cell.id}>
-                                                    {flexRender(
-                                                        cell.column.columnDef.cell,
-                                                        cell.getContext()
+                </div>
+                <div className="flex items-center">
+                    <Input
+                        placeholder="按队伍名称过滤..."
+                        value={searchKeyword}
+                        onChange={(event) => handleSearch(event.target.value)}
+                        className="max-w-sm"
+                    />
+                    <div className="flex gap-2 ml-auto">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline">
+                                    列 <ChevronDown />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="select-none">
+                                {table
+                                    .getAllColumns()
+                                    .filter((column) => column.getCanHide())
+                                    .map((column) => {
+                                        return (
+                                            <DropdownMenuCheckboxItem
+                                                key={column.id}
+                                                className="capitalize"
+                                                checked={column.getIsVisible()}
+                                                onCheckedChange={(value) =>
+                                                    column.toggleVisibility(!!value)
+                                                }
+                                            >
+                                                {column.id}
+                                            </DropdownMenuCheckboxItem>
+                                        )
+                                    })}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <Button variant="outline" size={"icon"} onClick={() => fetchTeams()}>
+                            <RefreshCw />
+                        </Button>
+                    </div>
+                </div>
+                <div className="rounded-md border">
+                    <Table>
+                        <TableHeader>
+                            {table.getHeaderGroups().map((headerGroup) => (
+                                <TableRow key={headerGroup.id}>
+                                    {headerGroup.headers.map((header) => {
+                                        return (
+                                            <TableHead key={header.id}>
+                                                {header.isPlaceholder
+                                                    ? null
+                                                    : flexRender(
+                                                        header.column.columnDef.header,
+                                                        header.getContext()
                                                     )}
-                                                </TableCell>
-                                            ))}
-                                        </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell
-                                            colSpan={columns.length}
-                                            className="h-24 text-center"
-                                        >
-                                            暂无数据
-                                        </TableCell>
+                                            </TableHead>
+                                        )
+                                    })}
+                                </TableRow>
+                            ))}
+                        </TableHeader>
+                        <TableBody>
+                            {table.getRowModel().rows?.length ? (
+                                table.getRowModel().rows.map((row) => (
+                                    <TableRow
+                                        key={row.id}
+                                        data-state={row.getIsSelected() && "selected"}
+                                    >
+                                        {row.getVisibleCells().map((cell) => (
+                                            <TableCell key={cell.id}>
+                                                {flexRender(
+                                                    cell.column.columnDef.cell,
+                                                    cell.getContext()
+                                                )}
+                                            </TableCell>
+                                        ))}
                                     </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={columns.length}
+                                        className="h-24 text-center"
+                                    >
+                                        暂无数据
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
                 </div>
             </div>
             <ConfirmDialog
@@ -685,6 +618,6 @@ export function TeamManageView() {
                 title={confirmDialog.title}
                 description={confirmDialog.description}
             />
-        </MacScrollbar>
+        </>
     )
 }

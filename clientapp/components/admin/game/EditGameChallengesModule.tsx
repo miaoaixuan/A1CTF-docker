@@ -23,7 +23,7 @@ import { ChallengeCategory, AdminDetailGameChallenge, AdminFullGameInfo, JudgeTy
 import { useFieldArray, UseFormReturn } from 'react-hook-form';
 
 import * as z from 'zod';
-import { EditGameFormSchema } from '../EditGameView';
+import { EditGameFormSchema } from './EditGameSchema';
 import { ColumnDef, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, SortingState, useReactTable, VisibilityState } from '@tanstack/react-table';
 import { Checkbox } from 'components/ui/checkbox';
 import dayjs from 'dayjs';

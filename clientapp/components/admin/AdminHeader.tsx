@@ -27,8 +27,8 @@ export function AdminHeader() {
                 <Button variant={get_button_style("games")} onClick={() => move_to_page("games")} className="font-bold"><Flag/>比赛管理</Button>
                 <Button variant={get_button_style("challenges")} onClick={() => move_to_page("challenges")} className="font-bold"><Dices/>题目管理</Button>
                 <Button variant={get_button_style("users")} onClick={() => move_to_page("users")} className="font-bold"><ContactRound/>用户管理</Button>
-                <Button variant={get_button_style("teams")} onClick={() => move_to_page("teams")} className="font-bold"><UsersRound/>队伍管理</Button>
-                <Button variant={get_button_style("containers")} onClick={() => move_to_page("containers")} className="font-bold"><Package/>容器管理</Button>
+                {/* <Button variant={get_button_style("teams")} onClick={() => move_to_page("teams")} className="font-bold"><UsersRound/>队伍管理</Button> */}
+                {/* <Button variant={get_button_style("containers")} onClick={() => move_to_page("containers")} className="font-bold"><Package/>容器管理</Button> */}
                 <Button variant={get_button_style("logs")} onClick={() => move_to_page("logs")} className="font-bold"><Cable/>系统日志</Button>
                 <div className="flex-1" />
                 <Button variant={get_button_style("system")} onClick={() => move_to_page("system")} className="font-bold"><Settings/>系统设置</Button>

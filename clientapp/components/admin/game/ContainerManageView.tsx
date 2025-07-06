@@ -39,7 +39,7 @@ import {
 
 import { api, ErrorMessage } from "utils/ApiHelper";
 import { MacScrollbar } from "mac-scrollbar";
-import { Badge } from "../ui/badge";
+import { Badge } from "../../ui/badge";
 import { 
     AlertDialog,
     AlertDialogAction,
@@ -116,7 +116,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     );
 };
 
-export function ContainerManageView() {
+export function ContainerManageView({ gameId }: { gameId: number }) {
     const [data, setData] = React.useState<ContainerModel[]>([])
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -126,14 +126,9 @@ export function ContainerManageView() {
     const [pageSize, setPageSize] = React.useState(30);
     const [curPage, setCurPage] = React.useState(0);
     const [totalCount, setTotalCount] = React.useState(0);
-    const [gameId, setGameId] = React.useState(1); // 默认游戏ID
+
     const [searchKeyword, setSearchKeyword] = React.useState("");
     const [debouncedSearchKeyword, setDebouncedSearchKeyword] = React.useState("");
-    
-    // 比赛选择相关状态
-    const [games, setGames] = React.useState<UserGameSimpleInfo[]>([]);
-    const [open, setOpen] = React.useState(false);
-    const [searchValue, setSearchValue] = React.useState("");
     
     // 对话框状态
     const [confirmDialog, setConfirmDialog] = React.useState({
@@ -153,24 +148,6 @@ export function ContainerManageView() {
         return () => clearTimeout(timer);
     }, [searchKeyword]);
     
-    // 获取比赛列表
-    const fetchGames = () => {
-        api.admin.listGames({ size: 100, offset: 0 }).then((res: any) => {
-            if (res.data.code === 200) {
-                setGames(res.data.data);
-            } else {
-                toast.error("获取比赛列表失败");
-            }
-        }).catch((err: Error) => {
-            toast.error("获取比赛列表失败");
-            console.error("获取比赛列表失败:", err);
-        });
-    };
-
-    // 在组件加载时获取比赛列表
-    React.useEffect(() => {
-        fetchGames();
-    }, []);
 
     // 处理容器删除
     const handleDeleteContainer = (containerId: string) => {
@@ -551,188 +528,132 @@ export function ContainerManageView() {
     }, [curPage, pageSize, gameId, debouncedSearchKeyword]);
 
     return (
-        <MacScrollbar className="overflow-hidden w-full">
-            <div className="w-full flex justify-center pb-10 pt-4">
-                <div className="w-[80%]">
-                    <div className="flex items-center justify-between space-x-2 select-none mb-4">
-                        <div className="flex items-center space-x-2">
-                            <Popover open={open} onOpenChange={setOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        role="combobox"
-                                        aria-expanded={open}
-                                        className="w-[300px] justify-between"
-                                    >
-                                        {gameId
-                                            ? games.find((game) => game.game_id === gameId)?.name
-                                            : "选择比赛..."}
-                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[300px] p-0">
-                                    <Command>
-                                        <CommandInput 
-                                            placeholder="搜索比赛..." 
-                                            value={searchValue}
-                                            onValueChange={setSearchValue}
-                                        />
-                                        <CommandEmpty>未找到比赛</CommandEmpty>
-                                        <CommandGroup>
-                                            {games
-                                                .filter(game => 
-                                                    game.name.toLowerCase().includes(searchValue.toLowerCase())
-                                                )
-                                                .map((game) => (
-                                                    <CommandItem
-                                                        key={game.game_id}
-                                                        value={game.name}
-                                                        onSelect={() => {
-                                                            setGameId(game.game_id);
-                                                            setOpen(false);
-                                                            setSearchValue("");
-                                                        }}
-                                                    >
-                                                        <Check
-                                                            className={cn(
-                                                                "mr-2 h-4 w-4",
-                                                                gameId === game.game_id ? "opacity-100" : "opacity-0"
-                                                            )}
-                                                        />
-                                                        {game.name}
-                                                    </CommandItem>
-                                                ))}
-                                        </CommandGroup>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-                        <div className="flex items-center justify-end space-x-2 select-none">
-                            <div className="flex-1 text-sm text-muted-foreground flex items-center">
-                                {table.getFilteredSelectedRowModel().rows.length} / {" "}
-                                {table.getFilteredRowModel().rows.length} 行已选择
-                            </div>
-                            <div className="flex gap-3 items-center">
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => setCurPage( curPage - 1 )}
-                                    disabled={ curPage == 0 }
-                                >
-                                    <ArrowLeft />
-                                </Button>
-                                <div className="text-sm text-muted-foreground">
-                                    {curPage + 1} / {Math.ceil(totalCount / pageSize)}
-                                </div>
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => setCurPage( curPage + 1 )}
-                                    disabled={ curPage >= Math.ceil(totalCount / pageSize) - 1 }
-                                >
-                                    <ArrowRight />
-                                </Button>
-                            </div>
-                        </div>
+        <>
+            <div className="w-full flex flex-col gap-4 pb-4">
+                <div className="flex items-center justify-end space-x-2 select-none">
+                    <div className="flex-1 text-sm text-muted-foreground flex items-center">
+                        {table.getFilteredSelectedRowModel().rows.length} / {" "}
+                        {table.getFilteredRowModel().rows.length} 行已选择
                     </div>
-                    <div className="flex items-center py-4">
-                        <Input
-                            placeholder="按容器或队伍名称过滤..."
-                            value={searchKeyword}
-                            onChange={(event) => handleSearch(event.target.value)}
-                            className="max-w-sm"
-                        />
-                        <div className="flex gap-2 ml-auto items-center">
-                            <Button
-                                variant="destructive"
-                                className="select-none"
-                                onClick={handleBatchDeleteContainers}
-                                disabled={table.getFilteredSelectedRowModel().rows.length === 0}
-                            >
-                                <ZapOff className="h-4 w-4 mr-2" />
-                                批量停止 ({table.getFilteredSelectedRowModel().rows.length})
-                            </Button>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline">
-                                        显示项目 <ChevronDown />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="select-none">
-                                    { table
-                                        .getAllColumns()
-                                        .filter((column) => column.getCanHide())
-                                        .map((column) => {
-                                            return (
-                                                <DropdownMenuCheckboxItem
-                                                    key={column.id}
-                                                    className="capitalize"
-                                                    checked={column.getIsVisible()}
-                                                    onCheckedChange={(value) =>
-                                                        column.toggleVisibility(!!value)
-                                                    }
-                                                >
-                                                    {column.id}
-                                                </DropdownMenuCheckboxItem>
-                                            )
-                                        }) }
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            <Button variant="outline" size={"icon"} onClick={() => fetchContainers()}>
-                                <RefreshCw />
-                            </Button>
+                    <div className="flex gap-3 items-center">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setCurPage( curPage - 1 )}
+                            disabled={ curPage == 0 }
+                        >
+                            <ArrowLeft />
+                        </Button>
+                        <div className="text-sm text-muted-foreground">
+                            {curPage + 1} / {Math.ceil(totalCount / pageSize)}
                         </div>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setCurPage( curPage + 1 )}
+                            disabled={ curPage >= Math.ceil(totalCount / pageSize) - 1 }
+                        >
+                            <ArrowRight />
+                        </Button>
                     </div>
-                    <div className="rounded-md border">
-                        <Table>
-                            <TableHeader>
-                                {table.getHeaderGroups().map((headerGroup) => (
-                                    <TableRow key={headerGroup.id}>
-                                        {headerGroup.headers.map((header) => {
-                                            return (
-                                                <TableHead key={header.id}>
-                                                    {header.isPlaceholder
-                                                        ? null
-                                                        : flexRender(
-                                                            header.column.columnDef.header,
-                                                            header.getContext()
-                                                        )}
-                                                </TableHead>
-                                            )
-                                        })}
-                                    </TableRow>
-                                ))}
-                            </TableHeader>
-                            <TableBody>
-                                {table.getRowModel().rows?.length ? (
-                                    table.getRowModel().rows.map((row) => (
-                                        <TableRow
-                                            key={row.id}
-                                            data-state={row.getIsSelected() && "selected"}
-                                        >
-                                            {row.getVisibleCells().map((cell) => (
-                                                <TableCell key={cell.id}>
-                                                    {flexRender(
-                                                        cell.column.columnDef.cell,
-                                                        cell.getContext()
+                </div>
+                <div className="flex items-center">
+                    <Input
+                        placeholder="按容器或队伍名称过滤..."
+                        value={searchKeyword}
+                        onChange={(event) => handleSearch(event.target.value)}
+                        className="max-w-sm"
+                    />
+                    <div className="flex gap-2 ml-auto items-center">
+                        <Button
+                            variant="destructive"
+                            className="select-none"
+                            onClick={handleBatchDeleteContainers}
+                            disabled={table.getFilteredSelectedRowModel().rows.length === 0}
+                        >
+                            <ZapOff className="h-4 w-4 mr-2" />
+                            批量停止 ({table.getFilteredSelectedRowModel().rows.length})
+                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline">
+                                    显示项目 <ChevronDown />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="select-none">
+                                { table
+                                    .getAllColumns()
+                                    .filter((column) => column.getCanHide())
+                                    .map((column) => {
+                                        return (
+                                            <DropdownMenuCheckboxItem
+                                                key={column.id}
+                                                className="capitalize"
+                                                checked={column.getIsVisible()}
+                                                onCheckedChange={(value) =>
+                                                    column.toggleVisibility(!!value)
+                                                }
+                                            >
+                                                {column.id}
+                                            </DropdownMenuCheckboxItem>
+                                        )
+                                    }) }
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <Button variant="outline" size={"icon"} onClick={() => fetchContainers()}>
+                            <RefreshCw />
+                        </Button>
+                    </div>
+                </div>
+                <div className="rounded-md border">
+                    <Table>
+                        <TableHeader>
+                            {table.getHeaderGroups().map((headerGroup) => (
+                                <TableRow key={headerGroup.id}>
+                                    {headerGroup.headers.map((header) => {
+                                        return (
+                                            <TableHead key={header.id}>
+                                                {header.isPlaceholder
+                                                    ? null
+                                                    : flexRender(
+                                                        header.column.columnDef.header,
+                                                        header.getContext()
                                                     )}
-                                                </TableCell>
-                                            ))}
-                                        </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell
-                                            colSpan={columns.length}
-                                            className="h-24 text-center"
-                                        >
-                                            暂无数据
-                                        </TableCell>
+                                            </TableHead>
+                                        )
+                                    })}
+                                </TableRow>
+                            ))}
+                        </TableHeader>
+                        <TableBody>
+                            {table.getRowModel().rows?.length ? (
+                                table.getRowModel().rows.map((row) => (
+                                    <TableRow
+                                        key={row.id}
+                                        data-state={row.getIsSelected() && "selected"}
+                                    >
+                                        {row.getVisibleCells().map((cell) => (
+                                            <TableCell key={cell.id}>
+                                                {flexRender(
+                                                    cell.column.columnDef.cell,
+                                                    cell.getContext()
+                                                )}
+                                            </TableCell>
+                                        ))}
                                     </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={columns.length}
+                                        className="h-24 text-center"
+                                    >
+                                        暂无数据
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
                 </div>
             </div>
             
@@ -744,6 +665,6 @@ export function ContainerManageView() {
                 title={confirmDialog.title}
                 description={confirmDialog.description}
             />
-        </MacScrollbar>
+        </>
     )
 }

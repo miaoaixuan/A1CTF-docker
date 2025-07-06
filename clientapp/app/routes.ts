@@ -26,10 +26,8 @@ export default [
     route("admin/games/:game_id", "routes/[lng]/admin/games/[game_id]/page.tsx"),
     route("admin/games/:game_id/score-adjustments", "routes/[lng]/admin/games/[game_id]/score-adjustments/page.tsx"),
 
-    route("admin/containers", "routes/[lng]/admin/containers/page.tsx"),
     route("admin/logs", "routes/[lng]/admin/logs/page.tsx"),
     route("admin/system", "routes/[lng]/admin/system/page.tsx"),
-    route("admin/teams", "routes/[lng]/admin/teams/page.tsx"),
     route("admin/users", "routes/[lng]/admin/users/page.tsx"),
     
     // 创建404页面
