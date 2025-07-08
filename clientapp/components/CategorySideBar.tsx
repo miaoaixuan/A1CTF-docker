@@ -1,4 +1,4 @@
-import { BadgeCent, Binary, Bot, Bug, ChevronDown, ChevronUp, Chrome, CircleArrowLeft, Earth, FileSearch, Github, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode, Underline } from "lucide-react"
+import { BadgeCent, Binary, Bot, Bug, ChevronDown, ChevronUp, Chrome, CircleArrowLeft, Earth, FileSearch, Github, GlobeLock, HardDrive, Loader2, MessageSquareLock, Radar, Smartphone, SquareCode, Underline } from "lucide-react"
 
 import {
     Sidebar,
@@ -27,8 +27,23 @@ import { ChallengeSolveStatus } from "./ChallengesView";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import CategoryChallenges from "components/modules/game/CategoryChallenges";
 import { challengeCategoryColorMap, challengeCategoryIcons } from "utils/ClientAssets";
+import LoadingModule from "./modules/LoadingModule";
 
-export function CategorySidebar({ gameid, curChallenge, setCurChallenge, curChallengeRef, gameStatus, setGameStatus, resizeTrigger, setPageSwitching, challenges, setChallenges, challengeSolveStatusList, setChallengeSolveStatusList } : { 
+export function CategorySidebar({
+    gameid,
+    curChallenge,
+    setCurChallenge,
+    curChallengeRef,
+    gameStatus,
+    setGameStatus,
+    resizeTrigger,
+    setPageSwitching,
+    challenges,
+    setChallenges,
+    challengeSolveStatusList,
+    setChallengeSolveStatusList,
+    loadingVisible
+}: {
     gameid: string,
     curChallenge: UserDetailGameChallenge | undefined,
     setCurChallenge: Dispatch<SetStateAction<UserDetailGameChallenge | undefined>>,
@@ -41,6 +56,7 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, curChal
     setChallenges: Dispatch<SetStateAction<Record<string, UserSimpleGameChallenge[]>>>,
     challengeSolveStatusList: Record<string, ChallengeSolveStatus>,
     setChallengeSolveStatusList: Dispatch<SetStateAction<Record<string, ChallengeSolveStatus>>>,
+    loadingVisible: boolean
 }) {
 
     const { theme } = useTheme()
@@ -49,11 +65,11 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, curChal
     const gameID = parseInt(gameid, 10)
 
     // 为了实时更新
-    
+
 
     // 之前的题目列表
-    const prevChallenges = useRef<Record<string, UserSimpleGameChallenge[]>> ()
-    const prevGameDetail = useRef<UserFullGameInfo> ()
+    const prevChallenges = useRef<Record<string, UserSimpleGameChallenge[]>>()
+    const prevGameDetail = useRef<UserFullGameInfo>()
 
     // 懒加载, 当前题目卡片是否在视窗内
     const observerRef = useRef<IntersectionObserver | null>(null);
@@ -64,9 +80,9 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, curChal
 
     let updateChallengeInter: NodeJS.Timeout;
 
-    const colorMap : { [key: string]: string } = challengeCategoryColorMap
+    const colorMap: { [key: string]: string } = challengeCategoryColorMap
 
-    const cateIcon : { [key: string]: any } = challengeCategoryIcons
+    const cateIcon: { [key: string]: any } = challengeCategoryIcons
 
     useEffect(() => {
         const foldMap: Record<string, boolean> = {};
@@ -74,7 +90,7 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, curChal
 
         setCategoryFolded(foldMap)
     }, [])
-    
+
     // 更新题目列表
     const updateChalenges = (first?: boolean) => {
 
@@ -133,8 +149,8 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, curChal
 
             observerRef.current = new IntersectionObserver((entries) => {
                 entries.forEach((entry) => {
-                    const target = entry.target as HTMLElement; 
-                    
+                    const target = entry.target as HTMLElement;
+
                     const id = target.dataset.id as string;
                     const category = target.dataset.category as string;
 
@@ -157,11 +173,11 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, curChal
                         }));
                     }
                 }
-            );
+                );
             },
-            {
-                rootMargin: "200px 0px",
-            });
+                {
+                    rootMargin: "200px 0px",
+                });
 
         }).catch((error: AxiosError) => {
             if (error.response?.status == 400) {
@@ -218,7 +234,7 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, curChal
                 curChallengeRef.current = response.data.data
                 setCurChallenge(response.data.data)
                 setPageSwitching(true)
-            }).catch((error: AxiosError) => {})
+            }).catch((error: AxiosError) => { })
         };
     };
 
@@ -234,57 +250,61 @@ export function CategorySidebar({ gameid, curChallenge, setCurChallenge, curChal
     const { clientConfig } = useGlobalVariableContext()
 
     return (
-        <Sidebar className="backdrop-blur-sm hide-scrollbar select-none transition-all duration-200" onTransitionEnd={() => {
+        <Sidebar className="hide-scrollbar select-none transition-all duration-200" onTransitionEnd={() => {
             resizeTrigger(Math.floor(Math.random() * 1000000))
         }} >
             <SidebarContent>
-                <SafeComponent>
-                    <MacScrollbar 
-                        skin={theme ==  "light" ? "light" : "dark"}
-                        trackStyle={(horizontal) => ({ [horizontal ? "height" : "width"]: 0, borderWidth: 0})}
-                        thumbStyle={(horizontal) => ({ [horizontal ? "height" : "width"]: 6})}
-                        className="pr-1 pl-1"
-                    >
-                        <SidebarGroup>
-                            <div className="flex justify-center w-full items-center pl-2 pr-2 pt-2">
-                                <div className="justify-start flex gap-2 items-center mt-[-6px]">
-                                    <img
-                                        className="dark:invert transition-all duration-300"
-                                        src={clientConfig.SVGIcon}
-                                        alt={clientConfig.SVGAltData}
-                                        width={40}
-                                        height={40}
-                                    />
-                                    <span className="font-bold text-xl transition-colors duration-300">A1CTF</span>
-                                </div>
-                                <div className="flex-1" />
-                                <div className="justify-end">
-                                    <Button className="rounded-3xl p-4 pointer-events-auto w-[100px] mt-[5px] ml-[5px] mb-[10px] [&_svg]:size-5" asChild>
-                                        <TransitionLink className="transition-colors" href={`/games`}>
-                                            <CircleArrowLeft/>
-                                            <span>Back</span>
-                                        </TransitionLink>
-                                    </Button>
-                                </div>
+                <MacScrollbar
+                    skin={theme == "light" ? "light" : "dark"}
+                    trackStyle={(horizontal) => ({ [horizontal ? "height" : "width"]: 0, borderWidth: 0 })}
+                    thumbStyle={(horizontal) => ({ [horizontal ? "height" : "width"]: 6 })}
+                    className="pr-1 pl-1 h-full"
+                >
+                    <SidebarGroup className="h-full">
+                        <div className="flex justify-center w-full items-center pl-2 pr-2 pt-2">
+                            <div className="justify-start flex gap-2 items-center mt-[-6px]">
+                                <img
+                                    className="dark:invert transition-all duration-300"
+                                    src={clientConfig.SVGIcon}
+                                    alt={clientConfig.SVGAltData}
+                                    width={40}
+                                    height={40}
+                                />
+                                <span className="font-bold text-xl transition-colors duration-300">A1CTF</span>
                             </div>
-                            <div className="pl-[7px] pr-[7px] mt-2">
-                                {Object.entries(challenges ?? {}).map(([category, challengeList]) => (
-                                    <CategoryChallenges
-                                        key={category}
-                                        category={category}
-                                        challengeList={challengeList}
-                                        curChallenge={curChallenge}
-                                        observeItem={observeItem}
-                                        visibleItems={visibleItems}
-                                        handleChangeChallenge={handleChangeChallenge}
-                                        challengeSolveStatusList={challengeSolveStatusList}
-                                  />
-                                ))}
+                            <div className="flex-1" />
+                            <div className="justify-end">
+                                <Button className="rounded-3xl p-4 pointer-events-auto w-[100px] mt-[5px] ml-[5px] mb-[10px] [&_svg]:size-5" asChild>
+                                    <TransitionLink className="transition-colors" href={`/games`}>
+                                        <CircleArrowLeft />
+                                        <span>Back</span>
+                                    </TransitionLink>
+                                </Button>
+                            </div>
+                        </div>
 
+                        {!loadingVisible ? (
+                            <div className="pl-[7px] pr-[7px] mt-2">
+                                {
+                                    Object.entries(challenges ?? {}).map(([category, challengeList]) => (
+                                        <CategoryChallenges
+                                            key={category}
+                                            category={category}
+                                            challengeList={challengeList}
+                                            curChallenge={curChallenge}
+                                            observeItem={observeItem}
+                                            visibleItems={visibleItems}
+                                            handleChangeChallenge={handleChangeChallenge}
+                                            challengeSolveStatusList={challengeSolveStatusList}
+                                        />
+                                    ))
+                                }
                             </div>
-                        </SidebarGroup>
-                    </MacScrollbar>
-                </SafeComponent>
+                        ) : (
+                            <LoadingModule />
+                        )}
+                    </SidebarGroup>
+                </MacScrollbar>
             </SidebarContent>
         </Sidebar>
     )

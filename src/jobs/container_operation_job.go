@@ -10,6 +10,9 @@ import (
 	"strconv"
 	"time"
 
+	"a1ctf/src/utils/zaphelper"
+
+	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -113,6 +116,8 @@ func deleteRunningPod(podInfo k8stool.PodInfo, task *models.Container) error {
 
 func UpdateLivingContainers() {
 
+	// log.Println("UpdateLivingContainers")
+
 	var containers []models.Container
 	if err := dbtool.DB().Where("container_status != ? AND container_status != ?", models.ContainerError, models.ContainerStopped).Preload("Challenge").Preload("TeamFlag").Find(&containers).Error; err != nil {
 		log.Fatalf("Failed to find queued containers: %v\n", err)
@@ -120,7 +125,7 @@ func UpdateLivingContainers() {
 
 	podList, err := k8stool.ListPods()
 	if err != nil {
-		log.Printf("Failed to list pods: %v\n", err)
+		zaphelper.Logger.Error("Failed to list pods", zap.Error(err))
 		return
 	}
 
@@ -162,18 +167,18 @@ func UpdateLivingContainers() {
 
 		if podStatus == v1.PodRunning && container.ContainerStatus == models.ContainerStarting {
 			// 如果远程服务器Pod已经是Running状态，就获取端口并且更新数据库
-			fmt.Printf("Getting port for %s\n", pod.Name)
+			zaphelper.FileLogger.Info("Getting container port", zap.Any("container", container))
 			getContainerPorts(podInfo, container)
 		}
 
 		if podStatus == v1.PodRunning && time.Now().UTC().After(container.ExpireTime) {
 			// 如果远程服务器Pod已经是Running状态，并且已经超时，就删除Pod并且更新数据库
-			fmt.Printf("Stopping %s\n", pod.Name)
+			zaphelper.FileLogger.Info("Stopping container", zap.Any("container", container))
 			tasks.NewContainerStopTask(*container)
 		}
 
 		if podStatus == v1.PodRunning && container.ContainerStatus == models.ContainerStopped {
-			fmt.Printf("Stopping deaded %s\n", pod.Name)
+			zaphelper.FileLogger.Info("Stopping deaded container", zap.Any("container", container))
 			tasks.NewContainerStopTask(*container)
 		}
 	}
@@ -181,29 +186,20 @@ func UpdateLivingContainers() {
 	for _, container := range containers {
 		if container.ContainerStatus == models.ContainerQueueing {
 			if err := dbtool.DB().Model(&container).Update("container_status", models.ContainerStarting).Error; err != nil {
-				log.Printf("failed to update container status: %v", err)
+				zaphelper.Logger.Error("failed to update container status", zap.Error(err), zap.Any("container", container))
 				continue
 			}
-			fmt.Printf("Starting for %s\n", container.TeamHash)
+			zaphelper.FileLogger.Info("Starting container", zap.Any("container", container))
 			tasks.NewContainerStartTask(container)
 		}
 
 		if container.ContainerStatus == models.ContainerStopping {
 			if err := dbtool.DB().Model(&container).Update("container_status", models.ContainerStopped).Error; err != nil {
-				log.Printf("failed to update container status: %v", err)
+				zaphelper.Logger.Error("failed to update container status", zap.Error(err), zap.Any("container", container))
 				continue
 			}
-			fmt.Printf("Stopping for %s\n", container.TeamHash)
+			zaphelper.FileLogger.Info("Stopping container", zap.Any("container", container))
 			tasks.NewContainerStopTask(container)
 		}
-
-		// if container.ContainerStatus != models.ContainerError && container.ContainerStatus != models.ContainerStopped {
-		// 	pod := findExistPod(podList.Items, container.TeamHash, container.InGameID)
-		// 	if pod == nil {
-		// 		if err := dbtool.DB().Model(&container).Update("container_status", models.ContainerError).Error; err != nil {
-		// 			log.Printf("failed to update container status: %v", err)
-		// 		}
-		// 	}
-		// }
 	}
 }

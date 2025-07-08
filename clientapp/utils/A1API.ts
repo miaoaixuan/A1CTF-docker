@@ -1051,6 +1051,8 @@ export interface AdminSubmitItem {
   username: string;
   /** 提交者队伍名 */
   team_name: string;
+  team_id: number;
+  challenge_id: number;
   /** 提交的FLAG内容 */
   flag_content: string;
   /** 题目名称 */

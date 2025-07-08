@@ -5,10 +5,12 @@ import (
 	dbtool "a1ctf/src/utils/db_tool"
 	"context"
 	"fmt"
-	"log"
+
+	"a1ctf/src/utils/zaphelper"
 
 	"github.com/hibiken/asynq"
 	"github.com/vmihailenco/msgpack/v5"
+	"go.uber.org/zap"
 
 	k8stool "a1ctf/src/utils/k8s_tool"
 )
@@ -63,7 +65,7 @@ func HandleContainerStartTask(ctx context.Context, t *asynq.Task) error {
 			"pod_name":     podInfo.Name,
 			"container_id": task.ContainerID,
 		}, err)
-		log.Printf("CreatePod %+v error: %v", task, err)
+		zaphelper.Logger.Error("CreatePod", zap.Error(err), zap.Any("task", task))
 		return fmt.Errorf("CreatePod %+v error: %v", task, err)
 	} else {
 		task.ContainerStatus = models.ContainerStarting

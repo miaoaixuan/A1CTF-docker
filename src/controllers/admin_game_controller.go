@@ -1551,6 +1551,8 @@ func AdminGetSubmits(c *gin.Context) {
 			"judge_id":       j.JudgeID,
 			"username":       username,
 			"team_name":      teamName,
+			"team_id":        j.TeamID,
+			"challenge_id":   j.ChallengeID,
 			"flag_content":   j.JudgeContent,
 			"challenge_name": challengeName,
 			"judge_status":   j.JudgeStatus,

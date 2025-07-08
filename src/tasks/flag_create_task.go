@@ -7,12 +7,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"slices"
 	"time"
 
+	"a1ctf/src/utils/zaphelper"
+
 	"github.com/hibiken/asynq"
 	"github.com/vmihailenco/msgpack/v5"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -86,7 +88,7 @@ func HandleTeamCreateTask(ctx context.Context, t *asynq.Task) error {
 	}).Error
 
 	if err == nil {
-		log.Printf("Successfully created flag for team %d in game %d, challenge %d", p.TeamID, p.GameID, p.ChallengeID)
+		zaphelper.Logger.Info("Successfully created flag for team", zap.Int64("team_id", p.TeamID), zap.Int64("game_id", p.GameID), zap.Int64("challenge_id", p.ChallengeID))
 		return nil
 	}
 

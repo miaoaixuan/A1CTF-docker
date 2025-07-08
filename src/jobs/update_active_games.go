@@ -3,9 +3,12 @@ package jobs
 import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
+	"a1ctf/src/utils/ristretto_tool"
+	"a1ctf/src/utils/zaphelper"
 	"log"
 	"time"
 
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -208,6 +211,28 @@ func UpdateActiveGameScoreBoard() {
 			}).Error; err != nil {
 				log.Fatalf("failed to update scoreboard item %+v", scoreboardItem)
 			}
+		}
+	}
+}
+
+func UpdateGameScoreBoardCache() {
+	var active_games []models.Game
+	query := dbtool.DB().Where("start_time <= ? AND end_time >= ?", time.Now().UTC(), time.Now().UTC())
+
+	if err := query.Find(&active_games).Error; err != nil {
+		println("Failed to load active games")
+		return
+	}
+
+	var game_ids []int64
+	for _, game := range active_games {
+		game_ids = append(game_ids, game.GameID)
+	}
+
+	for _, game_id := range game_ids {
+		if err := ristretto_tool.MakeGameScoreBoardCache(game_id); err != nil {
+			zaphelper.Logger.Error("Failed to make game scoreboard cache", zap.Error(err), zap.Int64("game_id", game_id))
+			continue
 		}
 	}
 }

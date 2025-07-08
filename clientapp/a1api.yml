@@ -4808,6 +4808,10 @@ components:
         team_name:
           type: string
           description: 提交者队伍名
+        team_id:
+          type: integer
+        challenge_id:
+          type: integer
         flag_content:
           type: string
           description: 提交的FLAG内容
@@ -4826,6 +4830,8 @@ components:
         - judge_id
         - username
         - team_name
+        - team_id
+        - challenge_id
         - flag_content
         - challenge_name
         - judge_status

@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	"a1ctf/src/utils/zaphelper"
+
 	"github.com/pressly/goose/v3"
 )
 
@@ -35,7 +37,7 @@ func InitDB() {
 
 	version, err := getDBVersion(db)
 	if err != nil {
-		log.Printf("Init DB.................")
+		zaphelper.Logger.Info("Init DB.................")
 		goose.Up(db, migrationsDir)
 		return
 	}
@@ -61,10 +63,10 @@ func InitDB() {
 		}
 	}
 
-	log.Printf("DB version: %d, max version: %d", version, maxVersion)
+	zaphelper.Sugar.Infof("DB version: %d, max version: %d", version, maxVersion)
 
 	if version < maxVersion {
-		log.Printf("Starting migration from version %d to %d", version, maxVersion)
+		zaphelper.Sugar.Infof("Starting migration from version %d to %d", version, maxVersion)
 		goose.Up(db, migrationsDir)
 	}
 

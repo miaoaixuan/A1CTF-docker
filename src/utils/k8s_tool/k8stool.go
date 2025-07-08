@@ -1,6 +1,7 @@
 package k8stool
 
 import (
+	"a1ctf/src/utils/zaphelper"
 	"context"
 	"database/sql/driver"
 	"errors"
@@ -452,9 +453,9 @@ func InitNamespace() error {
 		if err != nil {
 			return fmt.Errorf("error creating namespace: %v", err)
 		}
-		fmt.Println("Namespace created")
+		zaphelper.Logger.Info("K8s namespace created")
 	} else {
-		fmt.Println("Namespace already exists")
+		zaphelper.Logger.Info("K8s namespace already exists")
 	}
 
 	return nil

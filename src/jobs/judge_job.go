@@ -5,11 +5,12 @@ import (
 	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	noticetool "a1ctf/src/utils/notice_tool"
+	"a1ctf/src/utils/zaphelper"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 func processQueueingJudge(judge *models.Judge) error {
@@ -45,7 +46,7 @@ func processQueueingJudge(judge *models.Judge) error {
 				var solveDetail = models.Solve{}
 
 				if err := dbtool.DB().Where("solve_id = ?", newSolve.SolveID).Preload("Challenge").Preload("Team").First(&solveDetail).Error; err != nil {
-					log.Printf("Announce first blood error: %v", err)
+					zaphelper.Logger.Error("Announce first blood error", zap.Error(err))
 				}
 
 				var noticeCate models.NoticeCategory

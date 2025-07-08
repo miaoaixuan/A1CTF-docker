@@ -3,11 +3,12 @@ package noticetool
 import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
-	"log"
+	"a1ctf/src/utils/zaphelper"
 	"time"
 
 	"github.com/bytedance/sonic"
 	"github.com/lib/pq"
+	"go.uber.org/zap"
 )
 
 func InsertNotice(gameID int64, category models.NoticeCategory, values []string) {
@@ -20,7 +21,7 @@ func InsertNotice(gameID int64, category models.NoticeCategory, values []string)
 	}
 
 	if err := dbtool.DB().Create(&notice).Error; err != nil {
-		log.Printf("Failed to insert notice: %v", err)
+		zaphelper.Logger.Error("Failed to insert notice", zap.Error(err))
 	} else {
 		AnnounceNotice(notice)
 	}

@@ -56,6 +56,8 @@ import GameStatusMask from "components/modules/game/GameStatusMask";
 import ChallengeHintPage from "./modules/challenge/ChallengeHintPage";
 import { useTranslation } from "react-i18next";
 import { useLocation, useParams, useSearchParams } from "react-router";
+import ChallengeMainContent from "./modules/challenge/ChallengeMainContent";
+import LoadingModule from "./modules/LoadingModule";
 
 export interface ChallengeSolveStatus {
     solved: boolean;
@@ -94,7 +96,7 @@ export function ChallengesView({ id }: { id: string }) {
     const [gameInfo, setGameInfo] = useState<UserFullGameInfo>()
 
     // 加载动画
-    const [loadingVisiblity, setLoadingVisibility] = useState(true)
+    const [loadingVisible, setLoadingVisibility] = useState(true)
 
     // 侧栏打开关闭的时候更新 Terminal 宽度用的钩子
     const [resizeTrigger, setResizeTrigger] = useState<number>(0)
@@ -127,13 +129,6 @@ export function ChallengesView({ id }: { id: string }) {
 
     const checkInterStarted = useRef(false)
 
-    const [containerLaunching, setContainerLaunching] = useState(false)
-
-    const [containerInfo, setContainerInfo] = useState<ExposePortInfo[]>([])
-    const [containerRunningTrigger, setContainerRunningTrigger] = useState(false);
-    const [refreshContainerTrigger, setRefreshContainerTrigger] = useState(false);
-    const [containerExpireTime, setContainerExpireTime] = useState<dayjs.Dayjs | null>(dayjs())
-
     const [blood, setBlood] = useState("")
     const [bloodMessage, setBloodMessage] = useState("")
 
@@ -146,10 +141,10 @@ export function ChallengesView({ id }: { id: string }) {
 
     const wsRef = useRef<WebSocket | null>(null)
 
-    const [scoreBoardModel, setScoreBoardModel] = useState<GameScoreboardData | undefined>(undefined)
-
     const [searchParams, setSearchParams] = useSearchParams()
     const location = useLocation()
+
+    const challengeSearched = searchParams.get("challenge") ? true : false
 
 
     // 更新当前选中题目信息, 根据 Websocket 接收到的信息被动调用
@@ -176,64 +171,6 @@ export function ChallengesView({ id }: { id: string }) {
     }
 
     useEffect(() => {
-        if (refreshContainerTrigger == true) {
-            const inter = setInterval(() => {
-                api.user.userGetContainerInfoForAChallenge(gameID, curChallenge?.challenge_id ?? 0).then((res) => {
-                    if (res.data.data.container_status == ContainerStatus.ContainerRunning) {
-                        setContainerInfo(res.data.data.containers)
-                        setContainerLaunching(false)
-                        setContainerRunningTrigger(true)
-
-                        setContainerExpireTime(res.data.data.container_expiretime
-                            ? dayjs(res.data.data.container_expiretime)
-                            : null)
-
-                        toast.success(t("container_start_success"))
-
-                        clearInterval(inter)
-                        setRefreshContainerTrigger(false)
-                    } else if (res.data.data.container_status != ContainerStatus.ContainerQueueing &&
-                        res.data.data.container_status != ContainerStatus.ContainerStarting
-                    ) {
-                        setContainerLaunching(false)
-                        setContainerRunningTrigger(false)
-
-                        clearInterval(inter)
-
-                        setRefreshContainerTrigger(false)
-                    }
-                }).catch(() => {
-                    toast.error("靶机开启失败")
-                    setContainerLaunching(false)
-                    setContainerRunningTrigger(false)
-
-                    clearInterval(inter)
-
-                    setRefreshContainerTrigger(false)
-                })
-            }, randomInt(3000, 5000))
-
-            return () => {
-                clearInterval(inter)
-            }
-        }
-    }, [refreshContainerTrigger])
-
-    useEffect(() => {
-        setContainerInfo(curChallenge?.containers ?? [])
-        setContainerExpireTime(curChallenge?.container_expiretime
-            ? dayjs(curChallenge.container_expiretime)
-            : null)
-
-        if (curChallenge?.container_status == ContainerStatus.ContainerRunning) {
-            setContainerRunningTrigger(true)
-        } else if (curChallenge?.container_status == ContainerStatus.ContainerQueueing) {
-            setContainerLaunching(true)
-            setRefreshContainerTrigger(true)
-        } else {
-            setContainerRunningTrigger(false)
-        }
-
         // 切换题目重置折叠状态
         if (JSON.stringify(curChallenge) == JSON.stringify(prevChallenge.current)) return
         prevChallenge.current = curChallenge
@@ -310,6 +247,11 @@ export function ChallengesView({ id }: { id: string }) {
         fetchGameInfoWithTeamInfo()
     }, [id])
 
+    const finishLoading = () => {
+        // setTimeout(() => setLoadingVisibility(false), 200000)
+        setLoadingVisibility(false)
+    }
+
     useEffect(() => {
         // 根据比赛状态处理事件
         if (gameStatus == "running" || gameStatus == "practiceMode") {
@@ -323,10 +265,10 @@ export function ChallengesView({ id }: { id: string }) {
                     setCurChallenge(response.data.data)
                     // setPageSwitch(true)
 
-                    setTimeout(() => setLoadingVisibility(false), 200)
-                }).catch((error: AxiosError) => {})
+                    finishLoading()
+                }).catch((error: AxiosError) => { })
             } else {
-                setTimeout(() => setLoadingVisibility(false), 200)
+                finishLoading()
             }
 
             // 获取比赛通知
@@ -464,12 +406,12 @@ export function ChallengesView({ id }: { id: string }) {
                     socket.onclose = (event) => {
                         clearTimeout(connectTimeout)
                         console.log('WebSocket disconnected', event.code, event.reason)
-                        
+
                         // 如果不是手动关闭且重连次数未达到上限，则尝试重连
                         if (!isManualClose && reconnectAttempts < maxReconnectAttempts) {
                             reconnectAttempts++
                             console.log(`WebSocket重连尝试 ${reconnectAttempts}/${maxReconnectAttempts}`)
-                            
+
                             reconnectTimer = setTimeout(() => {
                                 toast.promise(
                                     connectWebSocket(),
@@ -501,34 +443,22 @@ export function ChallengesView({ id }: { id: string }) {
                 )
             }, 1000)
 
-            const updateScoreBoard = () => {
-                api.user.userGetGameScoreboard(gameID).then((res) => {
-                    setScoreBoardModel(res.data.data)
-                })
-            }
-
-            updateScoreBoard()
-
-            const updateScoreBoardInter = setInterval(updateScoreBoard, randomInt(2000, 4000))
-
             return () => {
                 isManualClose = true // 标记为手动关闭
-                
+
                 if (reconnectTimer) {
                     clearTimeout(reconnectTimer)
                     reconnectTimer = null
                 }
-                
+
                 if (wsRef.current) {
                     wsRef.current.close()
                 }
-
-                if (updateScoreBoardInter) clearInterval(updateScoreBoardInter)
             }
 
         } else if (gameStatus == "unRegistered") {
             // 未注册 先获取队伍信息
-            setTimeout(() => setLoadingVisibility(false), 200)
+            finishLoading()
         } else if (gameStatus == "waitForProcess") {
             // 启动一个监听进程
             const refershTeamStatusInter = setInterval(() => {
@@ -549,11 +479,11 @@ export function ChallengesView({ id }: { id: string }) {
                 })
             }, 2000)
 
-            setTimeout(() => setLoadingVisibility(false), 200)
+            finishLoading()
         } else if (gameStatus == "banned" || gameStatus == "ended" || gameStatus == "noSuchGame" || gameStatus == "unLogin") {
-            setTimeout(() => setLoadingVisibility(false), 200)
+            finishLoading()
         } else if (gameStatus == "pending") {
-            setTimeout(() => setLoadingVisibility(false), 500)
+            finishLoading()
             return () => {
                 // if (penddingTimeInter) clearInterval(penddingTimeInter)
             }
@@ -566,12 +496,12 @@ export function ChallengesView({ id }: { id: string }) {
     }, [curProfile])
 
     useEffect(() => {
-        if (!loadingVisiblity) {
+        if (!loadingVisible) {
             setTimeout(() => {
                 setIsChangingGame(false)
             }, 500)
         }
-    }, [loadingVisiblity])
+    }, [loadingVisible])
 
     const startCheckForGameStart = () => {
         const checkGameStartedInter = setInterval(() => {
@@ -585,59 +515,6 @@ export function ChallengesView({ id }: { id: string }) {
             }).catch((error: AxiosError) => { })
         }, 2000)
     }
-
-    const handleLaunchContainer = () => {
-        setContainerLaunching(true)
-
-        api.user.userCreateContainerForAChallenge(gameID, curChallenge?.challenge_id ?? 0).then((res) => {
-            // 开始刷新靶机状态
-            setRefreshContainerTrigger(true)
-        })
-    }
-
-    const handleExtendContainer = () => {
-
-        api.user.userExtendContainerLifeForAChallenge(gameID, curChallenge?.challenge_id ?? 0)
-    }
-
-    const handleDestoryContainer = () => {
-
-        api.user.userDeleteContainerForAChallenge(gameID, curChallenge?.challenge_id ?? 0).then((res) => {
-            setContainerRunningTrigger(false)
-
-            const newContainers = containerInfo
-
-            for (let i = 0; i < newContainers.length; i++) {
-                newContainers[i].container_ports = []
-            }
-
-            setContainerInfo(newContainers)
-            setContainerExpireTime(null)
-        })
-    }
-
-    const handleCountdownFinish = () => {
-        setContainerRunningTrigger(false)
-
-        const newContainers = containerInfo
-
-        for (let i = 0; i < newContainers.length; i++) {
-            newContainers[i].container_ports = []
-        }
-
-        setContainerInfo(newContainers)
-        setContainerExpireTime(null)
-    }
-
-    const memoizedDescription = useMemo(() => {
-        return curChallenge?.description ? (
-            <div className="flex flex-col gap-0">
-                <Mdx source={curChallenge.description} />
-            </div>
-        ) : (
-            <span>题目简介为空哦</span>
-        );
-    }, [curChallenge?.description]); // 只依赖description
 
     // 为游戏描述创建 memo 化的 Mdx 组件
     const memoizedGameDescription = useMemo(() => {
@@ -654,17 +531,12 @@ export function ChallengesView({ id }: { id: string }) {
         }
     }, [curChallenge?.challenge_id])
 
-    const rankColor = (rank: number) => {
-        if (rank == 1) return "text-red-400 font-bold"
-        else if (rank == 2) return "text-green-400 font-bold"
-        else if (rank == 3) return "text-blue-400 font-bold"
-        else return ""
-    }
-
     return (
         <>
             <GameSwitchHover animation={false} />
-            <LoadingPage visible={loadingVisiblity} />
+            {/* <LoadingPage visible={loadingVisiblity} /> */}
+
+            <div className="absolute h-full w-full top-0 left-0 backdrop-blur-sm" />
 
             {/* 抢血动画 */}
             <SolvedAnimation blood={blood} setBlood={setBlood} bloodMessage={bloodMessage} />
@@ -683,7 +555,7 @@ export function ChallengesView({ id }: { id: string }) {
                 startCheckForGameStart={startCheckForGameStart}
                 fetchGameInfoWithTeamInfo={fetchGameInfoWithTeamInfo}
             />
-            
+
             {/* 重定向警告页 */}
             <RedirectNotice redirectURL={redirectURL} setRedirectURL={setRedirectURL} />
             {/* 公告页 */}
@@ -706,11 +578,10 @@ export function ChallengesView({ id }: { id: string }) {
                         setChallengeSolveStatusList={setChallengeSolveStatusList}
                         gameStatus={gameStatus}
                         setGameStatus={setGameStatus}
+                        loadingVisible={loadingVisible}
                     />
                 </div>
                 <div className="w-full h-screen relative">
-                    {/* Suck Chrome's backdrop blur */}
-                    <div className="absoulte h-full w-full top-0 left-0 backdrop-blur-sm" />
                     <div className="absolute h-full w-full top-0 left-0">
                         <div className="flex flex-col h-full w-full overflow-hidden relative">
                             <ChallengesViewHeader
@@ -718,8 +589,9 @@ export function ChallengesView({ id }: { id: string }) {
                                 setNoticeOpened={setNoticeOpened} setScoreBoardVisible={setScoreBoardVisible}
                                 notices={notices}
                                 curProfile={curProfile}
+                                loadingVisible={loadingVisible}
                             />
-                            <ResizablePanelGroup direction="vertical" className="relative">
+                            <div className="relative overflow-hidden h-full">
                                 <AnimatePresence>
                                     {pageSwitch ? (
                                         <motion.div className="absolute top-0 left-0 w-full h-full z-20 flex justify-center items-center"
@@ -735,179 +607,43 @@ export function ChallengesView({ id }: { id: string }) {
                                         </motion.div>
                                     ) : (null)}
                                 </AnimatePresence>
-                                <ResizableScrollablePanel defaultSize={60} minSize={20} className={`relative ${pageSwitch ? "opacity-0" : ""} `} onResize={(size, prevSize) => {
-                                    setResizeTrigger(size)
-                                }}>
-                                    {!curChallenge ? (
-                                        <div className="absolute top-0 left-0 w-full h-full flex flex-col">
-                                            {gameInfo?.description ? (
-                                                <MacScrollbar
-                                                    className="w-full flex flex-col"
-                                                    skin={theme === "dark" ? "dark" : "light"}
-                                                >
-                                                    {memoizedGameDescription}
-                                                </MacScrollbar>
-
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center select-none">
-                                                    <span className="font-bold text-lg">{t("choose_something")}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ) : <></>}
-                                    <div className="flex h-full">
-                                        <SafeComponent>
-                                            <div className="absolute bottom-5 right-7 z-10 flex justify-end flex-col gap-[8px]">
-                                                <div className="flex">
-                                                    <div className="flex-1" />
-                                                    {curChallenge && challengeSolveStatusList ? (challengeSolveStatusList[curChallenge?.challenge_id ?? 0]?.solved ?? false) ? (
-                                                            <Button
-                                                                className="h-[57px] px-5 rounded-3xl backdrop-blur-sm bg-green-600/70 hover:bg-green-800/70 [&_svg]:size-9 gap-2 flex items-center justify-center text-white disabled:opacity-100"
-                                                                onClick={() => { }}
-                                                            >
-                                                                <CheckCheck />
-                                                                <span className="font-bold text-xl">Solved!</span>
-                                                            </Button>
-                                                        ) : (
-                                                            <Button
-                                                                className="h-[57px] px-6 rounded-3xl backdrop-blur-sm bg-red-600/70 hover:bg-red-800/70 [&_svg]:size-8 gap-2 flex items-center justify-center text-white"
-                                                                onClick={() => setSubmitFlagWindowVisible(true)}
-                                                            >
-                                                                <Flag className="rotate-12" />
-                                                                <span className="font-bold text-xl">Submit!</span>
-                                                            </Button>
-                                                        ) : (<></>)
-                                                    }
-                                                </div>
-                                                <div className="flex px-5 py-2 flex-col gap-2 backdrop-blur-sm rounded-2xl select-none border-2 shadow-xl shadow-foreground/5">
-                                                    <div className="flex gap-2 items-center">
-                                                        <AudioWaveform className="size-5" />
-                                                        <span>{ gameInfo?.team_info?.team_name }</span>
-                                                    </div>
-                                                    <div className="flex gap-4">
-                                                        <div className="flex gap-2 items-center">
-                                                            <Flag className="size-5" />
-                                                            <span>{ scoreBoardModel != undefined ? (scoreBoardModel?.your_team?.score) : (gameInfo?.team_info?.team_score ?? 0) } pts</span>
-                                                        </div>
-                                                        <div className={`flex gap-2 items-center transition-colors duration-300 ${rankColor(scoreBoardModel != undefined ? (scoreBoardModel?.your_team?.rank ?? 0) : (gameInfo?.team_info?.rank ?? 0))}`}>
-                                                            <ChartNoAxesCombined className="size-5" />
-                                                            <span>Rank { scoreBoardModel != undefined ? (scoreBoardModel?.your_team?.rank ?? 0) : (gameInfo?.team_info?.rank ?? 0) }</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div> 
+                                {!challengeSearched ? (
+                                    <div className="absolute top-0 left-0 w-full h-full flex flex-col">
+                                        {gameInfo?.description ? (
                                             <MacScrollbar
-                                                className="p-5 lg:p-10 w-full flex flex-col"
+                                                className="w-full flex flex-col"
                                                 skin={theme === "dark" ? "dark" : "light"}
                                             >
-                                                {curChallenge?.challenge_name && (
-                                                    <div className="flex flex-col gap-4 mb-4">
-                                                        <ChallengeNameTitle challengeSolveStatusList={challengeSolveStatusList} curChallenge={curChallenge} setShowHintsWindowVisible={setShowHintsWindowVisible} />
-                                                        {memoizedDescription}
-                                                    </div>
-                                                )}
-
-                                                {curChallenge?.containers?.length ? (
-                                                    <div className="flex flex-col gap-4 mb-8">
-                                                        <div className={`flex items-center gap-2 px-5 py-[9px] border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md select-none`}>
-                                                            <Package />
-                                                            <span className="font-bold text-lg">靶机列表</span>
-                                                            <div className="flex-1" />
-                                                            {!containerRunningTrigger ? (
-                                                                <div className="flex gap-2 items-center">
-                                                                    <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-foreground bg-background hover:bg-foreground/20 [&_svg]:size-[24px] text-foreground"
-                                                                        onClick={handleLaunchContainer}
-                                                                        disabled={containerLaunching}
-                                                                    >
-                                                                        {containerLaunching ? (
-                                                                            <>
-                                                                                <Loader2 className="animate-spin" />
-                                                                                <span className="font-bold text-[1.125em]">Launching</span>
-                                                                            </>
-                                                                        ) : (
-                                                                            <>
-                                                                                <CirclePower />
-                                                                                <span className="font-bold text-[1.125em]">Launch</span>
-                                                                            </>
-                                                                        )}
-                                                                    </Button>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="flex gap-2 items-center">
-                                                                    <div className="h-[34px] rounded-[10px] border-2 border-green-500 px-2 text-green-500 items-center flex justify-center gap-2">
-                                                                        <AlarmClock />
-                                                                        <TimerDisplay target_time={containerExpireTime} onFinishCallback={handleCountdownFinish} className="font-bold text-md" />
-                                                                    </div>
-                                                                    <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-blue-400 text-blue-400 bg-background dark:hover:bg-blue-200/20 hover:bg-blue-200/60 [&_svg]:size-[24px]"
-                                                                        onClick={handleExtendContainer}
-                                                                    >
-                                                                        <ClockArrowUp />
-                                                                        <span className="font-bold text-[1.125em]">延长靶机</span>
-                                                                    </Button>
-                                                                    <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-red-400 text-red-400 bg-background dark:hover:bg-red-200/20 hover:bg-red-200/60 [&_svg]:size-[24px]"
-                                                                        onClick={handleDestoryContainer}
-                                                                    >
-                                                                        <CircleX />
-                                                                        <span className="font-bold text-[1.125em]">销毁</span>
-                                                                    </Button>
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        <div className={`flex flex-col gap-4 mt-4 select-none`}>
-                                                            {containerInfo.map((container, i) => (
-                                                                <div key={i} className="flex flex-col gap-[2px]">
-                                                                    <span className="font-bold text-xl mb-2">{container.container_name}</span>
-                                                                    <div className="flex gap-2 items-center">
-                                                                        <Network />
-                                                                        {container.container_ports?.length ? (
-                                                                            <div className="flex gap-2">
-                                                                                {container.container_ports.map((port, j) => (
-                                                                                    <div key={j} className="flex gap-2 items-center">
-                                                                                        <span className="text-sm font-bold">{port.port_name}:</span>
-                                                                                        <div className="border-2 border-foreground px-2 rounded-md flex items-center justify-center hover:bg-foreground/30 transition-colors duration-300"
-                                                                                            onClick={() => {
-                                                                                                const status = copy(`${port.ip}:${port.port}`)
-                                                                                                if (status) {
-                                                                                                    toast.success(t("copied"))
-                                                                                                } else {
-                                                                                                    toast.success(t("fail_copy"))
-                                                                                                }
-                                                                                            }}
-                                                                                        >
-                                                                                            <span className="font-bold text-sm">{port.ip}:{port.port}</span>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        ) : (
-                                                                            <span className="font-bold">等待启动</span>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                ) : <></>}
-
-                                                {curChallenge?.attachments?.length ? (
-                                                    <div className="flex flex-col gap-2 mb-4">
-                                                        <div className={`flex items-center gap-2 px-5 py-3 border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md `}>
-                                                            <Paperclip />
-                                                            <span className="font-bold text-lg">附件列表</span>
-                                                        </div>
-                                                        <div className="flex gap-6 mt-4 flex-col lg:flex-row">
-                                                            {curChallenge?.attachments?.map((attach, attach_index) => (
-                                                                <FileDownloader key={attach_index} attach={attach} setRedirectURL={setRedirectURL} />
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                ) : (<></>)}
+                                                {memoizedGameDescription}
                                             </MacScrollbar>
-                                        </SafeComponent>
+
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center select-none">
+                                                <span className="font-bold text-lg">{t("choose_something")}</span>
+                                            </div>
+                                        )}
                                     </div>
-                                </ResizableScrollablePanel>
-                            </ResizablePanelGroup>
+                                ) : (
+                                    !loadingVisible ? (
+                                        !pageSwitch ? (
+                                            <ChallengeMainContent
+                                                gameID={gameID}
+                                                curChallenge={curChallenge}
+                                                challengeSolveStatusList={challengeSolveStatusList}
+                                                setSubmitFlagWindowVisible={setSubmitFlagWindowVisible}
+                                                gameInfo={gameInfo}
+                                                setShowHintsWindowVisible={setShowHintsWindowVisible}
+                                                setRedirectURL={setRedirectURL}
+                                            />
+                                        ) : (
+                                            <></>
+                                        )
+                                    ) : (
+                                        <LoadingModule />
+                                    )
+                                )}
+                                
+                            </div>
                         </div>
                     </div>
                 </div>

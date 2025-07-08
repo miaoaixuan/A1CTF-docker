@@ -1,8 +1,5 @@
-import { A1LogoWithoutAnimation } from "components/A1LogoWithoutAnimation";
 
-import { ChallengesView } from 'components/ChallengesView';
 import MyTeamInfomationView from "components/MyTeamInfomationView";
-import ScoreBoardPage from "components/ScoreBoardPage";
 import { useParams } from "react-router";
 
 export default function GameScoreboard() {

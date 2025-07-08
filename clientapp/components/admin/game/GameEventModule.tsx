@@ -2,7 +2,7 @@ import { Button } from "components/ui/button"
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "components/ui/table"
 import { Badge } from "components/ui/badge"
 import { MacScrollbar } from "mac-scrollbar"
-import { Captions, TriangleAlert, RefreshCw, AlertCircle, CheckCircle2, XCircle, Clock, Flag, Trophy, User, Users, Plus, X, Filter } from "lucide-react"
+import { Captions, TriangleAlert, RefreshCw, AlertCircle, CheckCircle2, XCircle, Clock, Flag, Trophy, User, Users, Plus, X, Filter, Trash, Copy } from "lucide-react"
 import { useParams } from "react-router"
 import { useEffect, useState } from "react"
 import dayjs from "dayjs"
@@ -13,6 +13,15 @@ import { toast } from "sonner"
 import { Input } from "components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "components/ui/popover"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "components/ui/dialog"
+
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "components/ui/select"
+import copy from "copy-to-clipboard"
 
 export function GameEventModule() {
 
@@ -32,9 +41,11 @@ export function GameEventModule() {
     const [teamNames, setTeamNames] = useState<string[]>([])
     const [challengeIds, setChallengeIds] = useState<number[]>([])
     const [teamIds, setTeamIds] = useState<number[]>([])
-    type JudgeStatus = "JudgeAC" | "JudgeWA" | "JudgeError" | "JudgeTimeout" | "JudgeQueueing" | "JudgeRunning"
+    type JudgeStatus = "JudgeAC" | "JudgeWA"
     const [judgeStatuses, setJudgeStatuses] = useState<JudgeStatus[]>([])
-    const statusOptions: JudgeStatus[] = ["JudgeAC", "JudgeWA", "JudgeError", "JudgeTimeout"]
+    const statusOptions: JudgeStatus[] = ["JudgeAC", "JudgeWA"]
+
+    const [curChoicedCategory, setCurChoicedCategory] = useState<string>("teamName")
 
     const [newChallengeName, setNewChallengeName] = useState("")
     const [newTeamName, setNewTeamName] = useState("")
@@ -43,10 +54,6 @@ export function GameEventModule() {
 
     // dialog control & temp states
     const [dialogOpen, setDialogOpen] = useState(false)
-    const [tempChallengeNames, setTempChallengeNames] = useState<string[]>([])
-    const [tempTeamNames, setTempTeamNames] = useState<string[]>([])
-    const [tempChallengeIds, setTempChallengeIds] = useState<number[]>([])
-    const [tempTeamIds, setTempTeamIds] = useState<number[]>([])
     const [tempJudgeStatuses, setTempJudgeStatuses] = useState<JudgeStatus[]>([])
     const [tempStartTime, setTempStartTime] = useState<string | undefined>(undefined)
     const [tempEndTime, setTempEndTime] = useState<string | undefined>(undefined)
@@ -119,6 +126,10 @@ export function GameEventModule() {
         }
     }
 
+    const gotoChallenge = (challengeId: number) => {
+        window.open(window.location.origin + `/games/${gameId}?challenge=${challengeId}`, '_blank')
+    }
+
     const totalPages = Math.ceil(total / pageSize) || 1
 
     // 当过滤或分页改变时加载
@@ -155,32 +166,45 @@ export function GameEventModule() {
             {curChoicedType === 'submissions' && (
                 <div className="space-y-4">
                     {/* Filter action bar */}
-                    <div className="flex flex-wrap gap-3 items-center">
-                        <Button size="sm" variant="outline" onClick={() => {
-                            // copy current filters to temp before open
-                            setTempChallengeNames([...challengeNames])
-                            setTempTeamNames([...teamNames])
-                            setTempChallengeIds([...challengeIds])
-                            setTempTeamIds([...teamIds])
-                            setTempJudgeStatuses([...judgeStatuses])
-                            setTempStartTime(startTime)
-                            setTempEndTime(endTime)
-                            setDialogOpen(true)
-                        }}>
-                            <Filter className="w-4 h-4 mr-1" />筛选
-                        </Button>
-
+                    <div className="flex flex-wrap gap-1 items-center">
                         {/* Active filter chips */}
-                        <div className="flex flex-wrap gap-1">
-                            {challengeNames.map((c, i) => (<Badge key={"c" + i} variant="secondary" className="gap-1">题:{c}<X className="w-3 h-3 cursor-pointer" onClick={() => { setChallengeNames(prev => prev.filter((_, idx) => idx !== i)); setCurrentPage(1) }} /></Badge>))}
-                            {challengeIds.map((id, i) => (<Badge key={"cid" + i} variant="secondary" className="gap-1">题ID:{id}<X className="w-3 h-3 cursor-pointer" onClick={() => { setChallengeIds(prev => prev.filter((_, idx) => idx !== i)); setCurrentPage(1) }} /></Badge>))}
-                            {teamNames.map((t, i) => (<Badge key={"t" + i} variant="secondary" className="gap-1">队:{t}<X className="w-3 h-3 cursor-pointer" onClick={() => { setTeamNames(prev => prev.filter((_, idx) => idx !== i)); setCurrentPage(1) }} /></Badge>))}
-                            {teamIds.map((tid, i) => (<Badge key={"tid" + i} variant="secondary" className="gap-1">队ID:{tid}<X className="w-3 h-3 cursor-pointer" onClick={() => { setTeamIds(prev => prev.filter((_, idx) => idx !== i)); setCurrentPage(1) }} /></Badge>))}
+                        <div className="flex flex-wrap gap-1 select-none">
+                            {challengeNames.map((c, i) => (<Badge key={"c" + i} variant="secondary" className="gap-1">题目名:{c}<X className="w-3 h-3 cursor-pointer" onClick={() => { setChallengeNames(prev => prev.filter((_, idx) => idx !== i)); setCurrentPage(1) }} /></Badge>))}
+                            {challengeIds.map((id, i) => (<Badge key={"cid" + i} variant="secondary" className="gap-1">题目ID:{id}<X className="w-3 h-3 cursor-pointer" onClick={() => { setChallengeIds(prev => prev.filter((_, idx) => idx !== i)); setCurrentPage(1) }} /></Badge>))}
+                            {teamNames.map((t, i) => (<Badge key={"t" + i} variant="secondary" className="gap-1">队伍名:{t}<X className="w-3 h-3 cursor-pointer" onClick={() => { setTeamNames(prev => prev.filter((_, idx) => idx !== i)); setCurrentPage(1) }} /></Badge>))}
+                            {teamIds.map((tid, i) => (<Badge key={"tid" + i} variant="secondary" className="gap-1">队伍ID:{tid}<X className="w-3 h-3 cursor-pointer" onClick={() => { setTeamIds(prev => prev.filter((_, idx) => idx !== i)); setCurrentPage(1) }} /></Badge>))}
                             {judgeStatuses.map((s, i) => (<Badge key={"s" + i} variant="secondary" className="gap-1">{s.replace('Judge', '')}<X className="w-3 h-3 cursor-pointer" onClick={() => { setJudgeStatuses(prev => prev.filter((_, idx) => idx !== i)); setCurrentPage(1) }} /></Badge>))}
                             {(startTime || endTime) && (
                                 <Badge variant="secondary" className="gap-1">{startTime ? dayjs(startTime).format('MM-DD HH:mm') : '...'}<span>-</span>{endTime ? dayjs(endTime).format('MM-DD HH:mm') : '...'}<X className="w-3 h-3 cursor-pointer" onClick={() => { setStartTime(undefined); setEndTime(undefined); setCurrentPage(1) }} /></Badge>
                             )}
                         </div>
+
+                        <Badge variant="secondary" className="gap-[1px] select-none hover:bg-foreground/20"
+                            onClick={() => {
+                                // copy current filters to temp before open
+                                setTempJudgeStatuses([...judgeStatuses])
+                                setTempStartTime(startTime)
+                                setTempEndTime(endTime)
+                                setDialogOpen(true)
+                            }}
+                        >
+                            <Filter className="w-3 h-3 mr-1" />添加筛选条件
+                        </Badge>
+                        <Badge variant="secondary" className="gap-[1px] select-none hover:bg-foreground/20"
+                            onClick={() => {
+                                // copy current filters to temp before open
+                                setChallengeNames([])
+                                setTeamNames([])
+                                setChallengeIds([])
+                                setTeamIds([])
+                                setJudgeStatuses([])
+                                setStartTime(undefined)
+                                setEndTime(undefined)
+                                setCurrentPage(1)
+                            }}
+                        >
+                            <Trash className="w-3 h-3 mr-1" />清空筛选条件
+                        </Badge>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -202,29 +226,42 @@ export function GameEventModule() {
                             <div className="flex flex-col gap-1 pr-4">
                                 {submissions.map((sub) => (
                                     <div key={sub.judge_id} className="flex items-center gap-2 p-3 rounded-md hover:bg-accent/40 transition-colors text-sm w-full">
-                                        <div className="flex items-center flex-[2] gap-1 text-muted-foreground min-w-0">
+                                        <div className="flex items-center flex-[1] gap-1 text-muted-foreground min-w-0" title={dayjs(sub.judge_time).format('YYYY-MM-DD HH:mm:ss')}>
                                             <Clock className="w-4 h-4 flex-shrink-0" />
-                                            <span className="truncate">{dayjs(sub.judge_time).format('MM-DD HH:mm:ss')}</span>
+                                            <span className="truncate">{dayjs(sub.judge_time).format('YYYY-MM-DD HH:mm:ss')}</span>
                                         </div>
-                                        <Badge variant="outline" className={`flex items-center gap-1 ${statusColor(sub.judge_status)} flex-[1] justify-center min-w-0`}>
-                                            {statusIcon(sub.judge_status)}
-                                            <span className="truncate">{sub.judge_status.replace('Judge', '')}</span>
-                                        </Badge>
-                                        <div className="flex items-center flex-[1.5] gap-1 min-w-0" title={sub.username}>
+                                        <div className="flex-[0.5] justify-center flex">
+                                            <Badge variant="outline" className={`flex items-center gap-1 select-none ${statusColor(sub.judge_status)} min-w-0`}>
+                                                {statusIcon(sub.judge_status)}
+                                                <span className="truncate">{sub.judge_status.replace('Judge', '')}</span>
+                                            </Badge>
+                                        </div>
+                                        <div className="flex items-center flex-[1] gap-1 min-w-0" title={sub.username}>
                                             <User className="w-4 h-4 flex-shrink-0" />
                                             <span className="truncate">{sub.username}</span>
                                         </div>
-                                        <div className="flex items-center flex-[1.5] gap-1 min-w-0" title={sub.team_name}>
+                                        <div className="flex items-center flex-[1] gap-1 min-w-0" title={sub.team_name}>
                                             <Users className="w-4 h-4 flex-shrink-0" />
                                             <span className="truncate">{sub.team_name}</span>
+                                            <Badge variant="outline" className="text-xs select-none hover:bg-foreground/20 cursor-pointer" onClick={() => {
+                                                copy(sub.team_id.toString())
+                                                toast.success('已复制队伍ID')
+                                            }}>#{sub.team_id}</Badge>
                                         </div>
                                         <div className="flex items-center flex-[2] gap-1 min-w-0" title={sub.challenge_name}>
                                             <Trophy className="w-4 h-4 flex-shrink-0" />
                                             <span className="truncate">{sub.challenge_name}</span>
+                                            <Badge variant="outline" className="text-xs select-none hover:bg-foreground/20 cursor-pointer" onClick={() => {
+                                                gotoChallenge(sub.challenge_id)
+                                            }}>#{sub.challenge_id}</Badge>
                                         </div>
                                         <div className="flex items-center flex-[3] gap-1 font-mono min-w-0" title={sub.flag_content}>
                                             <Flag className="w-4 h-4 flex-shrink-0" />
                                             <span className="truncate">{sub.flag_content}</span>
+                                            <Badge variant="outline" className="text-xs select-none hover:bg-foreground/20 cursor-pointer p-1 px-2" onClick={() => {
+                                                copy(sub.flag_content)
+                                                toast.success('已复制')
+                                            }}><Copy className="w-3 h-3" /></Badge>
                                         </div>
                                     </div>
                                 ))}
@@ -259,101 +296,114 @@ export function GameEventModule() {
                                 <DialogTitle>筛选提交记录</DialogTitle>
                             </DialogHeader>
 
-                            {/* Challenge names */}
-                            <div className="space-y-2">
-                                <h4 className="font-medium">题目名称关键词</h4>
-                                <div className="flex items-center gap-2">
-                                    <Input value={newChallengeName} onChange={(e) => setNewChallengeName(e.target.value)} placeholder="输入后点击 + 添加" className="h-8" />
-                                    <Button size="sm" variant="secondary" onClick={() => {
-                                        if (newChallengeName.trim()) { setTempChallengeNames(prev => [...prev, newChallengeName.trim()]); setNewChallengeName(""); }
-                                    }}><Plus className="w-4 h-4" /></Button>
-                                </div>
-                                <div className="flex flex-wrap gap-1">
-                                    {tempChallengeNames.map((c, i) => (<Badge key={"tc" + i} variant="secondary" className="gap-1">{c}<X className="w-3 h-3 cursor-pointer" onClick={() => { setTempChallengeNames(prev => prev.filter((_, idx) => idx !== i)); }} /></Badge>))}
-                                </div>
+                            <div className="space-y-2 mt-4">
+                                <h4 className="font-medium">筛选条件</h4>
+                                <Select value={curChoicedCategory} onValueChange={(value) => setCurChoicedCategory(value)}>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="筛选条件" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="teamName">队伍名称</SelectItem>
+                                        <SelectItem value="challengeName">题目名称</SelectItem>
+                                        <SelectItem value="judgeStatus">评测状态</SelectItem>
+                                        <SelectItem value="timeRange">时间范围</SelectItem>
+                                        <SelectItem value="challengeId">题目ID</SelectItem>
+                                        <SelectItem value="teamId">队伍ID</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
+
+
+
+                            {/* Challenge names */}
+                            {curChoicedCategory === "challengeName" && (
+                                <div className="space-y-2">
+                                    <h4 className="font-medium">题目名称关键词</h4>
+                                    <Input value={newChallengeName} onChange={(e) => setNewChallengeName(e.target.value)} placeholder="题目关键词" className="h-8" />
+                                </div>
+                            )}
 
                             {/* Team names */}
-                            <div className="space-y-2 mt-4">
-                                <h4 className="font-medium">队伍名称关键词</h4>
-                                <div className="flex items-center gap-2">
-                                    <Input value={newTeamName} onChange={(e) => setNewTeamName(e.target.value)} placeholder="输入后点击 + 添加" className="h-8" />
-                                    <Button size="sm" variant="secondary" onClick={() => {
-                                        if (newTeamName.trim()) { setTempTeamNames(prev => [...prev, newTeamName.trim()]); setNewTeamName(""); }
-                                    }}><Plus className="w-4 h-4" /></Button>
+                            {curChoicedCategory === "teamName" && (
+                                <div className="space-y-2 mt-4">
+                                    <h4 className="font-medium">队伍名称关键词</h4>
+                                    <Input value={newTeamName} onChange={(e) => setNewTeamName(e.target.value)} placeholder="队伍关键词" className="h-8" />
                                 </div>
-                                <div className="flex flex-wrap gap-1">
-                                    {tempTeamNames.map((t, i) => (<Badge key={"tt" + i} variant="secondary" className="gap-1">{t}<X className="w-3 h-3 cursor-pointer" onClick={() => { setTempTeamNames(prev => prev.filter((_, idx) => idx !== i)); }} /></Badge>))}
-                                </div>
-                            </div>
+                            )}
 
                             {/* Challenge IDs */}
-                            <div className="space-y-2 mt-4">
-                                <h4 className="font-medium">题目 ID</h4>
-                                <div className="flex items-center gap-2">
-                                    <Input value={newChallengeId} onChange={(e) => setNewChallengeId(e.target.value)} placeholder="输入数字后 + 添加" className="h-8" />
-                                    <Button size="sm" variant="secondary" onClick={() => {
-                                        const num = parseInt(newChallengeId.trim());
-                                        if (!isNaN(num)) { setTempChallengeIds(prev => prev.includes(num) ? prev : [...prev, num]); setNewChallengeId(""); }
-                                    }}><Plus className="w-4 h-4" /></Button>
+                            {curChoicedCategory === "challengeId" && (
+                                <div className="space-y-2 mt-4">
+                                    <h4 className="font-medium">题目 ID</h4>
+                                    <Input value={newChallengeId} onChange={(e) => setNewChallengeId(e.target.value)} placeholder="题目ID" className="h-8" />
                                 </div>
-                                <div className="flex flex-wrap gap-1">
-                                    {tempChallengeIds.map((cid, i) => (<Badge key={"pcid" + i} variant="secondary" className="gap-1">{cid}<X className="w-3 h-3 cursor-pointer" onClick={() => { setTempChallengeIds(prev => prev.filter((_, idx) => idx !== i)); }} /></Badge>))}
-                                </div>
-                            </div>
+                            )}
 
                             {/* Team IDs */}
-                            <div className="space-y-2 mt-4">
-                                <h4 className="font-medium">队伍 ID</h4>
-                                <div className="flex items-center gap-2">
-                                    <Input value={newTeamId} onChange={(e) => setNewTeamId(e.target.value)} placeholder="输入数字后 + 添加" className="h-8" />
-                                    <Button size="sm" variant="secondary" onClick={() => {
-                                        const num = parseInt(newTeamId.trim());
-                                        if (!isNaN(num)) { setTempTeamIds(prev => prev.includes(num) ? prev : [...prev, num]); setNewTeamId(""); }
-                                    }}><Plus className="w-4 h-4" /></Button>
+                            {curChoicedCategory === "teamId" && (
+                                <div className="space-y-2 mt-4">
+                                    <h4 className="font-medium">队伍 ID</h4>
+                                    <Input value={newTeamId} onChange={(e) => setNewTeamId(e.target.value)} placeholder="队伍ID" className="h-8" />
                                 </div>
-                                <div className="flex flex-wrap gap-1">
-                                    {tempTeamIds.map((tid, i) => (<Badge key={"ptid" + i} variant="secondary" className="gap-1">{tid}<X className="w-3 h-3 cursor-pointer" onClick={() => { setTempTeamIds(prev => prev.filter((_, idx) => idx !== i)); }} /></Badge>))}
-                                </div>
-                            </div>
+                            )}
 
                             {/* Status select */}
-                            <div className="space-y-2 mt-4">
-                                <h4 className="font-medium">评测状态</h4>
-                                <div className="flex flex-wrap gap-2">
-                                    {statusOptions.map(st => {
-                                        const active = tempJudgeStatuses.includes(st)
-                                        return (
-                                            <Button key={st} size="sm" variant={active ? "default" : "outline"} onClick={() => {
-                                                setTempJudgeStatuses(prev => active ? prev.filter(s => s !== st) : [...prev, st]);
-                                            }}>{st.replace('Judge', '')}</Button>
-                                        )
-                                    })}
+                            {curChoicedCategory === "judgeStatus" && (
+                                <div className="space-y-2 mt-4">
+                                    <h4 className="font-medium">评测状态</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {statusOptions.map(st => {
+                                            const active = tempJudgeStatuses.includes(st)
+                                            return (
+                                                <Button key={st} size="sm" variant={active ? "default" : "outline"} onClick={() => {
+                                                    setTempJudgeStatuses(prev => active ? prev.filter(s => s !== st) : [...prev, st]);
+                                                }}>{st.replace('Judge', '')}</Button>
+                                            )
+                                        })}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Time range */}
-                            <div className="space-y-2 mt-4">
-                                <h4 className="font-medium">时间范围</h4>
-                                <div className="flex items-center gap-1">
-                                    <Input type="datetime-local" value={tempStartTime || ""} onChange={(e) => setTempStartTime(e.target.value || undefined)} className="h-8" />
-                                    <span className="px-1">-</span>
-                                    <Input type="datetime-local" value={tempEndTime || ""} onChange={(e) => setTempEndTime(e.target.value || undefined)} className="h-8" />
+                            {curChoicedCategory === "timeRange" && (
+                                <div className="space-y-2 mt-4">
+                                    <h4 className="font-medium">时间范围</h4>
+                                    <div className="flex items-center gap-1">
+                                        <Input type="datetime-local" value={tempStartTime || ""} onChange={(e) => setTempStartTime(e.target.value || undefined)} className="h-8" />
+                                        <span className="px-1">-</span>
+                                        <Input type="datetime-local" value={tempEndTime || ""} onChange={(e) => setTempEndTime(e.target.value || undefined)} className="h-8" />
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             <DialogFooter className="mt-6">
                                 <Button variant="secondary" onClick={() => setDialogOpen(false)}>取消</Button>
                                 <Button onClick={() => {
-                                    setChallengeNames(tempChallengeNames);
-                                    setTeamNames(tempTeamNames);
-                                    setJudgeStatuses(tempJudgeStatuses);
-                                    setChallengeIds(tempChallengeIds);
-                                    setTeamIds(tempTeamIds);
-                                    setStartTime(tempStartTime);
-                                    setEndTime(tempEndTime);
-                                    setCurrentPage(1);
-                                    setDialogOpen(false);
+                                    switch (curChoicedCategory) {
+                                        case "challengeName":
+                                            if (newChallengeName.trim()) { setChallengeNames(prev => [...prev, newChallengeName.trim()]); setNewChallengeName(""); }
+                                            break;
+                                        case "teamName":
+                                            if (newTeamName.trim()) { setTeamNames(prev => [...prev, newTeamName.trim()]); setNewTeamName(""); }
+                                            break
+                                        case "challengeId":
+                                            const num1 = parseInt(newChallengeId.trim());
+                                            if (!isNaN(num1)) { setChallengeIds(prev => prev.includes(num1) ? prev : [...prev, num1]); setNewChallengeId(""); }
+                                            break
+                                        case "teamId":
+                                            const num2 = parseInt(newTeamId.trim());
+                                            if (!isNaN(num2)) { setTeamIds(prev => prev.includes(num2) ? prev : [...prev, num2]); setNewTeamId(""); }
+                                            break
+                                        case "judgeStatus":
+                                            setJudgeStatuses(tempJudgeStatuses);
+                                            break
+                                        case "timeRange":
+                                            setStartTime(tempStartTime);
+                                            setEndTime(tempEndTime);
+                                            break
+                                    }
+                                    setCurrentPage(1)
+                                    setDialogOpen(false)
                                 }}>应用</Button>
                             </DialogFooter>
                         </DialogContent>

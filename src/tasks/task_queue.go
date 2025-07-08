@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"a1ctf/src/utils/zaphelper"
 	"log"
 
 	"github.com/hibiken/asynq"
@@ -42,6 +43,7 @@ func InitTaskQueue() {
 					"low":      1,
 				},
 				StrictPriority: true,
+				Logger:         zaphelper.NewZapLogger(zaphelper.Logger),
 				// See the godoc for other configuration options
 			},
 		)

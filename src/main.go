@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -21,6 +22,7 @@ import (
 	dbtool "a1ctf/src/utils/db_tool"
 	k8stool "a1ctf/src/utils/k8s_tool"
 	"a1ctf/src/utils/ristretto_tool"
+	"a1ctf/src/utils/zaphelper"
 
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
@@ -75,6 +77,26 @@ func StartLoopEvent() {
 		gocron.WithSingletonMode(gocron.LimitModeWait),
 	)
 
+	s.NewJob(
+		gocron.DurationJob(
+			viper.GetDuration("job-intervals.update-game-scoreboard-cache"),
+		),
+		gocron.NewTask(
+			jobs.UpdateGameScoreBoardCache,
+		),
+		gocron.WithSingletonMode(gocron.LimitModeWait),
+	)
+
+	s.NewJob(
+		gocron.DurationJob(
+			viper.GetDuration("job-intervals.compress-and-delete-old-logs"),
+		),
+		gocron.NewTask(
+			zaphelper.CompressAndDeleteOldLogs,
+		),
+		gocron.WithSingletonMode(gocron.LimitModeWait),
+	)
+
 	s.Start()
 }
 
@@ -94,6 +116,12 @@ func RateLimiter(rateLimit int, rateInterval time.Duration) gin.HandlerFunc {
 }
 
 func main() {
+
+	// 初始化 Zap
+	zaphelper.InitZap()
+	defer zaphelper.CloseZap()
+
+	zaphelper.Logger.Info("Zap initialized")
 
 	// 加载配置文件
 	utils.LoadConfig()
@@ -126,6 +154,7 @@ func main() {
 	memoryStore := persist.NewMemoryStore(1 * time.Minute)
 
 	// 关闭日志输出
+	gin.DefaultWriter = io.Discard
 	r := gin.New()
 	// r := gin.Default()
 
@@ -139,7 +168,7 @@ func main() {
 		}
 		r.SetTrustedProxies(viper.GetStringSlice("system.trusted-proxies"))
 	} else {
-		log.Printf("No trusted proxies set, using default. If you are using a reverse proxy, please set the trusted proxies in the config file.")
+		zaphelper.Sugar.Warn("No trusted proxies set, using default. If you are using a reverse proxy, please set the trusted proxies in the config file.")
 	}
 
 	pprof.Register(r)
@@ -348,12 +377,20 @@ func main() {
 	// 未知接口
 	// r.NoRoute(authMiddleware.MiddlewareFunc(), handleNoRoute())
 
-	r.Static("/assets", "./clientapp/assets")
-	r.Static("/favicon.ico", "./clientapp/favicon.ico")
-	r.Static("/images", "./clientapp/images")
-	r.Static("/locales", "./clientapp/locales")
+	// r.Static("/assets", "./clientapp/assets")
+	// r.Static("/favicon.ico", "./clientapp/favicon.ico")
+	// r.Static("/images", "./clientapp/images")
+	// r.Static("/locales", "./clientapp/locales")
+	// r.NoRoute(func(c *gin.Context) {
+	// 	c.File("./clientapp/index.html")
+	// })
+
+	r.Static("/assets", "./clientapp/build/client/assets")
+	r.Static("/favicon.ico", "./clientapp/build/client/favicon.ico")
+	r.Static("/images", "./clientapp/build/client/images")
+	r.Static("/locales", "./clientapp/build/client/locales")
 	r.NoRoute(func(c *gin.Context) {
-		c.File("./clientapp/index.html")
+		c.File("./clientapp/build/client/index.html")
 	})
 
 	// 任务线程
@@ -372,13 +409,13 @@ func main() {
 		}
 	}()
 
-	log.Printf("Server started on %s", srv.Addr)
+	zaphelper.Sugar.Infof("Server started on %s", srv.Addr)
 
 	// 等待中断信号以优雅地关闭服务器
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("Shutting down server...")
+	zaphelper.Logger.Info("Shutting down server...")
 
 	tasks.CloseTaskQueue()
 
@@ -394,5 +431,5 @@ func main() {
 		log.Fatal("Server forced to shutdown:", err)
 	}
 
-	log.Println("Server exiting")
+	zaphelper.Logger.Info("Server exiting")
 }
