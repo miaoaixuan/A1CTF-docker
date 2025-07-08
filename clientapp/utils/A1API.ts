@@ -1008,6 +1008,68 @@ export interface SystemLogStats {
   security_logs: number;
 }
 
+export interface AdminListSubmitsPayload {
+  /** 游戏ID */
+  game_id: number;
+  /** 每页大小 */
+  size: number;
+  /** 偏移量 */
+  offset: number;
+  /** 题目ID 列表（可选，OR 关系） */
+  challenge_ids?: number[];
+  /** 题目名称关键词列表（模糊匹配，可选，OR 关系） */
+  challenge_names?: string[];
+  /** 队伍ID 列表（可选） */
+  team_ids?: number[];
+  /** 队伍名称关键词列表（模糊匹配，可选） */
+  team_names?: string[];
+  /** 评测结果列表（可选，OR 关系） */
+  judge_statuses?: (
+    | "JudgeAC"
+    | "JudgeWA"
+    | "JudgeError"
+    | "JudgeTimeout"
+    | "JudgeQueueing"
+    | "JudgeRunning"
+  )[];
+  /**
+   * 开始时间（可选）
+   * @format date-time
+   */
+  start_time?: string;
+  /**
+   * 结束时间（可选）
+   * @format date-time
+   */
+  end_time?: string;
+}
+
+export interface AdminSubmitItem {
+  /** 判题ID */
+  judge_id: string;
+  /** 提交者用户名 */
+  username: string;
+  /** 提交者队伍名 */
+  team_name: string;
+  /** 提交的FLAG内容 */
+  flag_content: string;
+  /** 题目名称 */
+  challenge_name: string;
+  /** 判题状态 */
+  judge_status:
+    | "JudgeAC"
+    | "JudgeWA"
+    | "JudgeError"
+    | "JudgeTimeout"
+    | "JudgeQueueing"
+    | "JudgeRunning";
+  /**
+   * 判题时间
+   * @format date-time
+   */
+  judge_time: string;
+}
+
 import type {
   AxiosInstance,
   AxiosRequestConfig,
@@ -2808,6 +2870,35 @@ export class Api<
       >({
         path: `/api/admin/game/notices`,
         method: "DELETE",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 获取指定比赛的所有提交记录（包含正确和错误），支持分页
+     *
+     * @tags admin
+     * @name AdminListGameSubmits
+     * @summary 获取比赛提交记录列表
+     * @request POST:/api/admin/game/{game_id}/submits
+     */
+    adminListGameSubmits: (
+      gameId: number,
+      data: AdminListSubmitsPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: AdminSubmitItem[];
+          total: number;
+        },
+        void
+      >({
+        path: `/api/admin/game/${gameId}/submits`,
+        method: "POST",
         body: data,
         type: ContentType.Json,
         format: "json",

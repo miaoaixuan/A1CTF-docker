@@ -34,7 +34,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
     const [formEdited, setFormEdited] = useState(false)
 
     // 添加状态来管理当前选中的模块
-    const [activeModule, setActiveModule] = useState(searchParams.get("module") ?? 'basic');
+    const [activeModule, setActiveModule] = useState(searchParams.get("module") ?? 'events');
 
     useEffect(() => {
         setSearchParams({ module: activeModule })

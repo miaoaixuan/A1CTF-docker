@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -19,7 +20,26 @@ import (
 	"mime"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
+
+// helper: convert slice of strings to LIKE patterns for ILIKE ANY
+func mapSliceToLike(src []string) []string {
+	var dst []string
+	for _, s := range src {
+		dst = append(dst, "%"+strings.ToLower(s)+"%")
+	}
+	return dst
+}
+
+// helper: extract keys from map[int64]struct{}
+func keysInt64(m map[int64]struct{}) []int64 {
+	res := make([]int64, 0, len(m))
+	for k := range m {
+		res = append(res, k)
+	}
+	return res
+}
 
 func AdminListGames(c *gin.Context) {
 	var payload webmodels.AdminListGamePayload
@@ -1338,5 +1358,210 @@ func AdminDeleteChallengeSolves(c *gin.Context) {
 		"code":    200,
 		"message": message,
 		"data":    data,
+	})
+}
+
+// AdminGetSubmits 获取指定比赛的提交记录（包含正确与错误）
+func AdminGetSubmits(c *gin.Context) {
+	// 解析并校验 game_id
+	gameIDStr := c.Param("game_id")
+	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid game ID",
+		})
+		return
+	}
+
+	// 确认比赛存在
+	var game models.Game
+	if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"code":    404,
+				"message": "Game not found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to verify game",
+			})
+		}
+		return
+	}
+
+	// 解析分页及过滤参数
+	var payload struct {
+		Size           int      `json:"size" binding:"min=0"`
+		Offset         int      `json:"offset"`
+		ChallengeIDs   []int64  `json:"challenge_ids"`   // 多个题目ID
+		ChallengeNames []string `json:"challenge_names"` // 多个题目名称(模糊匹配，OR 关系)
+		TeamIDs        []int64  `json:"team_ids"`        // 多个队伍ID
+		TeamNames      []string `json:"team_names"`      // 多个队伍名称
+		JudgeStatuses  []string `json:"judge_statuses"`  // 多个评测结果
+		StartTime      *string  `json:"start_time"`      // 起始时间 (ISO8601)
+		EndTime        *string  `json:"end_time"`        // 结束时间 (ISO8601)
+	}
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// 构建基础查询
+	baseQuery := dbtool.DB().Model(&models.Judge{}).Where("game_id = ?", gameID)
+
+	// 题目过滤
+	challengeIDSet := make(map[int64]struct{})
+	if len(payload.ChallengeIDs) > 0 {
+		for _, id := range payload.ChallengeIDs {
+			challengeIDSet[id] = struct{}{}
+		}
+	}
+	if len(payload.ChallengeNames) > 0 {
+		var ids []int64
+		if err := dbtool.DB().Model(&models.Challenge{}).
+			Where("lower(name) ILIKE ANY(?)", pq.Array(mapSliceToLike(payload.ChallengeNames))).
+			Pluck("challenge_id", &ids).Error; err == nil {
+			for _, id := range ids {
+				challengeIDSet[id] = struct{}{}
+			}
+		}
+
+		if len(ids) == 0 {
+			c.JSON(http.StatusOK, gin.H{
+				"code":  200,
+				"data":  make([]gin.H, 0),
+				"total": 0,
+			})
+			return
+		}
+	}
+	if len(challengeIDSet) > 0 {
+		idList := keysInt64(challengeIDSet)
+		baseQuery = baseQuery.Where("challenge_id IN ?", idList)
+	}
+
+	// 队伍过滤
+	teamIDSet := make(map[int64]struct{})
+	for _, id := range payload.TeamIDs {
+		teamIDSet[id] = struct{}{}
+	}
+	if len(payload.TeamNames) > 0 {
+		var ids []int64
+		if err := dbtool.DB().Model(&models.Team{}).
+			Where("lower(team_name) ILIKE ANY(?)", pq.Array(mapSliceToLike(payload.TeamNames))).
+			Pluck("team_id", &ids).Error; err == nil {
+			for _, id := range ids {
+				teamIDSet[id] = struct{}{}
+			}
+		}
+	}
+	if len(teamIDSet) > 0 {
+		baseQuery = baseQuery.Where("team_id IN ?", keysInt64(teamIDSet))
+	}
+
+	// 评测结果过滤
+	if len(payload.JudgeStatuses) > 0 {
+		coveredStatus := make([]models.JudgeStatus, 0)
+		for _, status := range payload.JudgeStatuses {
+			switch status {
+			case "JudgeAC":
+				coveredStatus = append(coveredStatus, models.JudgeAC)
+			case "JudgeWA":
+				coveredStatus = append(coveredStatus, models.JudgeWA)
+			}
+		}
+		baseQuery = baseQuery.Where("judge_status IN ?", coveredStatus)
+	}
+
+	// 时间范围过滤
+	if payload.StartTime != nil && strings.TrimSpace(*payload.StartTime) != "" {
+		if t, err := time.Parse(time.RFC3339, *payload.StartTime); err == nil {
+			baseQuery = baseQuery.Where("judge_time >= ?", t)
+		}
+	}
+	if payload.EndTime != nil && strings.TrimSpace(*payload.EndTime) != "" {
+		if t, err := time.Parse(time.RFC3339, *payload.EndTime); err == nil {
+			baseQuery = baseQuery.Where("judge_time <= ?", t)
+		}
+	}
+
+	// 查询总数
+	var total int64
+	if err := baseQuery.Count(&total).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to count submits",
+		})
+		return
+	}
+
+	// 查询具体记录
+	var judges []models.Judge
+	query := baseQuery.Preload("Team").Preload("Challenge").Order("judge_time DESC").Offset(payload.Offset)
+	if payload.Size > 0 {
+		query = query.Limit(payload.Size)
+	}
+	if err := query.Find(&judges).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load submits",
+		})
+		return
+	}
+
+	// 批量获取提交者用户名
+	submitterIDs := make([]string, 0, len(judges))
+	unique := make(map[string]struct{})
+	for _, j := range judges {
+		if _, ok := unique[j.SubmiterID]; !ok {
+			unique[j.SubmiterID] = struct{}{}
+			submitterIDs = append(submitterIDs, j.SubmiterID)
+		}
+	}
+
+	userMap := make(map[string]string) // user_id -> username
+	if len(submitterIDs) > 0 {
+		var users []models.User
+		if err := dbtool.DB().Select("user_id", "username").Where("user_id IN ?", submitterIDs).Find(&users).Error; err == nil {
+			for _, u := range users {
+				userMap[u.UserID] = u.Username
+			}
+		}
+	}
+
+	// 构造响应数据
+	data := make([]gin.H, 0, len(judges))
+	for _, j := range judges {
+		username := userMap[j.SubmiterID]
+		teamName := ""
+		if j.Team.TeamName != "" {
+			teamName = j.Team.TeamName
+		}
+		challengeName := ""
+		if j.Challenge.Name != "" {
+			challengeName = j.Challenge.Name
+		}
+
+		data = append(data, gin.H{
+			"judge_id":       j.JudgeID,
+			"username":       username,
+			"team_name":      teamName,
+			"flag_content":   j.JudgeContent,
+			"challenge_name": challengeName,
+			"judge_status":   j.JudgeStatus,
+			"judge_time":     j.JudgeTime,
+		})
+	}
+
+	// 返回
+	c.JSON(http.StatusOK, gin.H{
+		"code":  200,
+		"data":  data,
+		"total": total,
 	})
 }

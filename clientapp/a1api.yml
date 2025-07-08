@@ -3040,6 +3040,49 @@ paths:
           description: 公告不存在
         '500':
           description: 服务器内部错误
+  /api/admin/game/{game_id}/submits:
+    post:
+      tags: [admin]
+      operationId: adminListGameSubmits
+      summary: 获取比赛提交记录列表
+      description: 获取指定比赛的所有提交记录（包含正确和错误），支持分页
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminListSubmitsPayload'
+        required: true
+      responses:
+        '200':
+          description: 成功获取提交记录列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminSubmitItem'
+                  total:
+                    type: integer
+                required:
+                  - code
+                  - data
+                  - total
+        '400':
+          description: 请求参数错误
+        '500':
+          description: 服务器内部错误
 components:
   securitySchemes:
     cookieAuth:
@@ -4703,3 +4746,87 @@ components:
         - admin_logs
         - user_logs
         - security_logs
+    AdminListSubmitsPayload:
+      type: object
+      properties:
+        game_id:
+          type: integer
+          description: 游戏ID
+        size:
+          type: integer
+          description: 每页大小
+        offset:
+          type: integer
+          description: 偏移量
+        challenge_ids:
+          type: array
+          items:
+            type: integer
+          description: 题目ID 列表（可选，OR 关系）
+        challenge_names:
+          type: array
+          items:
+            type: string
+          description: 题目名称关键词列表（模糊匹配，可选，OR 关系）
+        team_ids:
+          type: array
+          items:
+            type: integer
+          description: 队伍ID 列表（可选）
+        team_names:
+          type: array
+          items:
+            type: string
+          description: 队伍名称关键词列表（模糊匹配，可选）
+        judge_statuses:
+          type: array
+          items:
+            type: string
+            enum: [JudgeAC, JudgeWA, JudgeError, JudgeTimeout, JudgeQueueing, JudgeRunning]
+          description: 评测结果列表（可选，OR 关系）
+        start_time:
+          type: string
+          format: date-time
+          description: 开始时间（可选）
+        end_time:
+          type: string
+          format: date-time
+          description: 结束时间（可选）
+      required:
+        - game_id
+        - size
+        - offset
+    AdminSubmitItem:
+      type: object
+      properties:
+        judge_id:
+          type: string
+          description: 判题ID
+        username:
+          type: string
+          description: 提交者用户名
+        team_name:
+          type: string
+          description: 提交者队伍名
+        flag_content:
+          type: string
+          description: 提交的FLAG内容
+        challenge_name:
+          type: string
+          description: 题目名称
+        judge_status:
+          type: string
+          description: 判题状态
+          enum: [JudgeAC, JudgeWA, JudgeError, JudgeTimeout, JudgeQueueing, JudgeRunning]
+        judge_time:
+          type: string
+          format: date-time
+          description: 判题时间
+      required:
+        - judge_id
+        - username
+        - team_name
+        - flag_content
+        - challenge_name
+        - judge_status
+        - judge_time

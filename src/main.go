@@ -256,6 +256,8 @@ func main() {
 			gameGroup.PUT("/:game_id/challenge/:challenge_id", controllers.AdminAddGameChallenge)
 			gameGroup.PUT("/:game_id", controllers.AdminUpdateGame)
 
+			gameGroup.POST("/:game_id/submits", controllers.AdminGetSubmits)
+
 			// 比赛海报上传路由
 			gameGroup.POST("/:game_id/poster/upload", controllers.AdminUploadGamePoster)
 
