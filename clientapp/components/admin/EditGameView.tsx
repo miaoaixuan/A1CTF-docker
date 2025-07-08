@@ -10,7 +10,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import dayjs from 'dayjs';
-import { CalendarIcon, CircleArrowLeft, Save, FilePenLine, Settings, Trophy, Users, Package, PackageSearch, MessageSquareLock } from 'lucide-react';
+import { CalendarIcon, CircleArrowLeft, Save, FilePenLine, Settings, Trophy, Users, Package, PackageSearch, MessageSquareLock, Activity, Info } from 'lucide-react';
 import { EditGameFormSchema } from './game/EditGameSchema';
 import { AxiosError } from 'axios';
 import { api } from 'utils/ApiHelper';
@@ -26,6 +26,7 @@ import { GameManagePage } from './GameManagePage';
 import { TeamManageView } from './game/TeamManageView';
 import { ContainerManageView } from './game/ContainerManageView';
 import { useTheme } from 'next-themes';
+import { GameEventModule } from './game/GameEventModule';
 
 export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
 
@@ -180,9 +181,14 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
     // 定义模块配置
     const modules = [
         {
+            id: "events",
+            name: "比赛事件",
+            icon: <Activity className="h-4 w-4" />
+        },
+        {
             id: 'basic',
             name: '基本信息',
-            icon: <FilePenLine className="h-4 w-4" />
+            icon: <Info className="h-4 w-4" />
         },
         {
             id: 'settings',
@@ -191,7 +197,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
         },
         {
             id: 'timeline',
-            name: '时间线',
+            name: '阶段设置',
             icon: <CalendarIcon className="h-4 w-4" />
         },
         {
@@ -227,7 +233,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
             <div className="absolute top-0 z-10 backdrop-blur-sm bg-background/20 border-b px-6 w-full h-20 flex flex-col justify-center">
                 <div className="flex items-center justify-between select-none">
                     <div className="flex items-center gap-4">
-                        <span className="font-bold text-xl">编辑比赛</span>
+                        <span className="font-bold text-xl">比赛管理</span>
                         <div className="h-8 w-px bg-border" />
                         <div className='flex gap-2 items-center'>
                             <span className="text-xl text-muted-foreground">
@@ -264,7 +270,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
 
             <div className="flex gap-6 w-full h-full overflow-hidden">
                 {/* 左侧模块导航 */}
-                <div className="w-64 flex-none border-r-1">
+                <div className="w-64 flex-none border-r-1 select-none">
                     <div className="px-6 pt-28">
                         <h3 className="font-semibold text-lg mb-4 text-foreground/90">管理模块</h3>
                         <div className="space-y-2">
@@ -290,8 +296,14 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                         className="h-full"
                         skin={theme == "light" ? "light" : "dark"}
                     >
-                        <div className="pl-6 pr-10 pt-32">
+                        <div className="pl-6 pr-10 pt-32 pb-8">
                             <form id="game-edit-form" onSubmit={form.handleSubmit(onSubmit)}>
+
+                                {activeModule === 'events' && (
+                                    <GameEventModule />
+                                )}
+
+
                                 {/* 基本信息 Section */}
                                 {activeModule === 'basic' && (
                                     <BasicInfoModule
@@ -315,7 +327,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                                 {/* 比赛时间线和题目分配 */}
                                 {activeModule === 'timeline' && (
                                     <div>
-                                        <div className="flex items-center gap-3 mb-6">
+                                        <div className="flex items-center gap-3 mb-4">
                                             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/10 flex items-center justify-center">
                                                 <CalendarIcon className="h-4 w-4 text-purple-600" />
                                             </div>
@@ -331,7 +343,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                                 {/* 分组管理 */}
                                 {activeModule === 'groups' && (
                                     <div>
-                                        <div className="flex items-center gap-3 mb-6">
+                                        <div className="flex items-center gap-3 mb-4">
                                             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-600/10 flex items-center justify-center">
                                                 <Users className="h-4 w-4 text-orange-600" />
                                             </div>
@@ -344,7 +356,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                                 {/* 公告管理 */}
                                 {activeModule === 'notices' && (
                                     <div>
-                                        <div className="flex items-center gap-3 mb-6">
+                                        <div className="flex items-center gap-3 mb-4">
                                             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
                                                 <MessageSquareLock className="h-4 w-4 text-blue-600" />
                                             </div>
@@ -357,7 +369,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                                 {/* 题目设置 */}
                                 {activeModule === 'challenges' && (
                                     <div>
-                                        <div className="flex items-center gap-3 mb-6">
+                                        <div className="flex items-center gap-3 mb-4">
                                             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-red-500/20 to-red-600/10 flex items-center justify-center">
                                                 <Trophy className="h-4 w-4 text-red-600" />
                                             </div>
@@ -373,7 +385,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                                 {/* 队伍管理 */}
                                 {activeModule === 'teams' && (
                                     <div>
-                                        <div className="flex items-center gap-3 mb-6">
+                                        <div className="flex items-center gap-3 mb-4">
                                             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
                                                 <Users className="h-4 w-4 text-blue-600" />
                                             </div>
@@ -388,7 +400,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                                 {/* 容器管理 */}
                                 {activeModule === 'containers' && (
                                     <div>
-                                        <div className="flex items-center gap-3 mb-6">
+                                        <div className="flex items-center gap-3 mb-4">
                                             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/10 flex items-center justify-center">
                                                 <PackageSearch className="h-4 w-4 text-green-600" />
                                             </div>

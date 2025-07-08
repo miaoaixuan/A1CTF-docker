@@ -493,7 +493,7 @@ export function TeamManageView(
 
     return (
         <>
-            <div className="w-full flex flex-col gap-4 pb-4">
+            <div className="w-full flex flex-col gap-4">
                 <div className="flex items-center space-x-2">
                     <div className="flex-1 text-sm text-muted-foreground flex items-center">
                         {table.getFilteredSelectedRowModel().rows.length} / {" "}
