@@ -27,7 +27,6 @@ import { z } from "zod"
 
 import { api } from "utils/ApiHelper";
 
-import { useTransitionContext } from "contexts/TransitionContext";
 import { toast } from "sonner";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useNavigate } from "react-router";
@@ -51,7 +50,6 @@ export function LoginForm({
     const userNameRef = useRef<HTMLInputElement>(null)
     const passwordRef = useRef<HTMLInputElement>(null)
 
-    const { startTransition } = useTransitionContext()
     const router = useNavigate()
 
     const { updateProfile, clientConfig } = useGlobalVariableContext()
@@ -81,9 +79,7 @@ export function LoginForm({
             captcha: token
         }).then(response => {
             updateProfile(() => {
-                startTransition(() => {
-                    router(`/`)
-                })
+                router(`/`)
 
                 setTimeout(() => {
                     toast.success(t("login_successful"))
@@ -170,9 +166,7 @@ export function LoginForm({
                 <Button type="submit" className="transition-all duration-300 w-full" disabled={loading || (clientConfig.turnstileEnabled && token == "")}>{t("login")}</Button>
                 <div className="text-center text-sm">
                     {t("dont_have_account")}{" "}
-                    <a className="underline underline-offset-4" onClick={() => startTransition(() => {
-                        router(`/signup`)
-                    })}>
+                    <a className="underline underline-offset-4" onClick={() => router(`/signup`)}>
                         {t("sign_up_title")}
                     </a>
                 </div>

@@ -533,7 +533,6 @@ export function ChallengesView({ id }: { id: string }) {
 
     return (
         <>
-            <GameSwitchHover animation={false} />
             {/* <LoadingPage visible={loadingVisiblity} /> */}
 
             <div className="absolute h-full w-full top-0 left-0 backdrop-blur-sm" />
@@ -642,7 +641,7 @@ export function ChallengesView({ id }: { id: string }) {
                                         <LoadingModule />
                                     )
                                 )}
-                                
+
                             </div>
                         </div>
                     </div>

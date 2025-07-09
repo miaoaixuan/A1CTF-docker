@@ -22,7 +22,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { Skeleton } from "./ui/skeleton";
 import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
-import { useTransitionContext } from "contexts/TransitionContext";
 import { api, Role } from "utils/GZApi";
 import { toast } from "sonner";
 import { Link, useLocation, useNavigate } from "react-router";
@@ -47,8 +46,6 @@ const PageHeader = () => {
     const whetherSelected = (name: string) => {
         return (path == name) ? "default" : "ghost";
     }
-
-    const { startTransition } = useTransitionContext();
 
     const navigate = useNavigate();
 
@@ -124,21 +121,15 @@ const PageHeader = () => {
                                         </Avatar>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent className="mt-2">
-                                            <DropdownMenuItem onClick={() => startTransition(() => {
-                                                navigate(`/profile`)
-                                            })}>
+                                            <DropdownMenuItem onClick={() => navigate(`/profile`)}>
                                                 <Settings />
                                                 <span>{ t("settings") }</span>
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => startTransition(() => {
-                                                navigate(`/teams`)
-                                            })}>
+                                            <DropdownMenuItem onClick={() => navigate(`/teams`)}>
                                                 <UsersRound />
                                                 <span>{ t("team") }</span>
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => startTransition(() => {
-                                                navigate(`/profile/password`)
-                                            })}>
+                                            <DropdownMenuItem onClick={() => navigate(`/profile/password`)}>
                                                 <KeyRound />
                                                 <span>{ t("change_password_header") }</span>
                                             </DropdownMenuItem>
@@ -249,21 +240,15 @@ const PageHeader = () => {
                                                         </div>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent className="mt-2">
-                                                        <DropdownMenuItem onClick={() => startTransition(() => {
-                                                            navigate(`/profile`)
-                                                        })}>
+                                                        <DropdownMenuItem onClick={() => navigate(`/profile`)}>
                                                             <Settings />
                                                             <span>{ t("settings") }</span>
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => startTransition(() => {
-                                                            navigate(`/teams`)
-                                                        })}>
+                                                        <DropdownMenuItem onClick={() => navigate(`/teams`)}>
                                                             <UsersRound />
                                                             <span>{ t("team") }</span>
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => startTransition(() => {
-                                                            navigate(`/profile/password`)
-                                                        })}>
+                                                        <DropdownMenuItem onClick={() => navigate(`/profile/password`)}>
                                                             <KeyRound />
                                                             <span>{ t("change_password_header") }</span>
                                                         </DropdownMenuItem>

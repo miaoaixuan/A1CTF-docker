@@ -12,7 +12,6 @@ import {
 
 import { A1CTF_NAME, A1CTF_VERSION } from "version";
 
-import { useTransitionContext } from "contexts/TransitionContext";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useNavigate } from "react-router";
 
@@ -21,7 +20,6 @@ const A1Footer = () => {
     const [infoViewShow, setInfoViewShow] = useState(false)
 
     const router = useNavigate()
-    const { startTransition } = useTransitionContext()
 
     const { clientConfig } = useGlobalVariableContext()
 
@@ -63,9 +61,7 @@ const A1Footer = () => {
                             <div className="flex items-center justify-center pt-1 pb-1 pl-4 pr-4 gap-4 hover:bg-foreground/10 rounded-md transition-[background] duration-300"
                                 onClick={() => {
                                     setInfoViewShow(false)
-                                    startTransition(() => {
-                                        router(`/version`)
-                                    })
+                                    router(`/version`)
                                 }}
                             >
                                 <img

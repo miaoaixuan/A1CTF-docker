@@ -22,13 +22,11 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
 import { api, ErrorMessage } from "utils/GZApi";
-import { useTransitionContext } from "contexts/TransitionContext";
 import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 
 export function ProfileView () {
 
-    const { startTransition } = useTransitionContext()
     const router = useNavigate()
 
     const [submitDisabled, setSubmitDisabled] = useState(false)
@@ -201,9 +199,7 @@ export function ProfileView () {
                                 )}
                             />
                             <Button type="submit" className="transition-all duration-300 mr-4">{ t("submit") }</Button>
-                            <Button type="button" className="transition-all duration-300" onClick={() => startTransition(() => {
-                                router(`/profile/email`)
-                            })}>{ t("change_email") }</Button>
+                            <Button type="button" className="transition-all duration-300" onClick={() => router(`/profile/email`)}>{ t("change_email") }</Button>
                         </form>
                     </Form>
                 </div>

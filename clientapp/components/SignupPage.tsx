@@ -3,19 +3,22 @@ import { GalleryVerticalEnd } from "lucide-react"
 import { LoginForm } from "components/LoginForm"
 
 import ThemeSwitcher from "components/ToggleTheme"
-import { TransitionLink } from "components/TransitionLink";
 import { RegisterForm } from "components/RegisterForm";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
+import { useNavigate } from "react-router";
 
 export default function SignupPage() {
 
     const { clientConfig } = useGlobalVariableContext()
+    const navigate = useNavigate()
 
     return (
         <div className="grid min-h-svh lg:grid-cols-2">
             <div className="flex flex-col gap-4 p-6 md:p-10">
                 <div className="flex justify-center gap-2 md:justify-between">
-                    <TransitionLink href="/" className="flex items-center gap-2 font-medium">
+                    <div onClick={() => {
+                        navigate(`/`)
+                    }} className="flex items-center gap-2 font-medium">
                         <img
                             className="dark:invert"
                             src={clientConfig.SVGIcon}
@@ -24,7 +27,7 @@ export default function SignupPage() {
                             height={40}
                         />
                         <span className="font-bold text-lg">A1natas SSO</span>
-                    </TransitionLink>
+                    </div>
                     <ThemeSwitcher />
                 </div>
                 <div className="flex flex-1 items-center justify-center">

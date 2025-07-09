@@ -18,7 +18,6 @@ import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useState } from "react";
 
 import { useTheme } from "next-themes";
-import { useTransitionContext } from 'contexts/TransitionContext';
 import { AxiosError } from 'axios';
 import { toast } from 'sonner';
 import { useTranslation } from "react-i18next";
@@ -39,7 +38,6 @@ export function RegisterForm({
 
     const { updateProfile, clientConfig } = useGlobalVariableContext()
 
-    const { startTransition } = useTransitionContext()
     const router = useNavigate()
 
     const formSchema = z.object({
@@ -79,9 +77,7 @@ export function RegisterForm({
             captcha: token
         }).then((res) => {
             updateProfile(() => {
-                startTransition(() => {
-                    router(`/`)
-                })
+                router(`/`)
     
                 setTimeout(() => {
                     toast.success(t("signup_success"))
@@ -190,9 +186,7 @@ export function RegisterForm({
                             {t("or_continue_with")}
                         </span>
                     </div>
-                    <Button type="button" variant={"outline"} className="transition-all duration-300 w-full" onClick={() => startTransition(() => {
-                        router(`/login`)
-                    })}>{ t("login") }</Button>
+                    <Button type="button" variant={"outline"} className="transition-all duration-300 w-full" onClick={() => router(`/login`)}>{ t("login") }</Button>
                 </form>
             </Form>
         </div>

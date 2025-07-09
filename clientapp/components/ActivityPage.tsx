@@ -20,7 +20,6 @@ import { api, BasicGameInfoModel, DetailedGameInfoModel, GameDetailModel, Role }
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Skeleton } from "./ui/skeleton";
-import { useTransitionContext } from "contexts/TransitionContext";
 import { useCookies } from "react-cookie";
 import { TransitionLink } from "./TransitionLink";
 import GameSwitchHover from "./GameSwitchHover";
@@ -38,7 +37,6 @@ export function ActivityPage({ lng, gameDetailModel } : { lng: string, gameDetai
     const { curProfile, updateProfile, clientConfig } = useGlobalVariableContext()
 
     const [cookies, setCookie, removeCookie] = useCookies(["uid"])
-    const { startTransition } = useTransitionContext();
     const router = useNavigate()
 
     const [curGame, setCurGame] = useState<BasicGameInfoModel>();
@@ -241,21 +239,15 @@ export function ActivityPage({ lng, gameDetailModel } : { lng: string, gameDetai
                             </Avatar>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="mt-2 mr-3">
-                                <DropdownMenuItem onClick={() => startTransition(() => {
-                                    router(`/${lng}/profile`)
-                                })}>
+                                <DropdownMenuItem onClick={() => router(`/${lng}/profile`)}>
                                     <Settings />
                                     <span>{ t("settings") }</span>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => startTransition(() => {
-                                    router(`/${lng}/teams`)
-                                })}>
+                                <DropdownMenuItem onClick={() => router(`/${lng}/teams`)}>
                                     <UsersRound />
                                     <span>{ t("team") }</span>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => startTransition(() => {
-                                    router(`/${lng}/profile/password`)
-                                })}>
+                                <DropdownMenuItem onClick={() => router(`/${lng}/profile/password`)}>
                                     <KeyRound />
                                     <span>{ t("change_password_header") }</span>
                                 </DropdownMenuItem>

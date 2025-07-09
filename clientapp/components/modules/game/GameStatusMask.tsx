@@ -1,7 +1,6 @@
 import { CreateTeamDialog } from "components/dialogs/CreateTeamDialog";
 import { JoinTeamDialog } from "components/dialogs/JoinTeamDialog";
 import { Mdx } from "components/MdxCompoents";
-import { TransitionLink } from "components/TransitionLink";
 import { Button } from "components/ui/button";
 import { UserFullGameInfo } from "utils/A1API";
 import { motion } from "framer-motion";
@@ -12,6 +11,7 @@ import { useTheme } from "next-themes";
 import { Dispatch, SetStateAction } from "react";
 import TimerDisplay from "../TimerDisplay";
 import dayjs from "dayjs";
+import { useNavigate } from "react-router";
 
 export default function GameStatusMask(
     { gameStatus, fetchGameInfoWithTeamInfo, gameInfo, setScoreBoardVisible, gameID, startCheckForGameStart }: {
@@ -26,6 +26,8 @@ export default function GameStatusMask(
 
     const { t } = useTranslation('challenge_view');
     const { theme } = useTheme()
+
+    const navigate = useNavigate()
 
     return (
         <>
@@ -53,9 +55,9 @@ export default function GameStatusMask(
                             <Button variant="secondary"
                                 onClick={() => setScoreBoardVisible(true)}
                             ><Presentation />{t("rank")}</Button>
-                            <TransitionLink className="transition-colors" href={`/games`}>
-                                <Button variant="secondary">{t("back_to_main")}</Button>
-                            </TransitionLink>
+                            <Button variant="secondary" onClick={() => {
+                                navigate(`/games`)
+                            }}>{t("back_to_main")}</Button>
                         </div>
                     </div>
                 </motion.div>
@@ -100,9 +102,9 @@ export default function GameStatusMask(
                                             <Button variant="outline"
                                                 onClick={() => setScoreBoardVisible(true)}
                                             ><Presentation />{t("rank")}</Button>
-                                            <TransitionLink className="transition-colors flex items-center" href={`/games`}>
-                                                <Button>{t("back_to_main")}</Button>
-                                            </TransitionLink>
+                                            <Button onClick={() => {
+                                                navigate(`/games`)
+                                            }}>{t("back_to_main")}</Button>
                                         </div>
                                     </div>
                                 </div>
@@ -117,9 +119,9 @@ export default function GameStatusMask(
                                             <Button variant="outline"
                                                 onClick={() => setScoreBoardVisible(true)}
                                             ><Presentation />{t("rank")}</Button>
-                                            <TransitionLink className="transition-colors" href={`/games`}>
-                                                <Button variant="outline">{t("back_to_main")}</Button>
-                                            </TransitionLink>
+                                            <Button variant="outline" onClick={() => {
+                                                navigate(`/games`)
+                                            }}>{t("back_to_main")}</Button>
                                         </div>
                                         <div className="flex gap-[15px] mt-[-5px] pointer-events-auto">
                                             <CreateTeamDialog callback={() => { 
@@ -164,9 +166,9 @@ export default function GameStatusMask(
                                             <Button variant="outline"
                                                 onClick={() => setScoreBoardVisible(true)}
                                             ><Presentation />{t("rank")}</Button>
-                                            <TransitionLink className="transition-colors" href={`/games`}>
-                                                <Button variant="outline">{t("back_to_main")}</Button>
-                                            </TransitionLink>
+                                            <Button variant="outline" onClick={() => {
+                                                navigate(`/games`)
+                                            }}>{t("back_to_main")}</Button>
                                         </div>
                                     </div>
                                 </div>
@@ -184,9 +186,9 @@ export default function GameStatusMask(
                     <div className="flex flex-col items-center gap-4 select-none">
                         <Info size={80} className="mb-4" />
                         <span className="text-2xl mb-4">{t("no_such_game")}</span>
-                        <TransitionLink className="transition-colors" href={`/games`}>
-                            <Button variant="outline">{t("back_to_main")}</Button>
-                        </TransitionLink>
+                        <Button variant="outline" onClick={() => {
+                            navigate(`/games`)
+                        }}>{t("back_to_main")}</Button>
                     </div>
                 </div>
             )}

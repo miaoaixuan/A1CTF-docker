@@ -34,8 +34,8 @@ const Squares: React.FC<ImagesProps> = ({
     rotation = 0,
     rotationSpeed = 0,
     randomRotation = false,
-    gradientFrom = "rgba(255, 255, 255, 0)",
-    gradientTo = "#fff",
+    gradientFrom = "rgba(0, 0, 0, 0)",
+    gradientTo = "#000",
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const requestRef = useRef<number | null>(null);
@@ -105,7 +105,7 @@ const Squares: React.FC<ImagesProps> = ({
         };
 
         window.addEventListener("resize", resizeCanvas);
-        resizeCanvas();
+        resizeCanvas()
 
         const drawGrid = () => {
             if (!ctx) return;
@@ -230,23 +230,23 @@ const Squares: React.FC<ImagesProps> = ({
             // clearInterval(drawInter)
         };
     }, [
-        direction,
-        speed,
-        borderColor,
-        hoverFillColor,
-        imageSizeX,
-        imageSizeY,
-        isReady,
-        showBorder,
-        opacity,
-        rotation,
-        rotationSpeed,
-        randomRotation,
-        canvasState,
-        updateGridOffset,
-        updateRotationAngle,
-        updateHoveredSquare,
-        initializeRandomRotations,
+        // direction,
+        // speed,
+        // borderColor,
+        // hoverFillColor,
+        // imageSizeX,
+        // imageSizeY,
+        // isReady,
+        // showBorder,
+        // opacity,
+        // rotation,
+        // rotationSpeed,
+        // randomRotation,
+        // canvasState,
+        // updateGridOffset,
+        // updateRotationAngle,
+        // updateHoveredSquare,
+        // initializeRandomRotations,
         imageSrc,
         getImage,
         gradientFrom,

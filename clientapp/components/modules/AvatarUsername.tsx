@@ -1,6 +1,7 @@
 import { Avatar } from "@radix-ui/react-avatar";
 import { AvatarFallback, AvatarImage } from "components/ui/avatar";
 import { Skeleton } from "components/ui/skeleton";
+import { Loader2 } from "lucide-react";
 
 export default function AvatarUsername({
     avatar_url, username, size = 35, fontSize = 16
@@ -19,7 +20,9 @@ export default function AvatarUsername({
                     <AvatarImage src={avatar_url || "#"} alt="@shadcn"
                         className={`rounded-2xl`}
                     />
-                    <AvatarFallback><Skeleton className="h-full w-full rounded-full" /></AvatarFallback>
+                    <AvatarFallback>
+                        <div className="w-full h-full bg-foreground/10 rounded-full"></div>
+                    </AvatarFallback>
                 </>
             ) : ( 
                 <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>

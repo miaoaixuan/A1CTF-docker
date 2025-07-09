@@ -11,28 +11,16 @@ export default function GameSwitchHover({ animation } : { animation: boolean }) 
 
     const { isChangingGame, curSwitchingGame, posterData } = useGameSwitchContext();
 
-    const [fromY, setFromY] = useState(10);
-
     const [shouldAnime, setShouldAnime] = useState(false)
     const [animeMethod, setAnimeMethod] = useState("easeInOut")
     const [exitAnimationTime, setExitAnimationTime] = useState(0)
 
     const [scope, animate] = useAnimate()
 
-    const { theme } = useTheme();
-
     useEffect(() => {
-        if (animation) {
-            setShouldAnime(true)
-            setAnimeMethod("easeInOut")
-            setExitAnimationTime(0.4)
-        } else {
-            setTimeout(() => {
-                setShouldAnime(true)
-            }, 200)
-            setAnimeMethod("easeInOut")
-            setExitAnimationTime(0.4)
-        }
+        setShouldAnime(true)
+        setAnimeMethod("easeInOut")
+        setExitAnimationTime(0.4)
     }, [])
 
     return (
@@ -66,7 +54,7 @@ export default function GameSwitchHover({ animation } : { animation: boolean }) 
                             scale: 1.08
                         }}
                         transition={{
-                            duration: animation ? 2 : (shouldAnime ? exitAnimationTime : 0),
+                            duration: animation ? 3 : (shouldAnime ? exitAnimationTime : 0),
                             ease: "easeInOut"
                             // delay: 0.6
                         }}
@@ -83,7 +71,7 @@ export default function GameSwitchHover({ animation } : { animation: boolean }) 
                             backgroundColor: "rgba(0, 0, 0, 0.4)"
                         }}
                         transition={{
-                            duration: animation ? 2 : (shouldAnime ? exitAnimationTime : 0),
+                            duration: animation ? 3 : (shouldAnime ? exitAnimationTime : 0),
                             ease: "easeInOut"
                             // delay: 0.6
                         }}

@@ -3,7 +3,6 @@ import { GalleryVerticalEnd } from "lucide-react"
 import { LoginForm } from "components/LoginForm"
 
 import ThemeSwitcher from "components/ToggleTheme"
-import { TransitionLink } from "components/TransitionLink";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 
 export default function LoginPage() {

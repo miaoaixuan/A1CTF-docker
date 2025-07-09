@@ -13,8 +13,6 @@ import "./app.css";
 import "app/css/sonner.css";
 import 'mac-scrollbar/dist/mac-scrollbar.css';
 
-import { TransitionProvider } from 'contexts/TransitionContext'
-
 import { ClientToaster } from 'components/ClientToaster';
 import { GameSwitchProvider } from 'contexts/GameSwitchContext';
 import { CookiesProvider } from 'react-cookie';
@@ -25,6 +23,7 @@ import FancyBackground from 'components/modules/FancyBackground';
 import { I18nextProvider } from "react-i18next";
 
 import i18n from 'i18n';
+import GameSwitchHover from "components/GameSwitchHover";
 
 export const links: Route.LinksFunction = () => [
     { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -78,23 +77,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     attribute="class"
                     enableSystem
                 >
-                    <TransitionProvider>
-                        <I18nextProvider i18n={i18n}>
-                            {/* <LanguageProvider> */}
-                                <CookiesProvider>
-                                    <GlobalVariableProvider>
-                                        <GameSwitchProvider>
-                                            <CanvasProvider>
-                                                <ClientToaster />
-                                                {animationPresent && <FancyBackground />}
-                                                {children}
-                                            </CanvasProvider>
-                                        </GameSwitchProvider>
-                                    </GlobalVariableProvider>
-                                </CookiesProvider>
-                            {/* </LanguageProvider> */}
-                        </I18nextProvider>
-                    </TransitionProvider>
+                    <I18nextProvider i18n={i18n}>
+                        <CookiesProvider>
+                            <GlobalVariableProvider>
+                                <GameSwitchProvider>
+                                    <CanvasProvider>
+                                        <ClientToaster />
+                                        {animationPresent && <FancyBackground />}
+                                        <GameSwitchHover animation={true} />
+                                        {children}
+                                    </CanvasProvider>
+                                </GameSwitchProvider>
+                            </GlobalVariableProvider>
+                        </CookiesProvider>
+                    </I18nextProvider>
                 </ThemeProvider>
                 {/* </NextIntlClientProvider> */}
                 <ScrollRestoration />

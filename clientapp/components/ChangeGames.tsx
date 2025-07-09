@@ -216,7 +216,6 @@ export function ChangeGames() {
 
     return (
         <>
-            <GameSwitchHover animation={true} />
             {/* <LoadingPage visible={loadingPageVisible} screen={false} absolute={true} /> */}
             <div className="w-full h-full relative">
 
