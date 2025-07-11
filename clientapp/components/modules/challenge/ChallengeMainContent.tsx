@@ -24,7 +24,8 @@ export default function ChallengeMainContent(
         setSubmitFlagWindowVisible,
         gameInfo,
         setShowHintsWindowVisible,
-        setRedirectURL
+        setRedirectURL,
+        scoreBoardModel
     } : {
         gameID: number,
         curChallenge: UserDetailGameChallenge | undefined,
@@ -32,29 +33,14 @@ export default function ChallengeMainContent(
         setSubmitFlagWindowVisible: Dispatch<SetStateAction<boolean>>,
         gameInfo: UserFullGameInfo | undefined,
         setShowHintsWindowVisible: Dispatch<SetStateAction<boolean>>,
-        setRedirectURL: Dispatch<SetStateAction<string>>
+        setRedirectURL: Dispatch<SetStateAction<string>>,
+        scoreBoardModel: GameScoreboardData | undefined
     }
 ) {
 
     const { t } = useTranslation()
 
-    const [scoreBoardModel, setScoreBoardModel] = useState<GameScoreboardData | undefined>(undefined)
-
-    useEffect(() => {
-        const updateScoreBoard = () => {
-            api.user.userGetGameScoreboard(gameID).then((res) => {
-                setScoreBoardModel(res.data.data)
-            })
-        }
-
-        updateScoreBoard()
-
-        const updateScoreBoardInter = setInterval(updateScoreBoard, randomInt(2000, 4000))
-
-        return () => {
-            if (updateScoreBoardInter) clearInterval(updateScoreBoardInter)
-        }
-    }, [])
+    
 
     const rankColor = (rank: number) => {
         if (rank == 1) return "text-red-400 font-bold"

@@ -57,7 +57,7 @@ const LogoBackgroundAnimation: React.FC<SquaresProps> = ({
     useEffect(() => {
         shouldAnimation.current = clientConfig.BGAnimation
         if (clientConfig.BGAnimation) {
-            animationMrk.current = 10
+            animationMrk.current = 100
         }
     }, [clientConfig.BGAnimation])
 
@@ -121,7 +121,7 @@ const LogoBackgroundAnimation: React.FC<SquaresProps> = ({
             numSquaresX.current = Math.ceil(canvas.width / imageSizeX) + 1;
             numSquaresY.current = Math.ceil(canvas.height / imageSizeY) + 1;
 
-            animationMrk.current = 10
+            animationMrk.current = 100
         };
 
         window.addEventListener("resize", resizeCanvas);

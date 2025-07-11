@@ -7,7 +7,7 @@ import {
 
 import { SidebarTrigger } from "components/ui/sidebar"
 import { Button } from "components/ui/button"
-import { AppWindow, PackageOpen, Presentation, Settings } from "lucide-react"
+import { AppWindow, Bath, Cable, CircleCheck, CircleX, Loader2, PackageOpen, Presentation, Settings, TriangleAlert, X } from "lucide-react"
 import ToggleTheme from "components/ToggleTheme"
 
 import {
@@ -27,6 +27,12 @@ import AvatarUsername from "../AvatarUsername"
 import { EditTeamDialog } from "components/dialogs/EditTeamDialog"
 import { useNavigate } from "react-router"
 
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from "components/ui/tooltip"
+
 const ChallengesViewHeader = (
     {
         gameStatus,
@@ -34,6 +40,7 @@ const ChallengesViewHeader = (
         setNoticeOpened,
         setScoreBoardVisible,
         notices,
+        wsStatus,
         curProfile,
         loadingVisible
     }: {
@@ -42,6 +49,7 @@ const ChallengesViewHeader = (
         setNoticeOpened: (arg0: boolean) => void,
         setScoreBoardVisible: (arg0: boolean) => void,
         notices: GameNotice[],
+        wsStatus: "connecting" | "connected" | "disconnected",
         curProfile: UserProfile,
         loadingVisible: boolean
     },
@@ -96,6 +104,29 @@ const ChallengesViewHeader = (
         }
     }, [gameInfo])
 
+    const [wsStatusTooltipVisible, setWsStatusTooltipVisible] = useState(true)
+
+    const getWsStatusClassName = () => {
+        switch (wsStatus) {
+            case "connecting":
+                return "animate-pulse text-yellow-500"
+            case "connected":
+                return "text-green-500"
+            case "disconnected":
+                return "text-red-500"
+        }
+    }
+
+    useEffect(() => {
+        if (wsStatus == "connected") {
+            setTimeout(() => {
+                setWsStatusTooltipVisible(false)
+            }, 2000)
+        } else {
+            setWsStatusTooltipVisible(true)
+        }
+    }, [wsStatus])
+
     return (
         <div className="h-[70px] flex items-center pl-4 pr-4 z-20 w-full bg-transparent border-b-[1px] transition-[border-color] duration-300 flex-none">
             <div className="flex items-center min-w-0 h-[32px]">
@@ -121,6 +152,39 @@ const ChallengesViewHeader = (
                                 <span className="text-white mix-blend-difference z-20 transition-all duration-500">{remainTime}</span>
                             </div>
                         </div>
+                        <Tooltip open={wsStatusTooltipVisible} onOpenChange={(state) => {
+                            if (wsStatus == "connected") {
+                                setWsStatusTooltipVisible(state)
+                            }
+                        }}>
+                            <TooltipTrigger asChild>
+                                <div className="flex h-7 items-center justify-center">
+                                    <Cable className={`${getWsStatusClassName()} transition-colors duration-300`} />
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="select-none">
+                                <div className="flex flex-col gap-[4px]">
+                                    <div className="flex items-center gap-[6px]">
+                                        <Bath className="w-4 h-4" />
+                                        <span className="font-bold">A1 Notice Service</span>
+                                    </div>
+                                    <div className="flex items-center w-full justify-center">
+                                        {
+                                            wsStatus == "connecting" ? (
+                                                <div className="flex gap-[4px] items-center text-yellow-500">
+                                                    <Loader2 className="animate-spin w-4 h-4" />
+                                                    <p>Connecting</p>
+                                                </div>
+                                            ) : wsStatus == "connected" ? (
+                                                <p className="text-green-500">Connected</p>
+                                            ) : (
+                                                <p className="text-red-300">Disconnected</p>
+                                            )
+                                        }
+                                    </div>
+                                </div>
+                            </TooltipContent>
+                        </Tooltip>
                         <DropdownMenu modal={false}>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" className="lg:hidden" size="icon">

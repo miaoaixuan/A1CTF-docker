@@ -140,11 +140,30 @@ export function ChallengesView({ id }: { id: string }) {
     const [showHintsWindowVisible, setShowHintsWindowVisible] = useState(false)
 
     const wsRef = useRef<WebSocket | null>(null)
+    const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected">("disconnected")
 
     const [searchParams, setSearchParams] = useSearchParams()
     const location = useLocation()
 
     const challengeSearched = searchParams.get("challenge") ? true : false
+
+    const [scoreBoardModel, setScoreBoardModel] = useState<GameScoreboardData | undefined>(undefined)
+
+    useEffect(() => {
+        const updateScoreBoard = () => {
+            api.user.userGetGameScoreboard(gameID).then((res) => {
+                setScoreBoardModel(res.data.data)
+            })
+        }
+
+        updateScoreBoard()
+
+        const updateScoreBoardInter = setInterval(updateScoreBoard, randomInt(2000, 4000))
+
+        return () => {
+            if (updateScoreBoardInter) clearInterval(updateScoreBoardInter)
+        }
+    }, [gameID])
 
 
     // 更新当前选中题目信息, 根据 Websocket 接收到的信息被动调用
@@ -305,6 +324,8 @@ export function ChallengesView({ id }: { id: string }) {
                     const socket = new WebSocket(`ws://${baseURL}/api/hub?game=${gameID}`)
                     wsRef.current = socket
 
+                    setWsStatus("connecting")
+
                     const connectTimeout = setTimeout(() => {
                         socket.close()
                         reject(new Error('连接超时'))
@@ -312,6 +333,7 @@ export function ChallengesView({ id }: { id: string }) {
 
                     socket.onopen = () => {
                         clearTimeout(connectTimeout)
+                        setWsStatus("connected")
                         console.log('WebSocket connected')
                         reconnectAttempts = 0 // 重置重连次数
                         resolve()
@@ -400,30 +422,21 @@ export function ChallengesView({ id }: { id: string }) {
                     socket.onerror = (error) => {
                         clearTimeout(connectTimeout)
                         console.error('WebSocket error:', error)
-                        reject(new Error('实时通知服务连接失败'))
                     }
 
                     socket.onclose = (event) => {
+                        setWsStatus("disconnected")
                         clearTimeout(connectTimeout)
-                        console.log('WebSocket disconnected', event.code, event.reason)
 
                         // 如果不是手动关闭且重连次数未达到上限，则尝试重连
                         if (!isManualClose && reconnectAttempts < maxReconnectAttempts) {
                             reconnectAttempts++
-                            console.log(`WebSocket重连尝试 ${reconnectAttempts}/${maxReconnectAttempts}`)
 
                             reconnectTimer = setTimeout(() => {
-                                toast.promise(
-                                    connectWebSocket(),
-                                    {
-                                        loading: `实时通知服务正在重连... (${reconnectAttempts}/${maxReconnectAttempts})`,
-                                        success: '重连成功！',
-                                        error: (err) => `实时通知服务重连失败: ${err.message}`
-                                    }
-                                )
+                                connectWebSocket()
                             }, reconnectInterval)
                         } else if (reconnectAttempts >= maxReconnectAttempts) {
-                            toast.error('WebSocket连接失败，请刷新页面重试')
+                            // toast.error('WebSocket连接失败，请刷新页面重试')
                         }
                     }
                 })
@@ -433,14 +446,15 @@ export function ChallengesView({ id }: { id: string }) {
 
             // 初始连接
             setTimeout(() => {
-                toast.promise(
-                    connectWebSocket(),
-                    {
-                        loading: '正在连接实时通知...',
-                        success: '实时通知服务连接成功！',
-                        error: (err) => `连接失败: ${err.message}`
-                    }
-                )
+                // toast.promise(
+                //     connectWebSocket(),
+                //     {
+                //         loading: '正在连接实时通知...',
+                //         success: '实时通知服务连接成功！',
+                //         error: (err) => `连接失败: ${err.message}`
+                //     }
+                // )
+                connectWebSocket()
             }, 1000)
 
             return () => {
@@ -535,7 +549,7 @@ export function ChallengesView({ id }: { id: string }) {
         <>
             {/* <LoadingPage visible={loadingVisiblity} /> */}
 
-            <div className="absolute h-full w-full top-0 left-0 backdrop-blur-sm" />
+            {/* <div className="absolute h-full w-full top-0 left-0 backdrop-blur-sm" /> */}
 
             {/* 抢血动画 */}
             <SolvedAnimation blood={blood} setBlood={setBlood} bloodMessage={bloodMessage} />
@@ -584,6 +598,7 @@ export function ChallengesView({ id }: { id: string }) {
                     <div className="absolute h-full w-full top-0 left-0">
                         <div className="flex flex-col h-full w-full overflow-hidden relative">
                             <ChallengesViewHeader
+                                wsStatus={wsStatus}
                                 gameStatus={gameStatus} gameInfo={gameInfo}
                                 setNoticeOpened={setNoticeOpened} setScoreBoardVisible={setScoreBoardVisible}
                                 notices={notices}
@@ -598,7 +613,6 @@ export function ChallengesView({ id }: { id: string }) {
                                                 opacity: 0
                                             }}
                                         >
-                                            {/* <SkeletonCard /> */}
                                             <div className="flex">
                                                 <LoaderPinwheel className="animate-spin" />
                                                 <span className="font-bold ml-3">Loading...</span>
@@ -606,7 +620,7 @@ export function ChallengesView({ id }: { id: string }) {
                                         </motion.div>
                                     ) : (null)}
                                 </AnimatePresence>
-                                {!challengeSearched ? (
+                                { !challengeSearched && !loadingVisible ? (
                                     <div className="absolute top-0 left-0 w-full h-full flex flex-col">
                                         {gameInfo?.description ? (
                                             <MacScrollbar
@@ -633,6 +647,7 @@ export function ChallengesView({ id }: { id: string }) {
                                                 gameInfo={gameInfo}
                                                 setShowHintsWindowVisible={setShowHintsWindowVisible}
                                                 setRedirectURL={setRedirectURL}
+                                                scoreBoardModel={scoreBoardModel}
                                             />
                                         ) : (
                                             <></>
