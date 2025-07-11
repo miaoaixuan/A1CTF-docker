@@ -21,7 +21,7 @@ export function AdminHeader() {
     }, [])
     
     return (
-        <header className="sticky top-0 h-14 backdrop-blur-sm select-none flex-shrink-0">
+        <header className="h-14 backdrop-blur-sm select-none flex-shrink-0">
             <div className="w-full h-full flex items-center px-4 border-b-[1px] gap-2">
                 <span className="text-lg font-bold mr-4" onClick={() => move_to_page("")}>A1CTF Admin</span>
                 <Button variant={get_button_style("games")} onClick={() => move_to_page("games")} className="font-bold"><Flag/>比赛管理</Button>

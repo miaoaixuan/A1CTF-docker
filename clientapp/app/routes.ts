@@ -29,6 +29,8 @@ export default [
     route("admin/logs", "routes/[lng]/admin/logs/page.tsx"),
     route("admin/system", "routes/[lng]/admin/system/page.tsx"),
     route("admin/users", "routes/[lng]/admin/users/page.tsx"),
+
+    route("admin/about", "routes/[lng]/admin/about.tsx"),
     
     // 创建404页面
     route("*", "routes/[lng]/404.tsx"),

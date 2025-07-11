@@ -446,14 +446,6 @@ export function ChallengesView({ id }: { id: string }) {
 
             // 初始连接
             setTimeout(() => {
-                // toast.promise(
-                //     connectWebSocket(),
-                //     {
-                //         loading: '正在连接实时通知...',
-                //         success: '实时通知服务连接成功！',
-                //         error: (err) => `连接失败: ${err.message}`
-                //     }
-                // )
                 connectWebSocket()
             }, 1000)
 
