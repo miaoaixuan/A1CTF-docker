@@ -9,24 +9,25 @@ import {
     SidebarMenu,
 } from "components/ui/sidebar"
 
-import { Button } from "./ui/button"
+import { Button } from "components/ui/button"
 
 import { AxiosError } from 'axios';
 import { Dispatch, MutableRefObject, SetStateAction, useEffect, useRef, useState } from "react";
 
 import { MacScrollbar } from 'mac-scrollbar';
 import { useTheme } from "next-themes";
-import SafeComponent from "./SafeComponent";
+import SafeComponent from "components/SafeComponent";
 
 import { randomInt } from "mathjs";
 import { toast } from "sonner";
 import { ErrorMessage, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "utils/A1API";
 import { api } from "utils/ApiHelper";
-import { ChallengeSolveStatus } from "./ChallengesView";
+import { ChallengeSolveStatus } from "components/ChallengesView";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import CategoryChallenges from "components/modules/game/CategoryChallenges";
 import { challengeCategoryColorMap, challengeCategoryIcons } from "utils/ClientAssets";
-import LoadingModule from "./modules/LoadingModule";
+import LoadingModule from "components/modules/LoadingModule";
+import { useNavigate } from "react-router";
 
 export function CategorySidebar({
     gameid,
@@ -248,8 +249,10 @@ export function CategorySidebar({
 
     const { clientConfig } = useGlobalVariableContext()
 
+    const navigate = useNavigate()
+
     return (
-        <Sidebar className="hide-scrollbar select-none transition-all duration-200" onTransitionEnd={() => {
+        <Sidebar className="hide-scrollbar select-none transition-all duration-200 ml-16" onTransitionEnd={() => {
             resizeTrigger(Math.floor(Math.random() * 1000000))
         }} >
             <SidebarContent>
@@ -260,7 +263,7 @@ export function CategorySidebar({
                     className="pr-1 pl-1 h-full"
                 >
                     <SidebarGroup className="h-full">
-                        <div className="flex justify-center w-full items-center pl-2 pr-2 pt-2">
+                        <div className="flex justify-center w-full items-center pl-2 pr-2 pt-4">
                             <div className="justify-start flex gap-2 items-center mt-[-6px]">
                                 <img
                                     className="dark:invert transition-all duration-300"
@@ -272,14 +275,6 @@ export function CategorySidebar({
                                 <span className="font-bold text-xl transition-colors duration-300">A1CTF</span>
                             </div>
                             <div className="flex-1" />
-                            <div className="justify-end">
-                                <Button className="rounded-3xl p-4 pointer-events-auto w-[100px] mt-[5px] ml-[5px] mb-[10px] [&_svg]:size-5" asChild>
-                                    <a className="transition-colors" href={`/games`}>
-                                        <CircleArrowLeft />
-                                        <span>Back</span>
-                                    </a>
-                                </Button>
-                            </div>
                         </div>
 
                         {!loadingVisible ? (

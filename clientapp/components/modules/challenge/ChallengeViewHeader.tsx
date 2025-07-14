@@ -209,10 +209,6 @@ const ChallengesViewHeader = (
                                         <span>{t("open_notices")}</span>
                                         {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1">{notices.filter((e) => e.notice_category == NoticeCategory.NewAnnouncement).length}</Badge> : <></>}
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => navigator("scoreboard")}>
-                                        <Presentation />
-                                        <span>{t("rank")}</span>
-                                    </DropdownMenuItem>
                                 </div>
 
                             </DropdownMenuContent>
@@ -224,27 +220,7 @@ const ChallengesViewHeader = (
                                 {notices.length ? <Badge variant="destructive" className="p-0 pl-1 pr-1 text-white">{notices.filter((e) => e.notice_category == NoticeCategory.NewAnnouncement).length}</Badge> : <></>}
                             </div>
                         </Button>
-                        <Button variant="outline" className="select-none hidden lg:flex" onClick={() => navigator("scoreboard")}>
-                            <div className="flex items-center gap-1">
-                                <Presentation />
-                                <span>{t("rank")}</span>
-                            </div>
-                        </Button>
                         {/* <Button size="icon" variant="outline" onClick={testFunction}><FlaskConical /></Button> */}
-                        <ToggleTheme />
-                        <DropdownMenu modal={false}>
-                            <DropdownMenuTrigger>
-                                <div className="w-[35px] h-[35px] flex-shrink-0">
-                                    <AvatarUsername avatar_url={gameInfo?.team_info?.team_avatar} username={gameInfo?.team_info?.team_name || ""} />
-                                </div>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="mr-4 mt-4">
-                                <DropdownMenuItem onClick={() => navigator("team")}>
-                                    <Settings />
-                                    <span>队伍管理</span>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
                     </>
                 ) : (
                     <Skeleton className="h-10 w-[450px] bg-foreground/10" />

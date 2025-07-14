@@ -165,6 +165,7 @@ func AdminGetGame(c *gin.Context) {
 		return
 	}
 
+	// 避免因为更改先后造成顺序变动
 	sort.Slice(gameChallenges, func(i, j int) bool {
 		return gameChallenges[i].Challenge.Name < gameChallenges[j].Challenge.Name
 	})
@@ -288,6 +289,10 @@ func AdminUpdateGame(c *gin.Context) {
 			return
 		}
 
+		if game.StartTime.Before(time.Now().UTC()) {
+			existingGameChallenge.CurScore = existingGameChallenge.TotalScore
+		}
+
 		// 检测新增的Hint
 		existingHints := existingGameChallenge.Hints
 		newHints := chal.Hints
@@ -327,6 +332,7 @@ func AdminUpdateGame(c *gin.Context) {
 			JudgeConfig: chal.JudgeConfig,
 			Visible:     chal.Visible,
 			BelongStage: chal.BelongStage,
+			CurScore:    existingGameChallenge.CurScore,
 		}
 
 		if err := dbtool.DB().Model(&models.GameChallenge{}).

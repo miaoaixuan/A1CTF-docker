@@ -1,63 +1,41 @@
 import { SidebarProvider } from "components/ui/sidebar"
-import { CategorySidebar } from "components/CategorySideBar";
+import { CategorySidebar } from "components/user/game/CategorySideBar";
 
 import { toastNewNotice, toastNewHint } from "utils/ToastUtil";
 
-
-import {
-    ResizablePanelGroup,
-} from "components/ui/resizable"
-
-
-import { ResizableScrollablePanel } from "components/ResizableScrollablePanel"
-
-import { Mdx } from "./MdxCompoents";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Mdx } from "components/MdxCompoents";
+import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from "react";
 
 import { api } from "utils/ApiHelper"
-import { ContainerStatus, ErrorMessage, ExposePortInfo, GameNotice, GameScoreboardData, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "utils/A1API"
-
-
+import { ErrorMessage, GameNotice, GameScoreboardData, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "utils/A1API"
 
 import dayjs from "dayjs";
-import { LoadingPage } from "./LoadingPage";
-import { Button } from "./ui/button";
-import { AlarmClock, AudioWaveform, ChartNoAxesColumn, ChartNoAxesCombined, CheckCheck, CirclePower, CircleX, ClockArrowUp, Flag, Loader2, LoaderPinwheel, Network, Package, Paperclip } from "lucide-react";
+import { LoaderPinwheel } from "lucide-react";
 import { AxiosError } from "axios";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { DownloadBar } from "./DownloadBar";
-import { RedirectNotice } from "./RedirectNotice";
-import { NoticesView } from "./NoticesView";
-import SafeComponent from "./SafeComponent";
+import { RedirectNotice } from "components/RedirectNotice";
+import { NoticesView } from "components/NoticesView";
 
 import { MacScrollbar } from 'mac-scrollbar';
 import { useTheme } from "next-themes";
 
 import { useGameSwitchContext } from "contexts/GameSwitchContext";
-import GameSwitchHover from "./GameSwitchHover";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
-import ScoreBoardPage from "./ScoreBoardPage";
 
-import { randomInt, re } from "mathjs";
+import { randomInt } from "mathjs";
 
-import { toast } from "sonner";
-import copy from "copy-to-clipboard";
-import { SolvedAnimation } from "./SolvedAnimation";
+import { SolvedAnimation } from "components/SolvedAnimation";
 import { useCookies } from "react-cookie";
-import TimerDisplay from "./modules/TimerDisplay";
 import ChallengesViewHeader from "components/modules/challenge/ChallengeViewHeader";
 import SubmitFlagView from "components/modules/challenge/SubmitFlagView";
-import FileDownloader from "components/modules/challenge/FileDownloader";
-import ChallengeNameTitle from "components/modules/challenge/ChallengeNameTitle";
 
-import { useSpring } from "@react-spring/web";
 import GameStatusMask from "components/modules/game/GameStatusMask";
-import ChallengeHintPage from "./modules/challenge/ChallengeHintPage";
+import ChallengeHintPage from "components/modules/challenge/ChallengeHintPage";
 import { useTranslation } from "react-i18next";
-import { useLocation, useParams, useSearchParams } from "react-router";
-import ChallengeMainContent from "./modules/challenge/ChallengeMainContent";
-import LoadingModule from "./modules/LoadingModule";
+import { useLocation, useSearchParams } from "react-router";
+import ChallengeMainContent from "components/modules/challenge/ChallengeMainContent";
+import LoadingModule from "components/modules/LoadingModule";
 
 export interface ChallengeSolveStatus {
     solved: boolean;
@@ -65,7 +43,19 @@ export interface ChallengeSolveStatus {
     cur_score: number;
 }
 
-export function ChallengesView({ id }: { id: string }) {
+export function ChallengesView({ 
+    id,
+    gameInfo,
+    gameStatus,
+    setGameStatus,
+    fetchGameInfoWithTeamInfo
+}: { 
+    id: string,
+    gameInfo: UserFullGameInfo | undefined,
+    gameStatus: string,
+    setGameStatus: Dispatch<SetStateAction<string>>,
+    fetchGameInfoWithTeamInfo: () => void
+}) {
 
     const { t } = useTranslation()
 
@@ -91,9 +81,6 @@ export function ChallengesView({ id }: { id: string }) {
 
     // 用户名
     const [userName, setUserName] = useState("")
-
-    // 比赛详细信息
-    const [gameInfo, setGameInfo] = useState<UserFullGameInfo>()
 
     // 加载动画
     const [loadingVisible, setLoadingVisibility] = useState(true)
@@ -124,7 +111,7 @@ export function ChallengesView({ id }: { id: string }) {
 
     const { curProfile } = useGlobalVariableContext()
 
-    const [gameStatus, setGameStatus] = useState("")
+    
     const [beforeGameTime, setBeforeGameTime] = useState("")
 
     const checkInterStarted = useRef(false)
@@ -211,60 +198,6 @@ export function ChallengesView({ id }: { id: string }) {
             clearTimeout(timeout)
         }
     }, [curChallenge]);
-
-    const fetchGameInfoWithTeamInfo = () => {
-        api.user.userGetGameInfoWithTeamInfo(gameID).then((res) => {
-            setGameInfo(res.data.data)
-
-            // 第一步 检查是否报名
-            if (dayjs() > dayjs(res.data.data.end_time) && !res.data.data.practice_mode) {
-                setGameStatus("ended")
-            } else {
-                if (res.data.data.team_status == ParticipationStatus.UnLogin) {
-                    // 未登录
-                    setGameStatus("unLogin")
-                } else if (res.data.data.team_status == ParticipationStatus.UnRegistered) {
-                    // 未报名
-                    setGameStatus("unRegistered")
-                } else if (res.data.data.team_status == ParticipationStatus.Pending) {
-                    // 审核中
-                    setGameStatus("waitForProcess")
-                } else if (res.data.data.team_status == ParticipationStatus.Approved) {
-                    if (dayjs() < dayjs(res.data.data.start_time)) {
-                        // 等待比赛开始
-                        setGameStatus("pending")
-                    } else if (dayjs() < dayjs(res.data.data.end_time)) {
-                        // 比赛进行中
-                        setGameStatus("running")
-                    } else if (dayjs() > dayjs(res.data.data.end_time)) {
-                        if (!res.data.data.practice_mode) {
-                            setGameStatus("ended")
-                        } else {
-                            // 练习模式
-                            setGameStatus("practiceMode")
-                        }
-                    }
-                } else if (res.data.data.team_status == ParticipationStatus.Banned) {
-                    // 禁赛
-                    setGameStatus("banned")
-                }
-            }
-        }).catch((error: AxiosError) => {
-            if (error.response?.status) {
-                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                if (error.response.status == 401) {
-                    setGameStatus("unLogin")
-                } else if (error.response.status == 404) {
-                    setGameStatus("noSuchGame")
-                }
-            }
-        })
-    }
-
-    useEffect(() => {
-        // 获取比赛信息以及剩余时间
-        fetchGameInfoWithTeamInfo()
-    }, [id])
 
     const finishLoading = () => {
         // setTimeout(() => setLoadingVisibility(false), 200000)
@@ -568,7 +501,7 @@ export function ChallengesView({ id }: { id: string }) {
 
             {/* 题目侧栏和题目信息 */}
             <SidebarProvider>
-                <div className="z-20">
+                <div className="">
                     <CategorySidebar
                         gameid={id}
                         curChallenge={curChallenge}

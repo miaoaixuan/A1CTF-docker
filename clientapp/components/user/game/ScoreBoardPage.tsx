@@ -5,28 +5,28 @@ import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
 import ReactECharts from 'echarts-for-react';
 import React, { Dispatch, SetStateAction, useEffect, useRef, useState, useCallback } from 'react';
 import dayjs from 'dayjs';
-import ThemeSwitcher from './ToggleTheme';
+import ThemeSwitcher from 'components/ToggleTheme';
 import { useTheme } from 'next-themes';
-import { ScoreTable } from './ScoreTable';
+import { ScoreTable } from 'components/ScoreTable';
 import * as XLSX from 'xlsx-js-style';
 
 import { Tooltip } from 'react-tooltip';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Button } from './ui/button';
+import { Button } from 'components/ui/button';
 
 import { randomInt } from "mathjs";
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Skeleton } from './ui/skeleton';
+import { Avatar, AvatarFallback, AvatarImage } from 'components/ui/avatar';
+import { Skeleton } from 'components/ui/skeleton';
 import { MacScrollbar } from 'mac-scrollbar';
-import BetterChart from './BetterChart';
+import BetterChart from 'components/BetterChart';
 
 import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
 import { api } from 'utils/ApiHelper';
 import { GameScoreboardData, TeamScore, TeamTimeline, UserFullGameInfo, UserSimpleGameChallenge, GameGroupSimple, PaginationInfo } from 'utils/A1API';
-import { LoadingPage } from './LoadingPage';
+import { LoadingPage } from 'components/LoadingPage';
 import { useLocation, useNavigate } from 'react-router';
 import { useIsMobile } from 'hooks/use-mobile';
-import { ScoreTableMobile } from './ScoreTableMobile';
+import { ScoreTableMobile } from 'components/ScoreTableMobile';
 import { toast } from 'sonner';
 
 import {
@@ -718,10 +718,10 @@ export default function ScoreBoardPage(
 
     return (
         <>
-            <LoadingPage visible={loadingVisiblity} />
+            {/* <LoadingPage visible={loadingVisiblity} /> */}
             <AnimatePresence>
                 {showUserDetail.team_id && (
-                    <motion.div className='absolute top-0 left-0 w-screen h-screen z-[300] flex items-center justify-center overflow-hidden'
+                    <motion.div className='absolute top-0 left-0 w-full h-full z-[300] flex items-center justify-center overflow-hidden'
                         initial={{
                             backdropFilter: "blur(0px)"
                         }}
@@ -996,7 +996,7 @@ export default function ScoreBoardPage(
                     </motion.div>
                 )}
             </AnimatePresence>
-            <div className='absolute top-0 left-0 h-screen w-screen bg-transparent backdrop-blur-md transition-colors duration-300'>
+            <div className='absolute top-0 left-0 h-full w-full transition-colors duration-300'>
                 <Tooltip id="challengeTooltip" opacity={0.9} className='z-[200]' />
                 <MacScrollbar
                     className="w-full h-full overflow-y-auto"
@@ -1022,13 +1022,6 @@ export default function ScoreBoardPage(
                                     {isDownloading ? '下载中...' : '下载Excel表格'}
                                 </Button>
                             )}
-                            {/* <ThemeSwitcher lng='zh' /> */}
-                            {/* <ChartArea size={32} className=' ml-4 hover:scale-110 transition-all duration-300 ease-linear' onClick={() => {
-                                setShowGraphy(true)
-                            }} /> */}
-                            <CircleArrowLeft size={32} className=' ml-4 hover:scale-110 transition-all duration-300 ease-linear' onClick={() => {
-                                navigator(gamePath)
-                            }} />
                         </div>
                         {gameInfo ? (
                             <>

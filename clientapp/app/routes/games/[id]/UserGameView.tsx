@@ -1,15 +1,92 @@
 import { A1LogoWithoutAnimation } from "components/A1LogoWithoutAnimation";
 
-import { ChallengesView } from 'components/ChallengesView';
+import { ChallengesView } from 'components/user/game/ChallengesView';
+import MyTeamInfomationView from "components/user/game/MyTeamInfomationView";
+import ScoreBoardPage from "components/user/game/ScoreBoardPage";
+import GameViewSidebar from "components/user/game/GameViewSidebar";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router";
+import { ErrorMessage, ParticipationStatus, UserFullGameInfo } from "utils/A1API";
+import dayjs from "dayjs";
+import { api } from "utils/ApiHelper";
+import { parse } from "path";
+import { AxiosError } from "axios";
+import GameCountDowner from "components/modules/game/GameCountDowner";
 
 export default function Games() {
     
     const { id } = useParams();
+    const { module } = useParams()
 
     if (!id) {
         return <div>404</div>
     }
+
+    const gameID = parseInt(id, 10)
+
+    useEffect(() => {
+        setCurChoicedModule(module || "info")
+    }, [module])
+
+    // 比赛详细信息
+    const [gameInfo, setGameInfo] = useState<UserFullGameInfo>()
+    const [gameStatus, setGameStatus] = useState("")
+
+    const [curChoicedModule, setCurChoicedModule] = useState(module || "info")
+
+    const fetchGameInfoWithTeamInfo = () => {
+        api.user.userGetGameInfoWithTeamInfo(gameID).then((res) => {
+            setGameInfo(res.data.data)
+
+            // 第一步 检查是否报名
+            if (dayjs() > dayjs(res.data.data.end_time) && !res.data.data.practice_mode) {
+                setGameStatus("ended")
+            } else {
+                if (res.data.data.team_status == ParticipationStatus.UnLogin) {
+                    // 未登录
+                    setGameStatus("unLogin")
+                } else if (res.data.data.team_status == ParticipationStatus.UnRegistered) {
+                    // 未报名
+                    setGameStatus("unRegistered")
+                } else if (res.data.data.team_status == ParticipationStatus.Pending) {
+                    // 审核中
+                    setGameStatus("waitForProcess")
+                } else if (res.data.data.team_status == ParticipationStatus.Approved) {
+                    if (dayjs() < dayjs(res.data.data.start_time)) {
+                        // 等待比赛开始
+                        setGameStatus("pending")
+                    } else if (dayjs() < dayjs(res.data.data.end_time)) {
+                        // 比赛进行中
+                        setGameStatus("running")
+                    } else if (dayjs() > dayjs(res.data.data.end_time)) {
+                        if (!res.data.data.practice_mode) {
+                            setGameStatus("ended")
+                        } else {
+                            // 练习模式
+                            setGameStatus("practiceMode")
+                        }
+                    }
+                } else if (res.data.data.team_status == ParticipationStatus.Banned) {
+                    // 禁赛
+                    setGameStatus("banned")
+                }
+            }
+        }).catch((error: AxiosError) => {
+            if (error.response?.status) {
+                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
+                if (error.response.status == 401) {
+                    setGameStatus("unLogin")
+                } else if (error.response.status == 404) {
+                    setGameStatus("noSuchGame")
+                }
+            }
+        })
+    }
+
+    useEffect(() => {
+        fetchGameInfoWithTeamInfo()
+        setInterval(fetchGameInfoWithTeamInfo, 2000)
+    }, [])
 
     return (
         <div className="p-0 h-screen relative">
@@ -17,10 +94,48 @@ export default function Games() {
                 <div className="w-[400px] h-[400px] absolute bottom-[-120px] right-[-120px] rotate-[-20deg]">
                     <A1LogoWithoutAnimation />
                 </div>
-                {/* <div className="absolute w-[calc(100vw-2px)] h-[calc(100vh-2px)] top-[0px] left-[0px] border-2 z-[-20] dark:border-white">
-                </div> */}
             </div>
-            <ChallengesView id={id} />
+            <div className="flex w-full h-full">
+                <GameViewSidebar 
+                    curChoicedModule={curChoicedModule} 
+                    gameID={id}
+                    gameInfo={gameInfo}
+                    gameStatus={gameStatus}
+                />
+                <div className="flex-1 h-full overflow-hidden">
+                    { curChoicedModule == "challenges" ? ( 
+                        ["running", "practiceMode"].includes(gameStatus) ? (
+                            <ChallengesView 
+                                id={id} 
+                                gameInfo={gameInfo} 
+                                gameStatus={gameStatus} 
+                                setGameStatus={setGameStatus} 
+                                fetchGameInfoWithTeamInfo={fetchGameInfoWithTeamInfo}
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                                <span className="text-2xl font-bold">比赛未开始</span>
+                            </div>
+                        )
+                    ) : <></> }
+
+                    { curChoicedModule == "scoreboard" ? ( 
+                        ["running", "practiceMode", "ended", "banned"].includes(gameStatus) ? (
+                            <ScoreBoardPage gmid={parseInt(id)} />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                                <span className="text-2xl font-bold">比赛未开始</span>
+                            </div>
+                        )
+                    ) : <></> }
+
+                    { curChoicedModule == "team" && (
+                        <MyTeamInfomationView 
+                            gameid={parseInt(id)} 
+                        />
+                    ) }
+                </div>
+            </div>
         </div>
     );
 }

@@ -46,9 +46,9 @@ import type {
     SolvedChallenge,
     UserSimpleGameChallenge
 } from 'utils/A1API';
-import { LoadingPage } from './LoadingPage';
+import { LoadingPage } from 'components/LoadingPage';
 import { useLocation, useNavigate } from 'react-router';
-import { UploadImageDialog } from './dialogs/UploadImageDialog';
+import { UploadImageDialog } from 'components/dialogs/UploadImageDialog';
 
 interface MyTeamInfomationViewProps {
     gameid: number;
@@ -322,7 +322,7 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
 
     return (
         <>
-            <LoadingPage visible={loadingVisiblity} />
+            {/* <LoadingPage visible={loadingVisiblity} /> */}
             {gameInfo?.team_info ? (<MacScrollbar
                 className="w-full h-full overflow-y-auto"
                 skin={theme == "light" ? "light" : "dark"}
@@ -331,13 +331,6 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
                 <div className="container mx-auto p-6 space-y-6 py-10">
                     <div className='flex items-center'>
                         <span className='text-3xl font-bold [text-shadow:_hsl(var(--foreground))_1px_1px_20px] select-none'>Team Info</span>
-                        <div className='flex-1' />
-                        <Button variant="outline" className='' onClick={() => {
-                            navigator(gamePath)
-                        }} >
-                            <CircleArrowLeft size={32} />
-                            返回
-                        </Button>
                     </div>
                     {/* 战队基本信息 */}
                     <Card className='bg-transparent backdrop-blur-md mt-6'>

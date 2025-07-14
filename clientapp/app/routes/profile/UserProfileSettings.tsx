@@ -2,7 +2,6 @@ import PageHeader from "components/A1Headers"
 
 import A1Footer from "components/A1Footer";
 import SafeComponent from "components/SafeComponent";
-import { TeamsView } from "components/TeamsView";
 import { ProfileView } from "components/ProfileView";
 import { useParams } from "react-router";
 

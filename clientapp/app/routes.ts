@@ -4,9 +4,8 @@ import { redirect } from "react-router";
 export default [
     route("", "routes/A1CTFMainPage.tsx"),
     route("games/", "routes/games/UserGameList.tsx"),
-    route("games/:id/", "routes/games/[id]/UserGameView.tsx"),
-    route("games/:id/scoreboard/", "routes/games/[id]/scoreboard/UserShowGameScoreboard.tsx"),
-    route("games/:id/team/", "routes/games/[id]/team/UserShowMyTeams.tsx"),
+
+    route("games/:id/:module", "routes/games/[id]/UserGameView.tsx"),
 
     route("about/", "routes/about/SystemAboutPage.tsx"),
     route("version/", "routes/version/SystemVersionPage.tsx"),
