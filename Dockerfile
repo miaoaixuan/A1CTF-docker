@@ -16,6 +16,8 @@ WORKDIR /app
 RUN apk add --no-cache git
 
 COPY go.mod go.sum ./
+
+ENV GOPROXY=https://goproxy.cn,direct
 RUN go mod download
 
 COPY src/ ./src/
@@ -34,7 +36,7 @@ WORKDIR /app
 RUN mkdir -p /app/data && \
     chown -R appuser:appgroup /app
 
-COPY --from=frontend-builder /app/clientapp/build/client ./clientapp
+COPY --from=frontend-builder /app/clientapp ./clientapp
 COPY --from=backend-builder /app/app ./
 COPY migrations/ ./migrations/
 

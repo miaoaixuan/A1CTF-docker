@@ -11,7 +11,7 @@ export default function FancyBackground() {
     if (!clientConfig.FancyBackGroundIconWhite) return <></>
 
     return (
-        <div className="w-screen h-screen absolute top-0 left-0 pointer-events-none bg-background">
+        <div className="w-screen h-screen absolute top-0 left-0 pointer-events-none">
             <LogoBackgroundAnimation
                 direction="diagonal"
                 speed={0.05}

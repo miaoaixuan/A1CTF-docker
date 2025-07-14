@@ -10,3 +10,5 @@ benchmark
 postgres_data
 appdata
 test
+.idea/
+.DS_Store

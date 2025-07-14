@@ -31,7 +31,7 @@ export function AdminHeader() {
                 {/* <Button variant={get_button_style("containers")} onClick={() => move_to_page("containers")} className="font-bold"><Package/>容器管理</Button> */}
                 <Button variant={get_button_style("logs")} onClick={() => move_to_page("logs")} className="font-bold"><Cable/>系统日志</Button>
                 <div className="flex-1" />
-                <Button variant={get_button_style("system")} onClick={() => move_to_page("system")} className="font-bold"><Settings/>系统设置</Button>
+                <Button variant={get_button_style("system")} onClick={() => move_to_page("system/basic")} className="font-bold"><Settings/>系统设置</Button>
             </div>
         </header>
     )

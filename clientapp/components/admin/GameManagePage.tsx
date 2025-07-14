@@ -13,14 +13,14 @@ import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useNavigate } from "react-router";
 import ImageLoader from "components/modules/ImageLoader";
 
-export function GameManagePage() { 
+export function AdminGameManagePage() {
 
     const { theme } = useTheme()
-    const [ games, setGames ] = useState<UserGameSimpleInfo[]>([])
+    const [games, setGames] = useState<UserGameSimpleInfo[]>([])
 
-    const router = useNavigate()
+    const navigate = useNavigate()
 
-    const [ primaryColorMap, setPrimaryColorMap ] = useState<{ [key: number]: string }>({});
+    const [primaryColorMap, setPrimaryColorMap] = useState<{ [key: number]: string }>({});
 
     // 懒加载, 当前题目卡片是否在视窗内
     const observerRef = useRef<IntersectionObserver | null>(null);
@@ -35,8 +35,8 @@ export function GameManagePage() {
 
         observerRef.current = new IntersectionObserver((entries) => {
             entries.forEach((entry) => {
-                const target = entry.target as HTMLElement; 
-                
+                const target = entry.target as HTMLElement;
+
                 const id = target.dataset.id as string;
 
                 if (entry.isIntersecting) {
@@ -55,11 +55,11 @@ export function GameManagePage() {
                     }));
                 }
             }
-        );
+            );
         },
-        {
-            rootMargin: "420px 0px",
-        });
+            {
+                rootMargin: "420px 0px",
+            });
     }, [])
 
     const observeItem = (el: HTMLElement, id: string) => {
@@ -89,8 +89,8 @@ export function GameManagePage() {
     // 过滤比赛
     const filteredGames = games.filter((game) => {
         if (searchContent === "") return true;
-        return game.name.toLowerCase().includes(searchContent.toLowerCase()) || 
-               (game.summary && game.summary.toLowerCase().includes(searchContent.toLowerCase()));
+        return game.name.toLowerCase().includes(searchContent.toLowerCase()) ||
+            (game.summary && game.summary.toLowerCase().includes(searchContent.toLowerCase()));
     })
 
     return (
@@ -108,22 +108,22 @@ export function GameManagePage() {
                                 <p className="text-sm text-muted-foreground">管理和配置 {games.length} 场比赛</p>
                             </div>
                         </div>
-                        
+
                         <div className="flex-1 max-w-md">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                    value={searchContent} 
-                                    onChange={(e) => setSearchContent(e.target.value)} 
+                                <Input
+                                    value={searchContent}
+                                    onChange={(e) => setSearchContent(e.target.value)}
                                     placeholder="搜索比赛名称或简介..."
                                     className="pl-10 bg-background/50 backdrop-blur-sm"
                                 />
                             </div>
                         </div>
                     </div>
-                    
-                    <Button 
-                        onClick={() => router(`/admin/games/create`)}
+
+                    <Button
+                        onClick={() => navigate(`/admin/games/create`)}
                         className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200"
                     >
                         <CirclePlus className="h-4 w-4" />
@@ -141,8 +141,8 @@ export function GameManagePage() {
                                 {filteredGames.map((game, index) => {
                                     const status = getGameStatus(game);
                                     return (
-                                        <div 
-                                            key={index} 
+                                        <div
+                                            key={index}
                                             className="group relative h-80 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] bg-card border border-border/50"
                                             ref={(el) => observeItem(el!, index.toString())}
                                         >
@@ -150,14 +150,14 @@ export function GameManagePage() {
                                                 <>
                                                     {/* Background Image */}
                                                     <div className="absolute top-0 left-0 w-full h-full select-none">
-                                                        <ImageLoader 
+                                                        <ImageLoader
                                                             text={false}
                                                             src={game.poster || clientConfig.DefaultBGImage}
                                                             primaryColor={primaryColorMap[index]}
-                                                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                                                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                                             onLoad={(e) => {
                                                                 const fac = new FastAverageColor();
-                                                                const container = e.target as HTMLImageElement; 
+                                                                const container = e.target as HTMLImageElement;
 
                                                                 fac.getColorAsync(container)
                                                                     .then((color: any) => {
@@ -171,7 +171,7 @@ export function GameManagePage() {
                                                                     .catch((e: any) => {
                                                                         console.log(e);
                                                                     });
-                                                            }} 
+                                                            }}
                                                         />
                                                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                                                     </div>
@@ -181,8 +181,8 @@ export function GameManagePage() {
                                                         {/* Top Section */}
                                                         <div className="flex justify-between items-start">
                                                             <div className="flex items-center gap-2">
-                                                                <Badge 
-                                                                    variant={status.variant as any} 
+                                                                <Badge
+                                                                    variant={status.variant as any}
                                                                     className="backdrop-blur-sm select-none bg-background/20 border-white/20 text-white shadow-lg"
                                                                 >
                                                                     <div className="flex gap-1 items-center justify-center">
@@ -236,7 +236,7 @@ export function GameManagePage() {
                                                                     size="sm"
                                                                     variant="secondary"
                                                                     className="backdrop-blur-sm bg-white/20 hover:bg-white/30 border-white/20 text-white h-9 w-9 p-0"
-                                                                    onClick={() => router(`/admin/games/${game.game_id}`)}
+                                                                    onClick={() => navigate(`/admin/games/${game.game_id}/events`)}
                                                                     title="编辑比赛"
                                                                 >
                                                                     <Settings className="h-4 w-4" />
@@ -245,7 +245,7 @@ export function GameManagePage() {
                                                                     size="sm"
                                                                     variant="secondary"
                                                                     className="backdrop-blur-sm bg-white/20 hover:bg-white/30 border-white/20 text-white h-9 w-9 p-0"
-                                                                    onClick={() => router(`/admin/games/${game.game_id}/score-adjustments`)}
+                                                                    onClick={() => navigate(`/admin/games/${game.game_id}/score-adjustments`)}
                                                                     title="分数修正"
                                                                 >
                                                                     <Calculator className="h-4 w-4" />
@@ -290,22 +290,22 @@ export function GameManagePage() {
                             {searchContent ? "没有找到比赛" : "还没有比赛"}
                         </h3>
                         <p className="text-muted-foreground max-w-md">
-                            {searchContent 
-                                ? `没有找到包含 "${searchContent}" 的比赛` 
+                            {searchContent
+                                ? `没有找到包含 "${searchContent}" 的比赛`
                                 : "开始创建您的第一场比赛吧！"
                             }
                         </p>
                         {searchContent ? (
-                            <Button 
-                                variant="ghost" 
+                            <Button
+                                variant="ghost"
                                 onClick={() => setSearchContent("")}
                                 className="mt-4"
                             >
                                 清除搜索
                             </Button>
                         ) : (
-                            <Button 
-                                onClick={() => router(`/admin/games/create`)}
+                            <Button
+                                onClick={() => navigate(`/admin/games/create`)}
                                 className="mt-4"
                             >
                                 <CirclePlus className="h-4 w-4" />

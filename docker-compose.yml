@@ -2,6 +2,7 @@ version: '3.8'
 
 services:
   app:
+    build: .
     image: test-a1ctf:latest
     ports:
       - "8081:7777"
@@ -10,6 +11,7 @@ services:
     volumes:
       - ./appdata:/app/data
       - ./config.yaml:/app/config.yaml:ro
+      - ./k8sconfig.yaml:/app/k8sconfig.yaml:ro
     depends_on:
       - postgres
     restart: unless-stopped
@@ -26,6 +28,12 @@ services:
       - ./postgres_data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
+    restart: unless-stopped
+    networks:
+      - a1ctf-network
+
+  redis:
+    image: redis:alpine
     restart: unless-stopped
     networks:
       - a1ctf-network

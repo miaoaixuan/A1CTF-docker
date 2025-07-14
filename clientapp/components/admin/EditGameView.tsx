@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from 'components/ui/button';
 import { Form } from 'components/ui/form';
 import { MacScrollbar } from 'mac-scrollbar';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
 
@@ -22,7 +22,7 @@ import { BasicInfoModule } from './game/BasicInfoModule';
 import { DetailedSettingsModule } from './game/DetailedSettingsModule';
 import EditGameChallengesModule from './game/EditGameChallengesModule';
 import { AdminFullGameInfo } from 'utils/A1API';
-import { GameManagePage } from './GameManagePage';
+import { AdminGameManagePage } from './GameManagePage';
 import { TeamManageView } from './game/TeamManageView';
 import { ContainerManageView } from './game/ContainerManageView';
 import { useTheme } from 'next-themes';
@@ -30,15 +30,23 @@ import { GameEventModule } from './game/GameEventModule';
 
 export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
 
+    const { action } = useParams();
+
+    const navigate = useNavigate()
+
     const [searchParams, setSearchParams] = useSearchParams()
     const [formEdited, setFormEdited] = useState(false)
 
     // 添加状态来管理当前选中的模块
-    const [activeModule, setActiveModule] = useState(searchParams.get("module") ?? 'events');
+    const [activeModule, setActiveModule] = useState(action || 'events');
 
     useEffect(() => {
-        setSearchParams({ module: activeModule })
-    }, [activeModule])
+        if (!modules.filter(m => m.id == action).length) {
+            navigate("/404")
+            return
+        }
+        setActiveModule(action || "events")
+    }, [action])
 
     const { theme } = useTheme()
 
@@ -280,7 +288,9 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                                     type="button"
                                     className='w-full h-10 flex justify-start gap-2'
                                     variant={activeModule === module.id ? "default" : "ghost"}
-                                    onClick={() => setActiveModule(module.id)}
+                                    onClick={() => {
+                                        navigate(`/admin/games/${game_info.game_id}/${module.id}`)
+                                    }}
                                 >
                                     {module.icon}
                                     <span className="font-medium">{module.name}</span>

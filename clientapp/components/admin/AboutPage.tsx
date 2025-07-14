@@ -43,7 +43,7 @@ export default function AboutPage() {
     }, [debouncedSource]);
 
     return (
-        <div className='flex-1 overflow-hidden w-full flex flex-col'>
+        <div className='flex-1 overflow-hidden w-full flex flex-col h-full'>
             <div className='w-full flex items-center px-5 py-4 justify-between'>
                 <span className='font-bold text-2xl'>关于我们 - 编辑</span>
                 <Button>

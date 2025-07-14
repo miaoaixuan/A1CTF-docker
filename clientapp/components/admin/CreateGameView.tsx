@@ -14,15 +14,8 @@ import {
     PopoverTrigger,
 } from "components/ui/popover"
 
-import { useFieldArray, Controller, useWatch } from "react-hook-form";
+import { useFieldArray } from "react-hook-form";
 
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "components/ui/select"
 
 import { Input } from "../ui/input";
 import { z } from "zod"
@@ -31,15 +24,14 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "../ui/button";
 import { cn } from "lib/utils";
 
-import { ArrowLeft, ArrowRight, ArrowUpDown, CalendarIcon, CircleArrowLeft, Cloud, FileCode, Github, LoaderPinwheel, PlusCircle, Save, ScanBarcode, Squirrel, TableProperties, Tag, Underline, Upload } from "lucide-react"
+import { ArrowUpDown, CalendarIcon, CircleArrowLeft, Github, Save } from "lucide-react"
 import { Textarea } from "../ui/textarea";
 
-import CodeEditor from '@uiw/react-textarea-code-editor';
 
 import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
 import { useEffect, useRef, useState } from "react";
 import { MacScrollbar } from "mac-scrollbar";
-import { AdminChallengeConfig, AdminFullGameInfo } from "utils/A1API";
+import { AdminFullGameInfo } from "utils/A1API";
 import { api, ErrorMessage } from "utils/ApiHelper";
 import dayjs from "dayjs";
 import { toast } from "sonner";
@@ -49,14 +41,9 @@ import { ScrollArea, ScrollBar } from "components/ui/scroll-area";
 import { Switch } from "components/ui/switch"
 import { Calendar } from "../ui/calendar";
 import { format } from "date-fns";
-import { Badge } from "../ui/badge";
 
 import {
     ColumnDef,
-    ColumnFiltersState,
-    SortingState,
-    VisibilityState,
-    flexRender,
     getCoreRowModel,
     getFilteredRowModel,
     getPaginationRowModel,
@@ -64,30 +51,12 @@ import {
     useReactTable,
 } from "@tanstack/react-table"
 
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "components/ui/dialog"
 
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "components/ui/table"
 
-import { Label } from "components/ui/label"
 import { Checkbox } from "../ui/checkbox";
-import { size } from "mathjs";
 import { challengeCategoryColorMap, challengeCategoryIcons } from "utils/ClientAssets";
 import { useNavigate } from "react-router";
+import { Slider } from 'components/ui/slider';
 
 interface GameStageFormProps {
     control: any;
@@ -1184,7 +1153,17 @@ export function CreateGameView() {
                                                 <FormMessage className="text-[14px]" />
                                             </div>
                                             <FormControl>
-                                                <Input {...field} />
+                                                <div className='flex items-center gap-2'>
+                                                    <Slider
+                                                        min={1}
+                                                        max={100}
+                                                        step={1}
+                                                        value={[field.value]}
+                                                        onValueChange={(v) => field.onChange(v[0])}
+                                                    />
+                                                    <div className='flex-1' />
+                                                    <span className='w-8'>{field.value}</span>
+                                                </div>
                                             </FormControl>
                                             <FormDescription>
                                                 队伍人数限制
@@ -1203,7 +1182,17 @@ export function CreateGameView() {
                                                 <FormMessage className="text-[14px]" />
                                             </div>
                                             <FormControl>
-                                                <Input {...field} />
+                                                <div className='flex items-center gap-2'>
+                                                    <Slider
+                                                        min={1}
+                                                        max={100}
+                                                        step={1}
+                                                        value={[field.value]}
+                                                        onValueChange={(v) => field.onChange(v[0])}
+                                                    />
+                                                    <div className='flex-1' />
+                                                    <span className='w-8'>{field.value}</span>
+                                                </div>
                                             </FormControl>
                                             <FormDescription>
                                                 队伍容器数量限制
