@@ -24,6 +24,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { api } from "utils/ApiHelper";
 import Turnstile, { useTurnstile } from "react-turnstile";
+import { CapWidget } from "@pitininja/cap-react-widget";
 
 export function RegisterForm({
     className,
@@ -168,16 +169,15 @@ export function RegisterForm({
                         )}
                     />
                     { clientConfig.turnstileEnabled ? (
-                        <div className="w-full items-center justify-center flex">
-                            <Turnstile
-                                theme={(theme == "system" ? systemTheme : theme) as "dark" | "light" | "auto"}
-                                refreshExpired="auto"
-                                sitekey={clientConfig.turnstileSiteKey}
-                                onVerify={(token) => {
-                                    setToken(token)
-                                }}
-                            />
-                        </div>
+                        <CapWidget
+                            endpoint="/api/cap/"
+                            onSolve={(token) => {
+                                setToken(token)
+                            }}
+                            onError={() => {
+                                toast.error("获取验证码失败")
+                            }}
+                        />
                     ) : <></> } 
                     <div className='h-0' />
                     <Button type="submit" className="transition-all duration-300 w-full" disabled={loading || (clientConfig.turnstileEnabled && token == "")}>{ t("signup") }</Button>

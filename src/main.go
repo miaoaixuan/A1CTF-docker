@@ -17,6 +17,7 @@ import (
 	clientconfig "a1ctf/src/modules/client_config"
 	jwtauth "a1ctf/src/modules/jwt_auth"
 	"a1ctf/src/modules/monitoring"
+	proofofwork "a1ctf/src/modules/proof_of_work"
 	"a1ctf/src/tasks"
 	"a1ctf/src/utils"
 	dbtool "a1ctf/src/utils/db_tool"
@@ -130,6 +131,9 @@ func main() {
 	// 初始化数据库连接
 	dbtool.Init()
 
+	// 初始化 Proof-of-work backend
+	proofofwork.InitCap()
+
 	// 初始化缓存池
 	ristretto_tool.LoadCacheTime()
 	ristretto_tool.InitCachePool()
@@ -207,6 +211,10 @@ func main() {
 		}
 
 		public.GET("/client-config", controllers.GetClientConfig)
+
+		public.POST("/cap/challenge", controllers.CapCreateChallenge)
+		public.POST("/cap/redeem", controllers.CapRedeemChallenge)
+		public.POST("/cap/validate", controllers.CapValidateToken)
 	}
 
 	// 鉴权接口

@@ -8,6 +8,9 @@ import { LoaderCircle } from 'lucide-react';
 
 import { toastError, toastSuccess } from "utils/ToastUtil"
 
+import { CapWidget } from '@pitininja/cap-react-widget';
+
+
 import axios, { AxiosError } from 'axios';
 import { useTheme } from "next-themes";
 
@@ -150,18 +153,18 @@ export function LoginForm({
                         </FormItem>
                     )}
                 />
-                { clientConfig.turnstileEnabled ? (
-                    <div className="w-full items-center justify-center flex">
-                        <Turnstile
-                            theme={(theme == "system" ? systemTheme : theme) as "dark" | "light" | "auto"}
-                            refreshExpired="auto"
-                            sitekey={clientConfig.turnstileSiteKey}
-                            onVerify={(token) => {
-                                setToken(token)
-                            }}
-                        />
-                    </div>
-                ) : <></> } 
+                {clientConfig.turnstileEnabled ? (
+                    <CapWidget
+                        endpoint="/api/cap/"
+                        onSolve={(token) => {
+                            setToken(token)
+                        }}
+                        onError={() => {
+                            toast.error("获取验证码失败")
+                        }}
+                    />
+                ) : <></>}
+
                 <div className='h-0' />
                 <Button type="submit" className="transition-all duration-300 w-full" disabled={loading || (clientConfig.turnstileEnabled && token == "")}>{t("login")}</Button>
                 <div className="text-center text-sm">

@@ -10,11 +10,11 @@ import (
 
 	"a1ctf/src/db/models"
 	clientconfig "a1ctf/src/modules/client_config"
+	proofofwork "a1ctf/src/modules/proof_of_work"
 	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
 	"a1ctf/src/utils/ristretto_tool"
-	"a1ctf/src/utils/turnstile"
 	"a1ctf/src/webmodels"
 )
 
@@ -74,17 +74,9 @@ func Register(c *gin.Context) {
 	}
 
 	if clientconfig.ClientConfig.TurnstileEnabled {
-		turnstile := turnstile.New(clientconfig.ClientConfig.TurnstileSecretKey)
-		response, err := turnstile.Verify(payload.Captcha, c.ClientIP())
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"code":    400,
-				"message": "Invalid request payload",
-			})
-			return
-		}
+		valid := proofofwork.CapInstance.ValidateToken(c.Request.Context(), payload.Captcha)
 
-		if !response.Success {
+		if !valid {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"code":    400,
 				"message": "Invalid request payload",

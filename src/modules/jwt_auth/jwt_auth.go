@@ -3,11 +3,11 @@ package jwtauth
 import (
 	"a1ctf/src/db/models"
 	clientconfig "a1ctf/src/modules/client_config"
+	proofofwork "a1ctf/src/modules/proof_of_work"
 	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	"a1ctf/src/utils/general"
 	"a1ctf/src/utils/ristretto_tool"
-	"a1ctf/src/utils/turnstile"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -399,13 +399,8 @@ func Login() func(c *gin.Context) (interface{}, error) {
 		}
 
 		if clientconfig.ClientConfig.TurnstileEnabled {
-			turnstile := turnstile.New(clientconfig.ClientConfig.TurnstileSecretKey)
-			response, err := turnstile.Verify(loginVals.CaptCha, c.ClientIP())
-			if err != nil {
-				return nil, jwt.ErrMissingLoginValues
-			}
-
-			if !response.Success {
+			valid := proofofwork.CapInstance.ValidateToken(c.Request.Context(), loginVals.CaptCha)
+			if !valid {
 				return nil, jwt.ErrMissingLoginValues
 			}
 		}

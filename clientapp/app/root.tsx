@@ -12,6 +12,7 @@ import type { Route } from "./+types/root";
 import "./app.css";
 import "app/css/sonner.css";
 import 'mac-scrollbar/dist/mac-scrollbar.css';
+import '@pitininja/cap-react-widget/dist/index.css';
 
 import { ClientToaster } from 'components/ClientToaster';
 import { GameSwitchProvider } from 'contexts/GameSwitchContext';
