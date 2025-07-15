@@ -197,9 +197,9 @@ func main() {
 		public.POST("/auth/register", controllers.Register)
 
 		public.GET("/game/list", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.UserListGames)
-		public.GET("/game/:game_id/scoreboard", controllers.GameStatusMiddleware(true, false), controllers.UserGameGetScoreBoard)
+		public.GET("/game/:game_id/scoreboard", controllers.GameStatusMiddleware(true, false, true), controllers.UserGameGetScoreBoard)
 
-		public.GET("/game/:game_id", controllers.GameStatusMiddleware(true, false), controllers.UserGetGameDetailWithTeamInfo)
+		public.GET("/game/:game_id", controllers.GameStatusMiddleware(true, false, false), controllers.UserGetGameDetailWithTeamInfo)
 
 		fileGroup := public.Group("/file")
 		{
@@ -314,29 +314,29 @@ func main() {
 		// 用户相关接口
 		userGameGroup := auth.Group("/game")
 		{
-			userGameGroup.GET("/:game_id/challenges", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenges)
+			userGameGroup.GET("/:game_id/challenges", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenges)
 
 			// 查询比赛中的某道题
-			userGameGroup.GET("/:game_id/challenge/:challenge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenge)
+			userGameGroup.GET("/:game_id/challenge/:challenge_id", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenge)
 
 			// 比赛通知接口
-			userGameGroup.GET("/:game_id/notices", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameNotices)
+			userGameGroup.GET("/:game_id/notices", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameNotices)
 
 			// 用户获取分组列表（公开接口，用于创建团队时选择分组）
-			userGameGroup.GET("/:game_id/groups", controllers.GameStatusMiddleware(true, false), controllers.UserGetGameGroups)
+			userGameGroup.GET("/:game_id/groups", controllers.GameStatusMiddleware(true, false, false), controllers.UserGetGameGroups)
 
 			// 创建比赛队伍
-			userGameGroup.POST("/:game_id/createTeam", controllers.GameStatusMiddleware(false, true), controllers.UserCreateGameTeam)
+			userGameGroup.POST("/:game_id/createTeam", controllers.GameStatusMiddleware(false, true, false), controllers.UserCreateGameTeam)
 
 			// 题目容器
-			userGameGroup.POST("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserCreateGameContainer)
-			userGameGroup.DELETE("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserCloseGameContainer)
-			userGameGroup.PATCH("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserExtendGameContainer)
-			userGameGroup.GET("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallengeContainerInfo)
+			userGameGroup.POST("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserCreateGameContainer)
+			userGameGroup.DELETE("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserCloseGameContainer)
+			userGameGroup.PATCH("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserExtendGameContainer)
+			userGameGroup.GET("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallengeContainerInfo)
 
 			// 提交 Flag
-			userGameGroup.POST("/:game_id/flag/:challenge_id", RateLimiter(100, 1*time.Second), controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGameChallengeSubmitFlag)
-			userGameGroup.GET("/:game_id/flag/:judge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGameGetJudgeResult)
+			userGameGroup.POST("/:game_id/flag/:challenge_id", RateLimiter(100, 1*time.Second), controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserGameChallengeSubmitFlag)
+			userGameGroup.GET("/:game_id/flag/:judge_id", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserGameGetJudgeResult)
 		}
 
 		auth.GET("/hub", func(c *gin.Context) {

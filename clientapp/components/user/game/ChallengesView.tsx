@@ -10,7 +10,7 @@ import { api } from "utils/ApiHelper"
 import { ErrorMessage, GameNotice, GameScoreboardData, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "utils/A1API"
 
 import dayjs from "dayjs";
-import { LoaderPinwheel } from "lucide-react";
+import { Loader2, LoaderPinwheel } from "lucide-react";
 import { AxiosError } from "axios";
 
 import { AnimatePresence, motion } from "framer-motion";
@@ -105,9 +105,6 @@ export function ChallengesView({
     const [scoreBoardVisible, setScoreBoardVisible] = useState(false)
 
     const { theme } = useTheme()
-
-    // 切换比赛动画
-    const { isChangingGame, setIsChangingGame } = useGameSwitchContext();
 
     const { curProfile } = useGlobalVariableContext()
 
@@ -434,14 +431,6 @@ export function ChallengesView({
         setUserName(curProfile.username || "")
     }, [curProfile])
 
-    useEffect(() => {
-        if (!loadingVisible) {
-            setTimeout(() => {
-                setIsChangingGame(false)
-            }, 500)
-        }
-    }, [loadingVisible])
-
     const startCheckForGameStart = () => {
         const checkGameStartedInter = setInterval(() => {
             api.user.userGetGameChallenges(gameID).then((res) => {
@@ -539,7 +528,7 @@ export function ChallengesView({
                                             }}
                                         >
                                             <div className="flex">
-                                                <LoaderPinwheel className="animate-spin" />
+                                                <Loader2 className="animate-spin" />
                                                 <span className="font-bold ml-3">Loading...</span>
                                             </div>
                                         </motion.div>

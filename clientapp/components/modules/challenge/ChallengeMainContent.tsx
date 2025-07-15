@@ -3,7 +3,7 @@ import { AlarmClock, AudioWaveform, ChartNoAxesCombined, CheckCheck, CirclePower
 import { MacScrollbar } from "mac-scrollbar"
 import TimerDisplay from "../TimerDisplay"
 import { ContainerStatus, ExposePortInfo, GameScoreboardData, UserDetailGameChallenge, UserFullGameInfo } from "utils/A1API"
-import { ChallengeSolveStatus } from "components/ChallengesView"
+import { ChallengeSolveStatus } from "components/user/game/ChallengesView"
 import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react"
 import { api } from "utils/ApiHelper"
 import { randomInt } from "mathjs"
@@ -15,6 +15,7 @@ import ChallengeNameTitle from "./ChallengeNameTitle"
 import { useTheme } from "next-themes"
 import FileDownloader from "./FileDownloader"
 import copy from "copy-to-clipboard"
+import GameTeamStatusCard from "../game/GameTeamStatusCard"
 
 export default function ChallengeMainContent(
     { 
@@ -39,15 +40,6 @@ export default function ChallengeMainContent(
 ) {
 
     const { t } = useTranslation()
-
-    
-
-    const rankColor = (rank: number) => {
-        if (rank == 1) return "text-red-400 font-bold"
-        else if (rank == 2) return "text-green-400 font-bold"
-        else if (rank == 3) return "text-blue-400 font-bold"
-        else return ""
-    }
 
     const [containerLaunching, setContainerLaunching] = useState(false)
 
@@ -197,22 +189,10 @@ export default function ChallengeMainContent(
                     ) : (<></>)
                     }
                 </div>
-                <div className="flex px-5 py-2 flex-col gap-2 backdrop-blur-sm rounded-2xl select-none border-2 shadow-xl shadow-foreground/5">
-                    <div className="flex gap-2 items-center">
-                        <AudioWaveform className="size-5" />
-                        <span>{gameInfo?.team_info?.team_name}</span>
-                    </div>
-                    <div className="flex gap-4">
-                        <div className="flex gap-2 items-center">
-                            <Flag className="size-5" />
-                            <span>{scoreBoardModel != undefined ? (scoreBoardModel?.your_team?.score) : (gameInfo?.team_info?.team_score ?? 0)} pts</span>
-                        </div>
-                        <div className={`flex gap-2 items-center transition-colors duration-300 ${rankColor(scoreBoardModel != undefined ? (scoreBoardModel?.your_team?.rank ?? 0) : (gameInfo?.team_info?.rank ?? 0))}`}>
-                            <ChartNoAxesCombined className="size-5" />
-                            <span>Rank {scoreBoardModel != undefined ? (scoreBoardModel?.your_team?.rank ?? 0) : (gameInfo?.team_info?.rank ?? 0)}</span>
-                        </div>
-                    </div>
-                </div>
+                <GameTeamStatusCard 
+                    gameInfo={gameInfo}
+                    scoreBoardModel={scoreBoardModel}
+                />
             </div>
             <MacScrollbar
                 className="w-full h-full"
@@ -255,7 +235,7 @@ export default function ChallengeMainContent(
                                     <div className="flex gap-2 items-center">
                                         <div className="h-[34px] rounded-[10px] border-2 border-green-500 px-2 text-green-500 items-center flex justify-center gap-2">
                                             <AlarmClock />
-                                            <TimerDisplay target_time={containerExpireTime} onFinishCallback={handleCountdownFinish} className="font-bold text-md" />
+                                            <TimerDisplay targetTime={containerExpireTime} onFinishCallback={handleCountdownFinish} className="font-bold text-md" />
                                         </div>
                                         <Button className="h-[34px] rounded-[10px] p-0 border-2 px-2 border-blue-400 text-blue-400 bg-background dark:hover:bg-blue-200/20 hover:bg-blue-200/60 [&_svg]:size-[24px]"
                                             onClick={handleExtendContainer}

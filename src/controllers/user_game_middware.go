@@ -13,7 +13,7 @@ import (
 )
 
 // 比赛状态检查中间件
-func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool) gin.HandlerFunc {
+func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool, checkGameStarted bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		gameIDStr := c.Param("game_id")
 		gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
@@ -46,7 +46,7 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool) gin.Handle
 		}
 
 		now := time.Now().UTC()
-		if game.StartTime.After(now) {
+		if game.StartTime.After(now) && checkGameStarted {
 			c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
 				Code:    403,
 				Message: "Game not started yet",

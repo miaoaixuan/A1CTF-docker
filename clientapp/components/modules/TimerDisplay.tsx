@@ -1,8 +1,8 @@
 import dayjs from "dayjs";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const TimerDisplay = (
-    { target_time, className, onFinishCallback } : { target_time: dayjs.Dayjs | number | string | null, className: string, onFinishCallback: () => void }
+    { targetTime: target_time, className, onFinishCallback } : { targetTime: dayjs.Dayjs | number | string | null, className: string, onFinishCallback: () => void }
 ) => {
     const [timeLeft, setTimeLeft] = useState("0s");
 
@@ -43,8 +43,16 @@ const TimerDisplay = (
         }
     }, [target_time])
 
+    const monoTimeDisplayer = useMemo(() => {
+        return timeLeft ? (
+            <span className={className}>{timeLeft}</span>
+        ) : null;
+    }, [timeLeft]);
+
     return (
-        <span className={className}>{timeLeft}</span>
+        <>
+            { monoTimeDisplayer }
+        </>
     )
 }
 

@@ -3,7 +3,6 @@ package ristretto_tool
 import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
-	"a1ctf/src/utils/zaphelper"
 	"a1ctf/src/webmodels"
 	"errors"
 	"fmt"
@@ -13,7 +12,6 @@ import (
 
 	"github.com/dgraph-io/ristretto/v2"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
 )
@@ -581,7 +579,7 @@ func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, er
 		return value.(*webmodels.CachedGameScoreBoardData), nil
 	}
 
-	zaphelper.Logger.Error("Get scoreboard from cache failed", zap.String("cache_key", cacheKey))
+	// zaphelper.Logger.Error("Get scoreboard from cache failed", zap.String("cache_key", cacheKey))
 
 	obj := webmodels.CachedGameScoreBoardData{
 		TeamRankings:       make([]webmodels.TeamScoreItem, 0),

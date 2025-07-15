@@ -4,7 +4,7 @@ import { useTheme } from 'next-themes';
 
 
 import { useGameSwitchContext } from "contexts/GameSwitchContext";
-import { LoaderPinwheel } from 'lucide-react';
+import { Loader2, LoaderPinwheel } from 'lucide-react';
 
 export default function GameSwitchHover({ animation } : { animation: boolean }) {
 
@@ -126,7 +126,7 @@ export default function GameSwitchHover({ animation } : { animation: boolean }) 
                                     <span className="text-3xl font-bold">{ curSwitchingGame.name }</span>
                                     <p className="mt-2">{ curSwitchingGame.summary }</p>
                                     <div className='flex mt-4'>
-                                        <LoaderPinwheel className="animate-spin" />
+                                        <Loader2 className="animate-spin" />
                                         <span className="font-bold ml-3">Loading...</span>
                                     </div>
                                 </motion.div>

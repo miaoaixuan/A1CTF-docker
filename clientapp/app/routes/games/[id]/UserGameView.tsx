@@ -12,6 +12,8 @@ import { api } from "utils/ApiHelper";
 import { parse } from "path";
 import { AxiosError } from "axios";
 import GameCountDowner from "components/modules/game/GameCountDowner";
+import GameInfoView from "components/user/game/GameInfoView";
+import { useGameSwitchContext } from "contexts/GameSwitchContext";
 
 export default function Games() {
     
@@ -33,6 +35,9 @@ export default function Games() {
     const [gameStatus, setGameStatus] = useState("")
 
     const [curChoicedModule, setCurChoicedModule] = useState(module || "info")
+
+    // 切换比赛动画
+    const { isChangingGame, setIsChangingGame } = useGameSwitchContext();
 
     const fetchGameInfoWithTeamInfo = () => {
         api.user.userGetGameInfoWithTeamInfo(gameID).then((res) => {
@@ -85,7 +90,15 @@ export default function Games() {
 
     useEffect(() => {
         fetchGameInfoWithTeamInfo()
-        setInterval(fetchGameInfoWithTeamInfo, 2000)
+        const interval = setInterval(fetchGameInfoWithTeamInfo, 2000)
+
+        setTimeout(() => {
+            setIsChangingGame(false)
+        }, 500)
+
+        return () => {
+            clearInterval(interval)
+        }
     }, [])
 
     return (
@@ -104,7 +117,7 @@ export default function Games() {
                 />
                 <div className="flex-1 h-full overflow-hidden">
                     { curChoicedModule == "challenges" ? ( 
-                        ["running", "practiceMode"].includes(gameStatus) ? (
+                        ["running", "practiceMode", "banned"].includes(gameStatus) ? (
                             <ChallengesView 
                                 id={id} 
                                 gameInfo={gameInfo} 
@@ -121,7 +134,9 @@ export default function Games() {
 
                     { curChoicedModule == "scoreboard" ? ( 
                         ["running", "practiceMode", "ended", "banned"].includes(gameStatus) ? (
-                            <ScoreBoardPage gmid={parseInt(id)} />
+                            <div className="relative w-full h-full">
+                                <ScoreBoardPage gmid={parseInt(id)} />
+                            </div>
                         ) : (
                             <div className="w-full h-full flex items-center justify-center">
                                 <span className="text-2xl font-bold">比赛未开始</span>
@@ -132,6 +147,13 @@ export default function Games() {
                     { curChoicedModule == "team" && (
                         <MyTeamInfomationView 
                             gameid={parseInt(id)} 
+                        />
+                    ) }
+
+                    { curChoicedModule == "info" && (
+                        <GameInfoView 
+                            gameInfo={gameInfo} 
+                            gameStatus={gameStatus} 
                         />
                     ) }
                 </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LoaderPinwheel } from 'lucide-react';
+import { Loader, Loader2, LoaderPinwheel } from 'lucide-react';
 import { cn } from 'lib/utils';
 import { useSpring, animated } from '@react-spring/web';
 
@@ -71,7 +71,7 @@ const ImageLoader = ({
             >
                 {text && (
                     <div className='flex items-center gap-3'>
-                        <LoaderPinwheel className="animate-spin" />
+                        <Loader2 className="animate-spin" />
                         <span className="font-bold">Loading...</span>
                     </div>
                 )}

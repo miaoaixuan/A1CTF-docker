@@ -14,7 +14,7 @@ import { Dispatch, SetStateAction, useCallback, useEffect, useRef, useState } fr
 import { challengeCategoryIcons, challengeCategoryColorMap } from 'utils/ClientAssets';
 import { api, ErrorMessage } from 'utils/ApiHelper';
 import { Button } from 'components/ui/button';
-import { ArrowLeft, ArrowRight, ArrowUpDown, LoaderPinwheel, PlusCircle, Search, Trophy } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUpDown, Loader2, LoaderPinwheel, PlusCircle, Search, Trophy } from 'lucide-react';
 import { Input } from 'components/ui/input';
 
 import { AxiosError } from 'axios';
@@ -381,7 +381,7 @@ export default function EditGameChallengesModule(
                         {loadingHover && (
                             <div className="absolute top-0 left-0 w-full h-full bg-background opacity-95 z-10 flex items-center justify-center">
                                 <div className="flex">
-                                    <LoaderPinwheel className="animate-spin" />
+                                    <Loader2 className="animate-spin" />
                                     <span className="font-bold ml-3">搜索中...</span>
                                 </div>
                             </div>

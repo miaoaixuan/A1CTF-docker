@@ -75,7 +75,7 @@ export default function GameViewSidebar(
     const navigate = useNavigate()
 
     return (
-        <div className="w-16 h-full border-r-[1px] z-[20] bg-background">
+        <div className="w-16 h-full border-r-[1px] z-[20] bg-background select-none">
             <div className="flex flex-col w-full h-full gap-4 items-center py-4 pt-5">
                 <img
                     className="dark:invert mb-4"

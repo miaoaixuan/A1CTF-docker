@@ -78,7 +78,7 @@ export function ChangeGames() {
     const { theme } = useTheme()
 
     const [shouldAnime, setShouldAnime] = useState(false)
-    const router = useNavigate();
+    const navigate = useNavigate();
 
     // 观察器
     const observeItem = (el: HTMLElement, id: string) => {
@@ -195,7 +195,7 @@ export function ChangeGames() {
 
             // 动画时间
             setTimeout(() => {
-                router(`/games/${curGame.game_id}`);
+                navigate(`/games/${curGame.game_id}/info`);
             }, 1800)
         })
     }

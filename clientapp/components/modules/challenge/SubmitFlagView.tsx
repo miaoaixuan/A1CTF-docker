@@ -10,7 +10,7 @@ import {
 import { JudgeType, UserDetailGameChallenge } from "utils/A1API";
 import { api } from "utils/ApiHelper";
 import { toast } from "sonner";
-import { ChallengeSolveStatus } from "components/ChallengesView";
+import { ChallengeSolveStatus } from "components/user/game/ChallengesView";
 
 const SubmitFlagView = ({ curChallenge, gameID, setChallengeSolved, challengeSolveStatusList, visible, setVisible } : { curChallenge: UserDetailGameChallenge | undefined, gameID: number, setChallengeSolved: (id: number) => void, challengeSolveStatusList: Record<number, ChallengeSolveStatus>, visible: boolean, setVisible: Dispatch<SetStateAction<boolean>> }) => {
 
