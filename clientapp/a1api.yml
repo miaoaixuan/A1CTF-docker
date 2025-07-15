@@ -1984,6 +1984,66 @@ paths:
               required:
                 - file
         required: true
+  /api/admin/system/upload:
+    post:
+      tags: [system]
+      operationId: uploadSystemFile
+      summary: 上传系统文件
+      description: 上传系统文件并存储到服务器，返回文件ID
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: 文件上传成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      file_id:
+                        type: string
+                        description: 文件URL
+                required:
+                  - code
+                  - data
+        '400':
+          description: 请求错误，未上传文件或格式不正确
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '401':
+          description: 未授权，用户未登录
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 要上传的文件
+                resource_type:
+                  $ref: '#/components/schemas/SystemResourceType'
+                data:
+                  type: string
+              required:
+                - file
+                - resource_type
+        required: true
   /api/file/download/{file_id}:
     get:
       tags: [file]
@@ -3386,6 +3446,12 @@ components:
         invite_code:
           type: string
           nullable: true
+        game_icon_light:
+          type: string
+          nullable: true
+        game_icon_dark:
+          type: string
+          nullable: true
         start_time:
           type: string
           format: date-time
@@ -3731,6 +3797,12 @@ components:
           format: date-time
         visible:
           type: boolean
+        game_icon_light:
+          type: string
+          nullable: true
+        game_icon_dark:
+          type: string
+          nullable: true
         stages:
           type: array
           items:
@@ -4639,6 +4711,31 @@ components:
         - CONTAINER: 容器操作
         - JUDGE: 判题操作
         - SECURITY: 安全相关
+    SystemResourceType:
+      type: string
+      enum:
+        - svgIcon
+        - trophysGold
+        - trophysSilver
+        - trophysBronze
+        - schoolLogo
+        - schoolSmallIcon
+        - fancyBackGroundIconWhite
+        - fancyBackGroundIconBlack
+        - gameIconLight
+        - gameIconDark
+      description: |
+        资源类型:
+        - svgIcon: SVG图标
+        - trophysGold: 金牌奖杯
+        - trophysSilver: 银牌奖杯
+        - trophysBronze: 铜牌奖杯
+        - schoolLogo: 学校Logo
+        - schoolSmallIcon: 学校小图标
+        - fancyBackGroundIconWhite: 白色背景图标
+        - fancyBackGroundIconBlack: 黑色背景图标
+        - gameIconLight: 比赛图标(浅色)
+        - gameIconDark: 比赛图标(深色)
     SystemLogItem:
       type: object
       properties:

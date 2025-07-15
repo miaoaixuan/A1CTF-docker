@@ -186,6 +186,8 @@ func AdminGetGame(c *gin.Context) {
 		"wp_expire_time":         game.WpExpireTime,
 		"stages":                 game.Stages,
 		"visible":                game.Visible,
+		"game_icon_light":        game.GameIconLight,
+		"game_icon_dark":         game.GameIconDark,
 		"challenges":             make([]gin.H, 0, len(gameChallenges)),
 	}
 

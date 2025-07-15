@@ -11,6 +11,32 @@
  */
 
 /**
+ * 资源类型:
+ * - svgIcon: SVG图标
+ * - trophysGold: 金牌奖杯
+ * - trophysSilver: 银牌奖杯
+ * - trophysBronze: 铜牌奖杯
+ * - schoolLogo: 学校Logo
+ * - schoolSmallIcon: 学校小图标
+ * - fancyBackGroundIconWhite: 白色背景图标
+ * - fancyBackGroundIconBlack: 黑色背景图标
+ * - gameIconLight: 比赛图标(浅色)
+ * - gameIconDark: 比赛图标(深色)
+ */
+export enum SystemResourceType {
+  SvgIcon = "svgIcon",
+  TrophysGold = "trophysGold",
+  TrophysSilver = "trophysSilver",
+  TrophysBronze = "trophysBronze",
+  SchoolLogo = "schoolLogo",
+  SchoolSmallIcon = "schoolSmallIcon",
+  FancyBackGroundIconWhite = "fancyBackGroundIconWhite",
+  FancyBackGroundIconBlack = "fancyBackGroundIconBlack",
+  GameIconLight = "gameIconLight",
+  GameIconDark = "gameIconDark",
+}
+
+/**
  * 日志类别:
  * - ADMIN: 管理员操作
  * - USER: 用户操作
@@ -254,6 +280,8 @@ export interface AdminFullGameInfo {
   description?: string | null;
   poster?: string | null;
   invite_code?: string | null;
+  game_icon_light?: string | null;
+  game_icon_dark?: string | null;
   /** @format date-time */
   start_time: string;
   /** @format date-time */
@@ -432,6 +460,8 @@ export interface UserFullGameInfo {
   /** @format date-time */
   wp_expire_time: string;
   visible: boolean;
+  game_icon_light?: string | null;
+  game_icon_dark?: string | null;
   stages: GameStage[];
   /**
    * Team participation status:
@@ -2962,6 +2992,61 @@ export class Api<
         path: `/api/file/download/${fileId}`,
         method: "GET",
         secure: true,
+        ...params,
+      }),
+  };
+  system = {
+    /**
+     * @description 上传系统文件并存储到服务器，返回文件ID
+     *
+     * @tags system
+     * @name UploadSystemFile
+     * @summary 上传系统文件
+     * @request POST:/api/admin/system/upload
+     * @secure
+     */
+    uploadSystemFile: (
+      data: {
+        /**
+         * 要上传的文件
+         * @format binary
+         */
+        file: File;
+        /**
+         * 资源类型:
+         * - svgIcon: SVG图标
+         * - trophysGold: 金牌奖杯
+         * - trophysSilver: 银牌奖杯
+         * - trophysBronze: 铜牌奖杯
+         * - schoolLogo: 学校Logo
+         * - schoolSmallIcon: 学校小图标
+         * - fancyBackGroundIconWhite: 白色背景图标
+         * - fancyBackGroundIconBlack: 黑色背景图标
+         * - gameIconLight: 比赛图标(浅色)
+         * - gameIconDark: 比赛图标(深色)
+         */
+        resource_type: SystemResourceType;
+        data?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          data: {
+            /** 文件URL */
+            file_id?: string;
+          };
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/admin/system/upload`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.FormData,
+        format: "json",
         ...params,
       }),
   };

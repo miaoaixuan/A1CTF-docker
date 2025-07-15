@@ -6,6 +6,8 @@ import (
 	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	"a1ctf/src/utils/general"
+	"a1ctf/src/webmodels"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -69,6 +71,8 @@ func UpdateSystemSettings(c *gin.Context) {
 
 // UploadSystemFile 上传系统文件（图片）
 func UploadSystemFile(c *gin.Context) {
+	user := c.MustGet("user").(models.User)
+
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -76,6 +80,36 @@ func UploadSystemFile(c *gin.Context) {
 			"message": "文件上传失败: " + err.Error(),
 		})
 		return
+	}
+
+	resourceText, exists := c.GetPostForm("resource_type")
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "无效的资源类型",
+		})
+		return
+	}
+	resourceType := webmodels.SystemResourceType(resourceText)
+
+	var gameID int64
+	if resourceType == webmodels.GameIconLight || resourceType == webmodels.GameIconDark {
+		tmpV, exists := c.GetPostForm("data")
+		if !exists {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    400,
+				"message": "无效的请求数据",
+			})
+			return
+		}
+		gameID, err = strconv.ParseInt(tmpV, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    400,
+				"message": "无效的请求数据",
+			})
+			return
+		}
 	}
 
 	// 检查文件类型
@@ -98,9 +132,9 @@ func UploadSystemFile(c *gin.Context) {
 	}
 
 	// 生成唯一文件名
-	fileExt := filepath.Ext(file.Filename)
-	fileName := uuid.New().String() + fileExt
+	fileName := uuid.New().String()
 	filePath := filepath.Join(uploadDir, fileName)
+	fileExt := filepath.Ext(file.Filename)
 
 	// 保存文件
 	if err := saveUploadedFile(file, filePath); err != nil {
@@ -117,6 +151,36 @@ func UploadSystemFile(c *gin.Context) {
 		return
 	}
 
+	// 将文件信息保存到数据库
+	upload := models.Upload{
+		FileID:     fileName,
+		FileName:   file.Filename,
+		FilePath:   filePath,
+		FileSize:   file.Size,
+		FileType:   file.Header.Get("Content-Type"),
+		UserID:     user.UserID,
+		UploadTime: time.Now().UTC(),
+	}
+
+	if err := dbtool.DB().Create(&upload).Error; err != nil {
+		// 删除已保存的文件
+		os.Remove(filePath)
+
+		// 记录数据库保存失败日志
+		tasks.LogUserOperationWithError(c, models.ActionUpload, models.ResourceTypeFile, &fileName, map[string]interface{}{
+			"original_filename": file.Filename,
+			"file_size":         file.Size,
+			"file_extension":    fileExt,
+			"error_type":        "database_save_failed",
+		}, err)
+
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: "Failed to save file record",
+		})
+		return
+	}
+
 	// 记录成功日志
 	tasks.LogAdminOperation(c, models.ActionUpload, models.ResourceTypeFile, &fileName, map[string]interface{}{
 		"original_filename": file.Filename,
@@ -124,12 +188,46 @@ func UploadSystemFile(c *gin.Context) {
 		"saved_path":        filePath,
 	})
 
+	// 更新系统设置
+
+	downloadPath := fmt.Sprintf("/api/file/download/%s", fileName)
+
+	switch resourceType {
+	case webmodels.SystemIcon:
+		clientconfig.ClientConfig.SVGIcon = downloadPath
+		clientconfig.SaveSystemSettings(clientconfig.ClientConfig)
+	case webmodels.TrophysGold:
+		clientconfig.ClientConfig.TrophysGold = downloadPath
+		clientconfig.SaveSystemSettings(clientconfig.ClientConfig)
+	case webmodels.TrophysSilver:
+		clientconfig.ClientConfig.TrophysSilver = downloadPath
+		clientconfig.SaveSystemSettings(clientconfig.ClientConfig)
+	case webmodels.TrophysBronze:
+		clientconfig.ClientConfig.TrophysBronze = downloadPath
+		clientconfig.SaveSystemSettings(clientconfig.ClientConfig)
+	case webmodels.SchoolLogo:
+		clientconfig.ClientConfig.SchoolLogo = downloadPath
+		clientconfig.SaveSystemSettings(clientconfig.ClientConfig)
+	case webmodels.SchoolSmallIcon:
+		clientconfig.ClientConfig.SchoolSmallIcon = downloadPath
+		clientconfig.SaveSystemSettings(clientconfig.ClientConfig)
+	case webmodels.FancyBackGroundIconWhite:
+		clientconfig.ClientConfig.FancyBackGroundIconWhite = downloadPath
+		clientconfig.SaveSystemSettings(clientconfig.ClientConfig)
+	case webmodels.FancyBackGroundIconBlack:
+		clientconfig.ClientConfig.FancyBackGroundIconBlack = downloadPath
+		clientconfig.SaveSystemSettings(clientconfig.ClientConfig)
+	case webmodels.GameIconLight:
+		dbtool.DB().Model(&models.Game{}).Where("game_id = ?", gameID).Update("game_icon_light", downloadPath)
+	case webmodels.GameIconDark:
+		dbtool.DB().Model(&models.Game{}).Where("game_id = ?", gameID).Update("game_icon_dark", downloadPath)
+	}
+
 	// 返回文件URL
-	fileURL := "/data/uploads/system/" + fileName
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
 		"data": gin.H{
-			"url": fileURL,
+			"file_id": fileName,
 		},
 	})
 }

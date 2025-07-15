@@ -40,7 +40,6 @@ func CapRedeemChallenge(ginCtx *gin.Context) {
 	var resp proofofwork.VerificationResult
 	result, err := c.RedeemChallenge(ginCtx.Request.Context(), params.Token, params.Solutions)
 	if err != nil {
-		ginCtx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		resp.Message = err.Error()
 	} else {
 		resp.Success = true

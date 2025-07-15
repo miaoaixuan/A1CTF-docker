@@ -6,7 +6,7 @@ import { Label } from "components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "components/ui/card";
 import { Badge } from "components/ui/badge";
 import { Separator } from "components/ui/separator";
-import { Users, Trophy, Hash, Copy, Crown, UserCheck, UserMinus, UserPlus, Settings, Trash2, CircleArrowLeft, Upload, Group, Pencil, Ban, Gift, AlertTriangle, Calculator } from "lucide-react";
+import { Users, Trophy, Hash, Copy, Crown, UserCheck, UserMinus, UserPlus, Settings, Trash2, CircleArrowLeft, Upload, Group, Pencil, Ban, Gift, AlertTriangle, Calculator, Loader2 } from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -70,7 +70,7 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
     const [newSlogan, setNewSlogan] = useState('');
     const [currentUserId, setCurrentUserId] = useState<string>('');
 
-    const [loadingVisiblity, setLoadingVisibility] = useState(true)
+    const [dataLoaded, setDataLoaded] = useState(false)
 
     // 检查当前用户是否是队长
     const isTeamCaptain = gameInfo?.team_info?.team_members?.find(
@@ -123,9 +123,7 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
                 // 找到当前用户的战队数据
                 setCurrentUserTeam(response.data.data?.your_team);
 
-                setTimeout(() => {
-                    setLoadingVisibility(false)
-                }, 200)
+                setDataLoaded(true)
             })
             .catch((error) => {
                 console.error("Failed to fetch scoreboard data:", error);
@@ -318,6 +316,17 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
                     label: '未知'
                 };
         }
+    }
+
+    if (!dataLoaded) {
+        return (
+            <div className="w-full h-full flex items-center justify-center">
+                <div className="flex">
+                    <Loader2 className="animate-spin" />
+                    <span className="font-bold ml-3">Loading...</span>
+                </div>
+            </div>
+        )
     }
 
     return (

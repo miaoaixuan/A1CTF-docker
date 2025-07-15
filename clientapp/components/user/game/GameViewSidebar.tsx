@@ -3,6 +3,7 @@ import ToggleTheme from "components/ToggleTheme";
 import { Button } from "components/ui/button";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { BowArrow, Cctv, DoorOpen, Info, Settings, ShieldCheck, UserSearch, WandSparkles, Wrench } from "lucide-react";
+import { useTheme } from "next-themes";
 import { Dispatch, SetStateAction } from "react";
 import { useNavigate } from "react-router";
 import { UserFullGameInfo, UserRole } from "utils/A1API";
@@ -74,17 +75,27 @@ export default function GameViewSidebar(
 
     const navigate = useNavigate()
 
+    const { theme } = useTheme()
+
+    const getGameIcon = () => {
+        if (theme === "dark") {
+            return gameInfo?.game_icon_dark ?? clientConfig.SVGIcon
+        } else {
+            return gameInfo?.game_icon_light ?? clientConfig.SVGIcon
+        }
+    }
+
     return (
         <div className="w-16 h-full border-r-[1px] z-[20] bg-background select-none">
             <div className="flex flex-col w-full h-full gap-4 items-center py-4 pt-5">
                 <img
-                    className="dark:invert mb-4"
-                    src={clientConfig.SVGIcon}
-                    alt={clientConfig.SVGAltData}
+                    className="mb-4"
+                    src={getGameIcon()}
+                    alt={gameInfo?.name ?? "A1CTF ???????"}
                     width={36}
                     height={36}
                     data-tooltip-id="my-tooltip"
-                    data-tooltip-html="A1CTF 2025"
+                    data-tooltip-html={gameInfo?.name ?? "A1CTF ???????"}
                     data-tooltip-place="right"
                 />
                 {modules.map((module, i) => (

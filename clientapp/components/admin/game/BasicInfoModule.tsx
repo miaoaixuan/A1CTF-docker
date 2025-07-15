@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 
 import { format } from 'date-fns';
 import { Switch } from 'components/ui/switch';
@@ -18,7 +18,10 @@ import {
 import { Popover, PopoverTrigger, PopoverContent } from 'components/ui/popover';
 import { Calendar } from 'components/ui/calendar';
 import { ScrollArea, ScrollBar } from 'components/ui/scroll-area';
-import { CalendarIcon, FilePenLine } from 'lucide-react';
+import { CalendarIcon, FilePenLine, Upload } from 'lucide-react';
+import ImageUploader from 'components/modules/ImageUploader';
+import { api } from 'utils/ApiHelper';
+import { SystemResourceType } from 'utils/A1API';
 
 interface BasicInfoModuleProps {
     form: any;
@@ -28,13 +31,43 @@ interface BasicInfoModuleProps {
         value: string,
         tmType: 'start_time' | 'end_time'
     ) => void;
+    gameID: number;
 }
 
 /**
  * 基本信息管理模块
  * 从 EditGameView.tsx 中抽离，提升主组件可读性
  */
-export function BasicInfoModule({ form, handleDateSelect, handleTimeChange }: BasicInfoModuleProps) {
+export function BasicInfoModule({ form, handleDateSelect, handleTimeChange, gameID }: BasicInfoModuleProps) {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleImageUpload = (type: SystemResourceType) => {
+        return (event: React.ChangeEvent<HTMLInputElement>) => {
+            const file = event.target.files?.[0];
+            if (file) {
+                api.system.uploadSystemFile({
+                    file: file,
+                    resource_type: type,
+                    data: gameID.toString(),
+                }).then((res) => {
+                    if (res.status === 200) {
+                        switch (type) {
+                            case SystemResourceType.GameIconLight:
+                                form.setValue("game_icon_light", `/api/file/download/${res.data.data.file_id}`);
+                                break;
+                            case SystemResourceType.GameIconDark:
+                                form.setValue("game_icon_dark", `/api/file/download/${res.data.data.file_id}`);
+                        }
+                    }
+                })
+            }
+        }
+    };
+
+    const handleImageClick = () => {
+        fileInputRef.current?.click();
+    };
+
     return (
         <div>
             <div className="flex items-center gap-3 mb-6">
@@ -319,6 +352,46 @@ export function BasicInfoModule({ form, handleDateSelect, handleTimeChange }: Ba
                             <FormControl>
                                 <Switch checked={field.value} onCheckedChange={field.onChange} />
                             </FormControl>
+                        </FormItem>
+                    )}
+                />
+            </div>
+            
+            {/* 比赛图标 */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
+                <FormField
+                    control={form.control}
+                    name="game_icon_dark"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>比赛图标(深色)</FormLabel>
+                            <FormControl>
+                                <ImageUploader 
+                                    src={field.value}
+                                    backgroundTheme='dark'
+                                    onChange={handleImageUpload(SystemResourceType.GameIconDark)}
+                                />
+                            </FormControl>
+                            <FormDescription>比赛图标</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="game_icon_light"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>比赛图标(浅色)</FormLabel>
+                            <FormControl>
+                                <ImageUploader 
+                                    src={field.value}
+                                    backgroundTheme='light'
+                                    onChange={handleImageUpload(SystemResourceType.GameIconLight)}
+                                />
+                            </FormControl>
+                            <FormDescription>比赛图标</FormDescription>
+                            <FormMessage />
                         </FormItem>
                     )}
                 />

@@ -180,3 +180,18 @@ type UpdateScoreAdjustmentPayload struct {
 	ScoreChange    float64 `json:"score_change" binding:"required"`
 	Reason         string  `json:"reason" binding:"required"`
 }
+
+type SystemResourceType string
+
+const (
+	SystemIcon               SystemResourceType = "svgIcon"
+	TrophysGold              SystemResourceType = "trophysGold"
+	TrophysSilver            SystemResourceType = "trophysSilver"
+	TrophysBronze            SystemResourceType = "trophysBronze"
+	SchoolLogo               SystemResourceType = "schoolLogo"
+	SchoolSmallIcon          SystemResourceType = "schoolSmallIcon"
+	FancyBackGroundIconWhite SystemResourceType = "fancyBackGroundIconWhite"
+	FancyBackGroundIconBlack SystemResourceType = "fancyBackGroundIconBlack"
+	GameIconLight            SystemResourceType = "gameIconLight"
+	GameIconDark             SystemResourceType = "gameIconDark"
+)

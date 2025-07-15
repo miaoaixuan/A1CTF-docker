@@ -31,6 +31,8 @@ export const EditGameFormSchema = z.object({
   start_time: z.date().optional(),
   end_time: z.date().optional(),
   practice_mode: z.boolean(),
+  game_icon_light: z.string().optional(),
+  game_icon_dark: z.string().optional(),
   team_number_limit: z.coerce.number().min(1),
   container_number_limit: z.coerce.number().min(1),
   require_wp: z.boolean(),

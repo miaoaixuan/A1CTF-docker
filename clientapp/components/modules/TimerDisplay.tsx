@@ -34,7 +34,7 @@ const TimerDisplay = (
             }
             setTimeLeft(formatDuration(leftTime))
         }
-        const interval = setInterval(updateFunction, 1000)
+        const interval = setInterval(updateFunction, 500)
         
         updateFunction()
 
@@ -43,15 +43,9 @@ const TimerDisplay = (
         }
     }, [target_time])
 
-    const monoTimeDisplayer = useMemo(() => {
-        return timeLeft ? (
-            <span className={className}>{timeLeft}</span>
-        ) : null;
-    }, [timeLeft]);
-
     return (
         <>
-            { monoTimeDisplayer }
+            <span className={className}>{timeLeft}</span>
         </>
     )
 }

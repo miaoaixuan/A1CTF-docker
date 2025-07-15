@@ -22,7 +22,7 @@ import { randomInt } from "mathjs";
 import { toast } from "sonner";
 import { ErrorMessage, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "utils/A1API";
 import { api } from "utils/ApiHelper";
-import { ChallengeSolveStatus } from "components/ChallengesView";
+import { ChallengeSolveStatus } from "components/user/game/ChallengesView";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import CategoryChallenges from "components/modules/game/CategoryChallenges";
 import { challengeCategoryColorMap, challengeCategoryIcons } from "utils/ClientAssets";
@@ -42,7 +42,8 @@ export function CategorySidebar({
     setChallenges,
     challengeSolveStatusList,
     setChallengeSolveStatusList,
-    loadingVisible
+    loadingVisible,
+    gameInfo
 }: {
     gameid: string,
     curChallenge: UserDetailGameChallenge | undefined,
@@ -56,7 +57,8 @@ export function CategorySidebar({
     setChallenges: Dispatch<SetStateAction<Record<string, UserSimpleGameChallenge[]>>>,
     challengeSolveStatusList: Record<string, ChallengeSolveStatus>,
     setChallengeSolveStatusList: Dispatch<SetStateAction<Record<string, ChallengeSolveStatus>>>,
-    loadingVisible: boolean
+    loadingVisible: boolean,
+    gameInfo: UserFullGameInfo | undefined
 }) {
 
     const { theme } = useTheme()
@@ -251,6 +253,14 @@ export function CategorySidebar({
 
     const navigate = useNavigate()
 
+    const getGameIcon = () => {
+        if (theme === "dark") {
+            return gameInfo?.game_icon_dark ?? clientConfig.SVGIcon
+        } else {
+            return gameInfo?.game_icon_light ?? clientConfig.SVGIcon
+        }
+    }
+
     return (
         <Sidebar className="hide-scrollbar select-none transition-all duration-200 ml-16" onTransitionEnd={() => {
             resizeTrigger(Math.floor(Math.random() * 1000000))
@@ -263,16 +273,16 @@ export function CategorySidebar({
                     className="pr-1 pl-1 h-full"
                 >
                     <SidebarGroup className="h-full">
-                        <div className="flex justify-center w-full items-center pl-2 pr-2 pt-4">
-                            <div className="justify-start flex gap-2 items-center mt-[-6px]">
+                        <div className="flex justify-center w-full items-center pl-2 pr-2 pt-6 mb-2">
+                            <div className="justify-start flex gap-4 items-center">
                                 <img
-                                    className="dark:invert transition-all duration-300"
+                                    className="transition-all duration-300"
                                     src={clientConfig.SVGIcon}
                                     alt={clientConfig.SVGAltData}
                                     width={40}
                                     height={40}
                                 />
-                                <span className="font-bold text-xl transition-colors duration-300">A1CTF</span>
+                                <span className="font-bold text-xl transition-colors duration-300">A1CTF Platform</span>
                             </div>
                             <div className="flex-1" />
                         </div>

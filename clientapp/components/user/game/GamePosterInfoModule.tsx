@@ -6,6 +6,7 @@ import { Button } from "components/ui/button";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import dayjs from "dayjs";
 import { CirclePlay, ClockAlert, Hourglass, Key, Lock, Package, PencilLine, Pickaxe, ScanText, Users, UsersRound } from "lucide-react";
+import { useTheme } from "next-themes";
 import { UserFullGameInfo } from "utils/A1API";
 
 export default function GamePosterInfoModule(
@@ -19,6 +20,15 @@ export default function GamePosterInfoModule(
 ) {
 
     const { clientConfig } = useGlobalVariableContext()
+    const { theme } = useTheme()
+
+    const getGameIcon = () => {
+        if (theme === "dark") {
+            return gameInfo?.game_icon_dark ?? clientConfig.SVGIcon
+        } else {
+            return gameInfo?.game_icon_light ?? clientConfig.SVGIcon
+        }
+    }
 
     const gameStatusElement = {
         "unLogin": (
@@ -112,19 +122,21 @@ export default function GamePosterInfoModule(
     return (
         <div className="flex flex-col w-full overflow-hidden select-none lg:gap-16 gap-6">
             <div className="relative">
-                <ImageLoader
-                    src={gameInfo?.poster || clientConfig.DefaultBGImage}
-                    className="aspect-video border-2 bg-background rounded-xl overflow-hidden"
-                />
+                <div className="w-full aspect-video border-t-2 border-l-2 border-r-2 bg-background rounded-xl overflow-hidden">
+                    <ImageLoader
+                        src={gameInfo?.poster || clientConfig.DefaultBGImage}
+                        className=""
+                    />
+                </div>
                 <div className="absolute bottom-0 w-full border-b-2 border-l-2 border-r-2 rounded-b-2xl overflow-hidden backdrop-blur-md bg-background/10">
-                    <div className="w-full h-full p-5 px-7">
-                        <div className="flex gap-4 items-center">
+                    <div className="w-full h-full py-4 px-7">
+                        <div className="flex gap-6 items-center">
                             <img
-                                className="dark:invert"
-                                width={48}
-                                height={48}
-                                src={clientConfig.SVGIcon}
-                                alt={clientConfig.SVGAltData}
+                                width={"12%"}
+                                height={"12%"}
+                                className="min-w-[48px] min-h-[48px]"
+                                src={getGameIcon()}
+                                alt={gameInfo?.name ?? "A1CTF ???????"}
                             />
                             <div className="flex flex-col min-w-0">
                                 <span className="font-bold text-2xl text-nowrap pointer-events-auto overflow-ellipsis overflow-hidden whitespace-nowrap block"

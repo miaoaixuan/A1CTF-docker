@@ -5,7 +5,7 @@ import { Label } from "components/ui/label";
 import { Textarea } from "components/ui/textarea";
 import { Upload } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "components/ui/form";
+import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "components/ui/form";
 import { SystemSettingsValues } from "./AdminSettingsPage";
 
 
@@ -26,25 +26,35 @@ export const BasicSettings = (
                 name="systemName"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>系统名称</FormLabel>
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>系统名称</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
                         <FormControl>
                             <Input {...field} />
                         </FormControl>
-                        <FormMessage />
+                        <FormDescription>请填写比赛名称</FormDescription>
                     </FormItem>
                 )}
             />
+
+            
 
             <FormField
                 control={form.control}
                 name="systemSlogan"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>系统标语</FormLabel>
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>系统标语</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
                         <FormControl>
                             <Input {...field} />
                         </FormControl>
-                        <FormMessage />
+                        <FormDescription>输入系统标语</FormDescription>
                     </FormItem>
                 )}
             />
@@ -54,11 +64,15 @@ export const BasicSettings = (
                 name="systemFooter"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>页脚内容</FormLabel>
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>页脚内容</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
                         <FormControl>
                             <Input {...field} />
                         </FormControl>
-                        <FormMessage />
+                        <FormDescription>输入页脚内容</FormDescription>
                     </FormItem>
                 )}
             />
@@ -68,11 +82,15 @@ export const BasicSettings = (
                 name="systemICP"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>备案号</FormLabel>
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>备案号</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
                         <FormControl>
                             <Input {...field} />
                         </FormControl>
-                        <FormMessage />
+                        <FormDescription>工信部备案号</FormDescription>
                     </FormItem>
                 )}
             />
@@ -82,11 +100,15 @@ export const BasicSettings = (
                 name="systemOrganization"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>组织名称</FormLabel>
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>组织名称</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
                         <FormControl>
                             <Input {...field} />
                         </FormControl>
-                        <FormMessage />
+                        <FormDescription>组织名称</FormDescription>
                     </FormItem>
                 )}
             />
@@ -96,11 +118,15 @@ export const BasicSettings = (
                 name="systemOrganizationURL"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>组织链接</FormLabel>
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>组织链接</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
                         <FormControl>
                             <Input {...field} />
                         </FormControl>
-                        <FormMessage />
+                        <FormDescription>组织链接, 支持跳转</FormDescription>
                     </FormItem>
                 )}
             />
@@ -110,70 +136,18 @@ export const BasicSettings = (
                 name="systemSummary"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>系统摘要</FormLabel>
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>系统摘要</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
                         <FormControl>
                             <Textarea {...field} rows={3} />
                         </FormControl>
-                        <FormMessage />
+                        <FormDescription>系统摘要</FormDescription>
                     </FormItem>
                 )}
             />
-
-            <div className="space-y-2">
-                <Label htmlFor="logoUpload">系统Logo</Label>
-                <div className="flex items-center gap-4">
-                    {logoPreview && (
-                        <div className="relative w-24 h-24 border rounded">
-                            <img
-                                src={logoPreview}
-                                alt="Logo预览"
-                                className="object-contain p-2 w-full h-full"
-                            />
-                        </div>
-                    )}
-                    <Button variant="outline" className="flex gap-2" asChild>
-                        <label htmlFor="logoUpload">
-                            <Upload size={16} />
-                            上传Logo
-                            <input
-                                id="logoUpload"
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) => handleImageUpload(e, "logo")}
-                            />
-                        </label>
-                    </Button>
-                </div>
-            </div>
-
-            <div className="space-y-2">
-                <Label htmlFor="faviconUpload">网站图标</Label>
-                <div className="flex items-center gap-4">
-                    {faviconPreview && (
-                        <div className="relative w-12 h-12 border rounded">
-                            <img
-                                src={faviconPreview}
-                                alt="Favicon预览"
-                                className="object-contain p-1 w-full h-full"
-                            />
-                        </div>
-                    )}
-                    <Button variant="outline" className="flex gap-2" asChild>
-                        <label htmlFor="faviconUpload">
-                            <Upload size={16} />
-                            上传图标
-                            <input
-                                id="faviconUpload"
-                                type="file"
-                                accept="image/x-icon,image/png,image/svg+xml"
-                                className="hidden"
-                                onChange={(e) => handleImageUpload(e, "favicon")}
-                            />
-                        </label>
-                    </Button>
-                </div>
-            </div>
         </>
     );
 };

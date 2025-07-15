@@ -118,14 +118,13 @@ func RateLimiter(rateLimit int, rateInterval time.Duration) gin.HandlerFunc {
 
 func main() {
 
+	// 加载配置文件
+	utils.LoadConfig()
+
 	// 初始化 Zap
 	zaphelper.InitZap()
 	defer zaphelper.CloseZap()
 
-	zaphelper.Logger.Info("Zap initialized")
-
-	// 加载配置文件
-	utils.LoadConfig()
 	k8stool.InitNodeAddressMap()
 
 	// 初始化数据库连接

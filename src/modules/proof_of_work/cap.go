@@ -18,22 +18,6 @@ import (
 
 // from https://github.com/ackcoder/go-cap
 
-const (
-	defaultChallengeTokenSize  = 25
-	defaultChallengeCount      = 80
-	defaultChallengeSize       = 32
-	defaultChallengeDifficulty = 4
-	defaultChallengeExpires    = 10 * time.Minute
-
-	defaultTokenSize       = 64
-	defaultTokenIdSize     = 16
-	defaultTokenExpires    = 20 * time.Minute
-	defaultTokenVerifyOnce = true
-
-	defaultHttpHandleLimitRPS   = 10
-	defaultHttpHandleLimitBurst = 50
-)
-
 var (
 	ErrInvalidChallenge  = errors.New("invalid challenge body")        //非法质询参数
 	ErrChallengeExpired  = errors.New("challenge expired")             //质询令牌过期
@@ -103,7 +87,6 @@ func InitCap() {
 }
 
 func New(opts ...CapOption) *Cap {
-
 	redisAddr := viper.GetString("redis.address")
 	redisUsername := viper.GetString("redis.username")
 	redisPassword := viper.GetString("redis.password")
@@ -124,6 +107,20 @@ func New(opts ...CapOption) *Cap {
 	if err != nil {
 		panic(err)
 	}
+
+	defaultChallengeTokenSize := viper.GetInt("cap-settings.defaultChallengeTokenSize")
+	defaultChallengeCount := viper.GetInt("cap-settings.defaultChallengeCount")
+	defaultChallengeSize := viper.GetInt("cap-settings.defaultChallengeSize")
+	defaultChallengeDifficulty := viper.GetInt("cap-settings.defaultChallengeDifficulty")
+	defaultChallengeExpires := viper.GetDuration("cap-settings.defaultChallengeExpires")
+
+	defaultTokenSize := viper.GetInt("cap-settings.defaultTokenSize")
+	defaultTokenIdSize := viper.GetInt("cap-settings.defaultTokenIdSize")
+	defaultTokenExpires := viper.GetDuration("cap-settings.defaultTokenExpires")
+	defaultTokenVerifyOnce := viper.GetBool("cap-settings.defaultTokenVerifyOnce")
+
+	defaultHttpHandleLimitRPS := viper.GetInt("cap-settings.defaultHttpHandleLimitRPS")
+	defaultHttpHandleLimitBurst := viper.GetInt("cap-settings.defaultHttpHandleLimitBurst")
 
 	c := &Cap{
 		challengeTokenSize:  defaultChallengeTokenSize,

@@ -97,6 +97,8 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 		"name":                   game.Name,
 		"summary":                game.Summary,
 		"description":            game.Description,
+		"game_icon_light":        game.GameIconLight,
+		"game_icon_dark":         game.GameIconDark,
 		"poster":                 game.Poster,
 		"start_time":             game.StartTime,
 		"end_time":               game.EndTime,

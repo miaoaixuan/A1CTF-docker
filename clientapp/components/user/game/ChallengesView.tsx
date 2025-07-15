@@ -506,6 +506,7 @@ export function ChallengesView({
                         gameStatus={gameStatus}
                         setGameStatus={setGameStatus}
                         loadingVisible={loadingVisible}
+                        gameInfo={gameInfo}
                     />
                 </div>
                 <div className="w-full h-screen relative">

@@ -14,6 +14,7 @@ import { AxiosError } from "axios";
 import GameCountDowner from "components/modules/game/GameCountDowner";
 import GameInfoView from "components/user/game/GameInfoView";
 import { useGameSwitchContext } from "contexts/GameSwitchContext";
+import { LoadingPage } from "components/LoadingPage";
 
 export default function Games() {
     
@@ -100,6 +101,10 @@ export default function Games() {
             clearInterval(interval)
         }
     }, [])
+
+    if (!gameInfo) {
+        return <></>
+    }
 
     return (
         <div className="p-0 h-screen relative">

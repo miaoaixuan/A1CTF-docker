@@ -60,7 +60,7 @@ func UploadFile(c *gin.Context) {
 	}
 
 	// 保存文件
-	savedFileName := fileID + fileExt
+	savedFileName := fileID
 	savedPath := filepath.Join(uploadDir, savedFileName)
 
 	if err := saveUploadedFile(file, savedPath); err != nil {

@@ -47,6 +47,8 @@ type Game struct {
 	WpExpireTime         time.Time   `gorm:"column:wp_expire_time;not null" json:"wp_expire_time"`
 	Stages               *GameStages `gorm:"column:stages;not null" json:"stages"`
 	Visible              bool        `gorm:"column:visible;not null" json:"visible"`
+	GameIconLight        *string     `gorm:"column:game_icon_light" json:"game_icon_light"`
+	GameIconDark         *string     `gorm:"column:game_icon_dark" json:"game_icon_dark"`
 }
 
 // TableName Game's table name

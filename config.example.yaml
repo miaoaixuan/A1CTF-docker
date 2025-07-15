@@ -18,6 +18,11 @@ system:
   trusted-proxies:
     - 0.0.0.0/0
 
+redis:
+  address: localhost:6379
+  password: ""
+  db: 0
+
 k8s:
   k8s-config-file: "k8sconfig.yaml"
   node-ip-map:
@@ -27,11 +32,10 @@ postgres:
   host: localhost
   port: 5432
   user: postgres
-  password: example
+  password: postgres
   dbname: a1ctf
   sslmode: disable
 
-# time format like 1s 500ms etc..
 cache-time:
   user-list: 500ms
   upload-list: 500ms
@@ -43,6 +47,16 @@ cache-time:
   challenge-detail: 500ms
   container-status: 100ms
   team-flag: 100ms
+  team-solve-status: 100ms
+  judge-result: 100ms
+
+# time format like 1s 500ms etc..
+redis-cache-time:
+  user-list: 500ms
+  upload-list: 500ms
+  solved-challenges-for-game: 500ms
+  game-info: 500ms
+  all-teams-for-game: 500ms
 
 # if you need garafana, enable it
 monitoring:
@@ -50,21 +64,30 @@ monitoring:
   system-monitor-interval: 1s
   gorm-slow-query-threshold: 100ms
 
+# job intervals
 job-intervals:
-  update-activate-game-score: 2s
+  update-activate-game-score: 500ms
   update-active-game-score-board: 5s
-  container-operations: 2s
   flag-judge: 1s
+  update-game-scoreboard-cache: 1s
+  container-updating: 1s
+  compress-and-delete-old-logs: 2h
 
-# 日志系统配置
-logging:
-  # 是否启用异步队列日志
-  async-enabled: true
-  # 日志队列缓冲区大小
-  queue-buffer-size: 1000
-  # worker 协程数量
-  worker-count: 3
-  # 批量写入大小
-  batch-size: 10
-  # 强制刷写间隔
-  flush-interval: 5s
+# captcha settings
+cap-settings:
+  defaultChallengeTokenSize: 25
+  defaultChallengeCount: 80
+  defaultChallengeSize: 32
+
+  # difficulty is the number of leading zeros in the hash, don't set it too low or too high, it will affect the performance
+  defaultChallengeDifficulty: 4
+  defaultChallengeExpires: 10m
+
+  # token size is the size of the token in bytes
+  defaultTokenSize: 64
+  defaultTokenIdSize: 16
+  defaultTokenExpires: 20m
+  defaultTokenVerifyOnce: true
+
+  defaultHttpHandleLimitRPS: 10
+  defaultHttpHandleLimitBurst: 50

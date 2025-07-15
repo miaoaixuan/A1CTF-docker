@@ -86,6 +86,8 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
             team_number_limit: game_info.team_number_limit,
             container_number_limit: game_info.container_number_limit,
             require_wp: game_info.require_wp,
+            game_icon_light: game_info.game_icon_light || "",
+            game_icon_dark: game_info.game_icon_dark || "",
             wp_expire_time: game_info.wp_expire_time ? dayjs(game_info.wp_expire_time).toDate() : new Date(),
             visible: game_info.visible,
             stages: game_info.stages ? game_info.stages.map((stage) => ({
@@ -320,6 +322,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                                         form={form}
                                         handleDateSelect={handleDateSelect}
                                         handleTimeChange={handleTimeChange}
+                                        gameID={game_info.game_id}
                                     />
                                 )}
 
