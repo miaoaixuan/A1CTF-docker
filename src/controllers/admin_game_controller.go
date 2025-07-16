@@ -942,8 +942,8 @@ func AdminCreateScoreAdjustment(c *gin.Context) {
 		ScoreChange:    payload.ScoreChange,
 		Reason:         payload.Reason,
 		CreatedBy:      userID,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
+		CreatedAt:      time.Now().UTC(),
+		UpdatedAt:      time.Now().UTC(),
 	}
 
 	if err := dbtool.DB().Create(&adjustment).Error; err != nil {
@@ -1067,7 +1067,7 @@ func AdminUpdateScoreAdjustment(c *gin.Context) {
 		AdjustmentType: models.AdjustmentType(payload.AdjustmentType),
 		ScoreChange:    payload.ScoreChange,
 		Reason:         payload.Reason,
-		UpdatedAt:      time.Now(),
+		UpdatedAt:      time.Now().UTC(),
 	}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{

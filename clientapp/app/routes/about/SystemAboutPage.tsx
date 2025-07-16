@@ -16,6 +16,7 @@ export default function Home() {
                 <div className="w-full">
                     <SafeComponent animation={false}>
                         <AboutPage />
+                        
                     </SafeComponent>
                 </div>
             </main>

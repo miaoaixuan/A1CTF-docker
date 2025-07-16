@@ -5,20 +5,21 @@ import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessa
 import { SystemSettingsValues } from "./AdminSettingsPage";
 
 export const UserPolicySettings = (
-    { form } : {
+    { form }: {
         form: UseFormReturn<SystemSettingsValues>,
     }
 ) => {
 
     return (
         <>
-            <span className="text-2xl font-bold">用户策略</span>
+            <span className="text-2xl font-bold mb-4">用户策略</span>
+
             <FormField
                 control={form.control}
                 name="registrationEnabled"
                 render={({ field }) => (
-                    <FormItem className="flex items-center justify-between py-2">
-                        <div>
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                        <div className="space-y-0.5 mb-[-1px]">
                             <FormLabel>开放注册</FormLabel>
                             <FormDescription>是否允许新用户注册</FormDescription>
                         </div>
@@ -37,7 +38,11 @@ export const UserPolicySettings = (
                 name="accountActivationMethod"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>账户激活方式</FormLabel>
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>账户激活方式</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
                         <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}

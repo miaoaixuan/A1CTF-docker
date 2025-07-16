@@ -168,7 +168,7 @@ export function RegisterForm({
                             </FormItem>
                         )}
                     />
-                    { clientConfig.turnstileEnabled ? (
+                    { clientConfig.captchaEnabled ? (
                         <CapWidget
                             endpoint="/api/cap/"
                             onSolve={(token) => {
@@ -180,7 +180,7 @@ export function RegisterForm({
                         />
                     ) : <></> } 
                     <div className='h-0' />
-                    <Button type="submit" className="transition-all duration-300 w-full" disabled={loading || (clientConfig.turnstileEnabled && token == "")}>{ t("signup") }</Button>
+                    <Button type="submit" className="transition-all duration-300 w-full" disabled={loading || (clientConfig.captchaEnabled && token == "")}>{ t("signup") }</Button>
                     <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border transition-[border-color] duration-300">
                         <span className="relative z-10 bg-background px-2 text-muted-foreground transition-all duration-300">
                             {t("or_continue_with")}

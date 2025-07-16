@@ -167,7 +167,7 @@ export default function ChallengeMainContent(
 
     return (
         <>
-            <div className="absolute bottom-5 right-7 z-10 flex justify-end flex-col gap-[8px]">
+            <div className="absolute bottom-27 right-7 z-10 flex justify-end flex-col gap-[8px]">
                 <div className="flex">
                     <div className="flex-1" />
                     {curChallenge && challengeSolveStatusList ? (challengeSolveStatusList[curChallenge?.challenge_id ?? 0]?.solved ?? false) ? (
@@ -189,10 +189,6 @@ export default function ChallengeMainContent(
                     ) : (<></>)
                     }
                 </div>
-                <GameTeamStatusCard 
-                    gameInfo={gameInfo}
-                    scoreBoardModel={scoreBoardModel}
-                />
             </div>
             <MacScrollbar
                 className="w-full h-full"

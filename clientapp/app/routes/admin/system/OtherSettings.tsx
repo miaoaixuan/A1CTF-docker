@@ -12,13 +12,17 @@ export const OtherSettings = (
 
     return (
         <>
-            <span className="text-2xl font-bold">其他设置</span>
+            <span className="text-2xl font-bold mb-4">其他设置</span>
             <FormField
                 control={form.control}
                 name="defaultLanguage"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>默认语言</FormLabel>
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>默认语言</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
                         <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
@@ -43,7 +47,11 @@ export const OtherSettings = (
                 name="timeZone"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>时区设置</FormLabel>
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>时区设置</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
                         <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
@@ -70,7 +78,11 @@ export const OtherSettings = (
                 name="maxUploadSize"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>最大上传文件大小 (MB)</FormLabel>
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>最大上传文件大小 (MB)</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
                         <FormControl>
                             <Input
                                 type="number"

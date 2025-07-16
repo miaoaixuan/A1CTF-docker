@@ -653,7 +653,7 @@ func CachedGameSimpleChallenges(gameID int64) ([]webmodels.UserSimpleGameChallen
 
 		if gameStages != nil {
 			for _, stage := range *gameStages {
-				if stage.StartTime.Before(time.Now()) && stage.EndTime.After(time.Now()) {
+				if stage.StartTime.Before(time.Now().UTC()) && stage.EndTime.After(time.Now().UTC()) {
 					curStage = stage.StageName
 					break
 				}
@@ -870,7 +870,7 @@ func CachedGameChallengeVisibility(gameID int64, challengeID int64) (bool, error
 
 		if gameStages != nil {
 			for _, stage := range *gameStages {
-				if stage.StartTime.Before(time.Now()) && stage.EndTime.After(time.Now()) {
+				if stage.StartTime.Before(time.Now().UTC()) && stage.EndTime.After(time.Now().UTC()) {
 					curStage = stage.StageName
 					break
 				}

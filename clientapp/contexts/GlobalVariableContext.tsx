@@ -20,6 +20,7 @@ interface ClientConfig {
     SchoolSmallIcon: string;
     SchoolUnionAuthText: string;
     BGAnimation: boolean;
+    // AboutUS: string;
     systemName: string;
     systemLogo: string;
     systemFavicon: string;
@@ -32,9 +33,11 @@ interface ClientConfig {
     darkModeDefault: boolean;
     allowUserTheme: boolean;
     defaultLanguage: string;
-    turnstileEnabled: boolean;
-    turnstileSiteKey: string;
+    captchaEnabled: boolean;
     updateVersion: string;
+
+    // 全局比赛模式
+    gameActivityMode: string | undefined;
 }
 
 interface GlobalVariableContextType {
@@ -90,9 +93,11 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
         darkModeDefault: true,
         allowUserTheme: true,
         defaultLanguage: 'zh-CN',
-        turnstileEnabled: false,
-        turnstileSiteKey: '',
+        // AboutUS: "A1CTF Platform",
+        captchaEnabled: false,
         updateVersion: '',
+
+        gameActivityMode: undefined,
     }
 
     const [clientConfig, setClientConfig] = useState<ClientConfig>({} as ClientConfig)
@@ -144,8 +149,10 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
 
                 // 初始化没有客户端配置的情况
                 if (!cookies.clientConfig) {
-                    if (browserName.includes("Chrome")) {
+                    if (response.data.data.BGAnimation && browserName.includes("Chrome")) {
                         response.data.data.BGAnimation = true
+                    } else {
+                        response.data.data.BGAnimation = false
                     }
                     setClientConfig(response.data.data);
                     setCookie("clientConfig", response.data.data, { path: "/" })

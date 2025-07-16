@@ -5,12 +5,19 @@ import { Save } from 'lucide-react';
 import { MacScrollbar } from 'mac-scrollbar';
 import { editor } from 'monaco-editor';
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import { UseFormReturn, useWatch } from 'react-hook-form';
+import { SystemSettingsValues } from '~/routes/admin/system/AdminSettingsPage';
 
-export default function AboutPage() {
+export default function AboutPage(
+    { form, onSubmit }: {
+        form: UseFormReturn<SystemSettingsValues>,
+        onSubmit: (value: SystemSettingsValues) => Promise<void>
+    }
+) {
 
     const editorRef = useRef<any>(null);
-    const [aboutMeSource, setAboutMeSource] = useState<string>("# about");
-    const [debouncedSource, setDebouncedSource] = useState<string>("# about");
+    const [aboutMeSource, setAboutMeSource] = useState<string>("");
+    const [debouncedSource, setDebouncedSource] = useState<string>("");
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     // 防抖函数
@@ -42,16 +49,28 @@ export default function AboutPage() {
         return <Mdx source={debouncedSource} />;
     }, [debouncedSource]);
 
+    const watchValue = useWatch({
+        control: form.control,
+        name: `aboutus`, // Watch the specific field
+    });
+
+    useEffect(() => {
+        setAboutMeSource(watchValue || "A1CTF Platform")
+        debouncedUpdateSource(watchValue || "A1CTF Platform");
+    }, [watchValue])
+
     return (
-        <div className='flex-1 overflow-hidden w-full flex flex-col h-full'>
-            <div className='w-full flex items-center px-5 py-4 justify-between'>
+        <div className='flex-1 overflow-hidden w-full flex flex-col h-full p-10'>
+            <div className='w-full flex items-center justify-between mb-6'>
                 <span className='font-bold text-2xl'>关于我们 - 编辑</span>
-                <Button>
+                <Button
+                    onClick={form.handleSubmit(onSubmit)}
+                >
                     <Save />
                     保存
                 </Button>
             </div>
-            <div className='w-full h-full px-5 pb-4 overflow-hidden'>
+            <div className='w-full h-full overflow-hidden'>
                 <div className="h-full w-full flex gap-4">
                     <div className='h-full w-1/2 bg-[#1e1e1e] pt-2 rounded-md overflow-hidden'>
                         <Editor
@@ -62,6 +81,7 @@ export default function AboutPage() {
                             defaultValue={aboutMeSource}
                             onChange={(value) => {
                                 const newValue = value || "";
+                                form.setValue("aboutus", value)
                                 setAboutMeSource(newValue);
                                 debouncedUpdateSource(newValue);
                             }}

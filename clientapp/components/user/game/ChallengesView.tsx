@@ -36,6 +36,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useSearchParams } from "react-router";
 import ChallengeMainContent from "components/modules/challenge/ChallengeMainContent";
 import LoadingModule from "components/modules/LoadingModule";
+import GameTeamStatusCard from "components/modules/game/GameTeamStatusCard";
 
 export interface ChallengeSolveStatus {
     solved: boolean;
@@ -43,13 +44,13 @@ export interface ChallengeSolveStatus {
     cur_score: number;
 }
 
-export function ChallengesView({ 
+export function ChallengesView({
     id,
     gameInfo,
     gameStatus,
     setGameStatus,
     fetchGameInfoWithTeamInfo
-}: { 
+}: {
     id: string,
     gameInfo: UserFullGameInfo | undefined,
     gameStatus: string,
@@ -108,7 +109,7 @@ export function ChallengesView({
 
     const { curProfile } = useGlobalVariableContext()
 
-    
+
     const [beforeGameTime, setBeforeGameTime] = useState("")
 
     const checkInterStarted = useRef(false)
@@ -272,6 +273,7 @@ export function ChallengesView({
                     socket.onmessage = (event) => {
                         try {
                             const data = JSON.parse(event.data)
+                            console.log(data)
                             if (data.type === 'Notice') {
                                 const message: GameNotice = data.message
                                 console.log(message)
@@ -321,7 +323,7 @@ export function ChallengesView({
 
                                     toastNewNotice({
                                         title: message.data[0],
-                                        time: dayjs(message.create_time).toDate().getTime() / 1000,
+                                        time: dayjs(message.create_time).format("YYYY-MM-DD HH:mm:ss"),
                                         openNotices: setNoticeOpened
                                     })
                                 }
@@ -377,6 +379,7 @@ export function ChallengesView({
             // 初始连接
             setTimeout(() => {
                 connectWebSocket()
+                console.log("Connect to websocket")
             }, 1000)
 
             return () => {
@@ -535,7 +538,13 @@ export function ChallengesView({
                                         </motion.div>
                                     ) : (null)}
                                 </AnimatePresence>
-                                { !challengeSearched && !loadingVisible ? (
+                                <div className="absolute bottom-0 right-0 z-10 pr-7 pb-5">
+                                    <GameTeamStatusCard
+                                        gameInfo={gameInfo}
+                                        scoreBoardModel={scoreBoardModel}
+                                    />
+                                </div>
+                                {!challengeSearched && !loadingVisible ? (
                                     <div className="absolute top-0 left-0 w-full h-full flex flex-col">
                                         {gameInfo?.description ? (
                                             <MacScrollbar
@@ -553,20 +562,22 @@ export function ChallengesView({
                                     </div>
                                 ) : (
                                     !loadingVisible ? (
-                                        !pageSwitch ? (
-                                            <ChallengeMainContent
-                                                gameID={gameID}
-                                                curChallenge={curChallenge}
-                                                challengeSolveStatusList={challengeSolveStatusList}
-                                                setSubmitFlagWindowVisible={setSubmitFlagWindowVisible}
-                                                gameInfo={gameInfo}
-                                                setShowHintsWindowVisible={setShowHintsWindowVisible}
-                                                setRedirectURL={setRedirectURL}
-                                                scoreBoardModel={scoreBoardModel}
-                                            />
-                                        ) : (
-                                            <></>
-                                        )
+                                        <>
+                                            {!pageSwitch ? (
+                                                <ChallengeMainContent
+                                                    gameID={gameID}
+                                                    curChallenge={curChallenge}
+                                                    challengeSolveStatusList={challengeSolveStatusList}
+                                                    setSubmitFlagWindowVisible={setSubmitFlagWindowVisible}
+                                                    gameInfo={gameInfo}
+                                                    setShowHintsWindowVisible={setShowHintsWindowVisible}
+                                                    setRedirectURL={setRedirectURL}
+                                                    scoreBoardModel={scoreBoardModel}
+                                                />
+                                            ) : (
+                                                <></>
+                                            )}
+                                        </>
                                     ) : (
                                         <LoadingModule />
                                     )

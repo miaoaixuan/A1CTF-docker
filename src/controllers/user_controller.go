@@ -73,7 +73,7 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	if clientconfig.ClientConfig.TurnstileEnabled {
+	if clientconfig.ClientConfig.CaptchaEnabled {
 		valid := proofofwork.CapInstance.ValidateToken(c.Request.Context(), payload.Captcha)
 
 		if !valid {
@@ -206,12 +206,12 @@ func GetClientConfig(c *gin.Context) {
 		"systemOrganization":    ClientConfig.SystemOrganization,
 		"systemOrganizationURL": ClientConfig.SystemOrganizationURL,
 
-		"themeColor":       ClientConfig.ThemeColor,
-		"darkModeDefault":  ClientConfig.DarkModeDefault,
-		"allowUserTheme":   ClientConfig.AllowUserTheme,
-		"defaultLanguage":  ClientConfig.DefaultLanguage,
-		"turnstileEnabled": ClientConfig.TurnstileEnabled,
-		"turnstileSiteKey": ClientConfig.TurnstileSiteKey,
+		"themeColor":      ClientConfig.ThemeColor,
+		"darkModeDefault": ClientConfig.DarkModeDefault,
+		"allowUserTheme":  ClientConfig.AllowUserTheme,
+		"defaultLanguage": ClientConfig.DefaultLanguage,
+		"captchaEnabled":  ClientConfig.CaptchaEnabled,
+		// "AboutUS":         clientconfig.ClientConfig.AboutUS,
 
 		// 品牌资源
 		"FancyBackGroundIconWhite": ClientConfig.FancyBackGroundIconWhite,

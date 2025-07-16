@@ -76,8 +76,8 @@ func processQueueingJudge(judge *models.Judge) error {
 					ScoreChange:    rewardScore,
 					Reason:         rewardReason,
 					CreatedBy:      uuid.MustParse(judge.SubmiterID),
-					CreatedAt:      time.Now(),
-					UpdatedAt:      time.Now(),
+					CreatedAt:      time.Now().UTC(),
+					UpdatedAt:      time.Now().UTC(),
 				}
 
 				if err := dbtool.DB().Create(&adjustment).Error; err != nil {

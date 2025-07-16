@@ -366,7 +366,7 @@ func GetSystemLogs(c *gin.Context) {
 // 系统日志统计接口
 func GetSystemLogStats(c *gin.Context) {
 	// 统计最近24小时的日志
-	last24h := time.Now().Add(-24 * time.Hour)
+	last24h := time.Now().Add(-24 * time.Hour).UTC()
 
 	var stats struct {
 		TotalLogs    int64 `json:"total_logs"`

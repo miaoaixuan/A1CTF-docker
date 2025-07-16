@@ -8,7 +8,7 @@ import { Label } from "components/ui/label";
 import { Textarea } from "components/ui/textarea";
 import { Switch } from "components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "components/ui/select";
-import { Atom, Bird, Cat, Image, Loader2, Mail, Siren, Upload, UserLock } from "lucide-react";
+import { Atom, Bird, Cat, Image, Loader2, Mail, Save, Siren, Upload, UserLock } from "lucide-react";
 import { toast } from "sonner";
 import { MacScrollbar } from "mac-scrollbar";
 import { useForm } from "react-hook-form";
@@ -24,6 +24,7 @@ import MailSettings from "./MailSettings";
 import SecurityPolicySettings from "./SecurityPolicy";
 import OtherSettings from "./OtherSettings";
 import UserPolicySettings from "./UserPolicy";
+import { api } from "utils/ApiHelper";
 
 interface SystemSettings {
     // 基本信息
@@ -62,9 +63,7 @@ interface SystemSettings {
     smtpEnabled: boolean;
 
     // Cloudflare Turnstile设置
-    turnstileSiteKey: string;
-    turnstileSecretKey: string;
-    turnstileEnabled: boolean;
+    captchaEnabled: boolean;
 
     // 账户激活策略
     accountActivationMethod: "auto" | "email" | "admin";
@@ -79,7 +78,7 @@ interface SystemSettings {
 // 使用Zod定义表单验证模式
 const systemSettingsSchema = z.object({
     // 基本信息
-    systemName: z.string().min(1, "系统名称不能为空"),
+    systemName: z.string().optional(),
     systemLogo: z.string().optional(),
     systemSlogan: z.string().optional(),
     systemSummary: z.string().optional(),
@@ -89,9 +88,9 @@ const systemSettingsSchema = z.object({
     systemOrganization: z.string().optional(),
     systemOrganizationURL: z.string().optional(),
     // 主题设置
-    themeColor: z.string(),
-    darkModeDefault: z.boolean(),
-    allowUserTheme: z.boolean(),
+    themeColor: z.string().optional(),
+    darkModeDefault: z.boolean().optional(),
+    allowUserTheme: z.boolean().optional(),
 
     // 品牌资源
     fancyBackGroundIconWhite: z.string().optional(),
@@ -105,7 +104,7 @@ const systemSettingsSchema = z.object({
     schoolLogo: z.string().optional(),
     schoolSmallIcon: z.string().optional(),
     schoolUnionAuthText: z.string().optional(),
-    bgAnimation: z.boolean(),
+    bgAnimation: z.boolean().optional(),
 
     // SMTP设置
     smtpHost: z.string().optional(),
@@ -113,20 +112,21 @@ const systemSettingsSchema = z.object({
     smtpUsername: z.string().optional(),
     smtpPassword: z.string().optional(),
     smtpFrom: z.string().optional(),
-    smtpEnabled: z.boolean(),
+    smtpEnabled: z.boolean().optional(),
+    emailTemplate: z.string().optional(),
 
-    // Cloudflare Turnstile设置
-    turnstileSiteKey: z.string().optional(),
-    turnstileSecretKey: z.string().optional(),
-    turnstileEnabled: z.boolean(),
+    // 验证码
+    captchaEnabled: z.boolean().optional(),
+
+    aboutus: z.string().optional(),
 
     // 账户激活策略
-    accountActivationMethod: z.enum(["auto", "email", "admin"]),
-    registrationEnabled: z.boolean(),
+    accountActivationMethod: z.enum(["auto", "email", "admin"]).optional(),
+    registrationEnabled: z.boolean().optional(),
 
     // 其他系统设置
-    defaultLanguage: z.string(),
-    timeZone: z.string(),
+    defaultLanguage: z.string().optional(),
+    timeZone: z.string().optional(),
     maxUploadSize: z.number().int().positive(),
 });
 
@@ -146,22 +146,7 @@ export const AdminSettingsPage = () => {
         setActiveModule(action)
     }, [action])
 
-
-    // 图片预览状态
-    const [logoPreview, setLogoPreview] = useState<string | null>(null);
-    const [faviconPreview, setFaviconPreview] = useState<string | null>(null);
-    const [fancyWhitePreview, setFancyWhitePreview] = useState<string | null>(null);
-    const [fancyBlackPreview, setFancyBlackPreview] = useState<string | null>(null);
-    const [bgImagePreview, setBgImagePreview] = useState<string | null>(null);
-    const [svgIconPreview, setSvgIconPreview] = useState<string | null>(null);
-    const [goldTrophyPreview, setGoldTrophyPreview] = useState<string | null>(null);
-    const [silverTrophyPreview, setSilverTrophyPreview] = useState<string | null>(null);
-    const [bronzeTrophyPreview, setBronzeTrophyPreview] = useState<string | null>(null);
-    const [schoolLogoPreview, setSchoolLogoPreview] = useState<string | null>(null);
-    const [schoolSmallIconPreview, setSchoolSmallIconPreview] = useState<string | null>(null);
-
     const navigate = useNavigate()
-
 
     // 创建表单
     const form = useForm<SystemSettingsValues>({
@@ -200,9 +185,11 @@ export const AdminSettingsPage = () => {
             smtpPassword: "",
             smtpFrom: "",
             smtpEnabled: false,
-            turnstileSiteKey: "",
-            turnstileSecretKey: "",
-            turnstileEnabled: false,
+            emailTemplate: "",
+
+            aboutus: "",
+
+            captchaEnabled: false,
             accountActivationMethod: "email",
             registrationEnabled: true,
             defaultLanguage: "zh-CN",
@@ -225,19 +212,6 @@ export const AdminSettingsPage = () => {
 
                 // 更新表单值
                 form.reset(data);
-
-                // 设置图片预览
-                if (data.systemLogo) setLogoPreview(data.systemLogo);
-                if (data.systemFavicon) setFaviconPreview(data.systemFavicon);
-                if (data.fancyBackGroundIconWhite) setFancyWhitePreview(data.fancyBackGroundIconWhite);
-                if (data.fancyBackGroundIconBlack) setFancyBlackPreview(data.fancyBackGroundIconBlack);
-                if (data.defaultBGImage) setBgImagePreview(data.defaultBGImage);
-                if (data.svgIcon) setSvgIconPreview(data.svgIcon);
-                if (data.trophysGold) setGoldTrophyPreview(data.trophysGold);
-                if (data.trophysSilver) setSilverTrophyPreview(data.trophysSilver);
-                if (data.trophysBronze) setBronzeTrophyPreview(data.trophysBronze);
-                if (data.schoolLogo) setSchoolLogoPreview(data.schoolLogo);
-                if (data.schoolSmallIcon) setSchoolSmallIconPreview(data.schoolSmallIcon);
             }
         } catch (error) {
             console.error("获取系统设置失败:", error);
@@ -263,82 +237,6 @@ export const AdminSettingsPage = () => {
         }
     };
 
-    // 处理图片上传
-    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: string) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        const formData = new FormData();
-        formData.append("file", file);
-
-        try {
-            setIsLoading(true);
-            const response = await axios.post("/api/admin/system/upload", formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-            });
-
-            if (response.data && response.data.code === 200) {
-                const imageUrl = response.data.data.url;
-
-                // 根据不同类型设置不同字段和预览
-                switch (type) {
-                    case "logo":
-                        form.setValue("systemLogo", imageUrl);
-                        setLogoPreview(imageUrl);
-                        break;
-                    case "favicon":
-                        form.setValue("systemFavicon", imageUrl);
-                        setFaviconPreview(imageUrl);
-                        break;
-                    case "fancyWhite":
-                        form.setValue("fancyBackGroundIconWhite", imageUrl);
-                        setFancyWhitePreview(imageUrl);
-                        break;
-                    case "fancyBlack":
-                        form.setValue("fancyBackGroundIconBlack", imageUrl);
-                        setFancyBlackPreview(imageUrl);
-                        break;
-                    case "bgImage":
-                        form.setValue("defaultBGImage", imageUrl);
-                        setBgImagePreview(imageUrl);
-                        break;
-                    case "svgIcon":
-                        form.setValue("svgIcon", imageUrl);
-                        setSvgIconPreview(imageUrl);
-                        break;
-                    case "goldTrophy":
-                        form.setValue("trophysGold", imageUrl);
-                        setGoldTrophyPreview(imageUrl);
-                        break;
-                    case "silverTrophy":
-                        form.setValue("trophysSilver", imageUrl);
-                        setSilverTrophyPreview(imageUrl);
-                        break;
-                    case "bronzeTrophy":
-                        form.setValue("trophysBronze", imageUrl);
-                        setBronzeTrophyPreview(imageUrl);
-                        break;
-                    case "schoolLogo":
-                        form.setValue("schoolLogo", imageUrl);
-                        setSchoolLogoPreview(imageUrl);
-                        break;
-                    case "schoolSmallIcon":
-                        form.setValue("schoolSmallIcon", imageUrl);
-                        setSchoolSmallIconPreview(imageUrl);
-                        break;
-                }
-
-                toast.success("图片已成功上传");
-            }
-        } catch (error) {
-            console.error("上传图片失败:", error);
-            toast.error("无法上传图片，请稍后再试");
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     const modules = [
         {
@@ -378,10 +276,6 @@ export const AdminSettingsPage = () => {
         },
     ];
 
-    useEffect(() => {
-        console.log(activeModule)
-    }, [activeModule])
-
     return (
         <div className="w-screen h-screen flex flex-col">
             <AdminHeader />
@@ -409,33 +303,24 @@ export const AdminSettingsPage = () => {
                     <div className="flex flex-1 h-full overflow-hidden">
                         {activeModule == "aboutus" ? (
                             <div className="w-full h-full">
-                                <AboutPage />
+                                <AboutPage 
+                                    form={form}
+                                    onSubmit={onSubmit}
+                                />
                             </div>
                         ) : (
-                            <MacScrollbar className="w-full h-full overflow-hidden">
+                            <MacScrollbar className="w-full h-full overflow-hidden select-none">
                                 <div className="p-10 flex flex-col gap-4">
                                     {activeModule == "basic" && (
                                         <BasicSettings
                                             form={form}
-                                            logoPreview={logoPreview}
-                                            faviconPreview={faviconPreview}
-                                            handleImageUpload={handleImageUpload}
+                                            onSubmit={onSubmit}
                                         />
                                     )}
 
                                     {activeModule == "resource" && (
                                         <ResourceSettings
                                             form={form}
-                                            fancyWhitePreview={fancyWhitePreview}
-                                            fancyBlackPreview={fancyBlackPreview}
-                                            bgImagePreview={bgImagePreview}
-                                            svgIconPreview={svgIconPreview}
-                                            goldTrophyPreview={goldTrophyPreview}
-                                            silverTrophyPreview={silverTrophyPreview}
-                                            handleImageUpload={handleImageUpload}
-                                            bronzeTrophyPreview={bronzeTrophyPreview}
-                                            schoolLogoPreview={schoolLogoPreview}
-                                            schoolSmallIconPreview={schoolSmallIconPreview}
                                         />
                                     )}
 
@@ -461,6 +346,19 @@ export const AdminSettingsPage = () => {
                                         <OtherSettings
                                             form={form}
                                         />
+                                    )}
+
+                                    {activeModule != "resource" && (
+                                        <div className="w-full mt-4">
+                                            <Button
+                                                type="button"
+                                                onClick={form.handleSubmit(onSubmit)}
+                                                disabled={isLoading}
+                                            >
+                                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save />}
+                                                {isLoading ? '保存中...' : '保存设置'}
+                                            </Button>
+                                        </div>
                                     )}
                                 </div>
                             </MacScrollbar>

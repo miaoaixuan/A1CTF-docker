@@ -41,17 +41,18 @@ type SystemSettings struct {
 	BGAnimation              bool   `json:"bgAnimation"`
 
 	// SMTP设置
-	SmtpHost     string `json:"smtpHost"`
-	SmtpPort     int    `json:"smtpPort"`
-	SmtpUsername string `json:"smtpUsername"`
-	SmtpPassword string `json:"smtpPassword"`
-	SmtpFrom     string `json:"smtpFrom"`
-	SmtpEnabled  bool   `json:"smtpEnabled"`
+	SmtpHost      string `json:"smtpHost"`
+	SmtpPort      int    `json:"smtpPort"`
+	SmtpUsername  string `json:"smtpUsername"`
+	SmtpPassword  string `json:"smtpPassword"`
+	SmtpFrom      string `json:"smtpFrom"`
+	SmtpEnabled   bool   `json:"smtpEnabled"`
+	EmailTemplate string `json:"emailTemplate"`
 
-	// Cloudflare Turnstile设置
-	TurnstileSiteKey   string `json:"turnstileSiteKey"`
-	TurnstileSecretKey string `json:"turnstileSecretKey"`
-	TurnstileEnabled   bool   `json:"turnstileEnabled"`
+	// Proof-of-work 验证码设置
+	CaptchaEnabled bool `json:"captchaEnabled"`
+
+	AboutUS string `json:"aboutus"`
 
 	// 账户激活策略
 	AccountActivationMethod string `json:"accountActivationMethod"`
@@ -90,7 +91,11 @@ var DefaultSettings = SystemSettings{
 	SchoolLogo:               "/images/zjnu_logo.png",
 	SchoolSmallIcon:          "/images/zjnu_small_logo.png",
 	SchoolUnionAuthText:      "ZJNU Union Authserver",
+	EmailTemplate:            "",
 	BGAnimation:              false,
+
+	CaptchaEnabled: true,
+	AboutUS:        "A1CTF Platform",
 
 	SmtpPort:                587,
 	DefaultLanguage:         "zh-CN",
@@ -98,7 +103,7 @@ var DefaultSettings = SystemSettings{
 	MaxUploadSize:           10,
 	AccountActivationMethod: "email",
 	RegistrationEnabled:     true,
-	UpdatedTime:             time.Now(),
+	UpdatedTime:             time.Now().UTC(),
 }
 
 var ClientConfig SystemSettings

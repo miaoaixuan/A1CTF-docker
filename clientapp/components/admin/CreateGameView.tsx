@@ -957,7 +957,7 @@ export function CreateGameView() {
                                     name="practice_mode"
                                     render={({ field }) => (
                                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                            <div className="space-y-0.5">
+                                            <div className="space-y-0.5 mb-[-1px]">
                                                 <FormLabel>练习模式</FormLabel>
                                                 <FormDescription>
                                                     是否开启练习模式
@@ -979,7 +979,7 @@ export function CreateGameView() {
                                     name="require_wp"
                                     render={({ field }) => (
                                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                            <div className="space-y-0.5">
+                                            <div className="space-y-0.5 mb-[-1px]">
                                                 <FormLabel>WriteUP</FormLabel>
                                                 <FormDescription>
                                                     是否需要提交 WriteUP
@@ -1001,7 +1001,7 @@ export function CreateGameView() {
                                     name="visible"
                                     render={({ field }) => (
                                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                            <div className="space-y-0.5">
+                                            <div className="space-y-0.5 mb-[-1px]">
                                                 <FormLabel>是否可见</FormLabel>
                                                 <FormDescription>
                                                     比赛是否可见

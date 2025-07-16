@@ -26,7 +26,7 @@ export function toastSuccess({ title, theme }: { title: string, theme: string })
     )
 }
 
-export function toastNewNotice({ title, time, openNotices }: { title: string, time: number, openNotices: Dispatch<SetStateAction<boolean>> }) {
+export function toastNewNotice({ title, time, openNotices }: { title: string, time: string, openNotices: Dispatch<SetStateAction<boolean>> }) {
 
     toast.custom((t) => (
         <div className="bg-background border-2 rounded-2xl w-full relative">
@@ -37,7 +37,7 @@ export function toastNewNotice({ title, time, openNotices }: { title: string, ti
                 </div>
                 <div className="flex gap-2 items-center">
                     <CalendarClock size={20} />
-                    <span className="text-sm">{ dayjs(time).format("YYYY-MM-DD HH:mm:ss") }</span>
+                    <span className="text-sm">{ time }</span>
                 </div>
                 <div className="flex gap-2">
                     <FileType2 size={20} className="flex-none" />

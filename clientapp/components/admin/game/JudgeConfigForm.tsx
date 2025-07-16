@@ -218,7 +218,10 @@ export function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) 
                                     render={({ field }) => (
                                         <FormItem className="flex">
                                             <FormControl>
-                                                <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                                <Switch checked={field.value} onCheckedChange={(v) => {
+                                                    field.onChange(v)
+                                                    form.setValue(`challenges.${index}.hints.${hintIndex}.create_time`, new Date())
+                                                }} />
                                             </FormControl>
                                         </FormItem>
                                     )}
@@ -250,7 +253,10 @@ export function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) 
                                 render={({ field }) => (
                                     <FormItem className="flex-1">
                                         <FormControl>
-                                            <Textarea {...field} value={field.value ?? ''} />
+                                            <Textarea value={field.value ?? ''} onChange={(v) => {
+                                                field.onChange(v)
+                                                form.setValue(`challenges.${index}.hints.${hintIndex}.create_time`, new Date())
+                                            }} />
                                         </FormControl>
                                     </FormItem>
                                 )}

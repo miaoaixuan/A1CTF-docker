@@ -4,22 +4,15 @@ import { useTheme } from "next-themes";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "utils/GZApi";
 import { LoadingPage } from "./LoadingPage";
+import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 
 export function AboutPage () {
 
     const { theme } = useTheme()
-    const [source, setSource] = useState("")
 
-    const [loadingPageVisible, setLoadingPageVisible] = useState(true)
+    const { clientConfig } = useGlobalVariableContext()
 
-    useEffect(() => {
-        api.info.infoGetLatestPosts().then((res1) => {
-            api.info.infoGetPost(res1.data[0].id).then((res2) => {
-                setSource(res2.data.content)
-                setLoadingPageVisible(false)
-            })
-        })
-    }, [])
+    const [source, setSource] = useState(clientConfig.AboutUS)
 
     const memoizedDescription = useMemo(() => {
         return source ? (
@@ -33,7 +26,6 @@ export function AboutPage () {
 
     return (
         <div className="flex w-full h-full relative">
-            <LoadingPage visible={loadingPageVisible} screen={false} absolute={true} />
             <MacScrollbar className="overflow-y-auto w-full h-full pl-3 pr-3 md:pl-8 md:pr-8 lg:pl-20 lg:pr-20 pt-4 pb-4"
                 skin={theme == "light" ? "light" : "dark"}
             >

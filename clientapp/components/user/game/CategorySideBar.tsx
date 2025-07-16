@@ -273,7 +273,7 @@ export function CategorySidebar({
                     className="pr-1 pl-1 h-full"
                 >
                     <SidebarGroup className="h-full">
-                        <div className="flex justify-center w-full items-center pl-2 pr-2 pt-6 mb-2">
+                        <div className="flex justify-center w-full items-center pl-2 pr-2 pt-6 mb-4">
                             <div className="justify-start flex gap-4 items-center">
                                 <img
                                     className="transition-all duration-300"
@@ -288,7 +288,7 @@ export function CategorySidebar({
                         </div>
 
                         {!loadingVisible ? (
-                            <div className="pl-[7px] pr-[7px] mt-2">
+                            <div className="pl-[7px] pr-[7px] mt-2 pb-6">
                                 {
                                     Object.entries(challenges ?? {}).map(([category, challengeList]) => (
                                         <CategoryChallenges

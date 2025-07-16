@@ -1,26 +1,26 @@
-import React, {  } from "react";
+import React, { } from "react";
 import { Button } from "components/ui/button";
 import { Input } from "components/ui/input";
 import { Label } from "components/ui/label";
 import { Textarea } from "components/ui/textarea";
-import { Upload } from "lucide-react";
+import { Save, Upload } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "components/ui/form";
 import { SystemSettingsValues } from "./AdminSettingsPage";
+import { Switch } from "components/ui/switch";
 
 
 export const BasicSettings = (
-    { form, logoPreview, faviconPreview, handleImageUpload } : {
+    { form, onSubmit }: {
         form: UseFormReturn<SystemSettingsValues>,
-        logoPreview: string | null,
-        faviconPreview: string | null,
-        handleImageUpload: (event: React.ChangeEvent<HTMLInputElement>, type: string) => Promise<void>
+        onSubmit: (value: SystemSettingsValues) => Promise<void>
     }
 ) => {
 
     return (
         <>
-            <span className="text-2xl font-bold">基本设置</span>
+            <span className="text-2xl font-bold mb-4">基本设置</span>
+
             <FormField
                 control={form.control}
                 name="systemName"
@@ -38,8 +38,6 @@ export const BasicSettings = (
                     </FormItem>
                 )}
             />
-
-            
 
             <FormField
                 control={form.control}
@@ -133,6 +131,42 @@ export const BasicSettings = (
 
             <FormField
                 control={form.control}
+                name="svgAltData"
+                render={({ field }) => (
+                    <FormItem>
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>图标的AltData</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
+                        <FormControl>
+                            <Input {...field} />
+                        </FormControl>
+                        <FormDescription>长时间悬停在系统图标上显示的 Title</FormDescription>
+                    </FormItem>
+                )}
+            />
+
+            <FormField
+                control={form.control}
+                name="schoolUnionAuthText"
+                render={({ field }) => (
+                    <FormItem>
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>统一认证显示名称</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
+                        <FormControl>
+                            <Input {...field} />
+                        </FormControl>
+                        <FormDescription>登录页的统一认证按钮显示名称</FormDescription>
+                    </FormItem>
+                )}
+            />
+
+            <FormField
+                control={form.control}
                 name="systemSummary"
                 render={({ field }) => (
                     <FormItem>
@@ -148,6 +182,29 @@ export const BasicSettings = (
                     </FormItem>
                 )}
             />
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <FormField
+                    control={form.control}
+                    name="bgAnimation"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                            <div className="space-y-0.5 mb-[-1px]">
+                                <FormLabel>是否启用背景动画</FormLabel>
+                                <FormDescription>
+                                    背景动画资源占用有点高，可以选择性的关闭
+                                </FormDescription>
+                            </div>
+                            <FormControl>
+                                <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
+            </div>
         </>
     );
 };

@@ -153,7 +153,7 @@ export function LoginForm({
                         </FormItem>
                     )}
                 />
-                {clientConfig.turnstileEnabled ? (
+                {clientConfig.captchaEnabled ? (
                     <CapWidget
                         endpoint="/api/cap/"
                         onSolve={(token) => {
@@ -166,7 +166,7 @@ export function LoginForm({
                 ) : <></>}
 
                 <div className='h-0' />
-                <Button type="submit" className="transition-all duration-300 w-full" disabled={loading || (clientConfig.turnstileEnabled && token == "")}>{t("login")}</Button>
+                <Button type="submit" className="transition-all duration-300 w-full" disabled={loading || (clientConfig.captchaEnabled && token == "")}>{t("login")}</Button>
                 <div className="text-center text-sm">
                     {t("dont_have_account")}{" "}
                     <a className="underline underline-offset-4" onClick={() => router(`/signup`)}>

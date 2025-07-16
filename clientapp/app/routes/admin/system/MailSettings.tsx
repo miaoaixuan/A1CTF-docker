@@ -1,133 +1,149 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "components/ui/card";
 import { Button } from "components/ui/button";
 import { Input } from "components/ui/input";
-import { Label } from "components/ui/label";
-import { Textarea } from "components/ui/textarea";
 import { Switch } from "components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "components/ui/select";
-import { Atom, Bird, Cat, Image, Loader2, Mail, Siren, Upload, UserLock } from "lucide-react";
-import { toast } from "sonner";
-import { MacScrollbar } from "mac-scrollbar";
-import { useForm, UseFormReturn } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "components/ui/form";
-import { useLocation, useSearchParams } from "react-router";
-import { AdminHeader } from "components/admin/AdminHeader";
-import AboutPage from "components/admin/AboutPage";
+import { UseFormReturn } from "react-hook-form";
+import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "components/ui/form";
 import { SystemSettingsValues } from "./AdminSettingsPage";
+import { Editor } from "@monaco-editor/react";
+import { Mail } from "lucide-react";
 
 
 export const MailSettings = (
-    { form } : {
+    { form }: {
         form: UseFormReturn<SystemSettingsValues>,
     }
 ) => {
 
     return (
         <>
-            <span className="text-2xl font-bold">邮件设置</span>
+            <span className="text-2xl font-bold mb-4">邮件设置</span>
+
             <FormField
                 control={form.control}
-                name="smtpEnabled"
+                name="smtpHost"
                 render={({ field }) => (
-                    <FormItem className="flex items-center justify-between py-2">
-                        <div>
-                            <FormLabel>启用SMTP</FormLabel>
-                            <FormDescription>是否启用系统邮件发送功能</FormDescription>
+                    <FormItem>
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>SMTP服务器</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
                         </div>
                         <FormControl>
-                            <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                            />
+                            <Input {...field} />
                         </FormControl>
                     </FormItem>
                 )}
             />
 
-            <div className="grid gap-4">
-                <FormField
-                    control={form.control}
-                    name="smtpHost"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>SMTP服务器</FormLabel>
-                            <FormControl>
-                                <Input {...field} placeholder="例如: smtp.example.com" />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={form.control}
-                    name="smtpPort"
-                    render={({ field }) => (
-                        <FormItem>
+            <FormField
+                control={form.control}
+                name="smtpPort"
+                render={({ field }) => (
+                    <FormItem>
+                        <div className="flex items-center h-[20px]">
                             <FormLabel>SMTP端口</FormLabel>
-                            <FormControl>
-                                <Input
-                                    type="number"
-                                    placeholder="例如: 587"
-                                    value={field.value}
-                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 587)}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
+                        <FormControl>
+                            <Input {...field} />
+                        </FormControl>
+                    </FormItem>
+                )}
+            />
 
-                <FormField
-                    control={form.control}
-                    name="smtpUsername"
-                    render={({ field }) => (
-                        <FormItem>
+            <FormField
+                control={form.control}
+                name="smtpUsername"
+                render={({ field }) => (
+                    <FormItem>
+                        <div className="flex items-center h-[20px]">
                             <FormLabel>SMTP用户名</FormLabel>
-                            <FormControl>
-                                <Input {...field} placeholder="邮箱账号" />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
+                        <FormControl>
+                            <Input {...field} />
+                        </FormControl>
+                    </FormItem>
+                )}
+            />
 
-                <FormField
-                    control={form.control}
-                    name="smtpPassword"
-                    render={({ field }) => (
-                        <FormItem>
+            <FormField
+                control={form.control}
+                name="smtpPassword"
+                render={({ field }) => (
+                    <FormItem>
+                        <div className="flex items-center h-[20px]">
                             <FormLabel>SMTP密码</FormLabel>
-                            <FormControl>
-                                <Input {...field} type="password" placeholder="邮箱密码或授权码" />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
+                        <FormControl>
+                            <Input {...field} />
+                        </FormControl>
+                        <FormDescription>邮箱密码或授权码</FormDescription>
+                    </FormItem>
+                )}
+            />
 
-                <FormField
-                    control={form.control}
-                    name="smtpFrom"
-                    render={({ field }) => (
-                        <FormItem>
+            <FormField
+                control={form.control}
+                name="smtpFrom"
+                render={({ field }) => (
+                    <FormItem>
+                        <div className="flex items-center h-[20px]">
                             <FormLabel>发件人地址</FormLabel>
-                            <FormControl>
-                                <Input {...field} placeholder="例如: noreply@example.com" />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            </div>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
+                        <FormControl>
+                            <Input {...field} />
+                        </FormControl>
+                        <FormDescription>例如: noreply@example.com</FormDescription>
+                    </FormItem>
+                )}
+            />
 
-            <div className="pt-4">
-                <Button type="button" variant="outline">测试邮件配置</Button>
+            <FormField
+                control={form.control}
+                name="emailTemplate"
+                render={({ field }) => (
+                    <FormItem>
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>邮件模板</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
+                        <FormControl>
+                            <div className="w-full h-[500px] pt-4 bg-[#1e1e1e] rounded-lg overflow-hidden">
+                                <Editor
+                                    height="100%"
+                                    width="100%"
+                                    defaultLanguage="html"
+                                    theme='vs-dark'
+                                    defaultValue={field.value}
+                                    onChange={(value) => {
+                                        form.setValue("emailTemplate", value)
+                                    }}
+                                />
+                            </div>
+                        </FormControl>
+                        <FormDescription>可以在这里输入你的邮件模板, 关键数据的模板名称请参考文档</FormDescription>
+                    </FormItem>
+                )}
+            />
+
+            <div className="flex flex-col gap-2 mt-1">
+                <FormLabel>邮件测试</FormLabel>
+                <div className="flex gap-4 mt-1">
+                    <Input />
+                    <Button>
+                        <Mail />
+                        发送
+                    </Button>
+                </div>
+                <FormDescription>请先保存再发送测试</FormDescription>
             </div>
         </>
     );

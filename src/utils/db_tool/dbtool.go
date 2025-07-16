@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -22,6 +23,7 @@ var db *gorm.DB
 var redis_instance *redis.Client
 var ml *melody.Melody
 var gameSessions map[*melody.Session]int64 = make(map[*melody.Session]int64)
+var gameSessionsMutex sync.RWMutex
 var ctx = context.Background()
 
 func DB() *gorm.DB {
@@ -100,17 +102,32 @@ func Init() {
 			return
 		}
 
+		gameSessionsMutex.Lock()
 		gameSessions[s] = gameID
+		gameSessionsMutex.Unlock()
 
 		s.Write([]byte("{ \"status\": \"connected\" }"))
 	})
 
 	ml.HandleClose(func(s *melody.Session, i int, s2 string) error {
-		delete(gameSessions, s)
+		gameSessionsMutex.Lock()
+		_, exists := gameSessions[s]
+		if exists {
+			delete(gameSessions, s)
+		}
+		gameSessionsMutex.Unlock()
 		return nil
 	})
 }
 
 func GameSessions() map[*melody.Session]int64 {
-	return gameSessions
+	gameSessionsMutex.RLock()
+	defer gameSessionsMutex.RUnlock()
+
+	// 返回一个拷贝以避免外部修改
+	result := make(map[*melody.Session]int64)
+	for k, v := range gameSessions {
+		result[k] = v
+	}
+	return result
 }

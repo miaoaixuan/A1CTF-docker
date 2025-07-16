@@ -6,7 +6,7 @@ import { ChevronDown } from 'lucide-react';
 import { Button } from 'components/ui/button';
 import { ChallengeCard } from 'components/ChallengeCard';
 import { challengeCategoryColorMap, challengeCategoryIcons } from 'utils/ClientAssets';
-import { ChallengeSolveStatus } from 'components/ChallengesView';
+import { ChallengeSolveStatus } from 'components/user/game/ChallengesView';
 
 export default function CategoryChallenges({
     category,
@@ -28,7 +28,14 @@ export default function CategoryChallenges({
     const colorMap: { [key: string]: string } = challengeCategoryColorMap;
     const cateIcon: { [key: string]: any } = challengeCategoryIcons;
 
-    const [categoryFolded, setCategoryFolded] = useState(false);
+    let shouldExtend = false
+
+    if (curChallenge) {
+        shouldExtend = curChallenge?.category?.toString().toLocaleLowerCase() == category
+    }
+
+
+    const [categoryFolded, setCategoryFolded] = useState(!shouldExtend);
     const [hasPadding, setCategoryPadding] = useState(true);
     const contentRef = useRef<HTMLDivElement>(null);
 
@@ -94,7 +101,7 @@ export default function CategoryChallenges({
                         }}
                     >
                         {cateIcon[category.toLowerCase()]}
-                        <span className="font-bold text-[1.1em]">{category}</span>
+                        <span className="font-bold text-[1.1em]">{category} ({ challengeList.length })</span>
                     </div>
                     <div className="flex-1" />
                     <div className="justify-end">

@@ -398,7 +398,7 @@ func Login() func(c *gin.Context) (interface{}, error) {
 			return "", jwt.ErrMissingLoginValues
 		}
 
-		if clientconfig.ClientConfig.TurnstileEnabled {
+		if clientconfig.ClientConfig.CaptchaEnabled {
 			valid := proofofwork.CapInstance.ValidateToken(c.Request.Context(), loginVals.CaptCha)
 			if !valid {
 				return nil, jwt.ErrMissingLoginValues

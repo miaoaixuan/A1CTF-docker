@@ -14,7 +14,7 @@ import (
 func InsertNotice(gameID int64, category models.NoticeCategory, values []string) {
 	notice := models.Notice{
 		GameID:         gameID,
-		CreateTime:     time.Now(),
+		CreateTime:     time.Now().UTC(),
 		NoticeCategory: category,
 		Announced:      false,
 		Data:           pq.StringArray(values),

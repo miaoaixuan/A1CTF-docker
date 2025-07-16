@@ -5,67 +5,35 @@ import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessa
 import { SystemSettingsValues } from "./AdminSettingsPage";
 
 export const SecurityPolicySettings = (
-    { form } : {
+    { form }: {
         form: UseFormReturn<SystemSettingsValues>,
     }
 ) => {
 
     return (
         <>
-            <span className="text-2xl font-bold">安全设置</span>
-            <div>
-                <h3 className="text-lg font-medium">Cloudflare Turnstile 人机验证</h3>
-                <p className="text-sm text-gray-500 mb-4">配置Cloudflare Turnstile验证码以防止自动化攻击</p>
+            <span className="text-2xl font-bold mb-4">安全设置</span>
 
-                <FormField
-                    control={form.control}
-                    name="turnstileEnabled"
-                    render={({ field }) => (
-                        <FormItem className="flex items-center justify-between py-2">
-                            <div>
-                                <FormLabel>启用验证码</FormLabel>
-                                <FormDescription>在登录、注册等页面显示验证码</FormDescription>
-                            </div>
-                            <FormControl>
-                                <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                />
-                            </FormControl>
-                        </FormItem>
-                    )}
-                />
-
-                <div className="grid gap-4 mt-4">
-                    <FormField
-                        control={form.control}
-                        name="turnstileSiteKey"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>站点密钥 (Site Key)</FormLabel>
-                                <FormControl>
-                                    <Input {...field} placeholder="Cloudflare Turnstile站点密钥" />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-
-                    <FormField
-                        control={form.control}
-                        name="turnstileSecretKey"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>密钥 (Secret Key)</FormLabel>
-                                <FormControl>
-                                    <Input {...field} placeholder="Cloudflare Turnstile密钥" />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
-            </div>
+            <FormField
+                control={form.control}
+                name="captchaEnabled"
+                render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                        <div className="space-y-0.5 mb-[-1px]">
+                            <FormLabel>启用验证码</FormLabel>
+                            <FormDescription>
+                                在登录、注册等页面显示验证码
+                            </FormDescription>
+                        </div>
+                        <FormControl>
+                            <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                            />
+                        </FormControl>
+                    </FormItem>
+                )}
+            />
         </>
     );
 };
