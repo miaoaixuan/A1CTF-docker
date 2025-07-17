@@ -5,8 +5,10 @@ import TimerDisplay from "components/modules/TimerDisplay";
 import { Button } from "components/ui/button";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import dayjs from "dayjs";
-import { CirclePlay, ClockAlert, Hourglass, Key, Lock, Package, PencilLine, Pickaxe, ScanText, Users, UsersRound } from "lucide-react";
+import { useNavigateFrom } from "hooks/NavigateFrom";
+import { Album, CirclePlay, ClockAlert, Hourglass, IdCard, Key, Lock, Package, PencilLine, Pickaxe, ScanFace, ScanText, Users, UsersRound } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useNavigate } from "react-router";
 import { UserFullGameInfo } from "utils/A1API";
 
 export default function GamePosterInfoModule(
@@ -30,11 +32,33 @@ export default function GamePosterInfoModule(
         }
     }
 
+    const [ navigateFrom, getNavigateFrom ] = useNavigateFrom()
+
     const gameStatusElement = {
         "unLogin": (
-            <div className="flex gap-4 items-center">
-                <Key size={36} />
-                <span className="text-2xl font-bold">请先登录</span>
+            <div className="flex gap-4 flex-col items-center">
+                <div className="flex gap-4">
+                    <Key size={36} />
+                    <span className="text-2xl font-bold">请先登录</span>
+                </div>
+                <div className="flex gap-4">
+                    <Button variant="outline" className="pointer-events-auto [&_svg]:size-[22px] gap-2"
+                        onClick={() => {
+                            navigateFrom("/login")
+                        }}
+                    >
+                        <ScanFace />
+                        <span className="text-[16px] font-bold">登录</span>
+                    </Button>
+                    <Button variant="outline" className="pointer-events-auto [&_svg]:size-[22px] gap-2"
+                        onClick={() => {
+                            navigateFrom("/signup")
+                        }}
+                    >
+                        <IdCard />
+                        <span className="text-[16px] font-bold">注册</span>
+                    </Button>
+                </div>
             </div>
         ),
         "ended": (

@@ -52,13 +52,16 @@ export default function GameViewSidebar(
             name: '排行榜',
             icon: <Cctv className="h-4 w-4" />,
             shouldDisable: () => {
-                return gameStatus != "running" && gameStatus != "practiceMode" && gameStatus != "ended" && gameStatus != "banned"
+                return gameStatus != "running" && gameStatus != "practiceMode" && gameStatus != "ended" && gameStatus != "banned" && gameStatus != "unLogin"
             }
         },
         {
             id: 'team',
             name: '队伍管理',
             icon: <UserSearch className="h-4 w-4" />,
+            shouldDisable: () => {
+                return gameStatus == "unLogin"
+            }
         },
     ];
 

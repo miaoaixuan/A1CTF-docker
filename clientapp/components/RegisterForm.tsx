@@ -78,7 +78,7 @@ export function RegisterForm({
             captcha: token
         }).then((res) => {
             updateProfile(() => {
-                router(`/`)
+                router(`/login`)
     
                 setTimeout(() => {
                     toast.success(t("signup_success"))

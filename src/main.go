@@ -400,6 +400,7 @@ func main() {
 		if clientconfig.ClientConfig.GameActivityMode != "" {
 			if c.Request.RequestURI == "/" || c.Request.RequestURI == "/games" || c.Request.RequestURI == "/games/" {
 				c.Redirect(http.StatusFound, fmt.Sprintf("/games/%s/info", clientconfig.ClientConfig.GameActivityMode))
+				return
 			}
 		}
 		c.File("./clientapp/build/client/index.html")

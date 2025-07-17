@@ -36,6 +36,7 @@ import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 
 import Turnstile, { useTurnstile } from "react-turnstile";
+import { useNavigateFrom } from "hooks/NavigateFrom";
 
 interface ErrorLoginResponse {
     title: string;
@@ -61,6 +62,8 @@ export function LoginForm({
 
     const { theme, systemTheme } = useTheme();
 
+    const [navigateFrom, getNavigateFrom] = useNavigateFrom()
+
     const formSchema = z.object({
         userName: z.string().nonempty(t("username_not_null")),
         password: z.string().nonempty(t("password_not_null"))
@@ -82,7 +85,7 @@ export function LoginForm({
             captcha: token
         }).then(response => {
             updateProfile(() => {
-                router(`/`)
+                router(getNavigateFrom() ?? "/")
 
                 setTimeout(() => {
                     toast.success(t("login_successful"))
@@ -91,7 +94,6 @@ export function LoginForm({
         }).catch((error: AxiosError) => {
             if (error.response?.status == 401) {
                 toast.error((error.response.data as any).message)
-                turnstile.reset()
                 setToken("")
             } else {
                 toast.error(t("unknow_error"))
@@ -102,8 +104,6 @@ export function LoginForm({
             }, 300)
         })
     }
-
-    const turnstile = useTurnstile();
 
     return (
         <Form {...form}>

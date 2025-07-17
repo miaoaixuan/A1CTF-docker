@@ -116,7 +116,7 @@ export default function Games() {
         )
     }
 
-    if (!gameInfo) {
+    if (!gameInfo || gameStatus == "") {
         return <></>
     }
 
@@ -152,7 +152,7 @@ export default function Games() {
                     ) : <></> }
 
                     { curChoicedModule == "scoreboard" ? ( 
-                        ["running", "practiceMode", "ended", "banned"].includes(gameStatus) ? (
+                        ["running", "practiceMode", "ended", "banned", "unLogin"].includes(gameStatus) ? (
                             <div className="relative w-full h-full">
                                 <ScoreBoardPage gmid={parseInt(id)} />
                             </div>
