@@ -36,7 +36,7 @@ export default function GamePosterInfoModule(
 
     const gameStatusElement = {
         "unLogin": (
-            <div className="flex gap-4 flex-col items-center">
+            <div className="flex gap-6 flex-col items-center">
                 <div className="flex gap-4">
                     <Key size={36} />
                     <span className="text-2xl font-bold">请先登录</span>

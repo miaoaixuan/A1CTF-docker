@@ -1004,7 +1004,7 @@ export default function ScoreBoardPage(
                     suppressScrollX
                 >
                     <div className='w-full flex flex-col relative gap-2 py-10'>
-                        <div id='scoreHeader' className='w-full h-[60px] flex items-center px-10 '>
+                        <div id='scoreHeader' className='w-full h-[60px] flex items-center px-10 mb-6 '>
                             <span className='text-3xl font-bold [text-shadow:_hsl(var(--foreground))_1px_1px_20px] select-none'>ScoreBoard</span>
                             <div className='flex-1' />
                             {/* 下载积分榜按钮 */}
