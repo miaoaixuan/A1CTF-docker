@@ -3143,6 +3143,66 @@ paths:
           description: 请求参数错误
         '500':
           description: 服务器内部错误
+  /api/admin/system/settings:
+    get:
+      tags: [system]
+      operationId: getSystemSettings
+      summary: 获取系统设置
+      description: 获取当前系统的所有配置设置
+      responses:
+        '200':
+          description: 成功获取系统设置
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    $ref: '#/components/schemas/SystemSettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags: [system]
+      operationId: updateSystemSettings
+      summary: 更新系统设置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SystemSettingsPartialUpdate'
+      responses:
+        '200':
+          description: 系统设置更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "System settings updated"
+                  data:
+                    $ref: '#/components/schemas/SystemSettings'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 components:
   securitySchemes:
     cookieAuth:
@@ -4933,3 +4993,423 @@ components:
         - challenge_name
         - judge_status
         - judge_time
+    SystemSettings:
+      type: object
+      description: 系统设置完整结构体
+      properties:
+        # 基本信息
+        systemName:
+          type: string
+          description: 系统名称
+          example: "A1CTF"
+          maxLength: 100
+        systemLogo:
+          type: string
+          description: 系统logo URL
+          example: "/images/logo.png"
+        systemSlogan:
+          type: string
+          description: 系统标语
+          example: "A Modern CTF Platform"
+          maxLength: 200
+        systemSummary:
+          type: string
+          description: 系统简介
+          example: "A comprehensive CTF platform for cybersecurity education"
+        systemFooter:
+          type: string
+          description: 页面底部信息
+          example: "© 2024 A1CTF Team"
+          maxLength: 500
+        systemFavicon:
+          type: string
+          description: 网站图标 URL
+          example: "/images/favicon.ico"
+        systemICP:
+          type: string
+          description: ICP备案号
+          example: "浙ICP备2023022969号"
+        systemOrganization:
+          type: string
+          description: 组织名称
+          example: "浙江师范大学"
+        systemOrganizationURL:
+          type: string
+          description: 组织官网链接
+          format: uri
+          example: "https://www.zjnu.edu.cn"
+
+        # 主题设置
+        themeColor:
+          type: string
+          description: 主题颜色
+          enum: ["blue", "red", "green", "purple", "orange", "gray"]
+          example: "blue"
+        darkModeDefault:
+          type: boolean
+          description: 默认是否为暗色模式
+          example: true
+        allowUserTheme:
+          type: boolean
+          description: 是否允许用户自定义主题
+          example: true
+
+        # 品牌资源
+        fancyBackGroundIconWhite:
+          type: string
+          description: 白色背景图标 URL
+          example: "/images/ctf_white.png"
+        fancyBackGroundIconBlack:
+          type: string
+          description: 黑色背景图标 URL
+          example: "/images/ctf_black.png"
+        defaultBGImage:
+          type: string
+          description: 默认背景图片 URL
+          example: "/images/defaultbg.jpg"
+        svgIcon:
+          type: string
+          description: SVG图标 URL
+          example: "/images/A1natas.svg"
+        svgAltData:
+          type: string
+          description: SVG图标替代文本
+          example: "A1natas"
+        trophysGold:
+          type: string
+          description: 金奖杯图标 URL
+          example: "/images/trophys/gold_trophy.png"
+        trophysSilver:
+          type: string
+          description: 银奖杯图标 URL
+          example: "/images/trophys/silver_trophy.png"
+        trophysBronze:
+          type: string
+          description: 铜奖杯图标 URL
+          example: "/images/trophys/copper_trophy.png"
+        schoolLogo:
+          type: string
+          description: 学校logo URL
+          example: "/images/zjnu_logo.png"
+        schoolSmallIcon:
+          type: string
+          description: 学校小图标 URL
+          example: "/images/zjnu_small_logo.png"
+        schoolUnionAuthText:
+          type: string
+          description: 学校联合认证文本
+          example: "ZJNU Union Authserver"
+        bgAnimation:
+          type: boolean
+          description: 是否启用背景动画
+          example: false
+
+        # SMTP设置
+        smtpHost:
+          type: string
+          description: SMTP服务器地址
+          example: "smtp.example.com"
+        smtpPort:
+          type: integer
+          description: SMTP服务器端口
+          minimum: 1
+          maximum: 65535
+          example: 587
+        smtpUsername:
+          type: string
+          description: SMTP用户名
+          example: "noreply@example.com"
+        smtpPassword:
+          type: string
+          description: SMTP密码
+          format: password
+          example: "password123"
+        smtpFrom:
+          type: string
+          description: 发件人邮箱
+          format: email
+          example: "noreply@example.com"
+        smtpEnabled:
+          type: boolean
+          description: 是否启用SMTP
+          example: false
+        emailTemplate:
+          type: string
+          description: 邮件模板
+          example: ""
+
+        # 验证码设置
+        captchaEnabled:
+          type: boolean
+          description: 是否启用验证码
+          example: true
+
+        # 比赛模式
+        gameActivityMode:
+          type: string
+          description: 比赛模式对应的比赛ID
+
+        # 关于我们
+        aboutus:
+          type: string
+          description: 关于我们内容
+          example: "A1CTF Platform"
+
+        # 账户激活策略
+        accountActivationMethod:
+          type: string
+          description: 账户激活方式
+          enum: ["auto", "email", "admin"]
+          example: "email"
+        registrationEnabled:
+          type: boolean
+          description: 是否启用用户注册
+          example: true
+
+        # 其他系统设置
+        defaultLanguage:
+          type: string
+          description: 默认语言
+          example: "zh-CN"
+        timeZone:
+          type: string
+          description: 时区设置
+          example: "Asia/Shanghai"
+        maxUploadSize:
+          type: integer
+          description: 最大上传文件大小(MB)
+          minimum: 1
+          maximum: 1024
+          example: 10
+
+        # 时间戳
+        updatedTime:
+          type: string
+          format: date-time
+          description: 最后更新时间
+          example: "2024-01-01T12:00:00Z"
+
+      required:
+        - systemName
+        - themeColor
+        - darkModeDefault
+        - allowUserTheme
+        - bgAnimation
+        - smtpPort
+        - smtpEnabled
+        - captchaEnabled
+        - accountActivationMethod
+        - registrationEnabled
+        - defaultLanguage
+        - timeZone
+        - maxUploadSize
+
+    SystemSettingsPartialUpdate:
+      type: object
+      description: |
+        系统设置部分更新对象。所有字段都是可选的，只需要提供需要更新的字段。
+        字段定义与 SystemSettings 相同，但都为可选字段。
+      properties:
+        # 基本信息
+        systemName:
+          type: string
+          description: 系统名称
+          maxLength: 100
+        systemLogo:
+          type: string
+          description: 系统logo URL
+        systemSlogan:
+          type: string
+          description: 系统标语
+          maxLength: 200
+        systemSummary:
+          type: string
+          description: 系统简介
+        systemFooter:
+          type: string
+          description: 页面底部信息
+          maxLength: 500
+        systemFavicon:
+          type: string
+          description: 网站图标 URL
+        systemICP:
+          type: string
+          description: ICP备案号
+        systemOrganization:
+          type: string
+          description: 组织名称
+        systemOrganizationURL:
+          type: string
+          description: 组织官网链接
+          format: uri
+
+        # 主题设置
+        themeColor:
+          type: string
+          description: 主题颜色
+        darkModeDefault:
+          type: boolean
+          description: 默认是否为暗色模式
+        allowUserTheme:
+          type: boolean
+          description: 是否允许用户自定义主题
+
+        # 品牌资源
+        fancyBackGroundIconWhite:
+          type: string
+          description: 白色背景图标 URL
+        fancyBackGroundIconBlack:
+          type: string
+          description: 黑色背景图标 URL
+        defaultBGImage:
+          type: string
+          description: 默认背景图片 URL
+        svgIcon:
+          type: string
+          description: SVG图标 URL
+        svgAltData:
+          type: string
+          description: SVG图标替代文本
+        trophysGold:
+          type: string
+          description: 金奖杯图标 URL
+        trophysSilver:
+          type: string
+          description: 银奖杯图标 URL
+        trophysBronze:
+          type: string
+          description: 铜奖杯图标 URL
+        schoolLogo:
+          type: string
+          description: 学校logo URL
+        schoolSmallIcon:
+          type: string
+          description: 学校小图标 URL
+        schoolUnionAuthText:
+          type: string
+          description: 学校联合认证文本
+        bgAnimation:
+          type: boolean
+          description: 是否启用背景动画
+
+        # SMTP设置
+        smtpHost:
+          type: string
+          description: SMTP服务器地址
+        smtpPort:
+          type: integer
+          description: SMTP服务器端口
+          minimum: 1
+          maximum: 65535
+        smtpUsername:
+          type: string
+          description: SMTP用户名
+        smtpPassword:
+          type: string
+          description: SMTP密码
+          format: password
+        smtpFrom:
+          type: string
+          description: 发件人邮箱
+          format: email
+        smtpEnabled:
+          type: boolean
+          description: 是否启用SMTP
+        emailTemplate:
+          type: string
+          description: 邮件模板
+
+        # 验证码设置
+        captchaEnabled:
+          type: boolean
+          description: 是否启用验证码
+
+        # 比赛模式
+        gameActivityMode:
+          type: string
+          description: 比赛模式对应的比赛ID
+
+        # 关于我们
+        aboutus:
+          type: string
+          description: 关于我们内容
+
+        # 账户激活策略
+        accountActivationMethod:
+          type: string
+          description: 账户激活方式
+          enum: ["auto", "email", "admin"]
+        registrationEnabled:
+          type: boolean
+          description: 是否启用用户注册
+
+        # 其他系统设置
+        defaultLanguage:
+          type: string
+          description: 默认语言
+        timeZone:
+          type: string
+          description: 时区设置
+        maxUploadSize:
+          type: integer
+          description: 最大上传文件大小(MB)
+          minimum: 1
+          maximum: 1024
+
+      additionalProperties: false
+      minProperties: 1
+
+    Error:
+      type: object
+      description: 错误响应格式
+      properties:
+        code:
+          type: integer
+          description: 错误代码
+        message:
+          type: string
+          description: 错误信息
+      required:
+        - code
+        - message
+
+  responses:
+    BadRequest:
+      description: 请求参数错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 400
+            message: "Invalid request data"
+
+    Unauthorized:
+      description: 未授权访问
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 401
+            message: "Unauthorized access"
+
+    Forbidden:
+      description: 权限不足
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 403
+            message: "Insufficient permissions"
+
+    InternalServerError:
+      description: 服务器内部错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 500
+            message: "Save system settings failed: database connection error"

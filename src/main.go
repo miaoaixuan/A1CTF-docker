@@ -397,6 +397,11 @@ func main() {
 	r.Static("/images", "./clientapp/build/client/images")
 	r.Static("/locales", "./clientapp/build/client/locales")
 	r.NoRoute(func(c *gin.Context) {
+		if clientconfig.ClientConfig.GameActivityMode != "" {
+			if c.Request.RequestURI == "/" || c.Request.RequestURI == "/games" || c.Request.RequestURI == "/games/" {
+				c.Redirect(http.StatusFound, fmt.Sprintf("/games/%s/info", clientconfig.ClientConfig.GameActivityMode))
+			}
+		}
 		c.File("./clientapp/build/client/index.html")
 	})
 

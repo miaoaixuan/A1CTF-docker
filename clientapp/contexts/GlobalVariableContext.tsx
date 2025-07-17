@@ -1,11 +1,12 @@
 import { AxiosError } from "axios";
 import React, { createContext, Dispatch, SetStateAction, useContext, useEffect, useRef, useState, ReactNode } from "react";
-import { useCookies } from "react-cookie";
 import { browserName } from "react-device-detect";
 import { UserProfile } from "utils/A1API";
 import { api } from "utils/ApiHelper";
 import axios from 'axios';
 import { useTheme } from "next-themes";
+
+import useLocalStorage from "use-local-storage-state";
 
 interface ClientConfig {
     FancyBackGroundIconWhite: string;
@@ -20,7 +21,7 @@ interface ClientConfig {
     SchoolSmallIcon: string;
     SchoolUnionAuthText: string;
     BGAnimation: boolean;
-    // AboutUS: string;
+    AboutUS: string;
     systemName: string;
     systemLogo: string;
     systemFavicon: string;
@@ -49,6 +50,8 @@ interface GlobalVariableContextType {
     isDarkMode: boolean;
     setIsDarkMode: (isDark: boolean) => void;
     refreshClientConfig: () => Promise<void>;
+    checkLoginStatus: () => boolean;
+    unsetLoginStatus: () => void;
 }
 
 const globalVariableContext = createContext<GlobalVariableContextType | undefined>(undefined);
@@ -63,7 +66,10 @@ export const useGlobalVariableContext = () => {
 
 export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
-    const [cookies, setCookie, removeCookie] = useCookies(["uid", "clientConfig"])
+    const [localStorageClientConfig, setLocalStorageClientConfig, { removeItem: removeClientConfig }] = useLocalStorage<ClientConfig>("clientconfig")
+    const [localStorageUID, setLocalStorageUID, { removeItem: removeUID }] = useLocalStorage<string>("uid")
+    
+    
     const [curProfile, setCurProfile] = useState<UserProfile>({} as UserProfile)
 
     const { theme, systemTheme, setTheme } = useTheme()
@@ -93,7 +99,7 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
         darkModeDefault: true,
         allowUserTheme: true,
         defaultLanguage: 'zh-CN',
-        // AboutUS: "A1CTF Platform",
+        AboutUS: "A1CTF Platform",
         captchaEnabled: false,
         updateVersion: '',
 
@@ -108,7 +114,7 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
             ...prevConfig,
             [key]: value
         }))
-        setCookie("clientConfig", { ...clientConfig, [key]: value }, { path: "/" })
+        setLocalStorageClientConfig({ ...clientConfig, [key]: value })
     }
 
     const serialOptions = useRef<echarts.SeriesOption[]>([])
@@ -116,26 +122,34 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
     const updateProfile = (callback?: () => void) => {
         api.user.getUserProfile().then((res) => {
             setCurProfile(res.data.data)
-            setCookie("uid", res.data.data.user_id, { path: "/" })
+            setLocalStorageUID(res.data.data.user_id)
         }).catch((error: AxiosError) => {
-            removeCookie("uid")
+            removeUID()
         }).finally(() => {
             if (callback) callback()
         })
     }
+
+    const checkLoginStatus = () => {
+        return localStorageUID != undefined
+    }
+
+    const unsetLoginStatus = () => {
+        removeUID()
+    }
     
     useEffect(() => {
-        if (!curProfile.user_id && cookies.uid) {
+        if (!curProfile.user_id && localStorageUID) {
             api.user.getUserProfile().then((res) => {
                 setCurProfile(res.data.data)
-                setCookie("uid", res.data.data.user_id, { path: "/" })
+                setLocalStorageUID(res.data.data.user_id)
             }).catch((error: AxiosError) => {
-                removeCookie("uid")
+                removeUID()
             })
         }
 
-        if (cookies.clientConfig) {
-            setClientConfig(cookies.clientConfig)
+        if (localStorageClientConfig) {
+            setClientConfig(localStorageClientConfig)
         }
 
         refreshClientConfig()
@@ -148,18 +162,18 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
             if (response.data && response.data.code === 200) {
 
                 // 初始化没有客户端配置的情况
-                if (!cookies.clientConfig) {
+                if (!localStorageClientConfig) {
                     if (response.data.data.BGAnimation && browserName.includes("Chrome")) {
                         response.data.data.BGAnimation = true
                     } else {
                         response.data.data.BGAnimation = false
                     }
                     setClientConfig(response.data.data);
-                    setCookie("clientConfig", response.data.data, { path: "/" })
+                    setLocalStorageClientConfig(response.data.data)
                     return
                 }
 
-                if (response.data.data.updateVersion && response.data.data.updateVersion == cookies.clientConfig.updateVersion) {
+                if (response.data.data.updateVersion && response.data.data.updateVersion == localStorageClientConfig.updateVersion) {
                     return
                 }
 
@@ -167,10 +181,10 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
                     response.data.data.BGAnimation = true
                 }
 
-                response.data.data.BGAnimation = cookies.clientConfig.BGAnimation
+                response.data.data.BGAnimation = localStorageClientConfig.BGAnimation
 
                 setClientConfig(response.data.data);
-                setCookie("clientConfig", response.data.data, { path: "/" })
+                setLocalStorageClientConfig(response.data.data)
                 
                 // 如果用户未手动设置主题，则使用配置的默认主题
                 if (!localStorage.getItem('theme-preference')) {
@@ -226,7 +240,7 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
     }, [isDarkMode]);
 
     return (
-        <globalVariableContext.Provider value={{ curProfile, updateProfile, serialOptions, clientConfig, updateClientConfg, isDarkMode, setIsDarkMode, refreshClientConfig }}>
+        <globalVariableContext.Provider value={{ curProfile, updateProfile, serialOptions, clientConfig, updateClientConfg, isDarkMode, setIsDarkMode, refreshClientConfig, checkLoginStatus, unsetLoginStatus }}>
             {children}
         </globalVariableContext.Provider>
     );

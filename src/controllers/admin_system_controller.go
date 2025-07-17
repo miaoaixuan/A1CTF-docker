@@ -39,33 +39,247 @@ func GetSystemSettings(c *gin.Context) {
 
 // UpdateSystemSettings 更新系统设置
 func UpdateSystemSettings(c *gin.Context) {
-	var settings clientconfig.SystemSettings
-	if err := c.ShouldBindJSON(&settings); err != nil {
+	// 使用 map 来接收部分更新的数据
+	var updateData map[string]interface{}
+	if err := c.ShouldBindJSON(&updateData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "无效的请求数据",
+			"message": "Invalid request data",
 		})
 		return
 	}
 
+	// 加载现有设置
+	existingSettings, err := clientconfig.LoadSystemSettings()
+	if err != nil {
+		// 如果加载失败，使用默认设置
+		existingSettings = clientconfig.DefaultSettings
+	}
+
+	// 逐个更新提供的字段
+	if value, exists := updateData["systemName"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SystemName = str
+		}
+	}
+	if value, exists := updateData["systemLogo"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SystemLogo = str
+		}
+	}
+	if value, exists := updateData["systemSlogan"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SystemSlogan = str
+		}
+	}
+	if value, exists := updateData["systemSummary"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SystemSummary = str
+		}
+	}
+	if value, exists := updateData["systemFooter"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SystemFooter = str
+		}
+	}
+	if value, exists := updateData["systemFavicon"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SystemFavicon = str
+		}
+	}
+	if value, exists := updateData["systemICP"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SystemICP = str
+		}
+	}
+	if value, exists := updateData["systemOrganization"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SystemOrganization = str
+		}
+	}
+	if value, exists := updateData["systemOrganizationURL"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SystemOrganizationURL = str
+		}
+	}
+
+	// 主题设置
+	if value, exists := updateData["themeColor"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.ThemeColor = str
+		}
+	}
+	if value, exists := updateData["darkModeDefault"]; exists {
+		if b, ok := value.(bool); ok {
+			existingSettings.DarkModeDefault = b
+		}
+	}
+	if value, exists := updateData["allowUserTheme"]; exists {
+		if b, ok := value.(bool); ok {
+			existingSettings.AllowUserTheme = b
+		}
+	}
+
+	// 品牌资源
+	if value, exists := updateData["fancyBackGroundIconWhite"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.FancyBackGroundIconWhite = str
+		}
+	}
+	if value, exists := updateData["fancyBackGroundIconBlack"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.FancyBackGroundIconBlack = str
+		}
+	}
+	if value, exists := updateData["defaultBGImage"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.DefaultBGImage = str
+		}
+	}
+	if value, exists := updateData["svgIcon"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SVGIcon = str
+		}
+	}
+	if value, exists := updateData["svgAltData"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SVGAltData = str
+		}
+	}
+	if value, exists := updateData["trophysGold"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.TrophysGold = str
+		}
+	}
+	if value, exists := updateData["trophysSilver"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.TrophysSilver = str
+		}
+	}
+	if value, exists := updateData["trophysBronze"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.TrophysBronze = str
+		}
+	}
+	if value, exists := updateData["schoolLogo"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SchoolLogo = str
+		}
+	}
+	if value, exists := updateData["schoolSmallIcon"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SchoolSmallIcon = str
+		}
+	}
+	if value, exists := updateData["schoolUnionAuthText"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SchoolUnionAuthText = str
+		}
+	}
+	if value, exists := updateData["bgAnimation"]; exists {
+		if b, ok := value.(bool); ok {
+			existingSettings.BGAnimation = b
+		}
+	}
+
+	// SMTP设置
+	if value, exists := updateData["smtpHost"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SmtpHost = str
+		}
+	}
+	if value, exists := updateData["smtpPort"]; exists {
+		if num, ok := value.(float64); ok {
+			existingSettings.SmtpPort = int(num)
+		}
+	}
+	if value, exists := updateData["smtpUsername"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SmtpUsername = str
+		}
+	}
+	if value, exists := updateData["smtpPassword"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SmtpPassword = str
+		}
+	}
+	if value, exists := updateData["smtpFrom"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SmtpFrom = str
+		}
+	}
+	if value, exists := updateData["smtpEnabled"]; exists {
+		if b, ok := value.(bool); ok {
+			existingSettings.SmtpEnabled = b
+		}
+	}
+	if value, exists := updateData["emailTemplate"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.EmailTemplate = str
+		}
+	}
+
+	// 其他设置
+	if value, exists := updateData["captchaEnabled"]; exists {
+		if b, ok := value.(bool); ok {
+			existingSettings.CaptchaEnabled = b
+		}
+	}
+	if value, exists := updateData["gameActivityMode"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.GameActivityMode = str
+		}
+	}
+	if value, exists := updateData["aboutus"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.AboutUS = str
+		}
+	}
+	if value, exists := updateData["accountActivationMethod"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.AccountActivationMethod = str
+		}
+	}
+	if value, exists := updateData["registrationEnabled"]; exists {
+		if b, ok := value.(bool); ok {
+			existingSettings.RegistrationEnabled = b
+		}
+	}
+	if value, exists := updateData["defaultLanguage"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.DefaultLanguage = str
+		}
+	}
+	if value, exists := updateData["timeZone"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.TimeZone = str
+		}
+	}
+	if value, exists := updateData["maxUploadSize"]; exists {
+		if num, ok := value.(float64); ok {
+			existingSettings.MaxUploadSize = int(num)
+		}
+	}
+
 	// 保存设置
-	if err := clientconfig.SaveSystemSettings(settings); err != nil {
+	if err := clientconfig.SaveSystemSettings(existingSettings); err != nil {
 		// 记录日志
-		tasks.LogAdminOperationWithError(c, models.ActionUpdate, models.ResourceTypeSystem, nil, settings, err)
+		tasks.LogAdminOperationWithError(c, models.ActionUpdate, models.ResourceTypeSystem, nil, updateData, err)
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "保存系统设置失败: " + err.Error(),
+			"message": "Save system settings failed: " + err.Error(),
 		})
 		return
 	}
 
 	// 记录成功日志
-	tasks.LogAdminOperation(c, models.ActionUpdate, models.ResourceTypeSystem, nil, settings)
+	tasks.LogAdminOperation(c, models.ActionUpdate, models.ResourceTypeSystem, nil, updateData)
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"message": "系统设置已更新",
+		"message": "System settings updated",
+		"data":    existingSettings,
 	})
 }
 

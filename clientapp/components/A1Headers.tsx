@@ -36,8 +36,8 @@ const PageHeader = () => {
 
     const curPath = useLocation().pathname;
 
-    const [cookies, setCookie, removeCookie] = useCookies(["uid", "a1token"])
-    const { curProfile, updateProfile } = useGlobalVariableContext()
+    const [cookies, setCookie, removeCookie] = useCookies(["a1token"])
+    const { curProfile, updateProfile, checkLoginStatus, unsetLoginStatus } = useGlobalVariableContext()
 
     let path = useLocation().pathname.split("/")[1];
 
@@ -95,13 +95,13 @@ const PageHeader = () => {
                             </nav>
                         </div>
                         <div className="flex flex-1 items-center justify-between gap-3 md:justify-end">
-                            { ((curProfile.role == UserRole.ADMIN || curProfile.role == UserRole.MONITOR) && cookies.uid) && (
+                            { ((curProfile.role == UserRole.ADMIN || curProfile.role == UserRole.MONITOR) && checkLoginStatus()) && (
                                 <Button variant={"outline"} onClick={() => {
                                     navigate(`/admin/`)
                                 }}><Wrench />Admin</Button>
                             ) }
                             <ThemeSwitcher />
-                            { cookies.uid ? (
+                            { checkLoginStatus() ? (
                                 <>
                                     <DropdownMenu modal={false}>
                                         <DropdownMenuTrigger>
@@ -134,7 +134,7 @@ const PageHeader = () => {
                                                 <span>{ t("change_password_header") }</span>
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => {
-                                                removeCookie("uid")
+                                                unsetLoginStatus()
                                                 removeCookie("a1token")
                                                 updateProfile(() => {
                                                     navigate(`/`)
@@ -217,7 +217,7 @@ const PageHeader = () => {
                                         
                                         <DropdownMenuSeparator />
 
-                                        { cookies.uid ? (
+                                        { checkLoginStatus() ? (
                                             <>
                                                 <DropdownMenu modal={false}>
                                                     <DropdownMenuTrigger>

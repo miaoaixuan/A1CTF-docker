@@ -1102,6 +1102,337 @@ export interface AdminSubmitItem {
   judge_time: string;
 }
 
+/** 系统设置完整结构体 */
+export interface SystemSettings {
+  /**
+   * 系统名称
+   * @maxLength 100
+   * @example "A1CTF"
+   */
+  systemName: string;
+  /**
+   * 系统logo URL
+   * @example "/images/logo.png"
+   */
+  systemLogo?: string;
+  /**
+   * 系统标语
+   * @maxLength 200
+   * @example "A Modern CTF Platform"
+   */
+  systemSlogan?: string;
+  /**
+   * 系统简介
+   * @example "A comprehensive CTF platform for cybersecurity education"
+   */
+  systemSummary?: string;
+  /**
+   * 页面底部信息
+   * @maxLength 500
+   * @example "© 2024 A1CTF Team"
+   */
+  systemFooter?: string;
+  /**
+   * 网站图标 URL
+   * @example "/images/favicon.ico"
+   */
+  systemFavicon?: string;
+  /**
+   * ICP备案号
+   * @example "浙ICP备2023022969号"
+   */
+  systemICP?: string;
+  /**
+   * 组织名称
+   * @example "浙江师范大学"
+   */
+  systemOrganization?: string;
+  /**
+   * 组织官网链接
+   * @format uri
+   * @example "https://www.zjnu.edu.cn"
+   */
+  systemOrganizationURL?: string;
+  /**
+   * 主题颜色
+   * @example "blue"
+   */
+  themeColor: "blue" | "red" | "green" | "purple" | "orange" | "gray";
+  /**
+   * 默认是否为暗色模式
+   * @example true
+   */
+  darkModeDefault: boolean;
+  /**
+   * 是否允许用户自定义主题
+   * @example true
+   */
+  allowUserTheme: boolean;
+  /**
+   * 白色背景图标 URL
+   * @example "/images/ctf_white.png"
+   */
+  fancyBackGroundIconWhite?: string;
+  /**
+   * 黑色背景图标 URL
+   * @example "/images/ctf_black.png"
+   */
+  fancyBackGroundIconBlack?: string;
+  /**
+   * 默认背景图片 URL
+   * @example "/images/defaultbg.jpg"
+   */
+  defaultBGImage?: string;
+  /**
+   * SVG图标 URL
+   * @example "/images/A1natas.svg"
+   */
+  svgIcon?: string;
+  /**
+   * SVG图标替代文本
+   * @example "A1natas"
+   */
+  svgAltData?: string;
+  /**
+   * 金奖杯图标 URL
+   * @example "/images/trophys/gold_trophy.png"
+   */
+  trophysGold?: string;
+  /**
+   * 银奖杯图标 URL
+   * @example "/images/trophys/silver_trophy.png"
+   */
+  trophysSilver?: string;
+  /**
+   * 铜奖杯图标 URL
+   * @example "/images/trophys/copper_trophy.png"
+   */
+  trophysBronze?: string;
+  /**
+   * 学校logo URL
+   * @example "/images/zjnu_logo.png"
+   */
+  schoolLogo?: string;
+  /**
+   * 学校小图标 URL
+   * @example "/images/zjnu_small_logo.png"
+   */
+  schoolSmallIcon?: string;
+  /**
+   * 学校联合认证文本
+   * @example "ZJNU Union Authserver"
+   */
+  schoolUnionAuthText?: string;
+  /**
+   * 是否启用背景动画
+   * @example false
+   */
+  bgAnimation: boolean;
+  /**
+   * SMTP服务器地址
+   * @example "smtp.example.com"
+   */
+  smtpHost?: string;
+  /**
+   * SMTP服务器端口
+   * @min 1
+   * @max 65535
+   * @example 587
+   */
+  smtpPort: number;
+  /**
+   * SMTP用户名
+   * @example "noreply@example.com"
+   */
+  smtpUsername?: string;
+  /**
+   * SMTP密码
+   * @format password
+   * @example "password123"
+   */
+  smtpPassword?: string;
+  /**
+   * 发件人邮箱
+   * @format email
+   * @example "noreply@example.com"
+   */
+  smtpFrom?: string;
+  /**
+   * 是否启用SMTP
+   * @example false
+   */
+  smtpEnabled: boolean;
+  /**
+   * 邮件模板
+   * @example ""
+   */
+  emailTemplate?: string;
+  /**
+   * 是否启用验证码
+   * @example true
+   */
+  captchaEnabled: boolean;
+  /** 比赛模式对应的比赛ID */
+  gameActivityMode?: string;
+  /**
+   * 关于我们内容
+   * @example "A1CTF Platform"
+   */
+  aboutus?: string;
+  /**
+   * 账户激活方式
+   * @example "email"
+   */
+  accountActivationMethod: "auto" | "email" | "admin";
+  /**
+   * 是否启用用户注册
+   * @example true
+   */
+  registrationEnabled: boolean;
+  /**
+   * 默认语言
+   * @example "zh-CN"
+   */
+  defaultLanguage: string;
+  /**
+   * 时区设置
+   * @example "Asia/Shanghai"
+   */
+  timeZone: string;
+  /**
+   * 最大上传文件大小(MB)
+   * @min 1
+   * @max 1024
+   * @example 10
+   */
+  maxUploadSize: number;
+  /**
+   * 最后更新时间
+   * @format date-time
+   * @example "2024-01-01T12:00:00Z"
+   */
+  updatedTime?: string;
+}
+
+/**
+ * 系统设置部分更新对象。所有字段都是可选的，只需要提供需要更新的字段。
+ * 字段定义与 SystemSettings 相同，但都为可选字段。
+ */
+export interface SystemSettingsPartialUpdate {
+  /**
+   * 系统名称
+   * @maxLength 100
+   */
+  systemName?: string;
+  /** 系统logo URL */
+  systemLogo?: string;
+  /**
+   * 系统标语
+   * @maxLength 200
+   */
+  systemSlogan?: string;
+  /** 系统简介 */
+  systemSummary?: string;
+  /**
+   * 页面底部信息
+   * @maxLength 500
+   */
+  systemFooter?: string;
+  /** 网站图标 URL */
+  systemFavicon?: string;
+  /** ICP备案号 */
+  systemICP?: string;
+  /** 组织名称 */
+  systemOrganization?: string;
+  /**
+   * 组织官网链接
+   * @format uri
+   */
+  systemOrganizationURL?: string;
+  /** 主题颜色 */
+  themeColor?: string;
+  /** 默认是否为暗色模式 */
+  darkModeDefault?: boolean;
+  /** 是否允许用户自定义主题 */
+  allowUserTheme?: boolean;
+  /** 白色背景图标 URL */
+  fancyBackGroundIconWhite?: string;
+  /** 黑色背景图标 URL */
+  fancyBackGroundIconBlack?: string;
+  /** 默认背景图片 URL */
+  defaultBGImage?: string;
+  /** SVG图标 URL */
+  svgIcon?: string;
+  /** SVG图标替代文本 */
+  svgAltData?: string;
+  /** 金奖杯图标 URL */
+  trophysGold?: string;
+  /** 银奖杯图标 URL */
+  trophysSilver?: string;
+  /** 铜奖杯图标 URL */
+  trophysBronze?: string;
+  /** 学校logo URL */
+  schoolLogo?: string;
+  /** 学校小图标 URL */
+  schoolSmallIcon?: string;
+  /** 学校联合认证文本 */
+  schoolUnionAuthText?: string;
+  /** 是否启用背景动画 */
+  bgAnimation?: boolean;
+  /** SMTP服务器地址 */
+  smtpHost?: string;
+  /**
+   * SMTP服务器端口
+   * @min 1
+   * @max 65535
+   */
+  smtpPort?: number;
+  /** SMTP用户名 */
+  smtpUsername?: string;
+  /**
+   * SMTP密码
+   * @format password
+   */
+  smtpPassword?: string;
+  /**
+   * 发件人邮箱
+   * @format email
+   */
+  smtpFrom?: string;
+  /** 是否启用SMTP */
+  smtpEnabled?: boolean;
+  /** 邮件模板 */
+  emailTemplate?: string;
+  /** 是否启用验证码 */
+  captchaEnabled?: boolean;
+  /** 比赛模式对应的比赛ID */
+  gameActivityMode?: string;
+  /** 关于我们内容 */
+  aboutus?: string;
+  /** 账户激活方式 */
+  accountActivationMethod?: "auto" | "email" | "admin";
+  /** 是否启用用户注册 */
+  registrationEnabled?: boolean;
+  /** 默认语言 */
+  defaultLanguage?: string;
+  /** 时区设置 */
+  timeZone?: string;
+  /**
+   * 最大上传文件大小(MB)
+   * @min 1
+   * @max 1024
+   */
+  maxUploadSize?: number;
+}
+
+/** 错误响应格式 */
+export interface Error {
+  /** 错误代码 */
+  code: number;
+  /** 错误信息 */
+  message: string;
+}
+
 import type {
   AxiosInstance,
   AxiosRequestConfig,
@@ -3046,6 +3377,61 @@ export class Api<
         body: data,
         secure: true,
         type: ContentType.FormData,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 获取当前系统的所有配置设置
+     *
+     * @tags system
+     * @name GetSystemSettings
+     * @summary 获取系统设置
+     * @request GET:/api/admin/system/settings
+     */
+    getSystemSettings: (params: RequestParams = {}) =>
+      this.request<
+        {
+          /** @example 200 */
+          code?: number;
+          /** 系统设置完整结构体 */
+          data?: SystemSettings;
+        },
+        Error
+      >({
+        path: `/api/admin/system/settings`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags system
+     * @name UpdateSystemSettings
+     * @summary 更新系统设置
+     * @request POST:/api/admin/system/settings
+     */
+    updateSystemSettings: (
+      data: SystemSettingsPartialUpdate,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code?: number;
+          /** @example "System settings updated" */
+          message?: string;
+          /** 系统设置完整结构体 */
+          data?: SystemSettings;
+        },
+        Error
+      >({
+        path: `/api/admin/system/settings`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),

@@ -1,15 +1,19 @@
 import ImageLoader from "components/modules/ImageLoader";
 import { Badge } from "components/ui/badge";
 import { Button } from "components/ui/button";
+import { Checkbox } from "components/ui/checkbox";
+import { Label } from "components/ui/label";
 import { Switch } from "components/ui/switch";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import dayjs from "dayjs";
 import { FastAverageColor } from "fast-average-color";
 import { EyeClosed, Calendar, Settings, Calculator, Trash2, Pause, Play, Square } from "lucide-react";
 import { index } from "mathjs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { toast } from "sonner";
 import { UserGameSimpleInfo } from "utils/A1API";
+import { api } from "utils/ApiHelper";
 
 export default function GameCard(
     { game }: {
@@ -19,7 +23,11 @@ export default function GameCard(
 
     const { clientConfig, updateClientConfg } = useGlobalVariableContext()
 
-    const [ gameActivityMode, setGameActivityModeActived ] = useState<boolean>((clientConfig.gameActivityMode && clientConfig.gameActivityMode == game.game_id.toString()) || false)
+    const [gameActivityMode, setGameActivityModeActived] = useState<boolean>((clientConfig.gameActivityMode && clientConfig.gameActivityMode == game.game_id.toString()) || false)
+
+    useEffect(() => {
+        setGameActivityModeActived((clientConfig.gameActivityMode && clientConfig.gameActivityMode == game.game_id.toString()) || false)
+    }, [clientConfig.gameActivityMode])
 
     const navigate = useNavigate()
 
@@ -128,13 +136,37 @@ export default function GameCard(
 
                         {/* Action Buttons */}
                         <div className="flex gap-2">
-                            <Switch
-                                checked={gameActivityMode}
-                                onCheckedChange={(option) => {
-                                    setGameActivityModeActived(option)
-                                    updateClientConfg("gameActivityMode", game.game_id.toString())
-                                }}
-                            />
+                            <div className="h-9 flex items-center flex-none">
+                                <Label className="hover:bg-accent/50 flex gap-3 rounded-lg border h-9 items-center px-3 backdrop-blur-lg has-[[aria-checked=true]]:border-blue-600 text-white has-[[aria-checked=true]]:text-blue-500 has-[[aria-checked=true]]:bg-blue-50/80 dark:has-[[aria-checked=true]]:border-blue-900 dark:has-[[aria-checked=true]]:bg-blue-950 transition-[background-color] duration-300"
+                                    data-tooltip-content="开启后访问网站主页会直接跳转到这个比赛"
+                                    data-tooltip-id="my-tooltip"
+                                    data-tooltip-place="bottom"
+                                >
+                                    <Checkbox
+                                        id="toggle-2"
+                                        checked={gameActivityMode}
+                                        onCheckedChange={(val) => {
+                                            if (gameActivityMode) {
+                                                updateClientConfg("gameActivityMode", "")
+                                                api.system.updateSystemSettings({
+                                                    "gameActivityMode": ""
+                                                })
+                                            } else {
+                                                updateClientConfg("gameActivityMode", game.game_id.toString())
+                                                api.system.updateSystemSettings({
+                                                    "gameActivityMode": game.game_id.toString()
+                                                })
+                                            }
+                                        }}
+                                        className="data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white dark:data-[state=checked]:border-blue-700 dark:data-[state=checked]:bg-blue-700"
+                                    />
+                                    <div className="grid gap-1.5 font-normal">
+                                        <p className="text-sm leading-none font-medium">
+                                            开启比赛模式
+                                        </p>
+                                    </div>
+                                </Label>
+                            </div>
                             <Button
                                 size="sm"
                                 variant="secondary"

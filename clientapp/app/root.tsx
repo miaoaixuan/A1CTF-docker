@@ -7,6 +7,7 @@ import {
     ScrollRestoration,
     useLocation,
 } from "react-router";
+import { useState, useEffect } from "react";
 
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -61,6 +62,23 @@ const AnimationPresent = (path: string) => {
     return true;
 }
 
+// 客户端检测组件
+function ClientOnly({ children }: { children: React.ReactNode }) {
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    if (!isClient) {
+        return (
+            <></>
+        );
+    }
+
+    return <>{children}</>;
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
 
     const href = useLocation().pathname
@@ -75,27 +93,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Links />
             </head>
             <body>
-                {/* <NextIntlClientProvider messages={messages}> */}
-                <ThemeProvider
-                    attribute="class"
-                    enableSystem
-                >
-                    <I18nextProvider i18n={i18n}>
-                        <CookiesProvider>
-                            <GlobalVariableProvider>
-                                <GameSwitchProvider>
-                                    <CanvasProvider>
-                                        <ClientToaster />
-                                        <div className="bg-background absolute top-0 left-0 w-screen h-screen z-[-1]" />
-                                        {animationPresent && <FancyBackground />}
-                                        <GameSwitchHover animation={true} />
-                                        {children}
-                                    </CanvasProvider>
-                                </GameSwitchProvider>
-                            </GlobalVariableProvider>
-                        </CookiesProvider>
-                    </I18nextProvider>
-                </ThemeProvider>
+                <ClientOnly>
+                    {/* <NextIntlClientProvider messages={messages}> */}
+                    <ThemeProvider
+                        attribute="class"
+                        enableSystem
+                    >
+                        <I18nextProvider i18n={i18n}>
+                            <CookiesProvider>
+                                <GlobalVariableProvider>
+                                    <GameSwitchProvider>
+                                        <CanvasProvider>
+                                            <ClientToaster />
+                                            <div className="bg-background absolute top-0 left-0 w-screen h-screen z-[-1]" />
+                                            {animationPresent && <FancyBackground />}
+                                            <GameSwitchHover animation={true} />
+                                            {children}
+                                        </CanvasProvider>
+                                    </GameSwitchProvider>
+                                </GlobalVariableProvider>
+                            </CookiesProvider>
+                        </I18nextProvider>
+                    </ThemeProvider>
+                </ClientOnly>
                 {/* </NextIntlClientProvider> */}
                 <ScrollRestoration />
                 <Scripts />
@@ -268,7 +288,9 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
                                     fontFamily: "Consolas, monospace"
                                 }}
                                 onClick={() => {
-                                    window.location.reload();
+                                    if (typeof window !== 'undefined') {
+                                        window.location.reload();
+                                    }
                                 }}
                             >Refresh</button>
                             <button className="my-button2"
@@ -278,7 +300,9 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
                                     fontFamily: "Consolas, monospace"
                                 }}
                                 onClick={() => {
-                                    navigator.clipboard.writeText(stack || details || "No error message");
+                                    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                                        navigator.clipboard.writeText(stack || details || "No error message");
+                                    }
                                 }}
                             >Copy the error message</button>
                         </div>

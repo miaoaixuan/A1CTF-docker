@@ -15,6 +15,7 @@ import GameCountDowner from "components/modules/game/GameCountDowner";
 import GameInfoView from "components/user/game/GameInfoView";
 import { useGameSwitchContext } from "contexts/GameSwitchContext";
 import { LoadingPage } from "components/LoadingPage";
+import { Panda } from "lucide-react";
 
 export default function Games() {
     
@@ -39,6 +40,8 @@ export default function Games() {
 
     // 切换比赛动画
     const { isChangingGame, setIsChangingGame } = useGameSwitchContext();
+
+    let updateGameInterval: NodeJS.Timeout | undefined = undefined
 
     const fetchGameInfoWithTeamInfo = () => {
         api.user.userGetGameInfoWithTeamInfo(gameID).then((res) => {
@@ -78,6 +81,7 @@ export default function Games() {
                 }
             }
         }).catch((error: AxiosError) => {
+            clearInterval(updateGameInterval)
             if (error.response?.status) {
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
                 if (error.response.status == 401) {
@@ -91,16 +95,26 @@ export default function Games() {
 
     useEffect(() => {
         fetchGameInfoWithTeamInfo()
-        const interval = setInterval(fetchGameInfoWithTeamInfo, 2000)
+        updateGameInterval = setInterval(fetchGameInfoWithTeamInfo, 2000)
 
         setTimeout(() => {
             setIsChangingGame(false)
         }, 500)
 
         return () => {
-            clearInterval(interval)
+            clearInterval(updateGameInterval)
         }
     }, [])
+
+
+    if (gameStatus == "noSuchGame") {
+        return (
+            <div className="w-screen h-screen flex items-center justify-center gap-6 select-none">
+                <Panda size={64} />
+                <span className="text-4xl font-bold">没有该比赛</span>
+            </div>
+        )
+    }
 
     if (!gameInfo) {
         return <></>

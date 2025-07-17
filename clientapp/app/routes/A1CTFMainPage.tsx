@@ -2,15 +2,16 @@ import PageHeader from "components/A1Headers"
 
 import A1Footer from "components/A1Footer";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { MainPageAnimation } from "components/MainPageAnimation";
 import SafeComponent from "components/SafeComponent";
 import { ActivityPage } from "components/ActivityPage";
 import { sAPI } from "utils/GZApi";
 import { config } from "dotenv";
 import FancyBackground from "components/modules/FancyBackground";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
+import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 
 // import type { Route } from "./+types/home";
 
@@ -24,6 +25,16 @@ import { useTranslation } from "react-i18next";
 
 export default function A1CTFMainPage() {
     const { t } = useTranslation();
+
+    const { clientConfig } = useGlobalVariableContext()
+    const navigate = useNavigate()
+
+    useEffect(() => {
+        if (clientConfig.gameActivityMode) {
+            console.log("gogogo 出发咯")
+            window.location.href = `/games/${clientConfig.gameActivityMode}/info`
+        }
+    }, [clientConfig])
 
     return (
         <>

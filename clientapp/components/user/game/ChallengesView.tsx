@@ -26,7 +26,6 @@ import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { randomInt } from "mathjs";
 
 import { SolvedAnimation } from "components/SolvedAnimation";
-import { useCookies } from "react-cookie";
 import ChallengesViewHeader from "components/modules/challenge/ChallengeViewHeader";
 import SubmitFlagView from "components/modules/challenge/SubmitFlagView";
 
@@ -118,8 +117,6 @@ export function ChallengesView({
     const [bloodMessage, setBloodMessage] = useState("")
 
     const gameID = parseInt(id, 10)
-
-    const [cookies, setCookie, removeCookie] = useCookies(["uid"])
 
     const [submitFlagWindowVisible, setSubmitFlagWindowVisible] = useState(false)
     const [showHintsWindowVisible, setShowHintsWindowVisible] = useState(false)

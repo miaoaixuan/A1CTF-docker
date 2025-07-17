@@ -206,12 +206,13 @@ func GetClientConfig(c *gin.Context) {
 		"systemOrganization":    ClientConfig.SystemOrganization,
 		"systemOrganizationURL": ClientConfig.SystemOrganizationURL,
 
-		"themeColor":      ClientConfig.ThemeColor,
-		"darkModeDefault": ClientConfig.DarkModeDefault,
-		"allowUserTheme":  ClientConfig.AllowUserTheme,
-		"defaultLanguage": ClientConfig.DefaultLanguage,
-		"captchaEnabled":  ClientConfig.CaptchaEnabled,
-		// "AboutUS":         clientconfig.ClientConfig.AboutUS,
+		"themeColor":       ClientConfig.ThemeColor,
+		"darkModeDefault":  ClientConfig.DarkModeDefault,
+		"allowUserTheme":   ClientConfig.AllowUserTheme,
+		"defaultLanguage":  ClientConfig.DefaultLanguage,
+		"captchaEnabled":   ClientConfig.CaptchaEnabled,
+		"AboutUS":          ClientConfig.AboutUS,
+		"gameActivityMode": ClientConfig.GameActivityMode,
 
 		// 品牌资源
 		"FancyBackGroundIconWhite": ClientConfig.FancyBackGroundIconWhite,

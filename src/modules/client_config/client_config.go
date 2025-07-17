@@ -52,6 +52,9 @@ type SystemSettings struct {
 	// Proof-of-work 验证码设置
 	CaptchaEnabled bool `json:"captchaEnabled"`
 
+	// 比赛模式
+	GameActivityMode string `json:"gameActivityMode"`
+
 	AboutUS string `json:"aboutus"`
 
 	// 账户激活策略

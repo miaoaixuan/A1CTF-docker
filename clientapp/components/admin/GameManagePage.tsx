@@ -1,18 +1,12 @@
-import dayjs from "dayjs";
-import { CirclePlus, Eye, EyeClosed, EyeOff, FilePenLine, Trash2, Search, Calendar, Users, Trophy, Settings, Play, Pause, Square, Calculator } from "lucide-react";
+import { CirclePlus, Search, Trophy } from "lucide-react";
 import { MacScrollbar } from "mac-scrollbar";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { Badge } from "../ui/badge";
 import { UserGameSimpleInfo } from "utils/A1API";
 import { api } from "utils/ApiHelper";
-import { FastAverageColor } from "fast-average-color"
-import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useNavigate } from "react-router";
-import ImageLoader from "components/modules/ImageLoader";
-import { Switch } from "@radix-ui/react-switch";
 import GameCard from "./GameCard";
 
 export function AdminGameManagePage() {
