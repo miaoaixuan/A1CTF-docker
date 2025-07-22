@@ -16,6 +16,7 @@ import GameInfoView from "components/user/game/GameInfoView";
 import { useGameSwitchContext } from "contexts/GameSwitchContext";
 import { LoadingPage } from "components/LoadingPage";
 import { Panda } from "lucide-react";
+import { A1GameStatus } from "components/modules/game/GameStatusEnum";
 
 export default function Games() {
     
@@ -34,7 +35,8 @@ export default function Games() {
 
     // 比赛详细信息
     const [gameInfo, setGameInfo] = useState<UserFullGameInfo>()
-    const [gameStatus, setGameStatus] = useState("")
+    const [gameStatus, setGameStatus] = useState<A1GameStatus | undefined>(undefined)
+    const [teamStatus, setTeamStatus] = useState<ParticipationStatus>(ParticipationStatus.UnLogin)
 
     const [curChoicedModule, setCurChoicedModule] = useState(module || "info")
 
@@ -47,37 +49,23 @@ export default function Games() {
         api.user.userGetGameInfoWithTeamInfo(gameID).then((res) => {
             setGameInfo(res.data.data)
 
-            // 第一步 检查是否报名
-            if (dayjs() > dayjs(res.data.data.end_time) && !res.data.data.practice_mode) {
-                setGameStatus("ended")
-            } else {
-                if (res.data.data.team_status == ParticipationStatus.UnLogin) {
-                    // 未登录
-                    setGameStatus("unLogin")
-                } else if (res.data.data.team_status == ParticipationStatus.UnRegistered) {
-                    // 未报名
-                    setGameStatus("unRegistered")
-                } else if (res.data.data.team_status == ParticipationStatus.Pending) {
-                    // 审核中
-                    setGameStatus("waitForProcess")
-                } else if (res.data.data.team_status == ParticipationStatus.Approved) {
-                    if (dayjs() < dayjs(res.data.data.start_time)) {
-                        // 等待比赛开始
-                        setGameStatus("pending")
-                    } else if (dayjs() < dayjs(res.data.data.end_time)) {
-                        // 比赛进行中
-                        setGameStatus("running")
-                    } else if (dayjs() > dayjs(res.data.data.end_time)) {
-                        if (!res.data.data.practice_mode) {
-                            setGameStatus("ended")
-                        } else {
-                            // 练习模式
-                            setGameStatus("practiceMode")
-                        }
-                    }
-                } else if (res.data.data.team_status == ParticipationStatus.Banned) {
-                    // 禁赛
-                    setGameStatus("banned")
+            // 先设置队伍状态
+            setTeamStatus(res.data.data.team_status)
+
+            // 检查比赛状态
+            if (dayjs() < dayjs(res.data.data.start_time)) {
+                // 等待比赛开始
+                setGameStatus(A1GameStatus.Pending)
+            } else if (dayjs() < dayjs(res.data.data.end_time)) {
+                // 比赛进行中
+                setGameStatus(A1GameStatus.Running)
+            } else if (dayjs() > dayjs(res.data.data.end_time)) {
+                if (!res.data.data.practice_mode) {
+                    // 比赛已结束，非练习模式
+                    setGameStatus(A1GameStatus.Ended)
+                } else {
+                    // 练习模式
+                    setGameStatus(A1GameStatus.PracticeMode)
                 }
             }
         }).catch((error: AxiosError) => {
@@ -85,9 +73,9 @@ export default function Games() {
             if (error.response?.status) {
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
                 if (error.response.status == 401) {
-                    setGameStatus("unLogin")
+                    setTeamStatus(ParticipationStatus.UnLogin)
                 } else if (error.response.status == 404) {
-                    setGameStatus("noSuchGame")
+                    setGameStatus(A1GameStatus.NoSuchGame)
                 }
             }
         })
@@ -107,7 +95,7 @@ export default function Games() {
     }, [])
 
 
-    if (gameStatus == "noSuchGame") {
+    if (gameStatus == A1GameStatus.NoSuchGame) {
         return (
             <div className="w-screen h-screen flex items-center justify-center gap-6 select-none">
                 <Panda size={64} />
@@ -116,7 +104,7 @@ export default function Games() {
         )
     }
 
-    if (!gameInfo || gameStatus == "") {
+    if (!gameInfo || gameStatus == undefined) {
         return <></>
     }
 
@@ -133,15 +121,18 @@ export default function Games() {
                     gameID={id}
                     gameInfo={gameInfo}
                     gameStatus={gameStatus}
+                    teamStatus={teamStatus}
                 />
                 <div className="flex-1 h-full overflow-hidden">
                     { curChoicedModule == "challenges" ? ( 
-                        ["running", "practiceMode", "banned"].includes(gameStatus) ? (
+                        [A1GameStatus.Running, A1GameStatus.PracticeMode].includes(gameStatus) || teamStatus == ParticipationStatus.Banned ? (
                             <ChallengesView 
                                 id={id} 
                                 gameInfo={gameInfo} 
                                 gameStatus={gameStatus} 
                                 setGameStatus={setGameStatus} 
+                                teamStatus={teamStatus}
+                                setTeamStatus={setTeamStatus}
                                 fetchGameInfoWithTeamInfo={fetchGameInfoWithTeamInfo}
                             />
                         ) : (
@@ -152,7 +143,7 @@ export default function Games() {
                     ) : <></> }
 
                     { curChoicedModule == "scoreboard" ? ( 
-                        ["running", "practiceMode", "ended", "banned", "unLogin"].includes(gameStatus) ? (
+                        [A1GameStatus.Running, A1GameStatus.PracticeMode, A1GameStatus.Ended].includes(gameStatus) || teamStatus == ParticipationStatus.UnLogin || teamStatus == ParticipationStatus.Banned ? (
                             <div className="relative w-full h-full">
                                 <ScoreBoardPage gmid={parseInt(id)} />
                             </div>
@@ -173,6 +164,7 @@ export default function Games() {
                         <GameInfoView 
                             gameInfo={gameInfo} 
                             gameStatus={gameStatus} 
+                            teamStatus={teamStatus}
                         />
                     ) }
                 </div>

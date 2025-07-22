@@ -49,7 +49,7 @@ const ChallengesViewHeader = (
         setNoticeOpened: (arg0: boolean) => void,
         setScoreBoardVisible: (arg0: boolean) => void,
         notices: GameNotice[],
-        wsStatus: "connecting" | "connected" | "disconnected",
+        wsStatus: "connecting" | "connected" | "disconnected" | "ingore",
         curProfile: UserProfile,
         loadingVisible: boolean
     },
@@ -104,7 +104,7 @@ const ChallengesViewHeader = (
         }
     }, [gameInfo])
 
-    const [wsStatusTooltipVisible, setWsStatusTooltipVisible] = useState(true)
+    const [wsStatusTooltipVisible, setWsStatusTooltipVisible] = useState(wsStatus != "ingore" ? true : false)
 
     const getWsStatusClassName = () => {
         switch (wsStatus) {
@@ -123,7 +123,7 @@ const ChallengesViewHeader = (
                 setWsStatusTooltipVisible(false)
             }, 2000)
         } else {
-            setWsStatusTooltipVisible(true)
+            if (wsStatus != "ingore") setWsStatusTooltipVisible(true)
         }
     }, [wsStatus])
 

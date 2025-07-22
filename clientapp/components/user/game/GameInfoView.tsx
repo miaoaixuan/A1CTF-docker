@@ -4,17 +4,20 @@ import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { Captions, LibraryBig, QrCode } from "lucide-react";
 import { MacScrollbar } from "mac-scrollbar";
 import { useMemo } from "react";
-import { UserFullGameInfo } from "utils/A1API";
+import { ParticipationStatus, UserFullGameInfo } from "utils/A1API";
 import GamePosterInfoModule from "./GamePosterInfoModule";
-import GameTeamStatusCard from "components/modules/game/GameTeamStatusCard";
+import GameTeamStatusCard, { LoginFirstCard } from "components/modules/game/GameTeamStatusCard";
+import { A1GameStatus } from "components/modules/game/GameStatusEnum";
 
 export default function GameInfoView(
     {
         gameInfo,
-        gameStatus
+        gameStatus,
+        teamStatus
     }: {
         gameInfo: UserFullGameInfo | undefined,
-        gameStatus: string
+        gameStatus: A1GameStatus
+        teamStatus: ParticipationStatus
     }
 ) {
 
@@ -24,7 +27,7 @@ export default function GameInfoView(
         ) : null;
     }, [gameInfo?.description]);
 
-    const { clientConfig } = useGlobalVariableContext()
+    const { clientConfig, checkLoginStatus } = useGlobalVariableContext()
 
     return (
         <div className="w-full h-full">
@@ -35,6 +38,7 @@ export default function GameInfoView(
                             <GamePosterInfoModule
                                 gameInfo={gameInfo}
                                 gameStatus={gameStatus}
+                                teamStatus={teamStatus}
                             />
                         </div>
                         <div className="flex gap-2 items-center mb-2 border-b-2 pb-4 select-none">
@@ -50,17 +54,23 @@ export default function GameInfoView(
                             <GamePosterInfoModule
                                 gameInfo={gameInfo}
                                 gameStatus={gameStatus}
+                                teamStatus={teamStatus}
                             />
                         </div>
                     </div>
                 </div>
             </MacScrollbar >
-            { ["running", "ended"].includes(gameStatus) && (
+            {  checkLoginStatus() ? (
                 <div className="absolute bottom-5 right-7 z-10 flex justify-end flex-col gap-[8px]">
                     <GameTeamStatusCard 
                         gameInfo={gameInfo}
                         scoreBoardModel={undefined}
+                        teamStatus={teamStatus}
                     />
+                </div>
+            ) : (
+                <div className="absolute bottom-5 right-0 z-10 flex justify-end flex-col gap-[8px]">
+                    <LoginFirstCard />
                 </div>
             ) }
         </div >

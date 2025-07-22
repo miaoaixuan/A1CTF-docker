@@ -1,4 +1,5 @@
 import AvatarUsername from "components/modules/AvatarUsername";
+import { A1GameStatus } from "components/modules/game/GameStatusEnum";
 import ToggleTheme from "components/ToggleTheme";
 import { Button } from "components/ui/button";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
@@ -6,24 +7,25 @@ import { BowArrow, Cctv, DoorOpen, Info, Settings, ShieldCheck, UserSearch, Wand
 import { useTheme } from "next-themes";
 import { Dispatch, SetStateAction } from "react";
 import { useNavigate } from "react-router";
-import { UserFullGameInfo, UserRole } from "utils/A1API";
+import { ParticipationStatus, UserFullGameInfo, UserRole } from "utils/A1API";
 
 export default function GameViewSidebar(
-    { 
+    {
         curChoicedModule,
         gameID,
         gameInfo,
         gameStatus,
-
-    }: { 
-        curChoicedModule: string, 
+        teamStatus,
+    }: {
+        curChoicedModule: string,
         gameID: string,
         gameInfo: UserFullGameInfo | undefined,
-        gameStatus: string,
+        gameStatus: A1GameStatus,
+        teamStatus: ParticipationStatus,
     }
 ) {
 
-    const { clientConfig, curProfile } = useGlobalVariableContext()
+    const { clientConfig, curProfile, checkLoginStatus } = useGlobalVariableContext()
 
     type Module = {
         id: string,
@@ -44,7 +46,7 @@ export default function GameViewSidebar(
             name: '题目列表',
             icon: <BowArrow className="h-4 w-4" />,
             shouldDisable: () => {
-                return gameStatus != "running" && gameStatus != "practiceMode"
+                return (gameStatus != A1GameStatus.Running && gameStatus != A1GameStatus.PracticeMode) || teamStatus != ParticipationStatus.Approved
             }
         },
         {
@@ -52,7 +54,7 @@ export default function GameViewSidebar(
             name: '排行榜',
             icon: <Cctv className="h-4 w-4" />,
             shouldDisable: () => {
-                return gameStatus != "running" && gameStatus != "practiceMode" && gameStatus != "ended" && gameStatus != "banned" && gameStatus != "unLogin"
+                return gameStatus == A1GameStatus.Pending || gameStatus == A1GameStatus.NoSuchGame
             }
         },
         {
@@ -60,7 +62,7 @@ export default function GameViewSidebar(
             name: '队伍管理',
             icon: <UserSearch className="h-4 w-4" />,
             shouldDisable: () => {
-                return gameStatus == "unLogin"
+                return teamStatus == ParticipationStatus.UnLogin
             }
         },
     ];
@@ -102,7 +104,7 @@ export default function GameViewSidebar(
                     data-tooltip-place="right"
                 />
                 {modules.map((module, i) => (
-                    <Button key={i} 
+                    <Button key={i}
                         className={`w-[45px] h-[45px] [&_svg]:size-6 cursor-pointer rounded-xl ${curChoicedModule != module.id ? "hover:bg-foreground/10" : ""}`}
                         variant={curChoicedModule === module.id ? "default" : "ghost"}
                         data-tooltip-id="my-tooltip"
@@ -121,11 +123,17 @@ export default function GameViewSidebar(
                     </Button>
                 ))}
                 <div className="flex-1" />
-                {/* <div className="w-[35px] h-[35px] flex-shrink-0">
-                    <AvatarUsername avatar_url={gameInfo?.team_info?.team_avatar} username={gameInfo?.team_info?.team_name || ""} />
-                </div> */}
+                {teamStatus != ParticipationStatus.UnLogin && teamStatus != ParticipationStatus.UnRegistered && (
+                    <div className="w-[40px] h-[40px] flex-shrink-0 mb-2"
+                        data-tooltip-id="my-tooltip"
+                        data-tooltip-html={gameInfo?.team_info?.team_name ?? "????"}
+                        data-tooltip-place="right"
+                    >
+                        <AvatarUsername avatar_url={gameInfo?.team_info?.team_avatar} username={gameInfo?.team_info?.team_name || ""} />
+                    </div>
+                )}
                 <ToggleTheme>
-                    <Button 
+                    <Button
                         className={`w-[45px] h-[45px] [&_svg]:size-6 cursor-pointer rounded-xl`}
                         variant="ghost"
                         data-tooltip-id="my-tooltip"

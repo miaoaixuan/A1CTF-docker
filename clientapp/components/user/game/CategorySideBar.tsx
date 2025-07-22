@@ -28,6 +28,7 @@ import CategoryChallenges from "components/modules/game/CategoryChallenges";
 import { challengeCategoryColorMap, challengeCategoryIcons } from "utils/ClientAssets";
 import LoadingModule from "components/modules/LoadingModule";
 import { useNavigate } from "react-router";
+import { A1GameStatus } from "components/modules/game/GameStatusEnum";
 
 export function CategorySidebar({
     gameid,
@@ -36,6 +37,8 @@ export function CategorySidebar({
     curChallengeRef,
     gameStatus,
     setGameStatus,
+    teamStatus,
+    setTeamStatus,
     resizeTrigger,
     setPageSwitching,
     challenges,
@@ -48,9 +51,11 @@ export function CategorySidebar({
     gameid: string,
     curChallenge: UserDetailGameChallenge | undefined,
     setCurChallenge: Dispatch<SetStateAction<UserDetailGameChallenge | undefined>>,
-    gameStatus: string,
+    gameStatus: A1GameStatus,
     curChallengeRef: MutableRefObject<UserDetailGameChallenge | undefined>,
-    setGameStatus: Dispatch<SetStateAction<string>>,
+    setGameStatus: Dispatch<SetStateAction<A1GameStatus | undefined>>,
+    teamStatus: ParticipationStatus,
+    setTeamStatus: Dispatch<SetStateAction<ParticipationStatus>>,
     resizeTrigger: Dispatch<SetStateAction<number>>,
     setPageSwitching: Dispatch<SetStateAction<boolean>>,
     challenges: Record<string, UserSimpleGameChallenge[]>,
@@ -187,7 +192,7 @@ export function CategorySidebar({
 
                 api.user.userGetGameInfoWithTeamInfo(gameID).then((res) => {
                     if (res.data.data.team_status == ParticipationStatus.Banned) {
-                        setGameStatus("banned")
+                        setTeamStatus(ParticipationStatus.Banned)
                     } else {
                         toast.error("Unknow error!")
                     }

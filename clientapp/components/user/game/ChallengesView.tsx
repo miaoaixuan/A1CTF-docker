@@ -36,6 +36,7 @@ import { useLocation, useSearchParams } from "react-router";
 import ChallengeMainContent from "components/modules/challenge/ChallengeMainContent";
 import LoadingModule from "components/modules/LoadingModule";
 import GameTeamStatusCard from "components/modules/game/GameTeamStatusCard";
+import { A1GameStatus } from "components/modules/game/GameStatusEnum";
 
 export interface ChallengeSolveStatus {
     solved: boolean;
@@ -48,12 +49,16 @@ export function ChallengesView({
     gameInfo,
     gameStatus,
     setGameStatus,
+    teamStatus,
+    setTeamStatus,
     fetchGameInfoWithTeamInfo
 }: {
     id: string,
     gameInfo: UserFullGameInfo | undefined,
-    gameStatus: string,
-    setGameStatus: Dispatch<SetStateAction<string>>,
+    gameStatus: A1GameStatus,
+    setGameStatus: Dispatch<SetStateAction<A1GameStatus | undefined>>,
+    teamStatus: ParticipationStatus,
+    setTeamStatus: Dispatch<SetStateAction<ParticipationStatus>>,
     fetchGameInfoWithTeamInfo: () => void
 }) {
 
@@ -122,7 +127,7 @@ export function ChallengesView({
     const [showHintsWindowVisible, setShowHintsWindowVisible] = useState(false)
 
     const wsRef = useRef<WebSocket | null>(null)
-    const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected">("disconnected")
+    const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected" | "ingore">("ingore")
 
     const [searchParams, setSearchParams] = useSearchParams()
     const location = useLocation()
@@ -374,10 +379,15 @@ export function ChallengesView({
             }
 
             // 初始连接
-            setTimeout(() => {
-                connectWebSocket()
-                console.log("Connect to websocket")
-            }, 1000)
+            if ((gameStatus == A1GameStatus.Running || gameStatus == A1GameStatus.PracticeMode) && teamStatus == ParticipationStatus.Approved) {
+                setWsStatus("disconnected")
+                setTimeout(() => {
+                    connectWebSocket()
+                    console.log("Connect to websocket")
+                }, 1000)
+            } else {
+                setWsStatus("ingore")
+            }
 
             return () => {
                 isManualClose = true // 标记为手动关闭
@@ -392,22 +402,22 @@ export function ChallengesView({
                 }
             }
 
-        } else if (gameStatus == "unRegistered") {
+        } else if (teamStatus == ParticipationStatus.UnRegistered) {
             // 未注册 先获取队伍信息
             finishLoading()
-        } else if (gameStatus == "waitForProcess") {
+        } else if (teamStatus == ParticipationStatus.Pending) {
             // 启动一个监听进程
             const refershTeamStatusInter = setInterval(() => {
                 api.user.userGetGameInfoWithTeamInfo(gameID).then((res) => {
                     if (res.data.data.team_status == ParticipationStatus.Approved) {
                         if (dayjs() < dayjs(res.data.data.start_time)) {
                             // 等待比赛开始
-                            setGameStatus("pending")
+                            setGameStatus(A1GameStatus.Pending)
                         } else if (dayjs() < dayjs(res.data.data.end_time)) {
                             // 比赛进行中
-                            setGameStatus("running")
+                            setGameStatus(A1GameStatus.Running)
                         } else if (dayjs() > dayjs(res.data.data.end_time)) {
-                            setGameStatus("ended")
+                            setGameStatus(A1GameStatus.Ended)
                         }
                         // 结束监听
                         clearInterval(refershTeamStatusInter)
@@ -416,9 +426,9 @@ export function ChallengesView({
             }, 2000)
 
             finishLoading()
-        } else if (gameStatus == "banned" || gameStatus == "ended" || gameStatus == "noSuchGame" || gameStatus == "unLogin") {
+        } else if (teamStatus == ParticipationStatus.Banned || gameStatus == A1GameStatus.Ended || gameStatus == A1GameStatus.NoSuchGame || teamStatus == ParticipationStatus.UnLogin) {
             finishLoading()
-        } else if (gameStatus == "pending") {
+        } else if (gameStatus == A1GameStatus.Pending) {
             finishLoading()
             return () => {
                 // if (penddingTimeInter) clearInterval(penddingTimeInter)
@@ -438,7 +448,7 @@ export function ChallengesView({
 
                 // 防卡
                 setTimeout(() => {
-                    setGameStatus("running")
+                    setGameStatus(A1GameStatus.Running)
                 }, randomInt(1000, 2000))
             }).catch((error: AxiosError) => { })
         }, 2000)
@@ -476,11 +486,7 @@ export function ChallengesView({
             {/* 比赛各种状态页 */}
             <GameStatusMask
                 gameStatus={gameStatus}
-                gameID={gameID}
-                gameInfo={gameInfo}
-                setScoreBoardVisible={setScoreBoardVisible}
-                startCheckForGameStart={startCheckForGameStart}
-                fetchGameInfoWithTeamInfo={fetchGameInfoWithTeamInfo}
+                teamStatus={teamStatus}
             />
 
             {/* 重定向警告页 */}
@@ -505,6 +511,8 @@ export function ChallengesView({
                         setChallengeSolveStatusList={setChallengeSolveStatusList}
                         gameStatus={gameStatus}
                         setGameStatus={setGameStatus}
+                        teamStatus={teamStatus}
+                        setTeamStatus={setTeamStatus}
                         loadingVisible={loadingVisible}
                         gameInfo={gameInfo}
                     />
@@ -539,6 +547,7 @@ export function ChallengesView({
                                     <GameTeamStatusCard
                                         gameInfo={gameInfo}
                                         scoreBoardModel={scoreBoardModel}
+                                        teamStatus={teamStatus}
                                     />
                                 </div>
                                 {!challengeSearched && !loadingVisible ? (

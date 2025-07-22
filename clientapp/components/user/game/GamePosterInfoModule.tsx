@@ -1,23 +1,25 @@
-import { CreateTeamDialog } from "components/dialogs/CreateTeamDialog";
-import { JoinTeamDialog } from "components/dialogs/JoinTeamDialog";
+import { A1GameStatus } from "components/modules/game/GameStatusEnum";
 import ImageLoader from "components/modules/ImageLoader";
 import TimerDisplay from "components/modules/TimerDisplay";
 import { Button } from "components/ui/button";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import dayjs from "dayjs";
 import { useNavigateFrom } from "hooks/NavigateFrom";
-import { Album, CirclePlay, ClockAlert, Hourglass, IdCard, Key, Lock, Package, PencilLine, Pickaxe, ScanFace, ScanText, Users, UsersRound } from "lucide-react";
+import { Album, CalendarArrowDown, CalendarArrowUp, CirclePlay, ClockAlert, Dumbbell, Hourglass, IdCard, Key, Lock, Package, PencilLine, Pickaxe, ScanFace, ScanText, Users, UsersRound } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useEffect } from "react";
 import { useNavigate } from "react-router";
-import { UserFullGameInfo } from "utils/A1API";
+import { ParticipationStatus, UserFullGameInfo } from "utils/A1API";
 
 export default function GamePosterInfoModule(
     {
         gameInfo,
         gameStatus,
+        teamStatus
     }: {
         gameInfo: UserFullGameInfo | undefined,
-        gameStatus: string,
+        gameStatus: A1GameStatus,
+        teamStatus: ParticipationStatus
     }
 ) {
 
@@ -32,68 +34,25 @@ export default function GamePosterInfoModule(
         }
     }
 
-    const [ navigateFrom, getNavigateFrom ] = useNavigateFrom()
+    const [navigateFrom, getNavigateFrom] = useNavigateFrom()
 
     const gameStatusElement = {
-        "unLogin": (
-            <div className="flex gap-6 flex-col items-center">
-                <div className="flex gap-4">
-                    <Key size={36} />
-                    <span className="text-2xl font-bold">请先登录</span>
-                </div>
-                <div className="flex gap-4">
-                    <Button variant="outline" className="pointer-events-auto [&_svg]:size-[22px] gap-2"
-                        onClick={() => {
-                            navigateFrom("/login")
-                        }}
-                    >
-                        <ScanFace />
-                        <span className="text-[16px] font-bold">登录</span>
-                    </Button>
-                    <Button variant="outline" className="pointer-events-auto [&_svg]:size-[22px] gap-2"
-                        onClick={() => {
-                            navigateFrom("/signup")
-                        }}
-                    >
-                        <IdCard />
-                        <span className="text-[16px] font-bold">注册</span>
-                    </Button>
-                </div>
-            </div>
-        ),
         "ended": (
             <div className="flex gap-4 items-center">
                 <ClockAlert size={36} />
                 <span className="text-2xl font-bold">比赛已结束</span>
             </div>
         ),
-        "waitForProcess": (
+        "practiceMode": (
             <div className="flex gap-4 items-center">
-                <ScanText size={36} />
-                <span className="text-2xl font-bold">你的队伍正在审核中哦，请耐心等待</span>
+                <Dumbbell size={36} />
+                <span className="text-2xl font-bold">练习模式</span>
             </div>
         ),
         "running": (
             <div className="flex flex-col gap-4 items-center">
                 <div className="flex gap-4 items-center">
-                    <CirclePlay size={36}/>
-                    <span className="text-2xl font-bold">距离比赛结束还有</span>
-                </div>
-                <TimerDisplay
-                    className="text-xl font-bold"
-                    targetTime={dayjs(gameInfo?.end_time)}
-                    onFinishCallback={() => { }}
-                />
-            </div>
-        ),
-        "banned": (
-            <div className="flex flex-col gap-4 items-center">
-                <div className="flex gap-4 items-center text-red-500 mb-4">
-                    <Lock size={32}/>
-                    <span className="text-2xl font-bold">你已被管理员禁赛</span>
-                </div>
-                <div className="flex gap-4 items-center">
-                    <CirclePlay size={36}/>
+                    <CirclePlay size={36} />
                     <span className="text-2xl font-bold">距离比赛结束还有</span>
                 </div>
                 <TimerDisplay
@@ -116,32 +75,11 @@ export default function GamePosterInfoModule(
                 />
             </div>
         ),
-        "unRegistered": (
-            <div className="flex flex-col gap-8 items-center">
-                <div className="flex gap-4">
-                    <PencilLine size={36} />
-                    <span className="text-2xl font-bold">你还没有报名哦，请先报名</span>
-                </div>
-                <div className="flex gap-4 pointer-events-auto">
-                    <CreateTeamDialog callback={() => {
-                        // setTimeout(() => {
-                        //     fetchGameInfoWithTeamInfo()
-                        // }, 600)
-                    }} gameID={gameInfo?.game_id ?? 0}>
-                        <Button variant="default" type="button"><Pickaxe />创建队伍</Button>
-                    </CreateTeamDialog>
-                    <JoinTeamDialog callback={() => {
-                        // setTimeout(() => {
-                        //     fetchGameInfoWithTeamInfo()
-                        // }, 600)
-                    }}>
-                        <Button variant="default" type="button"><Users />加入队伍</Button>
-                    </JoinTeamDialog>
-
-                </div>
-            </div>
-        )
     }
+
+    useEffect(() => {
+        console.log(teamStatus)
+    }, [teamStatus])
 
     return (
         <div className="flex flex-col w-full overflow-hidden select-none lg:gap-16 gap-6">
@@ -181,14 +119,23 @@ export default function GamePosterInfoModule(
             <div className="flex gap-2 w-full justify-center items-center">
                 {(gameStatusElement as any)[gameStatus]}
             </div>
-            <div className="flex w-full justify-center items-center gap-4 mt-[-16px]">
-                <div className="flex gap-2 rounded-full border-1 items-center bg-blue-400/60 border-blue-400 px-4 py-1 text-black/70">
-                    <UsersRound size={20} />
-                    <span>人数限制: { gameInfo?.team_number_limit }</span>
+            <div className="flex flex-col w-full justify-center items-center gap-4 mt-[-16px]">
+                <div className="flex gap-4 items-center">
+                    <div className="flex gap-2 rounded-full border-1 items-center bg-blue-400/60 border-blue-400 px-4 py-1 text-black/70">
+                        <UsersRound size={20} />
+                        <span>人数限制: {gameInfo?.team_number_limit}</span>
+                    </div>
+                    <div className="flex gap-2 rounded-full border-1 items-center bg-orange-400/60 border-orange-400 px-4 py-1 text-black/70">
+                        <Package size={20} />
+                        <span>容器限制: {gameInfo?.container_number_limit}</span>
+                    </div>
                 </div>
-                <div className="flex gap-2 rounded-full border-1 items-center bg-orange-400/60 border-orange-400 px-4 py-1 text-black/70">
-                    <Package size={20} />
-                    <span>容器限制: { gameInfo?.container_number_limit }</span>
+                <div className="flex gap-2 rounded-full border-1 items-center bg-green-400/60 border-green-500 px-4 py-1 text-black/70">
+                    <CalendarArrowUp size={20} />
+                    <span>{ dayjs(gameInfo?.start_time).format("YYYY-MM-DD HH:mm:ss") }</span>
+                    <span>-</span>
+                    <CalendarArrowDown size={20} />
+                    <span>{ dayjs(gameInfo?.end_time).format("YYYY-MM-DD HH:mm:ss") }</span>
                 </div>
             </div>
         </div>
