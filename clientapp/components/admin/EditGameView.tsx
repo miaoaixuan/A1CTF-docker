@@ -10,7 +10,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import dayjs from 'dayjs';
-import { CalendarIcon, CircleArrowLeft, Save, FilePenLine, Settings, Trophy, Users, Package, PackageSearch, MessageSquareLock, Activity, Info } from 'lucide-react';
+import { CalendarIcon, CircleArrowLeft, Save, FilePenLine, Settings, Trophy, Users, Package, PackageSearch, MessageSquareLock, Activity, Info, Plane } from 'lucide-react';
 import { EditGameFormSchema } from './game/EditGameSchema';
 import { AxiosError } from 'axios';
 import { api } from 'utils/ApiHelper';
@@ -251,7 +251,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                             </span>
                         </div>
                     </div>
-                    <div className='flex gap-4 items-center'>
+                    <div className='flex gap-3 items-center'>
                         {
                             formEdited && (
                                 <span className='text-red-500'>* 有未保存的修改</span>
@@ -264,6 +264,17 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                         >
                             <Save className="h-4 w-4" />
                             保存设置
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-9 w-9 p-0"
+                            onClick={() => window.open(`/games/${game_info.game_id}/info`)}
+                            data-tooltip-content="前往比赛"
+                            data-tooltip-id="my-tooltip"
+                            data-tooltip-place="bottom"
+                        >
+                            <Plane className="h-4 w-4" />
                         </Button>
                         <Button
                             type="button"

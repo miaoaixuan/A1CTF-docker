@@ -100,7 +100,8 @@ func UpdateActivateGameScore() {
 
 func UpdateActiveGameScoreBoard() {
 	var active_games []models.Game
-	query := dbtool.DB().Where("start_time <= ? AND end_time >= ?", time.Now().UTC(), time.Now().UTC())
+	query := dbtool.DB()
+	// .Where("start_time <= ? AND end_time >= ?", time.Now().UTC(), time.Now().UTC())
 
 	if err := query.Find(&active_games).Error; err != nil {
 		println("Failed to load active games")
@@ -217,7 +218,8 @@ func UpdateActiveGameScoreBoard() {
 
 func UpdateGameScoreBoardCache() {
 	var active_games []models.Game
-	query := dbtool.DB().Where("start_time <= ? AND end_time >= ?", time.Now().UTC(), time.Now().UTC())
+	query := dbtool.DB()
+	// .Where("start_time <= ? AND end_time >= ?", time.Now().UTC(), time.Now().UTC())
 
 	if err := query.Find(&active_games).Error; err != nil {
 		println("Failed to load active games")

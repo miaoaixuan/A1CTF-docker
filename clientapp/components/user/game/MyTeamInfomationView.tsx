@@ -127,6 +127,7 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
             })
             .catch((error) => {
                 console.error("Failed to fetch scoreboard data:", error);
+                setDataLoaded(true)
             });
     };
 
