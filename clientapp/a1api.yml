@@ -3341,6 +3341,11 @@ components:
         - AI
         - PENTENT
         - OSINT
+    FlagType:
+      type: string
+      enum:
+        - FlagTypeDynamic
+        - FlagTypeStatic
     EnvironmentItem:
       type: object
       properties:
@@ -3399,8 +3404,8 @@ components:
           $ref: '#/components/schemas/JudgeConfig'
         name:
           type: string
-        type_:
-          type: integer
+        flag_type:
+          $ref: '#/components/schemas/FlagType'
       required:
         - name
         - description
@@ -3471,6 +3476,10 @@ components:
           $ref: '#/components/schemas/ChallengeCategory'
         judge_config:
           $ref: '#/components/schemas/JudgeConfig'
+        minnal_score:
+          type: number
+        blood_reward_enabled:
+          type: boolean
       required:
         - challenge_id
         - challenge_name
@@ -3535,6 +3544,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GameStage'
+        first_blood_reward:
+          type: number
+        second_blood_reward:
+          type: number
+        third_blood_reward:
+          type: number
         challenges:
           type: array
           items:

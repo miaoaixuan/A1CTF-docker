@@ -428,35 +428,68 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 	}
 
 	// 构建时间线数据（基于原有的 scoreboard 数据）
-	var scoreboardItems []models.ScoreBoard
-	if err := dbtool.DB().Where("game_id = ?", gameID).Find(&scoreboardItems).Error; err != nil {
-		return nil, errors.New("failed to load scoreboards")
+
+	var teamsParticipated []models.Team = make([]models.Team, 0)
+	var participatedTeamIDs []int64
+	if err := dbtool.DB().Model(&models.Team{}).Where("game_id = ?", gameID).Find(&teamsParticipated).Error; err != nil {
+		return nil, errors.New("failed to load teams for game")
 	}
 
-	var scoreboardRecords []models.ScoreBoardDataWithTime
-	for _, item := range scoreboardItems {
-		scoreboardRecords = append(scoreboardRecords, item.Data...)
+	for _, team := range teamsParticipated {
+		participatedTeamIDs = append(participatedTeamIDs, team.TeamID)
 	}
 
-	// 如果没有历史记录，创建空的时间线
-	if len(scoreboardRecords) == 0 {
+	// 获取上述队伍的积分榜
+	var teamGameScoreborad []models.ScoreBoard = make([]models.ScoreBoard, 0)
+	var teamGameScoreboardMap map[int64]models.ScoreBoard = make(map[int64]models.ScoreBoard)
+	if err := dbtool.DB().Model(&models.ScoreBoard{}).Where("game_id = ? AND team_id IN ?", gameID, participatedTeamIDs).Find(&teamGameScoreborad).Error; err != nil {
+		return nil, errors.New("failed to load gameScoreBoard for game")
+	}
+
+	for _, scoreboard := range teamGameScoreborad {
+		// 顺便排序好
+		sort.Slice(scoreboard.Data, func(i, j int) bool {
+			return scoreboard.Data[i].RecordTime.Before(scoreboard.Data[j].RecordTime)
+		})
+
+		teamGameScoreboardMap[scoreboard.TeamID] = scoreboard
+	}
+
+	if len(teamGameScoreborad) == 0 {
 		timeLines = make([]webmodels.TimeLineItem, 0)
 		cachedData.AllTimeLines = make([]webmodels.TimeLineItem, 0)
 	} else {
-		sort.Slice(scoreboardRecords, func(i, j int) bool {
-			return scoreboardRecords[i].RecordTime.Before(scoreboardRecords[j].RecordTime)
-		})
-
 		// 构建 TOP10 的时间线
 		timeLineMap := make(map[int64]webmodels.TimeLineItem)
 		prevScoreMap := make(map[int64]float64)
 
 		for _, team := range top10Teams {
-			timeLineMap[team.TeamID] = webmodels.TimeLineItem{
-				TeamID:   team.TeamID,
+			teamID := team.TeamID
+
+			tmpTimeLine := webmodels.TimeLineItem{
+				TeamID:   teamID,
 				TeamName: team.TeamName,
 				Scores:   make([]webmodels.TimeLineScoreItem, 0),
 			}
+
+			scoreboard, exists := teamGameScoreboardMap[teamID]
+			if !exists {
+				timeLineMap[teamID] = tmpTimeLine
+				continue
+			}
+
+			for _, record := range scoreboard.Data {
+				lastScore, valid := prevScoreMap[teamID]
+				if !valid || lastScore != record.Score {
+					tmpTimeLine.Scores = append(tmpTimeLine.Scores, webmodels.TimeLineScoreItem{
+						RecordTime: record.RecordTime.UnixMilli(),
+						Score:      record.Score,
+					})
+					prevScoreMap[teamID] = record.Score
+				}
+			}
+
+			timeLineMap[teamID] = tmpTimeLine
 		}
 
 		// 构建所有队伍的时间线
@@ -465,44 +498,33 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 
 		// 初始化所有队伍的时间线
 		for _, team := range teams {
+			teamID := team.TeamID
+
 			if teamData, ok := teamDataMap[team.TeamID]; ok {
-				allTimeLineMap[team.TeamID] = webmodels.TimeLineItem{
+				tmpTimeLine := webmodels.TimeLineItem{
 					TeamID:   team.TeamID,
 					TeamName: teamData.TeamName,
 					Scores:   make([]webmodels.TimeLineScoreItem, 0),
 				}
-			}
-		}
 
-		// 统计时间线数据
-		for _, item := range scoreboardRecords {
-			recordTime := item.RecordTime
-			for teamID, scoreValue := range item.Data {
-				// 为 TOP10 构建时间线
-				if timeline, ok := timeLineMap[teamID]; ok {
-					lastScore, valid := prevScoreMap[teamID]
-					if !valid || lastScore != scoreValue.Score {
-						timeline.Scores = append(timeline.Scores, webmodels.TimeLineScoreItem{
-							RecordTime: recordTime.UnixMilli(),
-							Score:      scoreValue.Score,
-						})
-						timeLineMap[teamID] = timeline
-						prevScoreMap[teamID] = scoreValue.Score
-					}
+				scoreboard, exists := teamGameScoreboardMap[teamID]
+				if !exists {
+					allTimeLineMap[team.TeamID] = tmpTimeLine
+					continue
 				}
 
-				// 为所有队伍构建时间线
-				if allTimeline, ok := allTimeLineMap[teamID]; ok {
+				for _, record := range scoreboard.Data {
 					lastScore, valid := allPrevScoreMap[teamID]
-					if !valid || lastScore != scoreValue.Score {
-						allTimeline.Scores = append(allTimeline.Scores, webmodels.TimeLineScoreItem{
-							RecordTime: recordTime.UnixMilli(),
-							Score:      scoreValue.Score,
+					if !valid || lastScore != record.Score {
+						tmpTimeLine.Scores = append(tmpTimeLine.Scores, webmodels.TimeLineScoreItem{
+							RecordTime: record.RecordTime.UnixMilli(),
+							Score:      record.Score,
 						})
-						allTimeLineMap[teamID] = allTimeline
-						allPrevScoreMap[teamID] = scoreValue.Score
+						allPrevScoreMap[teamID] = record.Score
 					}
 				}
+
+				allTimeLineMap[team.TeamID] = tmpTimeLine
 			}
 		}
 

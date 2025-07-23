@@ -49,6 +49,10 @@ type Game struct {
 	Visible              bool        `gorm:"column:visible;not null" json:"visible"`
 	GameIconLight        *string     `gorm:"column:game_icon_light" json:"game_icon_light"`
 	GameIconDark         *string     `gorm:"column:game_icon_dark" json:"game_icon_dark"`
+
+	FirstBloodReward  int64 `gorm:"column:first_blood_reward" json:"first_blood_reward"`
+	SecondBloodReward int64 `gorm:"column:second_blood_reward" json:"second_blood_reward"`
+	ThirdBloodReward  int64 `gorm:"column:third_blood_reward" json:"third_blood_reward"`
 }
 
 // TableName Game's table name

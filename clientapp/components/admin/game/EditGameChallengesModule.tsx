@@ -204,7 +204,9 @@ export default function EditGameChallengesModule(
                                         judge_type: challenge.judge_config?.judge_type || JudgeType.DYNAMIC,
                                         judge_script: challenge.judge_config?.judge_script || "",
                                         flag_template: challenge.judge_config?.flag_template || "",
-                                    }
+                                    },
+                                    minnal_score: 200,
+                                    blood_reward_enabled: true
                                 })
                                 toast.success("题目添加成功")
                             }).catch((err: AxiosError) => {

@@ -37,8 +37,8 @@ export default function GameTeamStatusCard(
         ),
         "UnRegistered": (
             <div className="flex flex-col gap-2 items-center backdrop-blur-sm rounded-2xl border-2 bg-blue-100 border-blue-200 py-4 px-6 shadow-foreground/5 select-none">
-                <div className="flex gap-4 items-center text-green-500">
-                    <PencilLine size={28}/>
+                <div className="flex gap-2 items-center text-blue-500">
+                    <PencilLine size={24}/>
                     <span className="text-lg font-bold">你还没有报名哦，请先报名</span>
                 </div>
                 <div className="flex gap-4 pointer-events-auto">
@@ -47,14 +47,14 @@ export default function GameTeamStatusCard(
                         //     fetchGameInfoWithTeamInfo()
                         // }, 600)
                     }} gameID={gameInfo?.game_id ?? 0}>
-                        <Button variant="default" type="button"><Pickaxe />创建队伍</Button>
+                        <Button variant="outline" className="border-blue-300 bg-blue-200 hover:hover:bg-blue-300/80" type="button"><Pickaxe />创建队伍</Button>
                     </CreateTeamDialog>
                     <JoinTeamDialog callback={() => {
                         // setTimeout(() => {
                         //     fetchGameInfoWithTeamInfo()
                         // }, 600)
                     }}>
-                        <Button variant="default" type="button"><Users />加入队伍</Button>
+                        <Button variant="outline" className="border-blue-300 bg-blue-200 hover:hover:bg-blue-300/80" type="button"><Users />加入队伍</Button>
                     </JoinTeamDialog>
 
                 </div>

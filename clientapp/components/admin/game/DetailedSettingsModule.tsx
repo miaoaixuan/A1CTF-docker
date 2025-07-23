@@ -24,6 +24,7 @@ import * as z from 'zod';
 import { api } from 'utils/ApiHelper';
 import { AdminFullGameInfo } from 'utils/A1API';
 import { Slider } from 'components/ui/slider';
+import { DateTimePicker24h } from 'components/ui/data-time-picker';
 
 interface DetailedSettingsModuleProps {
     form: UseFormReturn<z.infer<typeof EditGameFormSchema>>;
@@ -127,77 +128,10 @@ export function DetailedSettingsModule({
                         render={({ field }) => (
                             <FormItem className="flex flex-col">
                                 <FormLabel>WriteUP截至时间</FormLabel>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <FormControl>
-                                            <Button
-                                                type="button"
-                                                variant={"outline"}
-                                                className={cn(
-                                                    'w-full pl-3 text-left font-normal',
-                                                    !field.value && 'text-muted-foreground'
-                                                )}
-                                            >
-                                                {field.value ? format(field.value, 'MM/dd/yyyy HH:mm') : 'MM/DD/YYYY HH:mm'}
-                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                            </Button>
-                                        </FormControl>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0">
-                                        <div className="sm:flex">
-                                            <Calendar
-                                                mode="single"
-                                                selected={field.value}
-                                                onSelect={(date) => handleDateSelect(date, 'wp_expire_time')}
-                                                initialFocus
-                                            />
-                                            <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
-                                                {/* 小时 */}
-                                                <ScrollArea className="w-64 sm:w-auto">
-                                                    <div className="flex sm:flex-col p-2">
-                                                        {Array.from({ length: 24 }, (_, i) => i)
-                                                            .reverse()
-                                                            .map((hour) => (
-                                                                <Button
-                                                                    type="button"
-                                                                    key={hour}
-                                                                    size="icon"
-                                                                    variant={
-                                                                        field.value && field.value.getHours() === hour ? 'default' : 'ghost'
-                                                                    }
-                                                                    className="sm:w-full shrink-0 aspect-square"
-                                                                    onClick={() => handleTimeChange('hour', hour.toString(), 'wp_expire_time')}
-                                                                >
-                                                                    {hour}
-                                                                </Button>
-                                                            ))}
-                                                    </div>
-                                                    <ScrollBar orientation="horizontal" className="sm:hidden" />
-                                                </ScrollArea>
-                                                {/* 分钟 */}
-                                                <ScrollArea className="w-64 sm:w-auto">
-                                                    <div className="flex sm:flex-col p-2">
-                                                        {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
-                                                            <Button
-                                                                type="button"
-                                                                key={minute}
-                                                                size="icon"
-                                                                variant={
-                                                                    field.value && field.value.getMinutes() === minute ? 'default' : 'ghost'
-                                                                }
-                                                                className="sm:w-full shrink-0 aspect-square"
-                                                                onClick={() => handleTimeChange('minute', minute.toString(), 'wp_expire_time')}
-                                                            >
-                                                                {minute.toString().padStart(2, '0')}
-                                                            </Button>
-                                                        ))}
-                                                    </div>
-                                                    <ScrollBar orientation="horizontal" className="sm:hidden" />
-                                                </ScrollArea>
-                                            </div>
-                                        </div>
-                                    </PopoverContent>
-                                </Popover>
+                                <DateTimePicker24h
+                                    date={field.value}
+                                    setDate={field.onChange}
+                                />
                                 <FormDescription>请选择WP截止时间</FormDescription>
                                 <FormMessage />
                             </FormItem>
@@ -225,7 +159,7 @@ export function DetailedSettingsModule({
                                             onValueChange={field.onChange}
                                         />
                                         <div className='flex-1' />
-                                        <span className='w-8'>{field.value}</span>
+                                        <span className='w-10'>{field.value}</span>
                                     </div>
                                 </FormControl>
                                 <FormDescription>队伍人数限制</FormDescription>
@@ -254,10 +188,97 @@ export function DetailedSettingsModule({
                                             onValueChange={field.onChange}
                                         />
                                         <div className='flex-1' />
-                                        <span className='w-8'>{field.value}</span>
+                                        <span className='w-10'>{field.value}</span>
                                     </div>
                                 </FormControl>
                                 <FormDescription>队伍容器数量限制</FormDescription>
+                            </FormItem>
+                        )}
+                    />
+
+                    {/* 一血加分比例 */}
+                    <FormField
+                        control={form.control}
+                        name="first_blood_reward"
+                        render={({ field }) => (
+                            <FormItem>
+                                <div className="flex items-center h-[20px]">
+                                    <FormLabel>一血加分比例</FormLabel>
+                                    <div className="flex-1" />
+                                    <FormMessage className="text-[14px]" />
+                                </div>
+                                <FormControl>
+                                    <div className='flex items-center gap-2'>
+                                        <Slider
+                                            min={0}
+                                            max={100}
+                                            step={1}
+                                            value={[field.value]}
+                                            onValueChange={field.onChange}
+                                        />
+                                        <div className='flex-1' />
+                                        <span className='w-10'>{field.value}%</span>
+                                    </div>
+                                </FormControl>
+                                <FormDescription>0%即为关闭</FormDescription>
+                            </FormItem>
+                        )}
+                    />
+
+                    {/* 二血加分比例 */}
+                    <FormField
+                        control={form.control}
+                        name="second_blood_reward"
+                        render={({ field }) => (
+                            <FormItem>
+                                <div className="flex items-center h-[20px]">
+                                    <FormLabel>二血加分比例</FormLabel>
+                                    <div className="flex-1" />
+                                    <FormMessage className="text-[14px]" />
+                                </div>
+                                <FormControl>
+                                    <div className='flex items-center gap-2'>
+                                        <Slider
+                                            min={0}
+                                            max={100}
+                                            step={1}
+                                            value={[field.value]}
+                                            onValueChange={field.onChange}
+                                        />
+                                        <div className='flex-1' />
+                                        <span className='w-10'>{field.value}%</span>
+                                    </div>
+                                </FormControl>
+                                <FormDescription>0%即为关闭</FormDescription>
+                            </FormItem>
+                        )}
+                    />
+
+                    {/* 三血加分比例 */}
+                    <FormField
+                        control={form.control}
+                        name="third_blood_reward"
+                        render={({ field }) => (
+                            <FormItem>
+                                <div className="flex items-center h-[20px]">
+                                    <FormLabel>三血加分比例</FormLabel>
+                                    <div className="flex-1" />
+                                    <FormMessage className="text-[14px]" />
+                                </div>
+                                <FormControl>
+                                    <div className='flex items-center gap-2'>
+                                        <Slider
+                                            min={0}
+                                            max={100}
+                                            step={1}
+                                            value={[field.value]}
+                                            onValueChange={field.onChange}
+                                        />
+                                        <div className='flex-1' />
+                                        <span className='w-10'>{field.value}%</span>
+                                    </div>
+                                </FormControl>
+                                <FormDescription>0%即为关闭</FormDescription>
                             </FormItem>
                         )}
                     />

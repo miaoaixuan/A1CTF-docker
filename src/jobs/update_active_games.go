@@ -5,11 +5,10 @@ import (
 	dbtool "a1ctf/src/utils/db_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/utils/zaphelper"
-	"log"
 	"time"
 
 	"go.uber.org/zap"
-	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func updateActiveGameScores(game_ids []int64) {
@@ -108,45 +107,52 @@ func UpdateActiveGameScoreBoard() {
 		return
 	}
 
-	var game_ids []int64
 	for _, game := range active_games {
-		game_ids = append(game_ids, game.GameID)
-	}
+		gameID := game.GameID
 
-	// 开始计算每只队伍当前的总分, 4000条一分块
-	for _, game_id := range game_ids {
+		// 先获取时间，统一的
+		curTime := time.Now().UTC()
 
-		var exists_scoreboard = true
-
-		// 查找当前比赛 cur_records 小于 4000 的分块
-		var scoreboardItem models.ScoreBoard
-		if err := dbtool.DB().Where("game_id = ? AND cur_records < 4000", game_id).First(&scoreboardItem).Error; err != nil {
-			if err != gorm.ErrRecordNotFound {
-				println("Failed to load scoreboard item")
-				return
-			} else {
-				exists_scoreboard = false
-				scoreboardItem = models.ScoreBoard{
-					GameID:       game_id,
-					GenerateTime: time.Now().UTC(),
-					Data:         make(models.ScoreBoardDataWithTimeList, 0),
-					CurRecords:   0,
-				}
-			}
-		}
-
-		var solves []models.Solve
-		if err := dbtool.DB().Where("game_id = ? AND solve_status = ?", game_id, models.SolveCorrect).Preload("GameChallenge").Preload("Team").Find(&solves).Error; err != nil {
-			println("Failed to load game solves")
+		// 先获取比赛下的所有队伍
+		var teamsParticipated []models.Team = make([]models.Team, 0)
+		var participatedTeamIDs []int64
+		if err := dbtool.DB().Where("game_id = ?", gameID).Find(&teamsParticipated).Error; err != nil {
+			zaphelper.Logger.Error("Failed to load teams for game ", zap.Error(err), zap.Int64("game_id", gameID))
 			return
 		}
 
+		for _, team := range teamsParticipated {
+			participatedTeamIDs = append(participatedTeamIDs, team.TeamID)
+		}
+
+		// 获取上述队伍的积分榜
+		var teamGameScoreborad []models.ScoreBoard = make([]models.ScoreBoard, 0)
+		var teamGameScoreboardMap map[int64]models.ScoreBoard = make(map[int64]models.ScoreBoard)
+		if err := dbtool.DB().Where("game_id = ? AND team_id IN ?", gameID, participatedTeamIDs).Find(&teamGameScoreborad).Error; err != nil {
+			zaphelper.Logger.Error("Failed to load team scoreboard for game ", zap.Error(err), zap.Int64("game_id", gameID))
+			return
+		}
+
+		for _, scoreboard := range teamGameScoreborad {
+			teamGameScoreboardMap[scoreboard.TeamID] = scoreboard
+		}
+
+		// 获取当前比赛的正确解题记录
+		var solves []models.Solve
+		if err := dbtool.DB().Where("game_id = ? AND solve_status = ?", gameID, models.SolveCorrect).Preload("GameChallenge").Preload("Team").Find(&solves).Error; err != nil {
+			zaphelper.Logger.Error("Failed to load solves for game ", zap.Error(err), zap.Int64("game_id", gameID))
+			return
+		}
+
+		// 计算每个队伍的解题信息
 		var teamMap = make(map[int64]models.ScoreBoardData)
 		for _, solve := range solves {
 			if !solve.GameChallenge.Visible {
+				// 如果题目现在不可见，就跳过
 				continue
 			}
 
+			// 更新解题信息
 			if scoreBoardData, exists := teamMap[solve.TeamID]; exists {
 				scoreBoardData.Score += solve.GameChallenge.CurScore
 				scoreBoardData.SolvedChallenges = append(scoreBoardData.SolvedChallenges, solve.SolveID)
@@ -160,59 +166,89 @@ func UpdateActiveGameScoreBoard() {
 					SolvedChallenges:     solvedList,
 					NewSolvedChallengeID: nil,
 					Score:                0,
+					RecordTime:           curTime,
 				}
-
 				scoreBoardData.Score += solve.GameChallenge.CurScore
-
 				teamMap[solve.TeamID] = scoreBoardData
 			}
 		}
 
-		// 加载分数修正并应用到队伍分数
+		// 加载分数修正
 		var adjustments []models.ScoreAdjustment
-		if err := dbtool.DB().Where("game_id = ?", game_id).Find(&adjustments).Error; err != nil {
-			println("Failed to load score adjustments")
+		if err := dbtool.DB().Where("game_id = ?", gameID).Preload("Team").Find(&adjustments).Error; err != nil {
+			zaphelper.Logger.Error("Failed to load score adjuestment for game ", zap.Error(err), zap.Int64("game_id", gameID))
 			return
 		}
 
 		for _, adjustment := range adjustments {
 			if scoreBoardData, exists := teamMap[adjustment.TeamID]; exists {
+				// 有解题记录，直接修正
 				scoreBoardData.Score += adjustment.ScoreChange
 				teamMap[adjustment.TeamID] = scoreBoardData
 			} else {
-				// 如果队伍没有解题记录，但有分数修正，也需要创建记录
-				var team models.Team
-				if err := dbtool.DB().Where("team_id = ?", adjustment.TeamID).First(&team).Error; err == nil {
-					scoreBoardData := models.ScoreBoardData{
-						TeamName:             team.TeamName,
-						SolvedChallenges:     make([]string, 0),
-						NewSolvedChallengeID: nil,
-						Score:                adjustment.ScoreChange,
-					}
-					teamMap[adjustment.TeamID] = scoreBoardData
+				// 没解题记录，创建新的
+				solvedList := make([]string, 0)
+				scoreBoardData := models.ScoreBoardData{
+					TeamName:             adjustment.Team.TeamName,
+					SolvedChallenges:     solvedList,
+					NewSolvedChallengeID: nil,
+					Score:                adjustment.ScoreChange,
+					RecordTime:           curTime,
 				}
+				teamMap[adjustment.TeamID] = scoreBoardData
 			}
 		}
 
-		scoreboardItemWithTime := models.ScoreBoardDataWithTime{
-			RecordTime: time.Now().UTC(),
-			Data:       teamMap,
+		// 现在已经计算完成当前所有队伍的解题记录，只需要更新进 sql 就行了
+
+		for teamID, teamData := range teamMap {
+			// 先判断是否是新数据
+			tmpScoreboard, exists := teamGameScoreboardMap[teamID]
+
+			if !exists {
+				// 如果不存在，直接添加一条新的
+				tmpScoreboardDatas := make(models.ScoreBoardDatas, 0)
+				tmpScoreboardDatas = append(tmpScoreboardDatas, teamData)
+
+				tmpScoreboard = models.ScoreBoard{
+					GameID:         gameID,
+					TeamID:         teamID,
+					GenerateTime:   curTime,
+					CurScore:       teamData.Score,
+					Data:           tmpScoreboardDatas,
+					LastUpdateTime: curTime,
+				}
+
+				teamGameScoreboardMap[teamID] = tmpScoreboard
+			} else {
+				// 如果存在，插入新数据
+
+				if tmpScoreboard.CurScore != teamData.Score {
+					tmpScoreboard.Data = append(tmpScoreboard.Data, teamData)
+					tmpScoreboard.LastUpdateTime = curTime
+					tmpScoreboard.CurScore = teamData.Score
+
+				}
+
+				teamGameScoreboardMap[teamID] = tmpScoreboard
+			}
 		}
 
-		scoreboardItem.Data = append(scoreboardItem.Data, scoreboardItemWithTime)
+		var scoreboards []models.ScoreBoard = make([]models.ScoreBoard, 0)
+		for _, scoreboard := range teamGameScoreboardMap {
+			scoreboards = append(scoreboards, scoreboard)
+		}
 
-		if !exists_scoreboard {
-			if err := dbtool.DB().Create(&scoreboardItem).Error; err != nil {
-				log.Fatalf("failed to insert scoreboard item %+v", scoreboardItem)
-			}
-		} else {
-			if err := dbtool.DB().Model(&scoreboardItem).Updates(models.ScoreBoard{
-				Data:       scoreboardItem.Data,
-				CurRecords: int32(len(scoreboardItem.Data)),
-			}).Error; err != nil {
-				log.Fatalf("failed to update scoreboard item %+v", scoreboardItem)
+		if len(scoreboards) > 0 {
+			err := dbtool.DB().Clauses(clause.OnConflict{
+				UpdateAll: true,
+			}).Create(&scoreboards).Error
+
+			if err != nil {
+				zaphelper.Logger.Error("Failed to update scoreboard for game ", zap.Error(err), zap.Int64("game_id", gameID))
 			}
 		}
+
 	}
 }
 

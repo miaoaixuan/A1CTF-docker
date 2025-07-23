@@ -121,6 +121,11 @@ export enum ChallengeContainerType {
   NO_CONTAINER = "NO_CONTAINER",
 }
 
+export enum FlagType {
+  FlagTypeDynamic = "FlagTypeDynamic",
+  FlagTypeStatic = "FlagTypeStatic",
+}
+
 export enum ChallengeCategory {
   MISC = "MISC",
   CRYPTO = "CRYPTO",
@@ -231,7 +236,7 @@ export interface AdminChallengeConfig {
   description: string;
   judge_config: JudgeConfig;
   name: string;
-  type_?: number;
+  flag_type?: FlagType;
 }
 
 export interface ErrorMessage {
@@ -265,6 +270,8 @@ export interface AdminDetailGameChallenge {
   visible?: boolean;
   category?: ChallengeCategory;
   judge_config?: JudgeConfig;
+  minnal_score?: number;
+  blood_reward_enabled?: boolean;
 }
 
 export interface AddGameChallengePayload {
@@ -294,6 +301,9 @@ export interface AdminFullGameInfo {
   wp_expire_time: string;
   visible: boolean;
   stages: GameStage[];
+  first_blood_reward?: number;
+  second_blood_reward?: number;
+  third_blood_reward?: number;
   challenges?: AdminDetailGameChallenge[];
 }
 

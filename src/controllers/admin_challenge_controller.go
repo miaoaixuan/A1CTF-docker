@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -129,6 +130,7 @@ func AdminCreateChallenge(c *gin.Context) {
 			"code":    500,
 			"message": "Failed to create challenge",
 		})
+		log.Panicf("%+v %v\n", payload, err)
 		return
 	}
 

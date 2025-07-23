@@ -62,6 +62,10 @@ func AdminListGames(c *gin.Context) {
 		return
 	}
 
+	sort.Slice(games, func(i, j int) bool {
+		return games[i].GameID < games[j].GameID
+	})
+
 	data := make([]gin.H, 0, len(games))
 	for _, game := range games {
 		data = append(data, gin.H{
@@ -188,6 +192,9 @@ func AdminGetGame(c *gin.Context) {
 		"visible":                game.Visible,
 		"game_icon_light":        game.GameIconLight,
 		"game_icon_dark":         game.GameIconDark,
+		"first_blood_reward":     game.FirstBloodReward,
+		"second_blood_reward":    game.SecondBloodReward,
+		"third_blood_reward":     game.ThirdBloodReward,
 		"challenges":             make([]gin.H, 0, len(gameChallenges)),
 	}
 
@@ -198,16 +205,18 @@ func AdminGetGame(c *gin.Context) {
 		}
 
 		result["challenges"] = append(result["challenges"].([]gin.H), gin.H{
-			"challenge_id":   gc.Challenge.ChallengeID,
-			"challenge_name": gc.Challenge.Name,
-			"total_score":    gc.TotalScore,
-			"cur_score":      gc.CurScore,
-			"hints":          gc.Hints,
-			"solve_count":    gc.SolveCount,
-			"category":       gc.Challenge.Category,
-			"judge_config":   judgeConfig,
-			"belong_stage":   gc.BelongStage,
-			"visible":        gc.Visible,
+			"challenge_id":         gc.Challenge.ChallengeID,
+			"challenge_name":       gc.Challenge.Name,
+			"total_score":          gc.TotalScore,
+			"cur_score":            gc.CurScore,
+			"hints":                gc.Hints,
+			"solve_count":          gc.SolveCount,
+			"category":             gc.Challenge.Category,
+			"judge_config":         judgeConfig,
+			"belong_stage":         gc.BelongStage,
+			"visible":              gc.Visible,
+			"minnal_score":         gc.MinimalScore,
+			"blood_reward_enabled": gc.BloodRewardEnabled,
 		})
 	}
 

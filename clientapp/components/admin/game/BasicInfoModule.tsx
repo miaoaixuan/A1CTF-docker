@@ -22,6 +22,7 @@ import { CalendarIcon, FilePenLine, Upload } from 'lucide-react';
 import ImageUploader from 'components/modules/ImageUploader';
 import { api } from 'utils/ApiHelper';
 import { SystemResourceType } from 'utils/A1API';
+import { DateTimePicker24h } from 'components/ui/data-time-picker';
 
 interface BasicInfoModuleProps {
     form: any;
@@ -85,7 +86,7 @@ export function BasicInfoModule({ form, handleDateSelect, handleTimeChange, game
                     name="name"
                     render={({ field }) => (
                         <FormItem>
-                            <div className="flex items-center h-[20px]">
+                            <div className="flex items-center">
                                 <FormLabel>比赛名称</FormLabel>
                                 <div className="flex-1" />
                                 <FormMessage className="text-[14px]" />
@@ -105,77 +106,10 @@ export function BasicInfoModule({ form, handleDateSelect, handleTimeChange, game
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
                             <FormLabel>开始时间</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <FormControl>
-                                        <Button
-                                            variant={"outline"}
-                                            type="button"
-                                            className={cn(
-                                                'w-full pl-3 text-left font-normal',
-                                                !field.value && 'text-muted-foreground'
-                                            )}
-                                        >
-                                            {field.value ? format(field.value, 'MM/dd/yyyy HH:mm') : <span>MM/DD/YYYY HH:mm</span>}
-                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                        </Button>
-                                    </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <div className="sm:flex">
-                                        <Calendar
-                                            mode="single"
-                                            selected={field.value}
-                                            onSelect={(date) => handleDateSelect(date, 'start_time')}
-                                            initialFocus
-                                        />
-                                        <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
-                                            {/* 小时选择 */}
-                                            <ScrollArea className="w-64 sm:w-auto">
-                                                <div className="flex sm:flex-col p-2">
-                                                    {Array.from({ length: 24 }, (_, i) => i)
-                                                        .reverse()
-                                                        .map((hour) => (
-                                                            <Button
-                                                                type="button"
-                                                                key={hour}
-                                                                size="icon"
-                                                                variant={
-                                                                    field.value && field.value.getHours() === hour ? 'default' : 'ghost'
-                                                                }
-                                                                className="sm:w-full shrink-0 aspect-square"
-                                                                onClick={() => handleTimeChange('hour', hour.toString(), 'start_time')}
-                                                            >
-                                                                {hour}
-                                                            </Button>
-                                                        ))}
-                                                </div>
-                                                <ScrollBar orientation="horizontal" className="sm:hidden" />
-                                            </ScrollArea>
-                                            {/* 分钟选择 */}
-                                            <ScrollArea className="w-64 sm:w-auto">
-                                                <div className="flex sm:flex-col p-2">
-                                                    {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
-                                                        <Button
-                                                            type="button"
-                                                            key={minute}
-                                                            size="icon"
-                                                            variant={
-                                                                field.value && field.value.getMinutes() === minute ? 'default' : 'ghost'
-                                                            }
-                                                            className="sm:w-full shrink-0 aspect-square"
-                                                            onClick={() => handleTimeChange('minute', minute.toString(), 'start_time')}
-                                                        >
-                                                            {minute.toString().padStart(2, '0')}
-                                                        </Button>
-                                                    ))}
-                                                </div>
-                                                <ScrollBar orientation="horizontal" className="sm:hidden" />
-                                            </ScrollArea>
-                                        </div>
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
+                            <DateTimePicker24h
+                                date={field.value}
+                                setDate={field.onChange}
+                            />
                             <FormDescription>请选择比赛开始时间</FormDescription>
                             <FormMessage />
                         </FormItem>
@@ -189,77 +123,10 @@ export function BasicInfoModule({ form, handleDateSelect, handleTimeChange, game
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
                             <FormLabel>结束时间</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <FormControl>
-                                        <Button
-                                            type="button"
-                                            variant={"outline"}
-                                            className={cn(
-                                                'w-full pl-3 text-left font-normal',
-                                                !field.value && 'text-muted-foreground'
-                                            )}
-                                        >
-                                            {field.value ? format(field.value, 'MM/dd/yyyy HH:mm') : <span>MM/DD/YYYY HH:mm</span>}
-                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                        </Button>
-                                    </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <div className="sm:flex">
-                                        <Calendar
-                                            mode="single"
-                                            selected={field.value}
-                                            onSelect={(date) => handleDateSelect(date, 'end_time')}
-                                            initialFocus
-                                        />
-                                        <div className="flex flex-col sm:flex-row sm:h-[300px] divide-y sm:divide-y-0 sm:divide-x">
-                                            {/* 小时选择 */}
-                                            <ScrollArea className="w-64 sm:w-auto">
-                                                <div className="flex sm:flex-col p-2">
-                                                    {Array.from({ length: 24 }, (_, i) => i)
-                                                        .reverse()
-                                                        .map((hour) => (
-                                                            <Button
-                                                                type="button"
-                                                                key={hour}
-                                                                size="icon"
-                                                                variant={
-                                                                    field.value && field.value.getHours() === hour ? 'default' : 'ghost'
-                                                                }
-                                                                className="sm:w-full shrink-0 aspect-square"
-                                                                onClick={() => handleTimeChange('hour', hour.toString(), 'end_time')}
-                                                            >
-                                                                {hour}
-                                                            </Button>
-                                                        ))}
-                                                </div>
-                                                <ScrollBar orientation="horizontal" className="sm:hidden" />
-                                            </ScrollArea>
-                                            {/* 分钟选择 */}
-                                            <ScrollArea className="w-64 sm:w-auto">
-                                                <div className="flex sm:flex-col p-2">
-                                                    {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
-                                                        <Button
-                                                            type="button"
-                                                            key={minute}
-                                                            size="icon"
-                                                            variant={
-                                                                field.value && field.value.getMinutes() === minute ? 'default' : 'ghost'
-                                                            }
-                                                            className="sm:w-full shrink-0 aspect-square"
-                                                            onClick={() => handleTimeChange('minute', minute.toString(), 'end_time')}
-                                                        >
-                                                            {minute.toString().padStart(2, '0')}
-                                                        </Button>
-                                                    ))}
-                                                </div>
-                                                <ScrollBar orientation="horizontal" className="sm:hidden" />
-                                            </ScrollArea>
-                                        </div>
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
+                            <DateTimePicker24h
+                                date={field.value}
+                                setDate={field.onChange}
+                            />
                             <FormDescription>请选择比赛结束时间</FormDescription>
                             <FormMessage />
                         </FormItem>
@@ -356,7 +223,7 @@ export function BasicInfoModule({ form, handleDateSelect, handleTimeChange, game
                     )}
                 />
             </div>
-            
+
             {/* 比赛图标 */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
                 <FormField
@@ -366,7 +233,7 @@ export function BasicInfoModule({ form, handleDateSelect, handleTimeChange, game
                         <FormItem>
                             <FormLabel>比赛图标(深色)</FormLabel>
                             <FormControl>
-                                <ImageUploader 
+                                <ImageUploader
                                     src={field.value}
                                     backgroundTheme='dark'
                                     onChange={handleImageUpload(SystemResourceType.GameIconDark)}
@@ -384,7 +251,7 @@ export function BasicInfoModule({ form, handleDateSelect, handleTimeChange, game
                         <FormItem>
                             <FormLabel>比赛图标(浅色)</FormLabel>
                             <FormControl>
-                                <ImageUploader 
+                                <ImageUploader
                                     src={field.value}
                                     backgroundTheme='light'
                                     onChange={handleImageUpload(SystemResourceType.GameIconLight)}

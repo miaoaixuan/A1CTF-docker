@@ -39,7 +39,7 @@ import CodeEditor from '@uiw/react-textarea-code-editor';
 import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
 import { useEffect, useState } from "react";
 import { MacScrollbar } from "mac-scrollbar";
-import { AdminChallengeConfig } from "utils/A1API";
+import { AdminChallengeConfig, ChallengeContainerType, FlagType } from "utils/A1API";
 import { api, ErrorMessage } from "utils/ApiHelper";
 import dayjs from "dayjs";
 import { toast } from "sonner";
@@ -378,6 +378,7 @@ export function CreateChallengeView() {
             judge_script: z.string().optional(),
             flag_template: z.string().optional(),
         }),
+        container_type: z.enum(["DYNAMIC_CONTAINER", "STATIC_CONTAINER", "NO_CONTAINER"]),
         // 新增 container_config 部分
         container_config: z.array(
             z.object({
@@ -388,10 +389,7 @@ export function CreateChallengeView() {
                 expose_ports: z.array(
                     z.object({
                         name: z.string().min(1, { message: "请输入端口名称" }),
-                        port: z.preprocess(
-                            (a) => parseInt(a as string, 10),
-                            z.number({ invalid_type_error: "请输入数字" }).min(1, { message: "端口号不能小于 1" }).max(65535, { message: "端口号不能大于 65535" })
-                        ),
+                        port: z.number().min(1).max(65535)
                     })
                 ),
             })
@@ -407,7 +405,8 @@ export function CreateChallengeView() {
                 download_hash: z.string().nullable(),
                 generate_script: z.string().nullable(),
             })
-        )
+        ),
+        flag_type: z.enum(["FlagTypeDynamic", "FlagTypeStatic"]),
     });
 
     const env_to_string = (data: { name: string, value: string }[]) => {
@@ -442,7 +441,10 @@ export function CreateChallengeView() {
                 flag_template: ""
             },
             container_config: [],
-            attachments: []
+            attachments: [],
+            container_type: "NO_CONTAINER",
+            create_time: new Date(),
+            flag_type: "FlagTypeDynamic",
         }
     })
 
@@ -485,7 +487,8 @@ export function CreateChallengeView() {
             description: values.description,
             judge_config: values.judge_config,
             name: values.name,
-            type_: 0
+            type_: 0,
+            flag_type: "FlagTypeDynamic"
         };
 
         api.admin.createChallenge(finalData as AdminChallengeConfig).then((res) => {

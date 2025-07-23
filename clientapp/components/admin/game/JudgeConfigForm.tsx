@@ -91,6 +91,22 @@ export function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) 
                 )}
             />
 
+            <FormField
+                control={form.control}
+                name="challenges.${index}.enable_blood_reward"
+                render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/50 p-4">
+                        <div className="space-y-0.5">
+                            <FormLabel>三血加分</FormLabel>
+                            <FormDescription>是否开启三血加分</FormDescription>
+                        </div>
+                        <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                    </FormItem>
+                )}
+            />
+
             {/* 根据评测模式渲染不同输入 */}
             {attachType === 'SCRIPT' ? (
                 <FormField
@@ -199,7 +215,7 @@ export function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) 
                             create_time: new Date(),
                             visible: false
                         })
-                        
+
                     }}
                 >
                     <PlusCircle />
