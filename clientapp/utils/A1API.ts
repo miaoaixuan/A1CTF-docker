@@ -270,8 +270,8 @@ export interface AdminDetailGameChallenge {
   visible?: boolean;
   category?: ChallengeCategory;
   judge_config?: JudgeConfig;
-  minnal_score?: number;
-  blood_reward_enabled?: boolean;
+  minimal_score?: number;
+  enable_blood_reward?: boolean;
 }
 
 export interface AddGameChallengePayload {

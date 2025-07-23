@@ -37,9 +37,9 @@ export const EditGameFormSchema = z.object({
     container_number_limit: z.coerce.number().min(1),
     require_wp: z.boolean(),
     wp_expire_time: z.date().optional(),
-    first_blood_reward: z.number(),
-    second_blood_reward: z.number(),
-    third_blood_reward: z.number(),
+    first_blood_reward: z.coerce.number(),
+    second_blood_reward: z.coerce.number(),
+    third_blood_reward: z.coerce.number(),
     stages: z.array(
         z.object({
             stage_name: z.string().nonempty(),
@@ -58,8 +58,8 @@ export const EditGameFormSchema = z.object({
             total_score: z.coerce.number().min(1, '请输入一个有效的数字'),
             cur_score: z.number(),
             solve_count: z.number(),
-            minnal_score: z.number(),
-            blood_reward_enabled: z.boolean(),
+            minimal_score: z.coerce.number().min(0, '请输入一个有效的数字'),
+            enable_blood_reward: z.boolean(),
             hints: z.array(
                 z.object({
                     content: z.string(),

@@ -6,6 +6,7 @@ import (
 	"a1ctf/src/webmodels"
 	"errors"
 	"fmt"
+	"math"
 	"math/rand"
 	"sort"
 	"time"
@@ -258,6 +259,8 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 	if err := dbtool.DB().Where("game_id = ?", gameID).
 		Preload("GameChallenge").
 		Preload("Solver").
+		Preload("Challenge").
+		Preload("Game").
 		Order("solve_time ASC").
 		Find(&solves).Error; err != nil {
 		return nil, errors.New("failed to load solves")
@@ -304,11 +307,63 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 				penalty = int64(solve.SolveTime.Sub(firstTime).Seconds())
 			}
 
-			teamData.Score += solve.GameChallenge.CurScore
+			challengeScore := solve.GameChallenge.CurScore
+
+			// 这里计算分数了，处理一下三血
+			if solve.GameChallenge.BloodRewardEnabled && solve.Rank <= 3 {
+
+				var rewardReason string
+				// 三血对于的奖励分数比例是否开启
+				var rankRewardEnabled bool = false
+
+				rewardScore := 0.0
+				switch solve.Rank {
+				case 3:
+					rewardScore = float64(solve.Game.ThirdBloodReward) * solve.GameChallenge.CurScore / 100
+					rewardReason = "Third Blood Reward"
+					if solve.Game.ThirdBloodReward != 0 {
+						rankRewardEnabled = true
+					}
+				case 2:
+					rewardScore = float64(solve.Game.SecondBloodReward) * solve.GameChallenge.CurScore / 100
+					rewardReason = "Second Blood Reward"
+					if solve.Game.SecondBloodReward != 0 {
+						rankRewardEnabled = true
+					}
+				case 1:
+					rewardScore = float64(solve.Game.FirstBloodReward) * solve.GameChallenge.CurScore / 100
+					rewardReason = "First Blood Reward"
+					if solve.Game.FirstBloodReward != 0 {
+						rankRewardEnabled = true
+					}
+				}
+
+				if rankRewardEnabled {
+					rewardScore = math.Max(math.Floor(rewardScore), 1)
+
+					rewardReason = fmt.Sprintf("%s for %s", rewardReason, solve.Challenge.Name)
+
+					adjustment := webmodels.TeamScoreAdjustmentItem{
+						AdjustmentID:   -1,
+						AdjustmentType: string(models.AdjustmentTypeReward),
+						ScoreChange:    rewardScore,
+						Reason:         rewardReason,
+						CreatedAt:      solve.SolveTime,
+					}
+
+					challengeScore += rewardScore
+
+					// 往前端添加解题记录
+					teamData.ScoreAdjustments = append(teamData.ScoreAdjustments, adjustment)
+				}
+			}
+
+			teamData.Score += challengeScore
 			teamData.Penalty += penalty
+
 			teamData.SolvedChallenges = append(teamData.SolvedChallenges, webmodels.TeamSolveItem{
 				ChallengeID: solve.ChallengeID,
-				Score:       solve.GameChallenge.CurScore,
+				Score:       challengeScore,
 				Solver:      solve.Solver.Username,
 				Rank:        int64(solve.Rank),
 				SolveTime:   solve.SolveTime,

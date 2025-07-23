@@ -375,10 +375,19 @@ func UserGameGetScoreBoard(c *gin.Context) {
 		pageTimeLines = make([]webmodels.TimeLineItem, 0)
 	}
 
+	// 过滤一遍 Top10，过滤掉没得分的
+	filteredTop10TimeLines := make([]webmodels.TimeLineItem, 0)
+
+	for _, top10TimeLine := range scoreBoard.Top10TimeLines {
+		if len(top10TimeLine.Scores) > 0 {
+			filteredTop10TimeLines = append(filteredTop10TimeLines, top10TimeLine)
+		}
+	}
+
 	result := webmodels.GameScoreboardData{
 		GameID:               game.GameID,
 		Name:                 game.Name,
-		Top10TimeLines:       scoreBoard.Top10TimeLines,
+		Top10TimeLines:       filteredTop10TimeLines,
 		TeamScores:           pageTeamScores,
 		TeamTimeLines:        pageTimeLines,
 		SimpleGameChallenges: simpleGameChallenges,

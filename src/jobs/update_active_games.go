@@ -5,6 +5,7 @@ import (
 	dbtool "a1ctf/src/utils/db_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/utils/zaphelper"
+	"math"
 	"time"
 
 	"go.uber.org/zap"
@@ -139,7 +140,7 @@ func UpdateActiveGameScoreBoard() {
 
 		// 获取当前比赛的正确解题记录
 		var solves []models.Solve
-		if err := dbtool.DB().Where("game_id = ? AND solve_status = ?", gameID, models.SolveCorrect).Preload("GameChallenge").Preload("Team").Find(&solves).Error; err != nil {
+		if err := dbtool.DB().Where("game_id = ? AND solve_status = ?", gameID, models.SolveCorrect).Preload("GameChallenge").Preload("Game").Preload("Team").Find(&solves).Error; err != nil {
 			zaphelper.Logger.Error("Failed to load solves for game ", zap.Error(err), zap.Int64("game_id", gameID))
 			return
 		}
@@ -152,9 +153,43 @@ func UpdateActiveGameScoreBoard() {
 				continue
 			}
 
+			challengeScore := solve.GameChallenge.CurScore
+
+			// 这里计算分数了，处理一下三血
+			if solve.GameChallenge.BloodRewardEnabled && solve.Rank <= 3 {
+
+				var rankRewardEnabled bool = false
+
+				rewardScore := 0.0
+				switch solve.Rank {
+				case 3:
+					rewardScore = float64(solve.Game.ThirdBloodReward) * solve.GameChallenge.CurScore / 100
+					if solve.Game.ThirdBloodReward != 0 {
+						rankRewardEnabled = true
+					}
+				case 2:
+					rewardScore = float64(solve.Game.SecondBloodReward) * solve.GameChallenge.CurScore / 100
+					if solve.Game.SecondBloodReward != 0 {
+						rankRewardEnabled = true
+					}
+				case 1:
+					rewardScore = float64(solve.Game.FirstBloodReward) * solve.GameChallenge.CurScore / 100
+					if solve.Game.FirstBloodReward != 0 {
+						rankRewardEnabled = true
+					}
+				}
+
+				if rankRewardEnabled {
+					rewardScore = math.Max(math.Floor(rewardScore), 1)
+
+					challengeScore += rewardScore
+				}
+			}
+
 			// 更新解题信息
 			if scoreBoardData, exists := teamMap[solve.TeamID]; exists {
-				scoreBoardData.Score += solve.GameChallenge.CurScore
+
+				scoreBoardData.Score += challengeScore
 				scoreBoardData.SolvedChallenges = append(scoreBoardData.SolvedChallenges, solve.SolveID)
 
 				teamMap[solve.TeamID] = scoreBoardData
@@ -168,7 +203,7 @@ func UpdateActiveGameScoreBoard() {
 					Score:                0,
 					RecordTime:           curTime,
 				}
-				scoreBoardData.Score += solve.GameChallenge.CurScore
+				scoreBoardData.Score += challengeScore
 				teamMap[solve.TeamID] = scoreBoardData
 			}
 		}

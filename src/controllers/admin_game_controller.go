@@ -205,18 +205,18 @@ func AdminGetGame(c *gin.Context) {
 		}
 
 		result["challenges"] = append(result["challenges"].([]gin.H), gin.H{
-			"challenge_id":         gc.Challenge.ChallengeID,
-			"challenge_name":       gc.Challenge.Name,
-			"total_score":          gc.TotalScore,
-			"cur_score":            gc.CurScore,
-			"hints":                gc.Hints,
-			"solve_count":          gc.SolveCount,
-			"category":             gc.Challenge.Category,
-			"judge_config":         judgeConfig,
-			"belong_stage":         gc.BelongStage,
-			"visible":              gc.Visible,
-			"minnal_score":         gc.MinimalScore,
-			"blood_reward_enabled": gc.BloodRewardEnabled,
+			"challenge_id":        gc.Challenge.ChallengeID,
+			"challenge_name":      gc.Challenge.Name,
+			"total_score":         gc.TotalScore,
+			"cur_score":           gc.CurScore,
+			"hints":               gc.Hints,
+			"solve_count":         gc.SolveCount,
+			"category":            gc.Challenge.Category,
+			"judge_config":        judgeConfig,
+			"belong_stage":        gc.BelongStage,
+			"visible":             gc.Visible,
+			"minimal_score":       gc.MinimalScore,
+			"enable_blood_reward": gc.BloodRewardEnabled,
 		})
 	}
 
@@ -277,6 +277,10 @@ func AdminUpdateGame(c *gin.Context) {
 	game.WpExpireTime = payload.WpExpireTime
 	game.Stages = payload.Stages
 	game.Visible = payload.Visible
+	// 三血比例
+	game.FirstBloodReward = payload.FirstBloodReward
+	game.SecondBloodReward = payload.SecondBloodReward
+	game.ThirdBloodReward = payload.ThirdBloodReward
 
 	if err := dbtool.DB().Save(&game).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -338,16 +342,18 @@ func AdminUpdateGame(c *gin.Context) {
 		}
 
 		updateModel := models.GameChallenge{
-			TotalScore:  chal.TotalScore,
-			Hints:       chal.Hints,
-			JudgeConfig: chal.JudgeConfig,
-			Visible:     chal.Visible,
-			BelongStage: chal.BelongStage,
-			CurScore:    existingGameChallenge.CurScore,
+			TotalScore:         chal.TotalScore,
+			Hints:              chal.Hints,
+			JudgeConfig:        chal.JudgeConfig,
+			Visible:            chal.Visible,
+			MinimalScore:       chal.MinimalScore,
+			BloodRewardEnabled: chal.BloodRewardEnabled,
+			BelongStage:        chal.BelongStage,
+			CurScore:           existingGameChallenge.CurScore,
 		}
 
 		if err := dbtool.DB().Model(&models.GameChallenge{}).
-			Select("total_score", "hints", "judge_config", "visible", "belong_stage").
+			Select("total_score", "hints", "judge_config", "visible", "belong_stage", "minimal_score", "enable_blood_reward").
 			Where("challenge_id = ? AND game_id = ?", chal.ChallengeID, gameID).Updates(updateModel).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":    500,
@@ -430,15 +436,16 @@ func AdminAddGameChallenge(c *gin.Context) {
 	}
 
 	gameChallenge := models.GameChallenge{
-		GameID:      gameID,
-		ChallengeID: challengeID,
-		TotalScore:  500,
-		CurScore:    500,
-		Difficulty:  5,
-		Hints:       &models.Hints{},
-		JudgeConfig: challenge.JudgeConfig,
-		BelongStage: nil,
-		Visible:     false,
+		GameID:             gameID,
+		ChallengeID:        challengeID,
+		TotalScore:         500,
+		CurScore:           500,
+		Difficulty:         5,
+		Hints:              &models.Hints{},
+		JudgeConfig:        challenge.JudgeConfig,
+		BelongStage:        nil,
+		Visible:            false,
+		BloodRewardEnabled: true,
 	}
 
 	if err := dbtool.DB().Create(&gameChallenge).Error; err != nil {

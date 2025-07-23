@@ -93,7 +93,7 @@ export function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) 
 
             <FormField
                 control={form.control}
-                name="challenges.${index}.enable_blood_reward"
+                name={`challenges.${index}.enable_blood_reward`}
                 render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/50 p-4">
                         <div className="space-y-0.5">
@@ -196,6 +196,28 @@ export function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) 
                         <div className="flex flex-col text-[12px] text-foreground/60">
                             <span>这里是题目的最大分数</span>
                             <span>在开启动态积分的情况下，积分会自动衰减</span>
+                        </div>
+                    </FormItem>
+                )}
+            />
+
+            {/* 题目最小分数 */}
+            <FormField
+                control={form.control}
+                name={`challenges.${index}.minimal_score`}
+                render={({ field }) => (
+                    <FormItem className="select-none">
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>题目最低分</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
+                        <FormControl>
+                            <Input {...field} value={field.value ?? ''} />
+                        </FormControl>
+                        <div className="flex flex-col text-[12px] text-foreground/60">
+                            <span>这里是题目的最小分数</span>
+                            <span>积分衰减不会小于这个分数</span>
                         </div>
                     </FormItem>
                 )}

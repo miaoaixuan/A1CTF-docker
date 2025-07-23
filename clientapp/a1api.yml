@@ -3476,9 +3476,9 @@ components:
           $ref: '#/components/schemas/ChallengeCategory'
         judge_config:
           $ref: '#/components/schemas/JudgeConfig'
-        minnal_score:
+        minimal_score:
           type: number
-        blood_reward_enabled:
+        enable_blood_reward:
           type: boolean
       required:
         - challenge_id

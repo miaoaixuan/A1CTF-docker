@@ -2,7 +2,6 @@ package jobs
 
 import (
 	"a1ctf/src/db/models"
-	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	noticetool "a1ctf/src/utils/notice_tool"
 	"a1ctf/src/utils/zaphelper"
@@ -50,43 +49,45 @@ func processQueueingJudge(judge *models.Judge) error {
 				}
 
 				var noticeCate models.NoticeCategory
-				var rewardScore float64
-				var rewardReason string
 
-				if newSolve.Rank == 1 {
-					noticeCate = models.NoticeFirstBlood
-					rewardScore = 50
-					rewardReason = "First Blood Reward"
-				} else if newSolve.Rank == 2 {
-					noticeCate = models.NoticeSecondBlood
-					rewardScore = 30
-					rewardReason = "Second Blood Reward"
-				} else {
-					noticeCate = models.NoticeThirdBlood
-					rewardScore = 10
-					rewardReason = "Third Blood Reward"
-				}
+				// 现在由算分逻辑计算三血分数，不使用 score-adjustment
+				// var rewardScore float64
+				// var rewardReason string
 
-				rewardReason = fmt.Sprintf("%s for %s", rewardReason, judge.Challenge.Name)
+				// if newSolve.Rank == 1 {
+				// 	noticeCate = models.NoticeFirstBlood
+				// 	rewardScore = 50
+				// 	rewardReason = "First Blood Reward"
+				// } else if newSolve.Rank == 2 {
+				// 	noticeCate = models.NoticeSecondBlood
+				// 	rewardScore = 30
+				// 	rewardReason = "Second Blood Reward"
+				// } else {
+				// 	noticeCate = models.NoticeThirdBlood
+				// 	rewardScore = 10
+				// 	rewardReason = "Third Blood Reward"
+				// }
 
-				adjustment := models.ScoreAdjustment{
-					TeamID:         judge.TeamID,
-					GameID:         judge.GameID,
-					AdjustmentType: models.AdjustmentTypeReward,
-					ScoreChange:    rewardScore,
-					Reason:         rewardReason,
-					CreatedBy:      uuid.MustParse(judge.SubmiterID),
-					CreatedAt:      time.Now().UTC(),
-					UpdatedAt:      time.Now().UTC(),
-				}
+				// rewardReason = fmt.Sprintf("%s for %s", rewardReason, judge.Challenge.Name)
 
-				if err := dbtool.DB().Create(&adjustment).Error; err != nil {
-					tasks.LogJudgeOperation(nil, nil, models.ActionJudge, judge.JudgeID, map[string]interface{}{
-						"team_id":      judge.TeamID,
-						"game_id":      judge.GameID,
-						"score_change": adjustment.ScoreChange,
-					}, err)
-				}
+				// adjustment := models.ScoreAdjustment{
+				// 	TeamID:         judge.TeamID,
+				// 	GameID:         judge.GameID,
+				// 	AdjustmentType: models.AdjustmentTypeReward,
+				// 	ScoreChange:    rewardScore,
+				// 	Reason:         rewardReason,
+				// 	CreatedBy:      uuid.MustParse(judge.SubmiterID),
+				// 	CreatedAt:      time.Now().UTC(),
+				// 	UpdatedAt:      time.Now().UTC(),
+				// }
+
+				// if err := dbtool.DB().Create(&adjustment).Error; err != nil {
+				// 	tasks.LogJudgeOperation(nil, nil, models.ActionJudge, judge.JudgeID, map[string]interface{}{
+				// 		"team_id":      judge.TeamID,
+				// 		"game_id":      judge.GameID,
+				// 		"score_change": adjustment.ScoreChange,
+				// 	}, err)
+				// }
 
 				go func() {
 					noticetool.InsertNotice(judge.GameID, noticeCate, []string{solveDetail.Team.TeamName, solveDetail.Challenge.Name})

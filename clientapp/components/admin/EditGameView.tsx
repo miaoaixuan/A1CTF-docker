@@ -104,6 +104,8 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                 category: challenge.category,
                 total_score: challenge.total_score,
                 cur_score: challenge.cur_score,
+                enable_blood_reward: challenge.enable_blood_reward,
+                minimal_score: challenge.minimal_score,
                 solve_count: challenge.solve_count || 0,
                 hints: challenge.hints?.map((hint) => ({
                     content: hint.content,
@@ -158,13 +160,16 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
             wp_expire_time: format_date(values.wp_expire_time ?? new Date()),
             stages: values.stages,
             visible: values.visible,
-            challenges: values.challenges
+            challenges: values.challenges,
+            first_blood_reward: values.first_blood_reward,
+            second_blood_reward: values.second_blood_reward,
+            third_blood_reward: values.third_blood_reward
         };
 
         api.admin.updateGame(game_info.game_id, finalData as any as AdminFullGameInfo).then((res) => {
             toast.success("比赛信息更新成功")
         }).catch((err: AxiosError) => {
-            toast.error(err.response?.data as string)
+            toast.error("更新失败")
         })
     }
 
