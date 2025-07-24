@@ -132,7 +132,7 @@ export function ChallengesView({
     const [searchParams, setSearchParams] = useSearchParams()
     const location = useLocation()
 
-    const challengeSearched = searchParams.get("challenge") ? true : false
+    const challengeSearched = searchParams.get("id") ? true : false
 
     const [scoreBoardModel, setScoreBoardModel] = useState<GameScoreboardData | undefined>(undefined)
 
@@ -208,7 +208,7 @@ export function ChallengesView({
         // 根据比赛状态处理事件
         if (gameStatus == "running" || gameStatus == "practiceMode") {
 
-            const challengeID = searchParams.get("challenge")
+            const challengeID = searchParams.get("id")
             if (challengeID) {
                 const challengeIDInt = parseInt(challengeID, 10)
                 api.user.userGetGameChallenge(gameID, challengeIDInt).then((response) => {
@@ -465,7 +465,7 @@ export function ChallengesView({
 
     useEffect(() => {
         if (curChallenge?.challenge_id) {
-            setSearchParams({ challenge: curChallenge.challenge_id.toString() })
+            setSearchParams({ id: curChallenge.challenge_id.toString() })
         }
     }, [curChallenge?.challenge_id])
 

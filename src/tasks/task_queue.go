@@ -55,6 +55,8 @@ func InitTaskQueue() {
 		mux.HandleFunc(TypeStartContainer, HandleContainerStartTask)
 		mux.HandleFunc(TypeStopContainer, HandleContainerStopTask)
 
+		mux.HandleFunc(TypeAntiCheat, HandleFlagAntiCheatTask)
+
 		if err := server.Run(mux); err != nil {
 			log.Fatalf("could not run server: %v", err)
 		}
@@ -73,4 +75,5 @@ const (
 	TypeCalculateRanks = "ranks:calculate"
 	TypeStartContainer = "container:start"
 	TypeStopContainer  = "container:stop"
+	TypeAntiCheat      = "flag:anticheat"
 )

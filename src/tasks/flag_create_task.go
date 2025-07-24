@@ -25,10 +25,11 @@ type CreateTeamFlagPayload struct {
 	ChallengeID  int64
 	TeamHash     string
 	TeamName     string
+	FlagType     models.FlagType
 }
 
-func NewTeamFlagCreateTask(flagTemplate string, teamID int64, gameID int64, challengeID int64, teamHash string, teamName string) error {
-	payload, err := msgpack.Marshal(CreateTeamFlagPayload{FlagTemplate: flagTemplate, TeamID: teamID, GameID: gameID, ChallengeID: challengeID, TeamHash: teamHash, TeamName: teamName})
+func NewTeamFlagCreateTask(flagTemplate string, teamID int64, gameID int64, challengeID int64, teamHash string, teamName string, flagType models.FlagType) error {
+	payload, err := msgpack.Marshal(CreateTeamFlagPayload{FlagTemplate: flagTemplate, TeamID: teamID, GameID: gameID, ChallengeID: challengeID, TeamHash: teamHash, TeamName: teamName, FlagType: flagType})
 	if err != nil {
 		return err
 	}
@@ -71,7 +72,7 @@ func HandleTeamCreateTask(ctx context.Context, t *asynq.Task) error {
 			"challenge_id": fmt.Sprintf("%d", p.ChallengeID),
 			"team_hash":    p.TeamHash,
 			"team_name":    p.TeamName,
-		})
+		}, p.FlagType == models.FlagTypeDynamic)
 
 		if slices.Contains(flags, flag) {
 			continue

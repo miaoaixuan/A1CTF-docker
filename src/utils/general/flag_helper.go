@@ -156,13 +156,7 @@ func ReplaceTemplateFlag(flag string, data map[string]string) string {
 	return flag
 }
 
-func ProcessFlag(flag string, data map[string]string) string {
-	shouldLeet := false
-	if strings.HasPrefix(flag, "[leet]") {
-		flag = strings.TrimPrefix(flag, "[leet]")
-		shouldLeet = true
-	}
-
+func ProcessFlag(flag string, data map[string]string, shouldLeet bool) string {
 	flagHead := ""
 	flagBody := flag
 

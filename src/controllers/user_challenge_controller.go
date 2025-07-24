@@ -106,19 +106,21 @@ func UserGetGameChallenge(c *gin.Context) {
 		return
 	}
 
-	// 5. Flag 处理，对于没有 flag 的队伍，需要添加到 flag 创建队列里
-	allFlags, err := ristretto_tool.CachedAllTeamFlags(game.GameID, challengeID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-			Code:    500,
-			Message: "System error",
-		})
-		return
-	}
+	// 5. Flag 处理，对于没有 flag 的队伍，需要添加到 flag 创建队列里，先判断是否是动态 Flag
+	if gameChallenge.Challenge.FlagType == models.FlagTypeDynamic {
+		allFlags, err := ristretto_tool.CachedAllTeamFlags(game.GameID, challengeID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+				Code:    500,
+				Message: "System error",
+			})
+			return
+		}
 
-	if _, exists := allFlags[team.TeamID]; !exists {
-		// 缓存不存在，添加到任务队列
-		_ = tasks.NewTeamFlagCreateTask(*gameChallenge.JudgeConfig.FlagTemplate, team.TeamID, game.GameID, challengeID, team.TeamHash, team.TeamName)
+		if _, exists := allFlags[team.TeamID]; !exists {
+			// 缓存不存在，添加到任务队列
+			_ = tasks.NewTeamFlagCreateTask(*gameChallenge.JudgeConfig.FlagTemplate, team.TeamID, game.GameID, challengeID, team.TeamHash, team.TeamName, gameChallenge.Challenge.FlagType)
+		}
 	}
 
 	// 3. 使用缓存获取附件信息
@@ -273,16 +275,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 		return
 	}
 
-	// 3. 使用缓存获取 teamFlag，提升性能
-	teamFlagMap, err := ristretto_tool.CachedAllTeamFlags(game.GameID, challengeID)
-	teamFlag, exsist := teamFlagMap[team.TeamID]
-	if !exsist || err != nil {
-		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-			Code:    500,
-			Message: "Failed to get team flag",
-		})
-		return
-	}
+	clientIP := c.ClientIP()
 
 	// 插入 Judge 队列
 	newJudge := models.Judge{
@@ -290,13 +283,29 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 		GameID:       game.GameID,
 		ChallengeID:  *gameChallenge.Challenge.ChallengeID,
 		TeamID:       team.TeamID,
-		FlagID:       teamFlag.FlagID,
 		JudgeType:    gameChallenge.JudgeConfig.JudgeType,
 		JudgeStatus:  models.JudgeQueueing,
 		SubmiterID:   c.MustGet("user_id").(string),
 		JudgeID:      uuid.NewString(),
 		JudgeTime:    time.Now().UTC(),
 		JudgeContent: payload.FlagContent,
+		SubmiterIP:   &clientIP,
+	}
+
+	// 判断是否是动态 Flag，如果是就从 teamFlag 的 map 缓存中拿 flag
+	if gameChallenge.Challenge.FlagType == models.FlagTypeDynamic {
+		teamFlagMap, err := ristretto_tool.CachedAllTeamFlags(game.GameID, challengeID)
+		teamFlag, exsist := teamFlagMap[team.TeamID]
+		if !exsist || err != nil {
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+				Code:    500,
+				Message: "Failed to get team flag",
+			})
+			return
+		}
+		newJudge.FlagID = &teamFlag.FlagID
+	} else {
+		newJudge.FlagID = nil
 	}
 
 	if err := dbtool.DB().Create(&newJudge).Error; err != nil {
@@ -315,6 +324,10 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 		})
 		return
 	}
+
+	// 启动一个检查作弊任务
+
+	tasks.NewFlagAntiCheatTask(newJudge)
 
 	tasks.LogUserOperation(c, models.ActionSubmitFlag, models.ResourceTypeChallenge, &challengeIDStr, map[string]interface{}{
 		"game_id":        game.GameID,

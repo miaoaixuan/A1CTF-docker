@@ -92,6 +92,7 @@ type Container struct {
 	ContainerConfig      k8stool.A1Containers `gorm:"column:container_config" json:"container_config"`
 	ChallengeName        string               `gorm:"column:challenge_name;not null" json:"challenge_name"`
 	TeamHash             string               `gorm:"column:team_hash;not null" json:"team_hash"`
+	SubmiterIP           *string              `gorm:"column:submiter_ip" json:"submiter_ip"`
 }
 
 // TableName Container's table name

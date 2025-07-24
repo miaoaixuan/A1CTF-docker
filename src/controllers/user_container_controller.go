@@ -105,6 +105,8 @@ func UserCreateGameContainer(c *gin.Context) {
 		}
 	}
 
+	clientIP := c.ClientIP()
+
 	// 加入数据库
 	newContainer := models.Container{
 		ContainerID:          uuid.NewString(),
@@ -120,6 +122,7 @@ func UserCreateGameContainer(c *gin.Context) {
 		ContainerConfig:      *gameChallenge.Challenge.ContainerConfig,
 		ChallengeName:        gameChallenge.Challenge.Name,
 		TeamHash:             team.TeamHash,
+		SubmiterIP:           &clientIP,
 	}
 
 	if err := dbtool.DB().Create(&newContainer).Error; err != nil {

@@ -28,6 +28,8 @@ import i18n from 'i18n';
 import GameSwitchHover from "components/GameSwitchHover";
 import { LoadingPage } from "components/LoadingPage";
 import HydrateFallbackPage from "components/HydrateFallbackPage";
+import ScreenTooSmall from "components/modules/ScreenTooSmall";
+import { isMobile } from "react-device-detect";
 
 export const links: Route.LinksFunction = () => [
     { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -84,6 +86,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
     const href = useLocation().pathname
     const animationPresent = AnimationPresent(href)
 
+    const checkPageMobileShouldVisible = () => {
+        if (!isMobile) return true
+        
+        const hrefs = [
+            "/",
+            "/login",
+            "/games",
+            "/about"
+        ]
+
+        return hrefs.includes(href)
+    }
+
     return (
         <html lang="en" suppressHydrationWarning>
             <head>
@@ -108,7 +123,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                                             <div className="bg-background absolute top-0 left-0 w-screen h-screen z-[-1]" />
                                             {animationPresent && <FancyBackground />}
                                             <GameSwitchHover animation={true} />
-                                            {children}
+                                            { checkPageMobileShouldVisible() ? children : <ScreenTooSmall /> }
                                         </CanvasProvider>
                                     </GameSwitchProvider>
                                 </GlobalVariableProvider>

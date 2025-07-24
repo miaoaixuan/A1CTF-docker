@@ -67,7 +67,11 @@ func InitDB() {
 
 	if version < maxVersion {
 		zaphelper.Sugar.Infof("Starting migration from version %d to %d", version, maxVersion)
-		goose.Up(db, migrationsDir)
+		err := goose.Up(db, migrationsDir)
+		if err != nil {
+			zaphelper.Sugar.Errorf("Migration from version %d to %d failed", version, maxVersion)
+			panic(err)
+		}
 	}
 
 }

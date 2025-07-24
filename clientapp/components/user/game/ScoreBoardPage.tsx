@@ -844,7 +844,7 @@ export default function ScoreBoardPage(
                                                                 >{getChallenge(e.challenge_id || 0)?.challenge_name}</span>
                                                             </div>
                                                             <div className='w-[100px] flex-shrink-0 flex overflow-hidden'>
-                                                                <span className='text-green-500'> + {e.score} pts</span>
+                                                                <span className='text-green-500'> + {getChallenge(e.challenge_id || 0)?.cur_score} pts</span>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -935,7 +935,7 @@ export default function ScoreBoardPage(
                                                                 <span className='text-nowrap overflow-hidden text-ellipsis'>{getChallenge(e.challenge_id || 0)?.challenge_name}</span>
                                                             </div>
                                                             <div className='w-[120px] flex-none flex overflow-hidden justify-center'>
-                                                                <span className='text-green-500'> + {e.score} pts</span>
+                                                                <span className='text-green-500'> + {getChallenge(e.challenge_id || 0)?.cur_score} pts</span>
                                                             </div>
                                                         </div>
                                                     ))}

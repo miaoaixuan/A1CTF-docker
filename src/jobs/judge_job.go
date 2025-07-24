@@ -15,7 +15,18 @@ import (
 func processQueueingJudge(judge *models.Judge) error {
 	switch judge.JudgeType {
 	case models.JudgeTypeDynamic:
-		if judge.JudgeContent == judge.TeamFlag.FlagContent {
+		flagCorrect := false
+
+		switch judge.Challenge.FlagType {
+		case models.FlagTypeDynamic:
+			// 动态和TeamFlag库里的比较
+			flagCorrect = judge.JudgeContent == judge.TeamFlag.FlagContent
+		case models.FlagTypeStatic:
+			// 静态直接比较
+			flagCorrect = judge.JudgeContent == *judge.GameChallenge.JudgeConfig.FlagTemplate
+		}
+
+		if flagCorrect {
 
 			// 查询已经解出来的人
 			var solves []models.Solve
@@ -114,7 +125,7 @@ func FlagJudgeJob() {
 	if err := dbtool.DB().Where(
 		"judge_status IN (?)",
 		[]interface{}{models.JudgeQueueing, models.JudgeRunning},
-	).Preload("TeamFlag").Preload("Challenge").Find(&judges).Error; err != nil {
+	).Preload("TeamFlag").Preload("GameChallenge").Preload("Challenge").Find(&judges).Error; err != nil {
 		fmt.Printf("database error: %v\n", err)
 		return
 	}

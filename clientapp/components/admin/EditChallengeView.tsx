@@ -462,6 +462,7 @@ export function EditChallengeView({ challenge_info }: { challenge_info: AdminCha
         }),
         allow_wan: z.boolean(),
         allow_dns: z.boolean(),
+        flag_type: z.enum(["FlagTypeDynamic", "FlagTypeStatic"]),
         // 新增 container_config 部分
         container_config: z.array(
             z.object({
@@ -530,6 +531,7 @@ export function EditChallengeView({ challenge_info }: { challenge_info: AdminCha
                 judge_script: challenge_info.judge_config.judge_script || "",
                 flag_template: challenge_info.judge_config.flag_template
             },
+            flag_type: challenge_info.flag_type,
             container_config: challenge_info.container_config.map((e) => ({
                 name: e.name,
                 image: e.image,
@@ -597,7 +599,7 @@ export function EditChallengeView({ challenge_info }: { challenge_info: AdminCha
             description: values.description,
             judge_config: values.judge_config,
             name: values.name,
-            type_: challenge_info.type_,
+            flag_type: values.flag_type
         };
 
         try {
@@ -792,28 +794,65 @@ export function EditChallengeView({ challenge_info }: { challenge_info: AdminCha
                                 )}
                             />
                         ) : (
-                            <FormField
-                                control={form.control}
-                                name="judge_config.flag_template"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <div className="flex items-center h-[20px]">
-                                            <FormLabel>Flag</FormLabel>
-                                            <div className="flex-1" />
-                                            <FormMessage className="text-[14px]" />
-                                        </div>
-                                        <FormControl>
-                                            <Input {...field} />
-                                        </FormControl>
-                                        <div className="flex flex-col text-[12px] text-foreground/60">
-                                            <span>Flag支持模板变量</span>
-                                            <span>[TEAMHASH] 部分会被替换成队伍唯一标识符</span>
-                                            <span>[UUID] 部分会被替换成随机UUID</span>
-                                            <span>在Flag头加上[LEET] 会把花括号内的内容用LEET替换字符</span>
-                                        </div>
-                                    </FormItem>
-                                )}
-                            />
+                            <>
+                                <FormField
+                                    control={form.control}
+                                    name="judge_config.flag_template"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <div className="flex items-center h-[20px]">
+                                                <FormLabel>Flag</FormLabel>
+                                                <div className="flex-1" />
+                                                <FormMessage className="text-[14px]" />
+                                            </div>
+                                            <FormControl>
+                                                <Input {...field} />
+                                            </FormControl>
+                                            <div className="flex flex-col text-[12px] text-foreground/60">
+                                                <span>Flag支持模板变量</span>
+                                                <span>[TEAMHASH] 部分会被替换成队伍唯一标识符</span>
+                                                <span>[UUID] 部分会被替换成随机UUID</span>
+                                                <span>模板变量部分不会被 Leet 替换</span>
+                                            </div>
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="flag_type"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <div className="flex items-center h-[20px]">
+                                                <FormLabel>Flag类型</FormLabel>
+                                                <div className="flex-1" />
+                                                <FormMessage className="text-[14px]" />
+                                            </div>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="选择一个Flag类型" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent className="w-full flex">
+                                                    <SelectItem key="FlagTypeDynamic" value="FlagTypeDynamic">
+                                                        <div className="w-full flex gap-2 items-center h-[30px]">
+                                                            <span className="text-[14px] font-bold">动态Flag (强制启用Leet)</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                    <SelectItem key="FlagTypeStatic" value="FlagTypeStatic">
+                                                        <div className="w-full flex gap-2 items-center h-[30px]">
+                                                            <span className="text-[14px] font-bold">静态Flag (无反作弊)</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormDescription>
+                                                请务必正确选择 Flag 类型, 在动态 Flag 模式下平台回使用Leet为每只队伍生成不同但是看起来相似的 Flag, 请你不要使用过短的 Flag
+                                            </FormDescription>
+                                        </FormItem>
+                                    )}
+                                />
+                            </>
                         )}
 
                         <div className="grid grid-cols-3 gap-4 mt-4">
