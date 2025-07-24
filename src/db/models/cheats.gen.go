@@ -17,7 +17,8 @@ const (
 )
 
 type CheatExtraData struct {
-	RelevantTeam int64 `json:"relevant_team"`
+	RelevantTeam     int64  `json:"relevant_team"`
+	RelevantTeamName string `json:"relevant_teamname"`
 }
 
 func (e CheatExtraData) Value() (driver.Value, error) {

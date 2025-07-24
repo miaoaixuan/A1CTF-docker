@@ -2,12 +2,12 @@ import { Button } from "components/ui/button"
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "components/ui/table"
 import { Badge } from "components/ui/badge"
 import { MacScrollbar } from "mac-scrollbar"
-import { Captions, TriangleAlert, RefreshCw, AlertCircle, CheckCircle2, XCircle, Clock, Flag, Trophy, User, Users, Plus, X, Filter, Trash, Copy } from "lucide-react"
+import { Captions, TriangleAlert, RefreshCw, AlertCircle, CheckCircle2, XCircle, Clock, Flag, Trophy, User, Users, Plus, X, Filter, Trash, Copy, Shield, MapPin } from "lucide-react"
 import { useParams } from "react-router"
 import { useEffect, useState } from "react"
 import dayjs from "dayjs"
 import { api } from "utils/ApiHelper"
-import { AdminSubmitItem } from "utils/A1API"
+import { AdminSubmitItem, AdminCheatItem } from "utils/A1API"
 import { useTheme } from "next-themes"
 import { toast } from "sonner"
 import { Input } from "components/ui/input"
@@ -30,11 +30,59 @@ export function GameEventModule() {
 
     const [curChoicedType, setCurChoicedType] = useState<string>("submissions")
 
+    // Helper functions for cheats
+    const cheatTypeColor = (type: string) => {
+        switch (type) {
+            case "SubmitSomeonesFlag":
+                return "text-red-600 border-red-200 bg-red-50 dark:text-red-400 dark:border-red-800 dark:bg-red-950"
+            case "SubmitWithoutDownloadAttachments":
+                return "text-orange-600 border-orange-200 bg-orange-50 dark:text-orange-400 dark:border-orange-800 dark:bg-orange-950"
+            case "SubmitWithoutStartContainer":
+                return "text-yellow-600 border-yellow-200 bg-yellow-50 dark:text-yellow-400 dark:border-yellow-800 dark:bg-yellow-950"
+            default:
+                return "text-gray-600 border-gray-200 bg-gray-50 dark:text-gray-400 dark:border-gray-800 dark:bg-gray-950"
+        }
+    }
+
+    const cheatTypeIcon = (type: string) => {
+        switch (type) {
+            case "SubmitSomeonesFlag":
+                return <Shield className="w-3 h-3" />
+            case "SubmitWithoutDownloadAttachments":
+                return <TriangleAlert className="w-3 h-3" />
+            case "SubmitWithoutStartContainer":
+                return <AlertCircle className="w-3 h-3" />
+            default:
+                return <Shield className="w-3 h-3" />
+        }
+    }
+
+    const cheatTypeText = (type: string) => {
+        switch (type) {
+            case "SubmitSomeonesFlag":
+                return "提交他人Flag"
+            case "SubmitWithoutDownloadAttachments":
+                return "未下载附件"
+            case "SubmitWithoutStartContainer":
+                return "未启动容器"
+            default:
+                return type
+        }
+    }
+
     const [submissions, setSubmissions] = useState<AdminSubmitItem[]>([])
+    const [cheats, setCheats] = useState<AdminCheatItem[]>([])
     const [loading, setLoading] = useState<boolean>(false)
     const [currentPage, setCurrentPage] = useState<number>(1)
     const pageSize = 15
     const [total, setTotal] = useState<number>(0)
+
+    // cheats state
+    const [cheatsLoading, setCheatsLoading] = useState<boolean>(false)
+    const [cheatsCurrentPage, setCheatsCurrentPage] = useState<number>(1)
+    const [cheatsTotal, setCheatsTotal] = useState<number>(0)
+
+    const cheatsTotalPages = Math.ceil(cheatsTotal / pageSize)
 
     // filter state
     const [challengeNames, setChallengeNames] = useState<string[]>([])
@@ -44,6 +92,15 @@ export function GameEventModule() {
     type JudgeStatus = "JudgeAC" | "JudgeWA"
     const [judgeStatuses, setJudgeStatuses] = useState<JudgeStatus[]>([])
     const statusOptions: JudgeStatus[] = ["JudgeAC", "JudgeWA"]
+
+    // cheats filter state
+    const [cheatsChallengeNames, setCheatsChallengeNames] = useState<string[]>([])
+    const [cheatsTeamNames, setCheatsTeamNames] = useState<string[]>([])
+    const [cheatsChallengeIds, setCheatsChallengeIds] = useState<number[]>([])
+    const [cheatsTeamIds, setCheatsTeamIds] = useState<number[]>([])
+    type CheatType = "SubmitSomeonesFlag" | "SubmitWithoutDownloadAttachments" | "SubmitWithoutStartContainer"
+    const [cheatTypes, setCheatTypes] = useState<CheatType[]>([])
+    const cheatTypeOptions: CheatType[] = ["SubmitSomeonesFlag", "SubmitWithoutDownloadAttachments", "SubmitWithoutStartContainer"]
 
     const [curChoicedCategory, setCurChoicedCategory] = useState<string>("teamName")
 
@@ -60,6 +117,20 @@ export function GameEventModule() {
 
     const [startTime, setStartTime] = useState<string | undefined>(undefined)
     const [endTime, setEndTime] = useState<string | undefined>(undefined)
+
+    // cheats dialog control & temp states
+    const [cheatsDialogOpen, setCheatsDialogOpen] = useState(false)
+    const [tempCheatTypes, setTempCheatTypes] = useState<CheatType[]>([])
+    const [tempCheatsStartTime, setTempCheatsStartTime] = useState<string | undefined>(undefined)
+    const [tempCheatsEndTime, setTempCheatsEndTime] = useState<string | undefined>(undefined)
+
+    const [cheatsStartTime, setCheatsStartTime] = useState<string | undefined>(undefined)
+    const [cheatsEndTime, setCheatsEndTime] = useState<string | undefined>(undefined)
+    const [cheatsCurChoicedCategory, setCheatsCurChoicedCategory] = useState<string>("teamName")
+    const [newCheatsChallengeName, setNewCheatsChallengeName] = useState("")
+    const [newCheatsTeamName, setNewCheatsTeamName] = useState("")
+    const [newCheatsChallengeId, setNewCheatsChallengeId] = useState<string>("")
+    const [newCheatsTeamId, setNewCheatsTeamId] = useState<string>("")
 
     const { theme } = useTheme()
 
@@ -90,13 +161,44 @@ export function GameEventModule() {
         }
     }
 
+    const loadCheats = async () => {
+        setCheatsLoading(true)
+        try {
+            const response = await api.admin.adminListGameCheats(gameId, {
+                game_id: gameId,
+                size: pageSize,
+                offset: (cheatsCurrentPage - 1) * pageSize,
+                challenge_names: cheatsChallengeNames.length > 0 ? cheatsChallengeNames : undefined,
+                team_names: cheatsTeamNames.length > 0 ? cheatsTeamNames : undefined,
+                challenge_ids: cheatsChallengeIds.length > 0 ? cheatsChallengeIds : undefined,
+                team_ids: cheatsTeamIds.length > 0 ? cheatsTeamIds : undefined,
+                cheat_types: cheatTypes.length > 0 ? cheatTypes : undefined,
+                start_time: cheatsStartTime,
+                end_time: cheatsEndTime,
+            })
+            setCheats(response.data.data)
+            setCheatsTotal(response.data.total)
+        } catch (error) {
+            console.error("Failed to load cheats:", error)
+            toast.error("加载作弊记录失败")
+        } finally {
+            setCheatsLoading(false)
+        }
+    }
+
     useEffect(() => {
         // 初次加载
         if (gameId) {
             loadSubmissions(1)
+            loadCheats()
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [gameId])
+
+    useEffect(() => {
+        // 当作弊记录筛选条件或分页变化时重新加载
+        loadCheats()
+    }, [cheatsCurrentPage, cheatsChallengeNames, cheatsTeamNames, cheatsChallengeIds, cheatsTeamIds, cheatTypes, cheatsStartTime, cheatsEndTime])
 
     const statusColor = (status: string) => {
         switch (status) {
@@ -224,8 +326,17 @@ export function GameEventModule() {
                     ) : (
                         <MacScrollbar className="flex-1" skin={theme === 'dark' ? 'dark' : 'light'}>
                             <div className="flex flex-col gap-1 pr-4">
+                                {/* Table Header */}
+                                <div className="flex items-center gap-4 p-3 border-b bg-muted/30 text-sm font-medium text-muted-foreground sticky top-0">
+                                    <div className="flex-[1] min-w-0">提交时间</div>
+                                    <div className="flex-[0.5] text-center">状态</div>
+                                    <div className="flex-[1] min-w-0">用户</div>
+                                    <div className="flex-[1] min-w-0">队伍</div>
+                                    <div className="flex-[2] min-w-0">题目</div>
+                                    <div className="flex-[3] min-w-0">Flag内容</div>
+                                </div>
                                 {submissions.map((sub) => (
-                                    <div key={sub.judge_id} className="flex items-center gap-2 p-3 rounded-md hover:bg-accent/40 transition-colors text-sm w-full">
+                                    <div key={sub.judge_id} className="flex items-center gap-4 p-3 rounded-md hover:bg-accent/40 transition-colors text-sm w-full">
                                         <div className="flex items-center flex-[1] gap-1 text-muted-foreground min-w-0" title={dayjs(sub.judge_time).format('YYYY-MM-DD HH:mm:ss')}>
                                             <Clock className="w-4 h-4 flex-shrink-0" />
                                             <span className="truncate">{dayjs(sub.judge_time).format('YYYY-MM-DD HH:mm:ss')}</span>
@@ -404,6 +515,296 @@ export function GameEventModule() {
                                     }
                                     setCurrentPage(1)
                                     setDialogOpen(false)
+                                }}>应用</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+            )}
+
+            {curChoicedType === 'cheats' && (
+                <div className="space-y-4">
+                    {/* Filter action bar */}
+                    <div className="flex flex-wrap gap-1 items-center">
+                        {/* Active filter chips */}
+                        <div className="flex flex-wrap gap-1 select-none">
+                            {cheatsChallengeNames.map((c, i) => (<Badge key={"c" + i} variant="secondary" className="gap-1">题目名:{c}<X className="w-3 h-3 cursor-pointer" onClick={() => { setCheatsChallengeNames(prev => prev.filter((_, idx) => idx !== i)); setCheatsCurrentPage(1) }} /></Badge>))}
+                            {cheatsChallengeIds.map((id, i) => (<Badge key={"cid" + i} variant="secondary" className="gap-1">题目ID:{id}<X className="w-3 h-3 cursor-pointer" onClick={() => { setCheatsChallengeIds(prev => prev.filter((_, idx) => idx !== i)); setCheatsCurrentPage(1) }} /></Badge>))}
+                            {cheatsTeamNames.map((t, i) => (<Badge key={"t" + i} variant="secondary" className="gap-1">队伍名:{t}<X className="w-3 h-3 cursor-pointer" onClick={() => { setCheatsTeamNames(prev => prev.filter((_, idx) => idx !== i)); setCheatsCurrentPage(1) }} /></Badge>))}
+                            {cheatsTeamIds.map((tid, i) => (<Badge key={"tid" + i} variant="secondary" className="gap-1">队伍ID:{tid}<X className="w-3 h-3 cursor-pointer" onClick={() => { setCheatsTeamIds(prev => prev.filter((_, idx) => idx !== i)); setCheatsCurrentPage(1) }} /></Badge>))}
+                            {cheatTypes.map((s, i) => (<Badge key={"s" + i} variant="secondary" className="gap-1">{cheatTypeText(s)}<X className="w-3 h-3 cursor-pointer" onClick={() => { setCheatTypes(prev => prev.filter((_, idx) => idx !== i)); setCheatsCurrentPage(1) }} /></Badge>))}
+                            {(cheatsStartTime || cheatsEndTime) && (
+                                <Badge variant="secondary" className="gap-1">{cheatsStartTime ? dayjs(cheatsStartTime).format('MM-DD HH:mm') : '...'}<span>-</span>{cheatsEndTime ? dayjs(cheatsEndTime).format('MM-DD HH:mm') : '...'}<X className="w-3 h-3 cursor-pointer" onClick={() => { setCheatsStartTime(undefined); setCheatsEndTime(undefined); setCheatsCurrentPage(1) }} /></Badge>
+                            )}
+                        </div>
+
+                        <Badge variant="secondary" className="gap-[1px] select-none hover:bg-foreground/20"
+                            onClick={() => {
+                                // copy current filters to temp before open
+                                setTempCheatTypes([...cheatTypes])
+                                setTempCheatsStartTime(cheatsStartTime)
+                                setTempCheatsEndTime(cheatsEndTime)
+                                setCheatsDialogOpen(true)
+                            }}
+                        >
+                            <Filter className="w-3 h-3 mr-1" />添加筛选条件
+                        </Badge>
+                        <Badge variant="secondary" className="gap-[1px] select-none hover:bg-foreground/20"
+                            onClick={() => {
+                                // copy current filters to temp before open
+                                setCheatsChallengeNames([])
+                                setCheatsTeamNames([])
+                                setCheatsChallengeIds([])
+                                setCheatsTeamIds([])
+                                setCheatTypes([])
+                                setCheatsStartTime(undefined)
+                                setCheatsEndTime(undefined)
+                                setCheatsCurrentPage(1)
+                            }}
+                        >
+                            <Trash className="w-3 h-3 mr-1" />清空筛选条件
+                        </Badge>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <RefreshCw
+                            className={`w-4 h-4 cursor-pointer ${cheatsLoading ? 'animate-spin' : ''}`}
+                            onClick={() => { if (!cheatsLoading) { setCheatsCurrentPage(1); loadCheats() } }}
+                        />
+                        <span className="text-muted-foreground text-sm select-none">共 {cheatsTotal} 条异常记录</span>
+                    </div>
+
+                    {cheats.length === 0 && !cheatsLoading ? (
+                        <div className="text-center py-12">
+                            <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                            <h3 className="text-lg font-semibold mb-2">暂无异常记录</h3>
+                            <p className="text-muted-foreground">系统将自动检测并记录异常行为</p>
+                        </div>
+                    ) : (
+                        <MacScrollbar className="flex-1" skin={theme === 'dark' ? 'dark' : 'light'}>
+                            <div className="flex flex-col gap-1 pr-4">
+                                {/* Table Header */}
+                                <div className="flex items-center gap-2 p-3 border-b bg-muted/30 text-sm font-medium text-muted-foreground sticky top-0">
+                                    <div className="flex-[1] min-w-0">异常时间</div>
+                                    <div className="flex-[1] text-center">异常类型</div>
+                                    <div className="flex-[1] min-w-0">用户</div>
+                                    <div className="flex-[1] min-w-0">队伍</div>
+                                    <div className="flex-[2] min-w-0">题目</div>
+                                    <div className="flex-[2] min-w-0">异常信息</div>
+                                    <div className="flex-[1] min-w-0">提交者IP</div>
+                                </div>
+                                {cheats.map((cheat) => (
+                                    <div key={cheat.cheat_id} className="flex items-center gap-2 p-3 rounded-md hover:bg-accent/40 transition-colors text-sm w-full">
+                                        <div className="flex items-center flex-[1] gap-1 text-muted-foreground min-w-0" title={dayjs(cheat.cheat_time).format('YYYY-MM-DD HH:mm:ss')}>
+                                            <Clock className="w-4 h-4 flex-shrink-0" />
+                                            <span className="truncate">{dayjs(cheat.cheat_time).format('YYYY-MM-DD HH:mm:ss')}</span>
+                                        </div>
+                                        <div className="flex-[1] justify-center flex">
+                                            <Badge variant="outline" className={`flex items-center gap-1 select-none ${cheatTypeColor(cheat.cheat_type)} min-w-0`}>
+                                                {cheatTypeIcon(cheat.cheat_type)}
+                                                <span className="truncate">{cheatTypeText(cheat.cheat_type)}</span>
+                                            </Badge>
+                                        </div>
+                                        <div className="flex items-center flex-[1] gap-1 min-w-0" title={cheat.username}>
+                                            <User className="w-4 h-4 flex-shrink-0" />
+                                            <span className="truncate">{cheat.username}</span>
+                                        </div>
+                                        <div className="flex items-center flex-[1] gap-1 min-w-0" title={cheat.team_name}>
+                                            <Users className="w-4 h-4 flex-shrink-0" />
+                                            <span className="truncate">{cheat.team_name}</span>
+                                            <Badge variant="outline" className="text-xs select-none hover:bg-foreground/20 cursor-pointer" onClick={() => {
+                                                copy(cheat.team_id.toString())
+                                                toast.success('已复制队伍ID')
+                                            }}>#{cheat.team_id}</Badge>
+                                        </div>
+                                        <div className="flex items-center flex-[2] gap-1 min-w-0" title={cheat.challenge_name}>
+                                            <Trophy className="w-4 h-4 flex-shrink-0" />
+                                            <span className="truncate">{cheat.challenge_name}</span>
+                                            <Badge variant="outline" className="text-xs select-none hover:bg-foreground/20 cursor-pointer" onClick={() => {
+                                                gotoChallenge(cheat.challenge_id)
+                                            }}>#{cheat.challenge_id}</Badge>
+                                        </div>
+                                        <div className="flex items-center flex-[2] gap-1 min-w-0">
+                                            {(() => {
+                                                if (cheat.cheat_type === "SubmitSomeonesFlag" && cheat.extra_data && typeof cheat.extra_data === 'object') {
+                                                    const extraData = cheat.extra_data as any;
+                                                    if (extraData.relevant_team && extraData.relevant_teamname) {
+                                                        return (
+                                                            <div className="flex items-center gap-1"
+                                                                data-tooltip-content="交串Flag的队伍"
+                                                                data-tooltip-id="my-tooltip"
+                                                                data-tooltip-place="bottom"
+                                                            >
+                                                                <Users className="w-4 h-4 flex-shrink-0" />
+                                                                <span className="truncate" title={extraData.relevant_teamname}>{extraData.relevant_teamname}</span>
+                                                                <Badge variant="outline" className="text-xs select-none hover:bg-foreground/20 cursor-pointer" onClick={() => {
+                                                                    copy(extraData.relevant_team.toString())
+                                                                    toast.success('已复制队伍ID')
+                                                                }}>#{extraData.relevant_team}</Badge>
+                                                            </div>
+                                                        );
+                                                    }
+                                                }
+                                                return (
+                                                    <>
+                                                        <span className="truncate text-muted-foreground" title={JSON.stringify(cheat.extra_data)}>{JSON.stringify(cheat.extra_data)}</span>
+                                                        <Badge variant="outline" className="text-xs select-none hover:bg-foreground/20 cursor-pointer p-1 px-2" onClick={() => {
+                                                            copy(JSON.stringify(cheat.extra_data))
+                                                            toast.success('已复制异常信息')
+                                                        }}><Copy className="w-3 h-3" /></Badge>
+                                                    </>
+                                                );
+                                            })()}
+                                        </div>
+                                        {cheat.submiter_ip && (
+                                            <div className="flex items-center flex-[1] gap-1 font-mono min-w-0" title={cheat.submiter_ip}>
+                                                <MapPin className="w-4 h-4 flex-shrink-0" />
+                                                <span className="truncate">{cheat.submiter_ip}</span>
+                                                <Badge variant="outline" className="text-xs select-none hover:bg-foreground/20 cursor-pointer p-1 px-2" onClick={() => {
+                                                    copy(cheat.submiter_ip || '')
+                                                    toast.success('已复制IP')
+                                                }}><Copy className="w-3 h-3" /></Badge>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </MacScrollbar>
+                    )}
+
+                    {/* Pagination */}
+                    {cheatsTotalPages > 1 && (
+                        <div className="flex justify-center gap-2 mt-2 select-none flex-wrap">
+                            <Button size="sm" variant="ghost" disabled={cheatsCurrentPage === 1} onClick={() => setCheatsCurrentPage(prev => prev - 1)}>上一页</Button>
+                            {Array.from({ length: cheatsTotalPages }).slice(0, 10).map((_, idx) => {
+                                const page = idx + 1
+                                if (page > cheatsTotalPages) return null
+                                return (
+                                    <Button key={page} size="sm" variant={cheatsCurrentPage === page ? 'default' : 'secondary'} onClick={() => setCheatsCurrentPage(page)}>
+                                        {page}
+                                    </Button>
+                                )
+                            })}
+                            {cheatsTotalPages > 10 && (
+                                <span className="text-sm mx-2">...</span>
+                            )}
+                            <Button size="sm" variant="ghost" disabled={cheatsCurrentPage === cheatsTotalPages} onClick={() => setCheatsCurrentPage(prev => prev + 1)}>下一页</Button>
+                        </div>
+                    )}
+
+                    {/* Filter Dialog */}
+                    <Dialog open={cheatsDialogOpen} onOpenChange={setCheatsDialogOpen}>
+                        <DialogContent className="max-w-lg">
+                            <DialogHeader>
+                                <DialogTitle>筛选异常记录</DialogTitle>
+                            </DialogHeader>
+
+                            <div className="space-y-2 mt-4">
+                                <h4 className="font-medium">筛选条件</h4>
+                                <Select value={cheatsCurChoicedCategory} onValueChange={(value) => setCheatsCurChoicedCategory(value)}>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="筛选条件" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="teamName">队伍名称</SelectItem>
+                                        <SelectItem value="challengeName">题目名称</SelectItem>
+                                        <SelectItem value="cheatType">异常类型</SelectItem>
+                                        <SelectItem value="timeRange">时间范围</SelectItem>
+                                        <SelectItem value="challengeId">题目ID</SelectItem>
+                                        <SelectItem value="teamId">队伍ID</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Challenge names */}
+                            {cheatsCurChoicedCategory === "challengeName" && (
+                                <div className="space-y-2">
+                                    <h4 className="font-medium">题目名称关键词</h4>
+                                    <Input value={newCheatsChallengeName} onChange={(e) => setNewCheatsChallengeName(e.target.value)} placeholder="题目关键词" className="h-8" />
+                                </div>
+                            )}
+
+                            {/* Team names */}
+                            {cheatsCurChoicedCategory === "teamName" && (
+                                <div className="space-y-2 mt-4">
+                                    <h4 className="font-medium">队伍名称关键词</h4>
+                                    <Input value={newCheatsTeamName} onChange={(e) => setNewCheatsTeamName(e.target.value)} placeholder="队伍关键词" className="h-8" />
+                                </div>
+                            )}
+
+                            {/* Challenge IDs */}
+                            {cheatsCurChoicedCategory === "challengeId" && (
+                                <div className="space-y-2 mt-4">
+                                    <h4 className="font-medium">题目 ID</h4>
+                                    <Input value={newCheatsChallengeId} onChange={(e) => setNewCheatsChallengeId(e.target.value)} placeholder="题目ID" className="h-8" />
+                                </div>
+                            )}
+
+                            {/* Team IDs */}
+                            {cheatsCurChoicedCategory === "teamId" && (
+                                <div className="space-y-2 mt-4">
+                                    <h4 className="font-medium">队伍 ID</h4>
+                                    <Input value={newCheatsTeamId} onChange={(e) => setNewCheatsTeamId(e.target.value)} placeholder="队伍ID" className="h-8" />
+                                </div>
+                            )}
+
+                            {/* Cheat Type select */}
+                            {cheatsCurChoicedCategory === "cheatType" && (
+                                <div className="space-y-2 mt-4">
+                                    <h4 className="font-medium">异常类型</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {cheatTypeOptions.map(ct => {
+                                            const active = tempCheatTypes.includes(ct)
+                                            return (
+                                                <Button key={ct} size="sm" variant={active ? "default" : "outline"} onClick={() => {
+                                                    setTempCheatTypes(prev => active ? prev.filter(s => s !== ct) : [...prev, ct]);
+                                                }}>{cheatTypeText(ct)}</Button>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Time range */}
+                            {cheatsCurChoicedCategory === "timeRange" && (
+                                <div className="space-y-2 mt-4">
+                                    <h4 className="font-medium">时间范围</h4>
+                                    <div className="flex items-center gap-1">
+                                        <Input type="datetime-local" value={tempCheatsStartTime || ""} onChange={(e) => setTempCheatsStartTime(e.target.value || undefined)} className="h-8" />
+                                        <span className="px-1">-</span>
+                                        <Input type="datetime-local" value={tempCheatsEndTime || ""} onChange={(e) => setTempCheatsEndTime(e.target.value || undefined)} className="h-8" />
+                                    </div>
+                                </div>
+                            )}
+
+                            <DialogFooter className="mt-6">
+                                <Button variant="secondary" onClick={() => setCheatsDialogOpen(false)}>取消</Button>
+                                <Button onClick={() => {
+                                    switch (cheatsCurChoicedCategory) {
+                                        case "challengeName":
+                                            if (newCheatsChallengeName.trim()) { setCheatsChallengeNames(prev => [...prev, newCheatsChallengeName.trim()]); setNewCheatsChallengeName(""); }
+                                            break;
+                                        case "teamName":
+                                            if (newCheatsTeamName.trim()) { setCheatsTeamNames(prev => [...prev, newCheatsTeamName.trim()]); setNewCheatsTeamName(""); }
+                                            break
+                                        case "challengeId":
+                                            const num1 = parseInt(newCheatsChallengeId.trim());
+                                            if (!isNaN(num1)) { setCheatsChallengeIds(prev => prev.includes(num1) ? prev : [...prev, num1]); setNewCheatsChallengeId(""); }
+                                            break
+                                        case "teamId":
+                                            const num2 = parseInt(newCheatsTeamId.trim());
+                                            if (!isNaN(num2)) { setCheatsTeamIds(prev => prev.includes(num2) ? prev : [...prev, num2]); setNewCheatsTeamId(""); }
+                                            break
+                                        case "cheatType":
+                                            setCheatTypes(tempCheatTypes);
+                                            break
+                                        case "timeRange":
+                                            setCheatsStartTime(tempCheatsStartTime);
+                                            setCheatsEndTime(tempCheatsEndTime);
+                                            break
+                                    }
+                                    setCheatsCurrentPage(1)
+                                    setCheatsDialogOpen(false)
                                 }}>应用</Button>
                             </DialogFooter>
                         </DialogContent>

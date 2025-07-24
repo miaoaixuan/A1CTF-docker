@@ -1591,3 +1591,198 @@ func AdminGetSubmits(c *gin.Context) {
 		"total": total,
 	})
 }
+
+// AdminGetCheats 获取指定比赛的作弊记录
+func AdminGetCheats(c *gin.Context) {
+	// 解析并校验 game_id
+	gameIDStr := c.Param("game_id")
+	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid game ID",
+		})
+		return
+	}
+
+	// 确认比赛存在
+	var game models.Game
+	if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"code":    404,
+				"message": "Game not found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to verify game",
+			})
+		}
+		return
+	}
+
+	// 解析分页及过滤参数
+	var payload struct {
+		Size           int      `json:"size" binding:"min=0"`
+		Offset         int      `json:"offset"`
+		ChallengeIDs   []int64  `json:"challenge_ids"`   // 多个题目ID
+		ChallengeNames []string `json:"challenge_names"` // 多个题目名称(模糊匹配，OR 关系)
+		TeamIDs        []int64  `json:"team_ids"`        // 多个队伍ID
+		TeamNames      []string `json:"team_names"`      // 多个队伍名称
+		CheatTypes     []string `json:"cheat_types"`     // 多个作弊类型
+		StartTime      *string  `json:"start_time"`      // 起始时间 (ISO8601)
+		EndTime        *string  `json:"end_time"`        // 结束时间 (ISO8601)
+	}
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// 构建基础查询
+	baseQuery := dbtool.DB().Model(&models.Cheat{}).Where("game_id = ?", gameID)
+
+	// 题目过滤
+	challengeIDSet := make(map[int64]struct{})
+	if len(payload.ChallengeIDs) > 0 {
+		for _, id := range payload.ChallengeIDs {
+			challengeIDSet[id] = struct{}{}
+		}
+	}
+	if len(payload.ChallengeNames) > 0 {
+		var ids []int64
+		if err := dbtool.DB().Model(&models.Challenge{}).
+			Where("lower(name) ILIKE ANY(?)", pq.Array(mapSliceToLike(payload.ChallengeNames))).
+			Pluck("challenge_id", &ids).Error; err == nil {
+			for _, id := range ids {
+				challengeIDSet[id] = struct{}{}
+			}
+		}
+
+		if len(ids) == 0 {
+			c.JSON(http.StatusOK, gin.H{
+				"code":  200,
+				"data":  make([]gin.H, 0),
+				"total": 0,
+			})
+			return
+		}
+	}
+	if len(challengeIDSet) > 0 {
+		idList := keysInt64(challengeIDSet)
+		baseQuery = baseQuery.Where("challenge_id IN ?", idList)
+	}
+
+	// 队伍过滤
+	teamIDSet := make(map[int64]struct{})
+	for _, id := range payload.TeamIDs {
+		teamIDSet[id] = struct{}{}
+	}
+	if len(payload.TeamNames) > 0 {
+		var ids []int64
+		if err := dbtool.DB().Model(&models.Team{}).
+			Where("lower(team_name) ILIKE ANY(?)", pq.Array(mapSliceToLike(payload.TeamNames))).
+			Pluck("team_id", &ids).Error; err == nil {
+			for _, id := range ids {
+				teamIDSet[id] = struct{}{}
+			}
+		}
+	}
+	if len(teamIDSet) > 0 {
+		baseQuery = baseQuery.Where("team_id IN ?", keysInt64(teamIDSet))
+	}
+
+	// 作弊类型过滤
+	if len(payload.CheatTypes) > 0 {
+		coveredTypes := make([]models.CheatType, 0)
+		for _, cheatType := range payload.CheatTypes {
+			switch cheatType {
+			case "SubmitSomeonesFlag":
+				coveredTypes = append(coveredTypes, models.CheatSubmitSomeonesFlag)
+			case "SubmitWithoutDownloadAttachments":
+				coveredTypes = append(coveredTypes, models.CheatSubmitWithoutDownloadAttachments)
+			case "SubmitWithoutStartContainer":
+				coveredTypes = append(coveredTypes, models.CheatSubmitWithoutStartContainer)
+			}
+		}
+		baseQuery = baseQuery.Where("cheat_type IN ?", coveredTypes)
+	}
+
+	// 时间范围过滤
+	if payload.StartTime != nil && strings.TrimSpace(*payload.StartTime) != "" {
+		if t, err := time.Parse(time.RFC3339, *payload.StartTime); err == nil {
+			baseQuery = baseQuery.Where("cheat_time >= ?", t)
+		}
+	}
+	if payload.EndTime != nil && strings.TrimSpace(*payload.EndTime) != "" {
+		if t, err := time.Parse(time.RFC3339, *payload.EndTime); err == nil {
+			baseQuery = baseQuery.Where("cheat_time <= ?", t)
+		}
+	}
+
+	// 查询总数
+	var total int64
+	if err := baseQuery.Count(&total).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to count cheats",
+		})
+		return
+	}
+
+	// 查询具体记录
+	var cheats []models.Cheat
+	query := baseQuery.Preload("Team").Preload("Challenge").Preload("Submiter").Order("cheat_time DESC").Offset(payload.Offset)
+	if payload.Size > 0 {
+		query = query.Limit(payload.Size)
+	}
+	if err := query.Find(&cheats).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load cheats",
+		})
+		return
+	}
+
+	// 构造响应数据
+	data := make([]gin.H, 0, len(cheats))
+	for _, cheat := range cheats {
+		username := ""
+		if cheat.Submiter.Username != "" {
+			username = cheat.Submiter.Username
+		}
+		teamName := ""
+		if cheat.Team.TeamName != "" {
+			teamName = cheat.Team.TeamName
+		}
+		challengeName := ""
+		if cheat.Challenge.Name != "" {
+			challengeName = cheat.Challenge.Name
+		}
+
+		data = append(data, gin.H{
+			"cheat_id":       cheat.CheatID,
+			"cheat_type":     cheat.CheatType,
+			"username":       username,
+			"team_name":      teamName,
+			"team_id":        cheat.TeamID,
+			"challenge_id":   cheat.ChallengeID,
+			"challenge_name": challengeName,
+			"judge_id":       cheat.JudgeID,
+			"flag_id":        cheat.FlagID,
+			"extra_data":     cheat.ExtraData,
+			"cheat_time":     cheat.CheatTime,
+			"submiter_ip":    cheat.SubmiterIP,
+		})
+	}
+
+	// 返回
+	c.JSON(http.StatusOK, gin.H{
+		"code":  200,
+		"data":  data,
+		"total": total,
+	})
+}

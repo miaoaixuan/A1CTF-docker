@@ -293,6 +293,7 @@ func main() {
 			gameGroup.PUT("/:game_id", controllers.AdminUpdateGame)
 
 			gameGroup.POST("/:game_id/submits", controllers.AdminGetSubmits)
+			gameGroup.POST("/:game_id/cheats", controllers.AdminGetCheats)
 
 			// 比赛海报上传路由
 			gameGroup.POST("/:game_id/poster/upload", controllers.AdminUploadGamePoster)

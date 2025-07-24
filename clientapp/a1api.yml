@@ -3143,6 +3143,49 @@ paths:
           description: 请求参数错误
         '500':
           description: 服务器内部错误
+  /api/admin/game/{game_id}/cheats:
+    post:
+      tags: [admin]
+      operationId: adminListGameCheats
+      summary: 获取比赛作弊记录列表
+      description: 获取指定比赛的所有作弊记录，支持分页
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminListCheatsPayload'
+        required: true
+      responses:
+        '200':
+          description: 成功获取作弊记录列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminCheatItem'
+                  total:
+                    type: integer
+                required:
+                  - code
+                  - data
+                  - total
+        '400':
+          description: 请求参数错误
+        '500':
+          description: 服务器内部错误
   /api/admin/system/settings:
     get:
       tags: [system]
@@ -5008,6 +5051,110 @@ components:
         - challenge_name
         - judge_status
         - judge_time
+    AdminListCheatsPayload:
+      type: object
+      properties:
+        game_id:
+          type: integer
+          description: 游戏ID
+        size:
+          type: integer
+          description: 每页大小
+        offset:
+          type: integer
+          description: 偏移量
+        challenge_ids:
+          type: array
+          items:
+            type: integer
+          description: 题目ID 列表（可选，OR 关系）
+        challenge_names:
+          type: array
+          items:
+            type: string
+          description: 题目名称关键词列表（模糊匹配，可选，OR 关系）
+        team_ids:
+          type: array
+          items:
+            type: integer
+          description: 队伍ID 列表（可选）
+        team_names:
+          type: array
+          items:
+            type: string
+          description: 队伍名称关键词列表（模糊匹配，可选）
+        cheat_types:
+          type: array
+          items:
+            type: string
+            enum: [SubmitSomeonesFlag, SubmitWithoutDownloadAttachments, SubmitWithoutStartContainer]
+          description: 作弊类型列表（可选，OR 关系）
+        start_time:
+          type: string
+          format: date-time
+          description: 开始时间（可选）
+        end_time:
+          type: string
+          format: date-time
+          description: 结束时间（可选）
+      required:
+        - game_id
+        - size
+        - offset
+    AdminCheatItem:
+      type: object
+      properties:
+        cheat_id:
+          type: string
+          description: 作弊记录ID
+        cheat_type:
+          type: string
+          description: 作弊类型
+          enum: [SubmitSomeonesFlag, SubmitWithoutDownloadAttachments, SubmitWithoutStartContainer]
+        username:
+          type: string
+          description: 作弊者用户名
+        team_name:
+          type: string
+          description: 作弊者队伍名
+        team_id:
+          type: integer
+          description: 队伍ID
+        challenge_id:
+          type: integer
+          description: 题目ID
+        challenge_name:
+          type: string
+          description: 题目名称
+        judge_id:
+          type: string
+          description: 相关判题ID
+        flag_id:
+          type: integer
+          nullable: true
+          description: 相关FLAG ID
+        extra_data:
+          type: object
+          description: 额外数据
+        cheat_time:
+          type: string
+          format: date-time
+          description: 作弊时间
+        submiter_ip:
+          type: string
+          nullable: true
+          description: 提交者IP地址
+      required:
+        - cheat_id
+        - cheat_type
+        - username
+        - team_name
+        - team_id
+        - challenge_id
+        - challenge_name
+        - judge_id
+        - extra_data
+        - cheat_time
     SystemSettings:
       type: object
       description: 系统设置完整结构体

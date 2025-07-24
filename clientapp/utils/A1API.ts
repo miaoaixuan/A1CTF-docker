@@ -1112,6 +1112,72 @@ export interface AdminSubmitItem {
   judge_time: string;
 }
 
+export interface AdminListCheatsPayload {
+  /** 游戏ID */
+  game_id: number;
+  /** 每页大小 */
+  size: number;
+  /** 偏移量 */
+  offset: number;
+  /** 题目ID 列表（可选，OR 关系） */
+  challenge_ids?: number[];
+  /** 题目名称关键词列表（模糊匹配，可选，OR 关系） */
+  challenge_names?: string[];
+  /** 队伍ID 列表（可选） */
+  team_ids?: number[];
+  /** 队伍名称关键词列表（模糊匹配，可选） */
+  team_names?: string[];
+  /** 作弊类型列表（可选，OR 关系） */
+  cheat_types?: (
+    | "SubmitSomeonesFlag"
+    | "SubmitWithoutDownloadAttachments"
+    | "SubmitWithoutStartContainer"
+  )[];
+  /**
+   * 开始时间（可选）
+   * @format date-time
+   */
+  start_time?: string;
+  /**
+   * 结束时间（可选）
+   * @format date-time
+   */
+  end_time?: string;
+}
+
+export interface AdminCheatItem {
+  /** 作弊记录ID */
+  cheat_id: string;
+  /** 作弊类型 */
+  cheat_type:
+    | "SubmitSomeonesFlag"
+    | "SubmitWithoutDownloadAttachments"
+    | "SubmitWithoutStartContainer";
+  /** 作弊者用户名 */
+  username: string;
+  /** 作弊者队伍名 */
+  team_name: string;
+  /** 队伍ID */
+  team_id: number;
+  /** 题目ID */
+  challenge_id: number;
+  /** 题目名称 */
+  challenge_name: string;
+  /** 相关判题ID */
+  judge_id: string;
+  /** 相关FLAG ID */
+  flag_id?: number | null;
+  /** 额外数据 */
+  extra_data: object;
+  /**
+   * 作弊时间
+   * @format date-time
+   */
+  cheat_time: string;
+  /** 提交者IP地址 */
+  submiter_ip?: string | null;
+}
+
 /** 系统设置完整结构体 */
 export interface SystemSettings {
   /**
@@ -3271,6 +3337,35 @@ export class Api<
         void
       >({
         path: `/api/admin/game/${gameId}/submits`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 获取指定比赛的所有作弊记录，支持分页
+     *
+     * @tags admin
+     * @name AdminListGameCheats
+     * @summary 获取比赛作弊记录列表
+     * @request POST:/api/admin/game/{game_id}/cheats
+     */
+    adminListGameCheats: (
+      gameId: number,
+      data: AdminListCheatsPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: AdminCheatItem[];
+          total: number;
+        },
+        void
+      >({
+        path: `/api/admin/game/${gameId}/cheats`,
         method: "POST",
         body: data,
         type: ContentType.Json,
