@@ -10,6 +10,7 @@ import {
 import { useState, useEffect } from "react";
 
 import type { Route } from "./+types/root";
+
 import "./app.css";
 import "app/css/sonner.css";
 import 'mac-scrollbar/dist/mac-scrollbar.css';
@@ -30,6 +31,7 @@ import { LoadingPage } from "components/LoadingPage";
 import HydrateFallbackPage from "components/HydrateFallbackPage";
 import ScreenTooSmall from "components/modules/ScreenTooSmall";
 import { isMobile } from "react-device-detect";
+import { useTheme } from "next-themes";
 
 export const links: Route.LinksFunction = () => [
     { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -81,6 +83,25 @@ function ClientOnly({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
 }
 
+function ThemeAwareLinks() {
+    const { resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!mounted) return null;
+
+    const cssFile = resolvedTheme === 'dark' 
+        ? '/app/css/github-markdown-dark.css'
+        : '/app/css/github-markdown-light.css';
+
+    return (
+        <link rel="stylesheet" href={cssFile} />
+    );
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
 
     const href = useLocation().pathname
@@ -119,6 +140,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                                 <GlobalVariableProvider>
                                     <GameSwitchProvider>
                                         <CanvasProvider>
+                                            <ThemeAwareLinks />
                                             <ClientToaster />
                                             <div className="bg-background absolute top-0 left-0 w-screen h-screen z-[-1]" />
                                             {animationPresent && <FancyBackground />}

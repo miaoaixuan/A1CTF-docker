@@ -7,8 +7,9 @@ import dayjs from "dayjs";
 import { useNavigateFrom } from "hooks/NavigateFrom";
 import { Album, CalendarArrowDown, CalendarArrowUp, CirclePlay, ClockAlert, Dumbbell, Hourglass, IdCard, Key, Lock, Package, PencilLine, Pickaxe, ScanFace, ScanText, Users, UsersRound } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { FastAverageColor } from "fast-average-color";
 import { ParticipationStatus, UserFullGameInfo } from "utils/A1API";
 
 export default function GamePosterInfoModule(
@@ -25,6 +26,8 @@ export default function GamePosterInfoModule(
 
     const { clientConfig } = useGlobalVariableContext()
     const { theme } = useTheme()
+
+    const [posterTextPrimaryColor, setPosterTextPrimaryColor] = useState("white")
 
     const getGameIcon = () => {
         if (theme === "dark") {
@@ -84,23 +87,39 @@ export default function GamePosterInfoModule(
     return (
         <div className="flex flex-col w-full overflow-hidden select-none lg:gap-16 gap-6">
             <div className="relative">
-                <div className="w-full aspect-video border-t-2 border-l-2 border-r-2 bg-background rounded-xl overflow-hidden">
+                <div className="w-full aspect-video bg-background rounded-xl overflow-hidden">
                     <ImageLoader
                         src={gameInfo?.poster || clientConfig.DefaultBGImage}
                         className=""
+                        onLoad={(e) => {
+                            const fac = new FastAverageColor();
+                            const container = e.target as HTMLImageElement;
+
+                            fac.getColorAsync(container)
+                                .then((color: any) => {
+                                    const brightness = 0.2126 * color.value[0] + 0.7152 * color.value[1] + 0.0722 * color.value[2];
+                                    const brightColor = brightness > 128 ? "white" : "black";
+                                    setPosterTextPrimaryColor(brightColor)
+                                })
+                                .catch((e: any) => {
+                                    console.log(e);
+                                });
+                        }}
                     />
                 </div>
-                <div className="absolute bottom-0 w-full border-b-2 border-l-2 border-r-2 rounded-b-2xl overflow-hidden backdrop-blur-md bg-background/10">
+                <div className="absolute bottom-0 w-full rounded-b-2xl overflow-hidden backdrop-blur-md bg-background/10">
                     <div className="w-full h-full py-4 px-7">
                         <div className="flex gap-6 items-center">
                             <img
                                 width={"12%"}
                                 height={"12%"}
                                 className="min-w-[48px] min-h-[48px]"
-                                src={getGameIcon()}
+                                src={
+                                    posterTextPrimaryColor == "white" ? gameInfo?.game_icon_light ?? clientConfig.SVGIcon : gameInfo?.game_icon_dark ?? clientConfig.SVGIcon
+                                }
                                 alt={gameInfo?.name ?? "A1CTF ???????"}
                             />
-                            <div className="flex flex-col min-w-0">
+                            <div className={`flex flex-col min-w-0 ${ posterTextPrimaryColor == "white" ? "text-black" : "text-white" }`}>
                                 <span className="font-bold text-2xl text-nowrap pointer-events-auto overflow-ellipsis overflow-hidden whitespace-nowrap block"
                                     data-tooltip-content={gameInfo?.name}
                                     data-tooltip-id="my-tooltip"

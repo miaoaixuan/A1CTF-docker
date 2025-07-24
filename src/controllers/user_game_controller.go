@@ -369,7 +369,16 @@ func UserGameGetScoreBoard(c *gin.Context) {
 
 	if totalCachedTeamsCount > 0 && curStartIdx < totalCachedTeamsCount {
 		pageTeamScores = filteredData.FilteredTeamRankings[curStartIdx:curEndIdx]
-		pageTimeLines = filteredData.FilteredTimeLines[curStartIdx:curEndIdx]
+		pageTimeLines = filteredData.FilteredTimeLines[curStartIdx:min(curEndIdx, int64(len(filteredData.FilteredTimeLines)))]
+
+		// 补全 timelines 不足 teamscores 的部分, 出现这种情况的原因是因为积分榜只有在队伍有得分的情况下才会生成一条记录
+		if len(pageTimeLines) < len(pageTeamScores) {
+			pageTimeLines = append(pageTimeLines, webmodels.TimeLineItem{
+				TeamID:   pageTeamScores[len(pageTimeLines)].TeamID,
+				TeamName: pageTeamScores[len(pageTimeLines)].TeamName,
+				Scores:   make([]webmodels.TimeLineScoreItem, 0),
+			})
+		}
 	} else {
 		pageTeamScores = make([]webmodels.TeamScoreItem, 0)
 		pageTimeLines = make([]webmodels.TimeLineItem, 0)

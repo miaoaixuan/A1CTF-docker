@@ -90,6 +90,8 @@ body {
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  --strong-markdown-color: oklch(0.70 0.19 48);
 }
 
 .dark {
@@ -135,6 +137,17 @@ body {
   body {
     @apply bg-background text-foreground;
     font-family: "JetBrains Mono", "Inter";
+  }
+
+  .markdown-body :where(ul):where(:not(.not-prose, .not-prose *)) {
+    list-style: revert;
+    margin: revert;
+    padding: revert;
+  }
+  .markdown-body :where(ol):where(:not(.not-prose, .not-prose *)) {
+    list-style: revert;
+    margin: revert;
+    padding: revert;
   }
 }
 
