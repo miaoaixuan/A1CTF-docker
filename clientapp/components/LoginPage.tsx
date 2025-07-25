@@ -8,7 +8,7 @@ import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 export default function LoginPage() {
 
 
-    const { clientConfig } = useGlobalVariableContext()
+    const { clientConfig, getSystemLogo } = useGlobalVariableContext()
 
     return (
         <div className="grid min-h-svh lg:grid-cols-2 select-none">
@@ -16,8 +16,7 @@ export default function LoginPage() {
                 <div className="flex justify-center gap-2 md:justify-between">
                     <a href="/" className="flex items-center gap-2 font-medium">
                         <img
-                            className="dark:invert"
-                            src={clientConfig.SVGIcon}
+                            src={getSystemLogo()}
                             alt={clientConfig.SVGAltData}
                             width={40}
                             height={40}

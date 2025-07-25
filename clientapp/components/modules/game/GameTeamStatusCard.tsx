@@ -20,26 +20,26 @@ export default function GameTeamStatusCard(
 
     const teamStatusElement = {
         "Pending": (
-            <div className="flex flex-col gap-2 items-center backdrop-blur-sm rounded-2xl border-2 bg-green-100 border-green-200 py-3 px-6 shadow-foreground/5 select-none">
+            <div className="flex flex-col gap-2 items-center backdrop-blur-sm rounded-2xl border-1 border-green-400 py-3 px-6 select-none">
                 <div className="flex gap-2 items-center text-green-500">
-                    <ScanText size={28} />
-                    <span className="text-lg font-bold">你的队伍申请正在审核中哦，请耐心等待</span>
+                    <ScanText size={24} />
+                    <span className="text-md font-bold">你的队伍申请正在审核中哦，请耐心等待</span>
                 </div>
             </div>
         ),
         "Banned": (
-            <div className="flex flex-col gap-2 items-center backdrop-blur-sm rounded-2xl border-2 bg-red-100 border-red-200 py-3 px-6 shadow-foreground/5 select-none">
+            <div className="flex flex-col gap-2 items-center backdrop-blur-sm rounded-2xl border-1 border-red-400 py-3 px-6 select-none">
                 <div className="flex gap-2 items-center text-red-500">
-                    <Lock size={28} />
-                    <span className="text-lg font-bold">你已被管理员禁赛</span>
+                    <Lock size={24} />
+                    <span className="text-md font-bold">你已被管理员禁赛</span>
                 </div>
             </div>
         ),
         "UnRegistered": (
-            <div className="flex flex-col gap-2 items-center backdrop-blur-sm rounded-2xl border-2 bg-blue-100 border-blue-200 py-4 px-6 shadow-foreground/5 select-none">
+            <div className="flex flex-col gap-3 items-center bg-transparent backdrop-blur-sm border-blue-500 rounded-2xl border-1 py-4 px-6 select-none">
                 <div className="flex gap-2 items-center text-blue-500">
                     <PencilLine size={24}/>
-                    <span className="text-lg font-bold">你还没有报名哦，请先报名</span>
+                    <span className="text-md font-bold">你还没有报名哦，请先报名</span>
                 </div>
                 <div className="flex gap-4 pointer-events-auto">
                     <CreateTeamDialog callback={() => {
@@ -47,16 +47,15 @@ export default function GameTeamStatusCard(
                         //     fetchGameInfoWithTeamInfo()
                         // }, 600)
                     }} gameID={gameInfo?.game_id ?? 0}>
-                        <Button variant="outline" className="border-blue-300 bg-blue-200 hover:hover:bg-blue-300/80" type="button"><Pickaxe />创建队伍</Button>
+                        <Button variant="outline" className="border-blue-300 hover:hover:bg-blue-300/10" type="button"><Pickaxe />创建队伍</Button>
                     </CreateTeamDialog>
                     <JoinTeamDialog callback={() => {
                         // setTimeout(() => {
                         //     fetchGameInfoWithTeamInfo()
                         // }, 600)
                     }}>
-                        <Button variant="outline" className="border-blue-300 bg-blue-200 hover:hover:bg-blue-300/80" type="button"><Users />加入队伍</Button>
+                        <Button variant="outline" className="border-blue-300 hover:hover:bg-blue-300/10" type="button"><Users />加入队伍</Button>
                     </JoinTeamDialog>
-
                 </div>
             </div>
         )
@@ -76,7 +75,7 @@ export default function GameTeamStatusCard(
     }
 
     return (
-        <div className="flex px-5 py-2 flex-col gap-2 backdrop-blur-sm rounded-2xl select-none border-2 shadow-xl shadow-foreground/5">
+        <div className="flex px-5 py-2 flex-col gap-2 backdrop-blur-sm rounded-2xl select-none border-1 shadow-xl">
             <div className="flex gap-2 items-center">
                 <AudioWaveform className="size-5" />
                 <span>{gameInfo?.team_info?.team_name}</span>
@@ -100,13 +99,13 @@ export function LoginFirstCard() {
     const [navigateFrom, getNavigateFrom] = useNavigateFrom()
 
     return (
-        <div className="pl-5 pr-5 py-2 bg-red-200 border-red-400 border-l-2 border-y-2 rounded-l-2xl w-full flex gap-6 items-center select-none">
-            <div className="flex gap-3 items-center text-black">
-                <KeyRound size={30} />
-                <span className="text-lg font-bold">你还没有登录哦，请先登录</span>
+        <div className="pl-5 pr-5 py-2 border-l-1 border-y-1 rounded-l-2xl w-full flex gap-6 items-center select-none">
+            <div className="flex gap-3 items-center">
+                <KeyRound size={26} />
+                <span className="text-md font-bold">你还没有登录哦，请先登录</span>
             </div>
             <div className="flex gap-3 items-center">
-                <Button variant="outline" className="pointer-events-auto border-blue-400 hover:hover:bg-blue-100 text-blue-600 [&_svg]:size-[22px] gap-2 bg-transparent"
+                <Button variant="outline" className="pointer-events-auto border-blue-400 hover:hover:bg-blue-400/10 text-blue-600 [&_svg]:size-[22px] gap-2 bg-transparent"
                     onClick={() => {
                         navigateFrom("/login")
                     }}
@@ -114,7 +113,7 @@ export function LoginFirstCard() {
                     <ScanFace />
                     <span className="text-[16px] font-bold">登录</span>
                 </Button>
-                <Button variant="outline" className="pointer-events-auto border-green-400 hover:hover:bg-green-100 text-green-600 [&_svg]:size-[22px] gap-2 bg-transparent"
+                <Button variant="outline" className="pointer-events-auto border-green-400 hover:hover:bg-green-400/10 text-green-600 [&_svg]:size-[22px] gap-2 bg-transparent"
                     onClick={() => {
                         navigateFrom("/signup")
                     }}

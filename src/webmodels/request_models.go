@@ -184,7 +184,8 @@ type UpdateScoreAdjustmentPayload struct {
 type SystemResourceType string
 
 const (
-	SystemIcon               SystemResourceType = "svgIcon"
+	SystemIconLight          SystemResourceType = "svgIconLight"
+	SystemIconDark           SystemResourceType = "svgIconDark"
 	TrophysGold              SystemResourceType = "trophysGold"
 	TrophysSilver            SystemResourceType = "trophysSilver"
 	TrophysBronze            SystemResourceType = "trophysBronze"

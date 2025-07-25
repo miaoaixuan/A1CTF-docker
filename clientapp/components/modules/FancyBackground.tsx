@@ -8,15 +8,15 @@ import LogoBackgroundAnimation from "./LogoBackgroundAnimation";
 export default function FancyBackground() {
     const { clientConfig } = useGlobalVariableContext()
 
-    if (!clientConfig.FancyBackGroundIconWhite) return <></>
+    if (clientConfig && !clientConfig.FancyBackGroundIconWhite) return <></>
 
     return (
         <div className="w-screen h-screen absolute top-0 left-0 pointer-events-none">
             <LogoBackgroundAnimation
                 direction="diagonal"
                 speed={0.05}
-                imageSizeX={241.2}
-                imageSizeY={122.39}
+                imageSizeX={clientConfig.fancyBackGroundIconWidth}
+                imageSizeY={clientConfig.fancyBackGroundIconHeight}
             />
         </div>
     )

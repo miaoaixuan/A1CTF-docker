@@ -12,7 +12,8 @@ interface ClientConfig {
     FancyBackGroundIconWhite: string;
     FancyBackGroundIconBlack: string;
     DefaultBGImage: string;
-    SVGIcon: string;
+    SVGIconLight: string;
+    SVGIconDark: string;
     SVGAltData: string;
     TrophysGold: string;
     TrophysSilver: string;
@@ -37,6 +38,9 @@ interface ClientConfig {
     captchaEnabled: boolean;
     updateVersion: string;
 
+    fancyBackGroundIconWidth: number;
+    fancyBackGroundIconHeight: number;
+
     // 全局比赛模式
     gameActivityMode: string | undefined;
 }
@@ -52,6 +56,8 @@ interface GlobalVariableContextType {
     refreshClientConfig: () => Promise<void>;
     checkLoginStatus: () => boolean;
     unsetLoginStatus: () => void;
+    getSystemLogo: () => string;
+    getSystemLogoDefault: () => string;
 }
 
 const globalVariableContext = createContext<GlobalVariableContextType | undefined>(undefined);
@@ -78,7 +84,8 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
         FancyBackGroundIconWhite: "/images/ctf_white.png",
         FancyBackGroundIconBlack: "/images/ctf_black.png",
         DefaultBGImage: "/images/defaultbg.jpg",
-        SVGIcon: "/images/A1natas.svg",
+        SVGIconLight: "/images/A1natas.svg",
+        SVGIconDark: "/images/A1natas_white.svg",
         SVGAltData: "A1natas",
         TrophysGold: "/images/trophys/gold_trophy.png",
         TrophysSilver: "/images/trophys/silver_trophy.png",
@@ -102,6 +109,8 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
         AboutUS: "A1CTF Platform",
         captchaEnabled: false,
         updateVersion: '',
+        fancyBackGroundIconWidth: 241.2,
+        fancyBackGroundIconHeight: 122.39,
 
         gameActivityMode: undefined,
     }
@@ -136,6 +145,16 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
 
     const unsetLoginStatus = () => {
         removeUID()
+    }
+
+    const getSystemLogo = () => {
+        if (theme == "light") return clientConfig.SVGIconLight
+        else return clientConfig.SVGIconDark
+    }
+
+    const getSystemLogoDefault = () => {
+        if (theme == "light") return "/images/A1natas.svg"
+        else return "/images/A1natas_white.svg"
     }
     
     useEffect(() => {
@@ -240,7 +259,7 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
     }, [isDarkMode]);
 
     return (
-        <globalVariableContext.Provider value={{ curProfile, updateProfile, serialOptions, clientConfig, updateClientConfg, isDarkMode, setIsDarkMode, refreshClientConfig, checkLoginStatus, unsetLoginStatus }}>
+        <globalVariableContext.Provider value={{ curProfile, updateProfile, serialOptions, clientConfig, updateClientConfg, isDarkMode, setIsDarkMode, refreshClientConfig, checkLoginStatus, unsetLoginStatus, getSystemLogo, getSystemLogoDefault }}>
             {children}
         </globalVariableContext.Provider>
     );

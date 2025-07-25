@@ -117,7 +117,7 @@ export default function GamePosterInfoModule(
                                 height={"12%"}
                                 className="min-w-[48px] min-h-[48px]"
                                 src={
-                                    posterTextPrimaryColor == "white" ? gameInfo?.game_icon_light ?? clientConfig.SVGIcon : gameInfo?.game_icon_dark ?? clientConfig.SVGIcon
+                                    posterTextPrimaryColor == "white" ? gameInfo?.game_icon_light ?? clientConfig.SVGIconLight : gameInfo?.game_icon_dark ?? clientConfig.SVGIconDark
                                 }
                                 alt={gameInfo?.name ?? "A1CTF ???????"}
                             />

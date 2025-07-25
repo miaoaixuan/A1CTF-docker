@@ -254,15 +254,15 @@ export function CategorySidebar({
         }
     };
 
-    const { clientConfig } = useGlobalVariableContext()
+    const { clientConfig, getSystemLogo, getSystemLogoDefault } = useGlobalVariableContext()
 
     const navigate = useNavigate()
 
     const getGameIcon = () => {
         if (theme === "dark") {
-            return gameInfo?.game_icon_dark ?? clientConfig.SVGIcon
+            return gameInfo?.game_icon_dark ?? clientConfig.SVGIconDark
         } else {
-            return gameInfo?.game_icon_light ?? clientConfig.SVGIcon
+            return gameInfo?.game_icon_light ?? clientConfig.SVGIconLight
         }
     }
 
@@ -282,7 +282,7 @@ export function CategorySidebar({
                             <div className="justify-start flex gap-4 items-center">
                                 <img
                                     className="transition-all duration-300"
-                                    src={clientConfig.SVGIcon}
+                                    src={getSystemLogoDefault()}
                                     alt={clientConfig.SVGAltData}
                                     width={40}
                                     height={40}

@@ -30,7 +30,8 @@ type SystemSettings struct {
 	FancyBackGroundIconWhite string `json:"fancyBackGroundIconWhite"`
 	FancyBackGroundIconBlack string `json:"fancyBackGroundIconBlack"`
 	DefaultBGImage           string `json:"defaultBGImage"`
-	SVGIcon                  string `json:"svgIcon"`
+	SVGIconLight             string `json:"svgIconLight"`
+	SVGIconDark              string `json:"svgIconDark"`
 	SVGAltData               string `json:"svgAltData"`
 	TrophysGold              string `json:"trophysGold"`
 	TrophysSilver            string `json:"trophysSilver"`
@@ -39,6 +40,9 @@ type SystemSettings struct {
 	SchoolSmallIcon          string `json:"schoolSmallIcon"`
 	SchoolUnionAuthText      string `json:"schoolUnionAuthText"`
 	BGAnimation              bool   `json:"bgAnimation"`
+
+	FancyBackGroundIconWidth  float64 `json:"fancyBackGroundIconWidth"`
+	FancyBackGroundIconHeight float64 `json:"fancyBackGroundIconHeight"`
 
 	// SMTP设置
 	SmtpHost      string `json:"smtpHost"`
@@ -86,7 +90,8 @@ var DefaultSettings = SystemSettings{
 	FancyBackGroundIconWhite: "/images/ctf_white.png",
 	FancyBackGroundIconBlack: "/images/ctf_black.png",
 	DefaultBGImage:           "/images/defaultbg.jpg",
-	SVGIcon:                  "/images/A1natas.svg",
+	SVGIconLight:             "/images/A1natas.svg",
+	SVGIconDark:              "/images/A1natas_white.svg",
 	SVGAltData:               "A1natas",
 	TrophysGold:              "/images/trophys/gold_trophy.png",
 	TrophysSilver:            "/images/trophys/silver_trophy.png",

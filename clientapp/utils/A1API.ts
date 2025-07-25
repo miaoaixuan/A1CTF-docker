@@ -12,7 +12,8 @@
 
 /**
  * 资源类型:
- * - svgIcon: SVG图标
+ * - svgIconLight: SVG图标(浅色)
+ * - svgIconDark: SVG图标(深色)
  * - trophysGold: 金牌奖杯
  * - trophysSilver: 银牌奖杯
  * - trophysBronze: 铜牌奖杯
@@ -24,7 +25,8 @@
  * - gameIconDark: 比赛图标(深色)
  */
 export enum SystemResourceType {
-  SvgIcon = "svgIcon",
+  SvgIconLight = "svgIconLight",
+  SvgIconDark = "svgIconDark",
   TrophysGold = "trophysGold",
   TrophysSilver = "trophysSilver",
   TrophysBronze = "trophysBronze",
@@ -3450,7 +3452,8 @@ export class Api<
         file: File;
         /**
          * 资源类型:
-         * - svgIcon: SVG图标
+         * - svgIconLight: SVG图标(浅色)
+         * - svgIconDark: SVG图标(深色)
          * - trophysGold: 金牌奖杯
          * - trophysSilver: 银牌奖杯
          * - trophysBronze: 铜牌奖杯

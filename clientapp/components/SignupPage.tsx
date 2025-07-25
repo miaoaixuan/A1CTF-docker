@@ -9,7 +9,7 @@ import { useNavigate } from "react-router";
 
 export default function SignupPage() {
 
-    const { clientConfig } = useGlobalVariableContext()
+    const { clientConfig, getSystemLogo } = useGlobalVariableContext()
     const navigate = useNavigate()
 
     return (
@@ -20,8 +20,7 @@ export default function SignupPage() {
                         navigate(`/`)
                     }} className="flex items-center gap-2 font-medium">
                         <img
-                            className="dark:invert"
-                            src={clientConfig.SVGIcon}
+                            src={getSystemLogo()}
                             alt={clientConfig.SVGAltData}
                             width={40}
                             height={40}

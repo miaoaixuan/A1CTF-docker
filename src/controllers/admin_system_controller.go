@@ -136,9 +136,14 @@ func UpdateSystemSettings(c *gin.Context) {
 			existingSettings.DefaultBGImage = str
 		}
 	}
-	if value, exists := updateData["svgIcon"]; exists {
+	if value, exists := updateData["svgIconLight"]; exists {
 		if str, ok := value.(string); ok {
-			existingSettings.SVGIcon = str
+			existingSettings.SVGIconLight = str
+		}
+	}
+	if value, exists := updateData["svgIconDark"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SVGIconDark = str
 		}
 	}
 	if value, exists := updateData["svgAltData"]; exists {
@@ -248,6 +253,16 @@ func UpdateSystemSettings(c *gin.Context) {
 	if value, exists := updateData["defaultLanguage"]; exists {
 		if str, ok := value.(string); ok {
 			existingSettings.DefaultLanguage = str
+		}
+	}
+	if value, exists := updateData["fancyBackGroundIconWidth"]; exists {
+		if str, ok := value.(float64); ok {
+			existingSettings.FancyBackGroundIconWidth = str
+		}
+	}
+	if value, exists := updateData["fancyBackGroundIconHeight"]; exists {
+		if str, ok := value.(float64); ok {
+			existingSettings.FancyBackGroundIconHeight = str
 		}
 	}
 	if value, exists := updateData["timeZone"]; exists {
@@ -407,8 +422,11 @@ func UploadSystemFile(c *gin.Context) {
 	downloadPath := fmt.Sprintf("/api/file/download/%s", fileName)
 
 	switch resourceType {
-	case webmodels.SystemIcon:
-		clientconfig.ClientConfig.SVGIcon = downloadPath
+	case webmodels.SystemIconLight:
+		clientconfig.ClientConfig.SVGIconLight = downloadPath
+		clientconfig.SaveSystemSettings(clientconfig.ClientConfig)
+	case webmodels.SystemIconDark:
+		clientconfig.ClientConfig.SVGIconDark = downloadPath
 		clientconfig.SaveSystemSettings(clientconfig.ClientConfig)
 	case webmodels.TrophysGold:
 		clientconfig.ClientConfig.TrophysGold = downloadPath

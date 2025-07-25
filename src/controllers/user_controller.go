@@ -218,7 +218,8 @@ func GetClientConfig(c *gin.Context) {
 		"FancyBackGroundIconWhite": ClientConfig.FancyBackGroundIconWhite,
 		"FancyBackGroundIconBlack": ClientConfig.FancyBackGroundIconBlack,
 		"DefaultBGImage":           ClientConfig.DefaultBGImage,
-		"SVGIcon":                  ClientConfig.SVGIcon,
+		"SVGIconLight":             ClientConfig.SVGIconLight,
+		"SVGIconDark":              ClientConfig.SVGIconDark,
 		"SVGAltData":               ClientConfig.SVGAltData,
 		"TrophysGold":              ClientConfig.TrophysGold,
 		"TrophysSilver":            ClientConfig.TrophysSilver,
@@ -227,6 +228,9 @@ func GetClientConfig(c *gin.Context) {
 		"SchoolSmallIcon":          ClientConfig.SchoolSmallIcon,
 		"SchoolUnionAuthText":      ClientConfig.SchoolUnionAuthText,
 		"BGAnimation":              ClientConfig.BGAnimation,
+
+		"fancyBackGroundIconWidth":  ClientConfig.FancyBackGroundIconWidth,
+		"fancyBackGroundIconHeight": ClientConfig.FancyBackGroundIconHeight,
 
 		"updateVersion": ClientConfig.UpdatedTime,
 	}

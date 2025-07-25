@@ -226,7 +226,7 @@ const LogoBackgroundAnimation: React.FC<SquaresProps> = ({
             window.removeEventListener("resize", resizeCanvas);
             if (requestRef.current) cancelAnimationFrame(requestRef.current);
         };
-    }, [direction, speed, borderColor, hoverFillColor, imageSizeX]);
+    }, [direction, speed, borderColor, hoverFillColor, imageSizeX, clientConfig]);
 
     return (
         <canvas

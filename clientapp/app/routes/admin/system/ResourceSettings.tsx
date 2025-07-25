@@ -41,15 +41,15 @@ export const ResourceSettings = (
             darkBackground: true,
         },
         {
-            type: SystemResourceType.SvgIcon,
+            type: SystemResourceType.SvgIconDark,
             name: "系统图标(深色模式)",
             darkBackground: true,
-            formValue: "svgIcon"
+            formValue: "svgIconDark"
         },
         {
-            type: SystemResourceType.SvgIcon,
+            type: SystemResourceType.SvgIconLight,
             name: "系统图标(浅色模式)",
-            formValue: "svgIcon"
+            formValue: "svgIconLight"
         },
         {
             type: SystemResourceType.TrophysGold,
@@ -108,7 +108,7 @@ export const ResourceSettings = (
         <>
             <span className="text-2xl font-bold mb-4">资源设置</span>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-4">
                 { resourceList.map((resource, idx) => (
                     <FormField
                         control={form.control}
@@ -135,7 +135,42 @@ export const ResourceSettings = (
                     />
                 )) }
             </div>
+            
+            <FormField
+                control={form.control}
+                name="fancyBackGroundIconWidth"
+                render={({ field }) => (
+                    <FormItem>
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>背景图标宽度</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
+                        <FormControl>
+                            <Input {...field} />
+                        </FormControl>
+                        <FormDescription>背景动画里每个图片的宽度, 请务必正确指定</FormDescription>
+                    </FormItem>
+                )}
+            />
 
+            <FormField
+                control={form.control}
+                name="fancyBackGroundIconHeight"
+                render={({ field }) => (
+                    <FormItem>
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>背景图标高度</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
+                        <FormControl>
+                            <Input {...field} />
+                        </FormControl>
+                        <FormDescription>背景动画里每个图片的高度, 请务必正确指定</FormDescription>
+                    </FormItem>
+                )}
+            />
             
         </>
     );

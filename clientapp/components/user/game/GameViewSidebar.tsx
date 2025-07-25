@@ -84,9 +84,9 @@ export default function GameViewSidebar(
 
     const getGameIcon = () => {
         if (theme === "dark") {
-            return gameInfo?.game_icon_dark ?? clientConfig.SVGIcon
+            return gameInfo?.game_icon_dark ?? clientConfig.SVGIconDark
         } else {
-            return gameInfo?.game_icon_light ?? clientConfig.SVGIcon
+            return gameInfo?.game_icon_light ?? clientConfig.SVGIconLight
         }
     }
 

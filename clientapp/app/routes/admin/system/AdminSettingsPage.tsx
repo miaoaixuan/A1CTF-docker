@@ -45,7 +45,8 @@ interface SystemSettings {
     fancyBackGroundIconWhite: string;
     fancyBackGroundIconBlack: string;
     defaultBGImage: string;
-    svgIcon: string;
+    svgIconLight: string;
+    svgIconDark: string;
     svgAltData: string;
     trophysGold: string;
     trophysSilver: string;
@@ -96,8 +97,14 @@ const systemSettingsSchema = z.object({
     // 品牌资源
     fancyBackGroundIconWhite: z.string().optional(),
     fancyBackGroundIconBlack: z.string().optional(),
+
+    // 宽度和高度
+    fancyBackGroundIconWidth: z.coerce.number().optional(),
+    fancyBackGroundIconHeight: z.coerce.number().optional(),
+
     defaultBGImage: z.string().optional(),
-    svgIcon: z.string().optional(),
+    svgIconLight: z.string().optional(),
+    svgIconDark: z.string().optional(),
     svgAltData: z.string().optional(),
     trophysGold: z.string().optional(),
     trophysSilver: z.string().optional(),
@@ -170,7 +177,8 @@ export const AdminSettingsPage = () => {
             fancyBackGroundIconWhite: "/images/ctf_white.png",
             fancyBackGroundIconBlack: "/images/ctf_black.png",
             defaultBGImage: "/images/defaultbg.jpg",
-            svgIcon: "/images/A1natas.svg",
+            svgIconLight: "/images/A1natas.svg",
+            svgIconDark: "/images/A1natas_white.svg",
             svgAltData: "A1natas",
             trophysGold: "/images/trophys/gold_trophy.png",
             trophysSilver: "/images/trophys/silver_trophy.png",
@@ -179,6 +187,10 @@ export const AdminSettingsPage = () => {
             schoolSmallIcon: "/images/zjnu_small_logo.png",
             schoolUnionAuthText: "ZJNU Union Authserver",
             bgAnimation: false,
+
+            // 宽度和高度
+            fancyBackGroundIconWidth: 241.2,
+            fancyBackGroundIconHeight: 122.39,
 
             smtpHost: "",
             smtpPort: 587,
@@ -353,18 +365,16 @@ export const AdminSettingsPage = () => {
                                         />
                                     )}
 
-                                    {activeModule != "resource" && (
-                                        <div className="w-full mt-4">
-                                            <Button
-                                                type="button"
-                                                onClick={form.handleSubmit(onSubmit)}
-                                                disabled={isLoading}
-                                            >
-                                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save />}
-                                                {isLoading ? '保存中...' : '保存设置'}
-                                            </Button>
-                                        </div>
-                                    )}
+                                    <div className="w-full mt-4">
+                                        <Button
+                                            type="button"
+                                            onClick={form.handleSubmit(onSubmit)}
+                                            disabled={isLoading}
+                                        >
+                                            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save />}
+                                            {isLoading ? '保存中...' : '保存设置'}
+                                        </Button>
+                                    </div>
                                 </div>
                             </MacScrollbar>
                         )}

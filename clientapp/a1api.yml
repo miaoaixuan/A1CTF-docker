@@ -4832,7 +4832,8 @@ components:
     SystemResourceType:
       type: string
       enum:
-        - svgIcon
+        - svgIconLight
+        - svgIconDark
         - trophysGold
         - trophysSilver
         - trophysBronze
@@ -4844,7 +4845,8 @@ components:
         - gameIconDark
       description: |
         资源类型:
-        - svgIcon: SVG图标
+        - svgIconLight: SVG图标(浅色)
+        - svgIconDark: SVG图标(深色)
         - trophysGold: 金牌奖杯
         - trophysSilver: 银牌奖杯
         - trophysBronze: 铜牌奖杯

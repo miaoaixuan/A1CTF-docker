@@ -32,7 +32,7 @@ export default function ImageUploader(
                 <img src={src} alt="比赛图标" className={`w-full h-full ${imageFit}`} />
             )}
             <div className={`w-full h-full absolute top-0 left-0 opacity-0 group-hover:opacity-80 bg-white transition-opacity duration-300 flex items-center justify-center`}>
-                <Upload size={48} />
+                <Upload size={48} className="text-black" />
             </div>
             <input
                 type="file"

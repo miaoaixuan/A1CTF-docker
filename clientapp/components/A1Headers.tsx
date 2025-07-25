@@ -49,7 +49,7 @@ const PageHeader = () => {
 
     const navigate = useNavigate();
 
-    const { clientConfig } = useGlobalVariableContext()
+    const { clientConfig, getSystemLogo } = useGlobalVariableContext()
 
     return (
         <div className="sticky top-0 h-16 select-none z-1">
@@ -59,8 +59,7 @@ const PageHeader = () => {
                         <div className="md:flex items-center">
                             <Link to={``} className="flex-shrink-0">
                                 <img
-                                    className="dark:invert"
-                                    src={clientConfig.SVGIcon}
+                                    src={getSystemLogo()}
                                     alt={clientConfig.SVGAltData}
                                     width={40}
                                     height={40}
@@ -163,8 +162,7 @@ const PageHeader = () => {
                         <div className="flex w-full justify-start ml-4">
                             <Link to={`/`} className="flex items-center">
                                 <img
-                                    className="dark:invert"
-                                    src={clientConfig.SVGIcon}
+                                    src={getSystemLogo()}
                                     alt={clientConfig.SVGAltData}
                                     width={34}
                                     height={34}

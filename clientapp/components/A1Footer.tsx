@@ -21,7 +21,7 @@ const A1Footer = () => {
 
     const router = useNavigate()
 
-    const { clientConfig } = useGlobalVariableContext()
+    const { clientConfig, getSystemLogo } = useGlobalVariableContext()
 
     return (
         <>
@@ -65,8 +65,7 @@ const A1Footer = () => {
                                 }}
                             >
                                 <img
-                                    className="dark:invert"
-                                    src={clientConfig.SVGIcon}
+                                    src={getSystemLogo()}
                                     alt={clientConfig.SVGAltData}
                                     width={34}
                                     height={34}
