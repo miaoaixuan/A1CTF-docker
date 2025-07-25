@@ -34,9 +34,10 @@ RUN addgroup -g 1001 -S appgroup && \
 WORKDIR /app
 
 RUN mkdir -p /app/data && \
+    mkdir -p /app/clientapp/build/client && \
     chown -R appuser:appgroup /app
 
-COPY --from=frontend-builder /app/clientapp ./clientapp
+COPY --from=frontend-builder /app/clientapp/build/client ./clientapp/build/client
 COPY --from=backend-builder /app/app ./
 COPY migrations/ ./migrations/
 
