@@ -129,7 +129,7 @@ func UpdateActiveGameScoreBoard() {
 		// 获取上述队伍的积分榜
 		var teamGameScoreborad []models.ScoreBoard = make([]models.ScoreBoard, 0)
 		var teamGameScoreboardMap map[int64]models.ScoreBoard = make(map[int64]models.ScoreBoard)
-		if err := dbtool.DB().Where("game_id = ? AND team_id IN ?", gameID, participatedTeamIDs).Find(&teamGameScoreborad).Error; err != nil {
+		if err := dbtool.DB().Where("game_id = ? AND team_id IN ?", gameID, participatedTeamIDs).Preload("Team").Find(&teamGameScoreborad).Error; err != nil {
 			zaphelper.Logger.Error("Failed to load team scoreboard for game ", zap.Error(err), zap.Int64("game_id", gameID))
 			return
 		}
@@ -147,6 +147,20 @@ func UpdateActiveGameScoreBoard() {
 
 		// 计算每个队伍的解题信息
 		var teamMap = make(map[int64]models.ScoreBoardData)
+
+		// 这里先根据现有的 Scoreboard 表项初始化一次 teamMap，防止后期后台操作导致队伍 0 solves 0 score-adjustments 后不更新 0 分
+		for _, teamScore := range teamGameScoreborad {
+			solvedList := make([]string, 0)
+			scoreBoardData := models.ScoreBoardData{
+				TeamName:             teamScore.Team.TeamName,
+				SolvedChallenges:     solvedList,
+				NewSolvedChallengeID: nil,
+				Score:                0,
+				RecordTime:           curTime,
+			}
+			teamMap[teamScore.TeamID] = scoreBoardData
+		}
+
 		for _, solve := range solves {
 			if !solve.GameChallenge.Visible {
 				// 如果题目现在不可见，就跳过

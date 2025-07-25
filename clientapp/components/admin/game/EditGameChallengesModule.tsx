@@ -482,7 +482,7 @@ export default function EditGameChallengesModule(
                     toast.error("请检查题目设置是否正确")
                 }
             }}>
-                <DialogContent className="sm:max-w-[825px] p-0" onInteractOutside={(e) => e.preventDefault()}>
+                <DialogContent className="sm:max-w-[1225px] p-0" onInteractOutside={(e) => e.preventDefault()}>
                     <DialogHeader className="select-none px-8 pt-8">
                         <DialogTitle>覆盖题目评测</DialogTitle>
                         <DialogDescription>

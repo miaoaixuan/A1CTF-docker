@@ -28,14 +28,7 @@ export default function GamePosterInfoModule(
     const { theme } = useTheme()
 
     const [posterTextPrimaryColor, setPosterTextPrimaryColor] = useState("white")
-
-    const getGameIcon = () => {
-        if (theme === "dark") {
-            return gameInfo?.game_icon_dark ?? clientConfig.SVGIcon
-        } else {
-            return gameInfo?.game_icon_light ?? clientConfig.SVGIcon
-        }
-    }
+    const [posterPrimaryColor, setPosterPrimaryColor] = useState([255, 255, 255, 255])
 
     const [navigateFrom, getNavigateFrom] = useNavigateFrom()
 
@@ -86,8 +79,12 @@ export default function GamePosterInfoModule(
 
     return (
         <div className="flex flex-col w-full overflow-hidden select-none lg:gap-16 gap-6">
-            <div className="relative">
-                <div className="w-full aspect-video bg-background rounded-xl overflow-hidden">
+            <div className="relative rounded-xl overflow-hidden border-2"
+                style={{
+                    borderColor: `rgba(${posterPrimaryColor[0]}, ${posterPrimaryColor[1]}, ${posterPrimaryColor[2]}, ${posterPrimaryColor[3]})`
+                }}
+            >
+                <div className="w-full aspect-video bg-background overflow-hidden">
                     <ImageLoader
                         src={gameInfo?.poster || clientConfig.DefaultBGImage}
                         className=""
@@ -98,6 +95,7 @@ export default function GamePosterInfoModule(
                             fac.getColorAsync(container)
                                 .then((color: any) => {
                                     const brightness = 0.2126 * color.value[0] + 0.7152 * color.value[1] + 0.0722 * color.value[2];
+                                    setPosterPrimaryColor(color.value)
                                     const brightColor = brightness > 128 ? "white" : "black";
                                     setPosterTextPrimaryColor(brightColor)
                                 })
@@ -107,7 +105,11 @@ export default function GamePosterInfoModule(
                         }}
                     />
                 </div>
-                <div className="absolute bottom-0 w-full rounded-b-2xl overflow-hidden backdrop-blur-md bg-background/10">
+                <div className="absolute bottom-0 w-full overflow-hidden backdrop-blur-md"
+                    style={{
+                        backgroundColor: `rgba(${posterPrimaryColor[0]}, ${posterPrimaryColor[1]}, ${posterPrimaryColor[2]}, 0.3)`
+                    }}
+                >
                     <div className="w-full h-full py-4 px-7">
                         <div className="flex gap-6 items-center">
                             <img

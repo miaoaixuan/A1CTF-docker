@@ -268,7 +268,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                         <Button
                             type="submit"
                             form="game-edit-form"
-                            disabled={!formEdited}
+                            onClick={form.handleSubmit(onSubmit)}
                         >
                             <Save className="h-4 w-4" />
                             保存设置
@@ -323,127 +323,124 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
 
                 {/* 右侧内容区域 */}
                 <div className="flex-1 overflow-hidden">
-                    <MacScrollbar 
+                    <MacScrollbar
                         className="h-full"
                         skin={theme == "light" ? "light" : "dark"}
                     >
                         <div className="pl-6 pr-10 pt-32 pb-8">
-                            <form id="game-edit-form" onSubmit={form.handleSubmit(onSubmit)}>
-
-                                {activeModule === 'events' && (
-                                    <GameEventModule />
-                                )}
+                            {activeModule === 'events' && (
+                                <GameEventModule />
+                            )}
 
 
-                                {/* 基本信息 Section */}
-                                {activeModule === 'basic' && (
-                                    <BasicInfoModule
+                            {/* 基本信息 Section */}
+                            {activeModule === 'basic' && (
+                                <BasicInfoModule
+                                    form={form}
+                                    handleDateSelect={handleDateSelect}
+                                    handleTimeChange={handleTimeChange}
+                                    gameID={game_info.game_id}
+                                />
+                            )}
+
+                            {/* 详细设置 Section */}
+                            {activeModule === 'settings' && (
+                                <DetailedSettingsModule
+                                    form={form}
+                                    game_info={game_info}
+                                    handleDateSelect={(date) => handleDateSelect(date, "wp_expire_time")}
+                                    handleTimeChange={(type, val) => handleTimeChange(type as any, val, "wp_expire_time")}
+                                    clientConfig={clientConfig}
+                                />
+                            )}
+
+                            {/* 比赛时间线和题目分配 */}
+                            {activeModule === 'timeline' && (
+                                <div>
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/10 flex items-center justify-center">
+                                            <CalendarIcon className="h-4 w-4 text-purple-600" />
+                                        </div>
+                                        <h2 className="text-xl font-semibold">时间线与题目分配</h2>
+                                    </div>
+                                    <GameTimelineEditor
+                                        game_info={game_info}
                                         form={form}
-                                        handleDateSelect={handleDateSelect}
-                                        handleTimeChange={handleTimeChange}
-                                        gameID={game_info.game_id}
                                     />
-                                )}
+                                </div>
+                            )}
 
-                                {/* 详细设置 Section */}
-                                {activeModule === 'settings' && (
-                                    <DetailedSettingsModule
+                            {/* 分组管理 */}
+                            {activeModule === 'groups' && (
+                                <div>
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-600/10 flex items-center justify-center">
+                                            <Users className="h-4 w-4 text-orange-600" />
+                                        </div>
+                                        <h2 className="text-xl font-semibold">分组管理</h2>
+                                    </div>
+                                    <GameGroupManager gameId={game_info.game_id} />
+                                </div>
+                            )}
+
+                            {/* 公告管理 */}
+                            {activeModule === 'notices' && (
+                                <div>
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
+                                            <MessageSquareLock className="h-4 w-4 text-blue-600" />
+                                        </div>
+                                        <h2 className="text-xl font-semibold">公告管理</h2>
+                                    </div>
+                                    <GameNoticeManager gameId={game_info.game_id} />
+                                </div>
+                            )}
+
+                            {/* 题目设置 */}
+                            {activeModule === 'challenges' && (
+                                <div>
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-red-500/20 to-red-600/10 flex items-center justify-center">
+                                            <Trophy className="h-4 w-4 text-red-600" />
+                                        </div>
+                                        <h2 className="text-xl font-semibold">题目设置</h2>
+                                    </div>
+                                    <EditGameChallengesModule
                                         form={form}
                                         game_info={game_info}
-                                        handleDateSelect={(date) => handleDateSelect(date, "wp_expire_time")}
-                                        handleTimeChange={(type, val) => handleTimeChange(type as any, val, "wp_expire_time")}
-                                        clientConfig={clientConfig}
                                     />
-                                )}
+                                </div>
+                            )}
 
-                                {/* 比赛时间线和题目分配 */}
-                                {activeModule === 'timeline' && (
-                                    <div>
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/10 flex items-center justify-center">
-                                                <CalendarIcon className="h-4 w-4 text-purple-600" />
-                                            </div>
-                                            <h2 className="text-xl font-semibold">时间线与题目分配</h2>
+                            {/* 队伍管理 */}
+                            {activeModule === 'teams' && (
+                                <div>
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
+                                            <Users className="h-4 w-4 text-blue-600" />
                                         </div>
-                                        <GameTimelineEditor
-                                            game_info={game_info}
-                                            form={form}
-                                        />
+                                        <h2 className="text-xl font-semibold">队伍管理</h2>
                                     </div>
-                                )}
+                                    <TeamManageView
+                                        gameId={game_info.game_id}
+                                    />
+                                </div>
+                            )}
 
-                                {/* 分组管理 */}
-                                {activeModule === 'groups' && (
-                                    <div>
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-600/10 flex items-center justify-center">
-                                                <Users className="h-4 w-4 text-orange-600" />
-                                            </div>
-                                            <h2 className="text-xl font-semibold">分组管理</h2>
+                            {/* 容器管理 */}
+                            {activeModule === 'containers' && (
+                                <div>
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/10 flex items-center justify-center">
+                                            <PackageSearch className="h-4 w-4 text-green-600" />
                                         </div>
-                                        <GameGroupManager gameId={game_info.game_id} />
+                                        <h2 className="text-xl font-semibold">容器管理</h2>
                                     </div>
-                                )}
-
-                                {/* 公告管理 */}
-                                {activeModule === 'notices' && (
-                                    <div>
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
-                                                <MessageSquareLock className="h-4 w-4 text-blue-600" />
-                                            </div>
-                                            <h2 className="text-xl font-semibold">公告管理</h2>
-                                        </div>
-                                        <GameNoticeManager gameId={game_info.game_id} />
-                                    </div>
-                                )}
-
-                                {/* 题目设置 */}
-                                {activeModule === 'challenges' && (
-                                    <div>
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-red-500/20 to-red-600/10 flex items-center justify-center">
-                                                <Trophy className="h-4 w-4 text-red-600" />
-                                            </div>
-                                            <h2 className="text-xl font-semibold">题目设置</h2>
-                                        </div>
-                                        <EditGameChallengesModule
-                                            form={form}
-                                            game_info={game_info}
-                                        />
-                                    </div>
-                                )}
-
-                                {/* 队伍管理 */}
-                                {activeModule === 'teams' && (
-                                    <div>
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
-                                                <Users className="h-4 w-4 text-blue-600" />
-                                            </div>
-                                            <h2 className="text-xl font-semibold">队伍管理</h2>
-                                        </div>
-                                        <TeamManageView
-                                            gameId={game_info.game_id}
-                                        />
-                                    </div>
-                                )}
-
-                                {/* 容器管理 */}
-                                {activeModule === 'containers' && (
-                                    <div>
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/10 flex items-center justify-center">
-                                                <PackageSearch className="h-4 w-4 text-green-600" />
-                                            </div>
-                                            <h2 className="text-xl font-semibold">容器管理</h2>
-                                        </div>
-                                        <ContainerManageView
-                                            gameId={game_info.game_id}
-                                        />
-                                    </div>
-                                )}
-                            </form>
+                                    <ContainerManageView
+                                        gameId={game_info.game_id}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </MacScrollbar>
                 </div>

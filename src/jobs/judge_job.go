@@ -65,19 +65,13 @@ func processQueueingJudge(judge *models.Judge) error {
 				// var rewardScore float64
 				// var rewardReason string
 
-				// if newSolve.Rank == 1 {
-				// 	noticeCate = models.NoticeFirstBlood
-				// 	rewardScore = 50
-				// 	rewardReason = "First Blood Reward"
-				// } else if newSolve.Rank == 2 {
-				// 	noticeCate = models.NoticeSecondBlood
-				// 	rewardScore = 30
-				// 	rewardReason = "Second Blood Reward"
-				// } else {
-				// 	noticeCate = models.NoticeThirdBlood
-				// 	rewardScore = 10
-				// 	rewardReason = "Third Blood Reward"
-				// }
+				if newSolve.Rank == 1 {
+					noticeCate = models.NoticeFirstBlood
+				} else if newSolve.Rank == 2 {
+					noticeCate = models.NoticeSecondBlood
+				} else {
+					noticeCate = models.NoticeThirdBlood
+				}
 
 				// rewardReason = fmt.Sprintf("%s for %s", rewardReason, judge.Challenge.Name)
 

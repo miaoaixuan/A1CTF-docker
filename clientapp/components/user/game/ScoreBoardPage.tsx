@@ -2,7 +2,6 @@ import { ChartArea, CircleArrowLeft, LogOut, X, Download, Calculator, Gift, Ban,
 
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
 
-import ReactECharts from 'echarts-for-react';
 import React, { Dispatch, SetStateAction, useEffect, useRef, useState, useCallback } from 'react';
 import dayjs from 'dayjs';
 import ThemeSwitcher from 'components/ToggleTheme';
@@ -36,13 +35,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "components/ui/select"
-
-import {
-    Tabs,
-    TabsContent,
-    TabsList,
-    TabsTrigger,
-} from "components/ui/tabs"
+import TeamScoreDetailPage from './TeamScoreDetailPage';
 
 export default function ScoreBoardPage(
     { gmid }
@@ -76,9 +69,6 @@ export default function ScoreBoardPage(
 
     const [chartOption, setChartOpton] = useState<echarts.EChartsOption>()
     const [showUserDetail, setShowUserDetail] = useState<TeamScore>({})
-    const [personalChartOption, setPersonalChartOption] = useState<echarts.EChartsOption>()
-    const lastPersonalTimeLine = useRef<string>()
-    const personalChartRef = useRef<ReactECharts>(null)
 
     const isMobile = useIsMobile()
 
@@ -94,7 +84,7 @@ export default function ScoreBoardPage(
     // 使用useMemo稳定gameInfo引用，避免BetterChart不必要的重新渲染
     const stableGameInfo = React.useMemo(() => gameInfo, [
         gameInfo?.game_id,
-        gameInfo?.name, 
+        gameInfo?.name,
         gameInfo?.start_time,
         gameInfo?.end_time
     ]);
@@ -136,33 +126,10 @@ export default function ScoreBoardPage(
         setIsChartMinimized(false);
     }, []);
 
-    // 保存个人图表为图片
-    const handleSavePersonalChart = useCallback(() => {
-        const chartInstance = personalChartRef.current?.getEchartsInstance();
-        if (!chartInstance) return;
-
-        try {
-            const url = chartInstance.getDataURL({
-                type: 'png',
-                pixelRatio: 2,
-                backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff'
-            });
-            
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${showUserDetail.team_name || '队伍'}_个人积分图表_${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } catch (error) {
-            console.error('保存个人图表失败:', error);
-        }
-    }, [theme, showUserDetail.team_name]);
-
     // 下载积分榜XLSX功能
     const downloadScoreboardXLSX = useCallback(async () => {
         if (!gameInfo || isDownloading) return;
-        
+
         setIsDownloading(true);
         try {
             // 获取完整的积分榜数据（不分页，获取所有数据用于导出）
@@ -172,29 +139,29 @@ export default function ScoreBoardPage(
             }
             params.page = 1;
             params.size = (pagination?.total_count ?? 0) + 100; // 获取大量数据用于导出
-            
+
             const response = await api.user.userGetGameScoreboard(gmid, params);
             const data = response.data.data as GameScoreboardData;
-            
+
             if (!data?.teams || !data?.challenges) {
                 throw new Error('积分榜数据不完整');
             }
 
             // 创建XLSX工作簿
             const workbook = generateScoreboardXLSX(data);
-            
+
             // 生成文件并下载
             const groupSuffix = selectedGroupId && data.current_group ? `_${data.current_group.group_name}组` : '';
             const filename = `${gameInfo.name}${groupSuffix}_积分榜_${dayjs().format('YYYY-MM-DD_HH-mm-ss')}.xlsx`;
-            
+
             XLSX.writeFile(workbook, filename);
-            
+
             // 成功提示
             toast.success('积分榜下载成功！', {
                 description: `文件已保存为: ${filename}`,
                 duration: 4000,
             });
-            
+
         } catch (error) {
             console.error('下载积分榜失败:', error);
             toast.error('下载积分榜失败', {
@@ -223,7 +190,7 @@ export default function ScoreBoardPage(
         const newSize = parseInt(size);
         setPageSize(newSize);
         setCurrentPage(1); // 重置到第一页
-        
+
         if (pagination && pagination.current_page > 1) {
             toast.info('页面大小已更改', {
                 description: '已重置到第一页',
@@ -236,7 +203,7 @@ export default function ScoreBoardPage(
     const generateScoreboardXLSX = (data: GameScoreboardData): XLSX.WorkBook => {
         const teams = data.teams || [];
         const challenges = data.challenges || [];
-        
+
         // 按类别分组题目
         const challengesByCategory: Record<string, UserSimpleGameChallenge[]> = {};
         challenges.forEach(challenge => {
@@ -249,7 +216,7 @@ export default function ScoreBoardPage(
 
         // 创建表头
         const headers = ['排名', '队伍名称', '总分'];
-        
+
         // 添加题目列（按类别分组）
         Object.keys(challengesByCategory).sort().forEach(category => {
             challengesByCategory[category].forEach(challenge => {
@@ -259,24 +226,24 @@ export default function ScoreBoardPage(
 
         // 创建数据行（使用正确的单元格对象格式）
         const sheetData: any[][] = [];
-        
+
         // 添加表头行（带样式）
         const headerRow = headers.map(header => ({
             v: header,
             t: 's',
             s: {
-                font: { 
-                    bold: true, 
+                font: {
+                    bold: true,
                     color: { rgb: "FFFFFF" },
                     sz: 12
                 },
-                fill: { 
+                fill: {
                     patternType: "solid",
                     fgColor: { rgb: "4F46E5" }
                 },
-                alignment: { 
-                    horizontal: "center", 
-                    vertical: "center" 
+                alignment: {
+                    horizontal: "center",
+                    vertical: "center"
                 },
                 border: {
                     top: { style: "thin", color: { rgb: "000000" } },
@@ -287,11 +254,11 @@ export default function ScoreBoardPage(
             }
         }));
         sheetData.push(headerRow);
-        
+
         // 添加数据行
         teams.forEach((team, teamIndex) => {
             const row: any[] = [];
-            
+
             // 排名列
             const rank = team.rank || 0;
             let rankStyle: any = {
@@ -303,7 +270,7 @@ export default function ScoreBoardPage(
                     right: { style: "thin", color: { rgb: "E5E7EB" } }
                 }
             };
-            
+
             // 前三名特殊样式
             if (rank === 1) {
                 rankStyle.fill = { patternType: "solid", fgColor: { rgb: "FEF3C7" } };
@@ -317,9 +284,9 @@ export default function ScoreBoardPage(
             } else if (teamIndex % 2 === 0) {
                 rankStyle.fill = { patternType: "solid", fgColor: { rgb: "F9FAFB" } };
             }
-            
+
             row.push({ v: rank, t: 'n', s: rankStyle });
-            
+
             // 队伍名称列
             let nameStyle: any = {
                 alignment: { horizontal: "left", vertical: "center" },
@@ -334,7 +301,7 @@ export default function ScoreBoardPage(
                 nameStyle.fill = { patternType: "solid", fgColor: { rgb: "F9FAFB" } };
             }
             row.push({ v: team.team_name || '', t: 's', s: nameStyle });
-            
+
             // 总分列
             let scoreStyle: any = {
                 alignment: { horizontal: "center", vertical: "center" },
@@ -349,7 +316,7 @@ export default function ScoreBoardPage(
                 scoreStyle.fill = { patternType: "solid", fgColor: { rgb: "F9FAFB" } };
             }
             row.push({ v: team.score || 0, t: 'n', s: scoreStyle });
-            
+
             // 题目分数列
             Object.keys(challengesByCategory).sort().forEach(category => {
                 challengesByCategory[category].forEach(challenge => {
@@ -357,7 +324,7 @@ export default function ScoreBoardPage(
                         solved => solved.challenge_id === challenge.challenge_id
                     );
                     const score = solvedChallenge ? solvedChallenge.score || 0 : 0;
-                    
+
                     let challengeStyle: any = {
                         alignment: { horizontal: "center", vertical: "center" },
                         border: {
@@ -367,7 +334,7 @@ export default function ScoreBoardPage(
                             right: { style: "thin", color: { rgb: "E5E7EB" } }
                         }
                     };
-                    
+
                     // 已解题目绿色背景
                     if (score > 0) {
                         challengeStyle.fill = { patternType: "solid", fgColor: { rgb: "DCFCE7" } };
@@ -375,38 +342,38 @@ export default function ScoreBoardPage(
                     } else if (teamIndex % 2 === 0 && rank > 3) {
                         challengeStyle.fill = { patternType: "solid", fgColor: { rgb: "F9FAFB" } };
                     }
-                    
+
                     row.push({ v: score, t: 'n', s: challengeStyle });
                 });
             });
-            
+
             sheetData.push(row);
         });
 
         // 创建工作表
         const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
-        
+
         // 设置列宽
         const colWidths = [
             { wch: 8 },  // 排名
             { wch: 20 }, // 队伍名称
             { wch: 10 }, // 总分
         ];
-        
+
         // 为每个题目列设置宽度
         Object.keys(challengesByCategory).sort().forEach(category => {
             challengesByCategory[category].forEach(() => {
                 colWidths.push({ wch: 15 }); // 题目列宽度
             });
         });
-        
+
         worksheet['!cols'] = colWidths;
-        
+
         // 创建工作簿
         const workbook = XLSX.utils.book_new();
         const sheetName = `积分榜_${dayjs().format('MM-DD_HH-mm')}`;
         XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-        
+
         // 设置工作簿属性
         workbook.Props = {
             Title: `${gameInfo?.name || 'CTF'} 积分榜`,
@@ -414,7 +381,7 @@ export default function ScoreBoardPage(
             Author: "A1CTF System",
             CreatedDate: new Date()
         };
-        
+
         return workbook;
     };
 
@@ -433,13 +400,13 @@ export default function ScoreBoardPage(
         const updateScoreBoard = (silent: boolean = false) => {
             // 设置加载状态
             if (!silent) setPageLoading(true);
-            
+
             // 构建查询参数
             const params: any = {
                 page: currentPage,
                 size: pageSize
             };
-            
+
             if (selectedGroupId) {
                 params.group_id = selectedGroupId;
             }
@@ -554,164 +521,6 @@ export default function ScoreBoardPage(
         }
     }, [gameInfo, currentPage, selectedGroupId, pageSize])
 
-    useEffect(() => {
-
-        if (!gameInfo) return
-        const current = dayjs()
-        const end = dayjs(gameInfo.end_time).diff(current) > 0 ? current : dayjs(gameInfo.end_time)
-
-        const curTimeLine = JSON.stringify(scoreBoardModel?.team_timelines?.find((e) => e.team_id == showUserDetail.team_id))
-
-        if (curTimeLine != lastPersonalTimeLine.current) {
-            lastPersonalTimeLine.current = curTimeLine
-
-            setPersonalChartOption({
-                backgroundColor: 'transparent',
-                tooltip: {
-                    trigger: 'axis',
-                    borderWidth: 0,
-                    textStyle: {
-                        fontSize: 12,
-                        color: theme == "dark" ? "#121212" : "#FFFFFF",
-                    },
-                    backgroundColor: theme == "dark" ? "#FFFFFF" : "#121212"
-                },
-                title: {
-                    left: 'center',
-                    text: `${showUserDetail.team_name} - 记分榜`,
-                    textStyle: {
-                        color: theme == "dark" ? "#FFFFFF" : "#121212",
-                    }
-                },
-                toolbox: {
-                    show: false,
-                    feature: {
-                        dataZoom: {
-                            yAxisIndex: 'none'
-                        },
-                        restore: {},
-                        saveAsImage: {}
-                    }
-                },
-                xAxis: {
-                    type: 'time',
-                    min: dayjs(gameInfo?.start_time).toDate(),
-                    max: dayjs(gameInfo?.end_time).toDate(),
-                    splitLine: {
-                        show: false,
-                    },
-                },
-                yAxis: {
-                    type: 'value',
-                    boundaryGap: [0, '100%'],
-                    max: (value: any) => (Math.floor(value.max / 1000) + 1) * 1000,
-                    splitLine: {
-                        show: true,
-                    },
-                },
-                dataZoom: [
-                    {
-                        type: 'inside',
-                        start: 0,
-                        end: 100,
-                        xAxisIndex: 0,
-                        filterMode: 'none'
-                    },
-                    {
-                        start: 0,
-                        end: 100,
-                        xAxisIndex: 0,
-                        showDetail: false,
-                    }
-                ],
-                series: [
-                    {
-                        type: 'line',
-                        step: 'end',
-                        data: [],
-                        markLine:
-                            dayjs(gameInfo.end_time).diff(dayjs(), 's') < 0
-                                ? undefined
-                                : {
-                                    symbol: 'none',
-                                    data: [
-                                        {
-                                            xAxis: +end.toDate(),
-                                            // lineStyle: {
-                                            //     color: colorScheme === 'dark' ? "#FFFFFF" : "#000000",
-                                            //     wight: 2,
-                                            // },
-                                            label: {
-                                                textBorderWidth: 0,
-                                                fontWeight: 500,
-                                                color: theme === 'dark' ? '#94a3b8' : '#64748b',
-                                                formatter: (time: any) => dayjs(time.value).format('YYYY-MM-DD HH:mm'),
-                                            },
-                                        },
-                                    ],
-                                },
-                    },
-                    ...(scoreBoardModel?.team_timelines?.filter((e) => e.team_id == showUserDetail.team_id).map((team) => ({
-                        name: team.team_name,
-                        type: 'line',
-                        showSymbol: false,
-                        step: 'end',
-                        data: [
-                            [+new Date(dayjs(gameInfo.start_time).toDate()), 0],
-                            ...(team.scores?.map((item) => [item.record_time || 0, item.score || 0]) || []),
-                            [+end.toDate(), (team.scores && team.scores[team.scores.length - 1]?.score) || 0]
-                        ],
-                        lineStyle: {
-                            width: 3
-                        },
-                        smooth: true,
-                    }) as echarts.SeriesOption) || [])
-                ] as echarts.SeriesOption[]
-            })
-        }
-    }, [showUserDetail])
-
-    const getChallenge = (id: number): UserSimpleGameChallenge | undefined => {
-        let target: UserSimpleGameChallenge | undefined
-        if (challenges) {
-            Object.values(challenges).forEach((es) => {
-                const tmp = es.find((e) => e.challenge_id == id)
-                if (tmp) target = tmp;
-            })
-        }
-        return target
-    }
-
-    // 获取分数修正类型的图标和颜色
-    const getAdjustmentTypeInfo = (type: string) => {
-        switch (type) {
-            case 'cheat':
-                return { 
-                    icon: <Ban className="w-5 h-5" />, 
-                    color: 'text-red-500',
-                    label: '作弊扣分'
-                };
-            case 'reward':
-                return { 
-                    icon: <Gift className="w-5 h-5" />, 
-                    color: 'text-green-500',
-                    label: '奖励加分'
-                };
-            case 'other':
-                return { 
-                    icon: <AlertTriangle className="w-5 h-5" />, 
-                    color: 'text-yellow-500',
-                    label: '其他调整'
-                };
-            default:
-                return { 
-                    icon: <Calculator className="w-5 h-5" />, 
-                    color: 'text-gray-500',
-                    label: '未知'
-                };
-        }
-    }
-
     const navigator = useNavigate()
 
     const gamePath = useLocation().pathname.split("/").slice(0, -1).join("/")
@@ -719,283 +528,13 @@ export default function ScoreBoardPage(
     return (
         <>
             {/* <LoadingPage visible={loadingVisiblity} /> */}
-            <AnimatePresence>
-                {showUserDetail.team_id && (
-                    <motion.div className='absolute top-0 left-0 w-full h-full z-[300] flex items-center justify-center overflow-hidden'
-                        initial={{
-                            backdropFilter: "blur(0px)"
-                        }}
-                        animate={{
-                            backdropFilter: "blur(12px)"
-                        }}
-                        exit={{
-                            backdropFilter: "blur(0px)"
-                        }}
-                    >
-                        <motion.div className='absolute top-10 right-10 lg:top-15 lg:right-15'
-                            initial={{
-                                opacity: 0
-                            }}
-                            animate={{
-                                opacity: 1
-                            }}
-                            exit={{
-                                opacity: 0
-                            }}
-                        >
-                            <div className='flex gap-2'>
-                                <Button className='w-[50px] h-[50px] [&_svg]:size-6 rounded-lg' variant="outline"
-                                    onClick={handleSavePersonalChart}
-                                    title="保存图表"
-                                >
-                                    <Download />
-                                </Button>
-                                <Button className='w-[50px] h-[50px] [&_svg]:size-8 rounded-lg' variant="default"
-                                    onClick={() => {
-                                        setShowUserDetail({})
-                                    }}
-                                >
-                                    <X />
-                                </Button>
-                            </div>
-                        </motion.div>
-                        <motion.div className='w-[100%] pl-6 pt-10 pb-6 lg:p-0 lg:w-[90%] h-[100%] lg:h-[70%]'
-                            initial={{
-                                opacity: 0
-                            }}
-                            animate={{
-                                opacity: 1
-                            }}
-                            exit={{
-                                opacity: 0
-                            }}
-                        >
-                            <Tooltip id="challengeTooltip2" opacity={0.9} className='z-[200]' />
-                            <MacScrollbar className='w-full h-full overflow-y-auto pr-3 lg:pr-0 lg:overflow-hidden' skin={theme == "light" ? "light" : "dark"} suppressScrollX>
-                                <div className='flex flex-row h-full w-full gap-4'>
-                                    <div className='flex flex-col w-full h-full gap-1 lg:basis-1/2 lg:overflow-hidden'>
-                                        <div className='flex items-center gap-4 mb-3'>
-                                            <Avatar className="select-none w-12 h-12">
-                                                {showUserDetail.team_avatar ? (
-                                                    <>
-                                                        <AvatarImage src={showUserDetail.team_avatar || "#"} alt="@shadcn" />
-                                                        <AvatarFallback><Skeleton className="h-12 w-12 rounded-full" /></AvatarFallback>
-                                                    </>
-                                                ) : (
-                                                    <div className='w-full h-full bg-foreground/80 flex items-center justify-center'>
-                                                        <span className='text-background text-lg'> {showUserDetail.team_name?.substring(0, 2)} </span>
-                                                    </div>
-                                                )}
-                                            </Avatar>
-                                            <span className='text-3xl font-bold'>{showUserDetail.team_name}</span>
-                                        </div>
-                                        <span className='text-2xl'>Rank: {showUserDetail.rank} </span>
-                                        <span className='text-2xl'>Solved {showUserDetail?.solved_challenges?.length ?? 0} problems</span>
-                                        <span className='text-2xl'>Score: {showUserDetail.score} pts</span>
-                                        <span className='text-2xl'>Slogan: {showUserDetail.team_slogan || "He didn't say anything."} </span>
-                                        <div className='lg:pr-14 pt-5 h-[400px] flex-shrink-0 lg:h-auto lg:flex-1'>
-                                            {personalChartOption && (
-                                                <ReactECharts
-                                                    ref={personalChartRef}
-                                                    option={personalChartOption}
-                                                    notMerge={false}
-                                                    lazyUpdate={true}
-                                                    style={{
-                                                        height: "100%"
-                                                    }}
-                                                    opts={{
-                                                        renderer: 'svg'
-                                                    }}
-                                                    theme={"theme_name"}
-                                                // onChartReady={this.onChartReadyCallback}
-                                                // onEvents={EventsDict}
-                                                // opts={}
-                                                />
-                                            )}
-                                        </div>
-                                        <div className='flex flex-col w-full lg:hidden p-2'>
-                                            <Tabs defaultValue="solved" className="w-full">
-                                                <TabsList className="grid w-full grid-cols-2">
-                                                    <TabsTrigger value="solved" className="flex items-center gap-2">
-                                                        <Calculator className="w-4 h-4" />
-                                                        解题记录 ({showUserDetail.solved_challenges?.length || 0})
-                                                    </TabsTrigger>
-                                                    <TabsTrigger value="adjustments" className="flex items-center gap-2">
-                                                        <AlertTriangle className="w-4 h-4" />
-                                                        分数修正 ({showUserDetail.score_adjustments?.length || 0})
-                                                    </TabsTrigger>
-                                                </TabsList>
-                                                
-                                                <TabsContent value="solved" className="mt-4">
-                                                    <div className={`flex h-9 flex-none items-center border-b-2`}>
-                                                        <div className='flex-1 flex justify-center border-r-2 h-full items-center'>
-                                                            <span className=''>题目名称</span>
-                                                        </div>
-                                                        <div className='w-[100px] flex-shrink-0 flex justify-center h-full items-center'>
-                                                            <span className=''>分数</span>
-                                                        </div>
-                                                    </div>
-                                                    {showUserDetail.solved_challenges?.map((e, index) => (
-                                                        <div key={`solved-problem-${index}`} className={`flex h-9 flex-none items-center border-b-2 gap-2`}>
-                                                            <div className='flex-1 overflow-hidden'>
-                                                                <span className='text-nowrap overflow-hidden text-ellipsis'
-                                                                    data-tooltip-id="challengeTooltip2"
-                                                                    data-tooltip-html={`<div class='text-sm flex flex-col'><span>${dayjs(e.solve_time).format("MM-DD HH:mm:ss")}</span><span>${e.solver}</span><span>${getChallenge(e.challenge_id || 0)?.challenge_name}</span></div>`}
-                                                                >{getChallenge(e.challenge_id || 0)?.challenge_name}</span>
-                                                            </div>
-                                                            <div className='w-[100px] flex-shrink-0 flex overflow-hidden'>
-                                                                <span className='text-green-500'> + {getChallenge(e.challenge_id || 0)?.cur_score} pts</span>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                    {(!showUserDetail.solved_challenges || showUserDetail.solved_challenges.length === 0) && (
-                                                        <div className="flex items-center justify-center py-8 text-muted-foreground">
-                                                            暂无解题记录
-                                                        </div>
-                                                    )}
-                                                </TabsContent>
-                                                
-                                                <TabsContent value="adjustments" className="mt-4">
-                                                    <div className={`flex h-9 flex-none items-center border-b-2`}>
-                                                        <div className='flex-1 flex justify-center border-r-2 h-full items-center'>
-                                                            <span className=''>修正原因</span>
-                                                        </div>
-                                                        <div className='w-[100px] flex-shrink-0 flex justify-center h-full items-center'>
-                                                            <span className=''>分数变化</span>
-                                                        </div>
-                                                    </div>
-                                                    {showUserDetail.score_adjustments?.map((adj, index) => {
-                                                        const typeInfo = getAdjustmentTypeInfo(adj.adjustment_type);
-                                                        return (
-                                                            <div key={`score-adjustment-${index}`} className={`flex h-9 flex-none items-center border-b-2 gap-2 bg-muted/30`}>
-                                                                <div className='flex-1 overflow-hidden flex items-center gap-2'>
-                                                                    <span className={typeInfo.color}>
-                                                                        {typeInfo.icon}
-                                                                    </span>
-                                                                    <span className='text-nowrap overflow-hidden text-ellipsis text-sm'
-                                                                        data-tooltip-id="challengeTooltip2"
-                                                                        data-tooltip-html={`<div class='text-sm flex flex-col'><span>${dayjs(adj.created_at).format("MM-DD HH:mm:ss")}</span><span>${typeInfo.label}</span><span>${adj.reason}</span></div>`}
-                                                                    >{adj.reason}</span>
-                                                                </div>
-                                                                <div className='w-[100px] flex-shrink-0 flex overflow-hidden'>
-                                                                    <span className={adj.score_change >= 0 ? 'text-green-500' : 'text-red-500'}>
-                                                                        {adj.score_change >= 0 ? '+' : ''}{adj.score_change} pts
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                    {(!showUserDetail.score_adjustments || showUserDetail.score_adjustments.length === 0) && (
-                                                        <div className="flex items-center justify-center py-8 text-muted-foreground">
-                                                            暂无分数修正记录
-                                                        </div>
-                                                    )}
-                                                </TabsContent>
-                                            </Tabs>
-                                        </div>
-                                    </div>
-                                    <div className='h-full basis-1/2 overflow-hidden hidden lg:flex'>
-                                        <Tabs defaultValue="solved" className="w-full h-full flex flex-col">
-                                            <TabsList className="grid w-full grid-cols-2 mb-4">
-                                                <TabsTrigger value="solved" className="flex items-center gap-2">
-                                                    <Calculator className="w-4 h-4" />
-                                                    解题记录 ({showUserDetail.solved_challenges?.length || 0})
-                                                </TabsTrigger>
-                                                <TabsTrigger value="adjustments" className="flex items-center gap-2">
-                                                    <AlertTriangle className="w-4 h-4" />
-                                                    分数修正 ({showUserDetail.score_adjustments?.length || 0})
-                                                </TabsTrigger>
-                                            </TabsList>
-                                            
-                                            <TabsContent value="solved" className="flex-1 overflow-hidden">
-                                                <MacScrollbar className='flex flex-col w-full overflow-hidden pr-5' skin={theme == "light" ? "light" : "dark"}>
-                                                    <div className={`flex h-9 flex-none items-center border-b-2 w-full`}>
-                                                        <div className='w-[150px] flex-shrink-0 flex justify-center border-r-2 h-full items-center'>
-                                                            <span>解题时间</span>
-                                                        </div>
-                                                        <div className='w-[100px] flex-shrink-0 flex justify-center border-r-2 h-full items-center'>
-                                                            <span>解题者</span>
-                                                        </div>
-                                                        <div className='flex-1 flex justify-center border-r-2 h-full items-center'>
-                                                            <span className=''>题目名称</span>
-                                                        </div>
-                                                        <div className='w-[120px] flex-none flex justify-center h-full items-center'>
-                                                            <span className=''>分数</span>
-                                                        </div>
-                                                    </div>
-                                                    {showUserDetail.solved_challenges?.map((e, index) => (
-                                                        <div key={`solved-problem-${index}`} className={`flex h-9 flex-none items-center border-b-2`}>
-                                                            <div className='w-[150px] flex-shrink-0 flex justify-center'>
-                                                                <span>{dayjs(e.solve_time).format("MM-DD HH:mm:ss")}</span>
-                                                            </div>
-                                                            <div className='w-[100px] flex-shrink-0 flex justify-center overflow-hidden'>
-                                                                <span className='text-nowrap overflow-hidden text-ellipsis'>{e.solver}</span>
-                                                            </div>
-                                                            <div className='flex-1 overflow-hidden pl-2 pr-2'>
-                                                                <span className='text-nowrap overflow-hidden text-ellipsis'>{getChallenge(e.challenge_id || 0)?.challenge_name}</span>
-                                                            </div>
-                                                            <div className='w-[120px] flex-none flex overflow-hidden justify-center'>
-                                                                <span className='text-green-500'> + {getChallenge(e.challenge_id || 0)?.cur_score} pts</span>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                    {(!showUserDetail.solved_challenges || showUserDetail.solved_challenges.length === 0) && (
-                                                        <div className="flex items-center justify-center py-8 text-muted-foreground">
-                                                            暂无解题记录
-                                                        </div>
-                                                    )}
-                                                </MacScrollbar>
-                                            </TabsContent>
-                                            
-                                            <TabsContent value="adjustments" className="flex-1 overflow-hidden">
-                                                <MacScrollbar className='flex flex-col w-full overflow-hidden pr-5' skin={theme == "light" ? "light" : "dark"}>
-                                                    <div className={`flex h-9 flex-none items-center border-b-2 w-full`}>
-                                                        <div className='w-[150px] flex-shrink-0 flex justify-center border-r-2 h-full items-center'>
-                                                            <span>修正时间</span>
-                                                        </div>
-                                                        <div className='flex-1 flex justify-center border-r-2 h-full items-center'>
-                                                            <span className=''>修正原因</span>
-                                                        </div>
-                                                        <div className='w-[120px] flex-none flex justify-center h-full items-center'>
-                                                            <span className=''>分数变化</span>
-                                                        </div>
-                                                    </div>
-                                                    {showUserDetail.score_adjustments?.map((adj, index) => {
-                                                        const typeInfo = getAdjustmentTypeInfo(adj.adjustment_type);
-                                                        return (
-                                                            <div key={`score-adjustment-${index}`} className={`flex h-9 flex-none items-center border-b-2 bg-muted/30`}>
-                                                                <div className='w-[150px] flex-shrink-0 flex justify-center'>
-                                                                    <span>{dayjs(adj.created_at).format("MM-DD HH:mm:ss")}</span>
-                                                                </div>
-                                                                <div className='flex-1 overflow-hidden pl-2 pr-2 flex items-center gap-2'>
-                                                                    <span className={typeInfo.color}>
-                                                                        {typeInfo.icon}
-                                                                    </span>
-                                                                    <span className='text-nowrap overflow-hidden text-ellipsis text-sm'>{adj.reason}</span>
-                                                                </div>
-                                                                <div className='w-[120px] flex-none flex overflow-hidden justify-center'>
-                                                                    <span className={adj.score_change >= 0 ? 'text-green-500' : 'text-red-500'}>
-                                                                        {adj.score_change >= 0 ? '+' : '-'} {Math.abs(adj.score_change)} pts
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                    {(!showUserDetail.score_adjustments || showUserDetail.score_adjustments.length === 0) && (
-                                                        <div className="flex items-center justify-center py-8 text-muted-foreground">
-                                                            暂无分数修正记录
-                                                        </div>
-                                                    )}
-                                                </MacScrollbar>
-                                            </TabsContent>
-                                        </Tabs>
-                                    </div>
-                                </div>
-                            </MacScrollbar>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            <TeamScoreDetailPage
+                showUserDetail={showUserDetail}
+                setShowUserDetail={setShowUserDetail}
+                scoreBoardModel={scoreBoardModel}
+                gameInfo={gameInfo}
+                challenges={challenges}
+            />
             <div className='absolute top-0 left-0 h-full w-full transition-colors duration-300'>
                 <Tooltip id="challengeTooltip" opacity={0.9} className='z-[200]' />
                 <MacScrollbar
@@ -1012,9 +551,8 @@ export default function ScoreBoardPage(
                                 <Button
                                     onClick={downloadScoreboardXLSX}
                                     disabled={isDownloading}
-                                    className={`mr-4 transition-all duration-300 hover:scale-110 ${
-                                        isDownloading ? 'opacity-50 cursor-not-allowed' : ''
-                                    }`}
+                                    className={`mr-4 transition-all duration-300 hover:scale-110 ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''
+                                        }`}
                                     variant="outline"
                                     size="sm"
                                 >
@@ -1027,11 +565,10 @@ export default function ScoreBoardPage(
                             <>
                                 {/* 图表区域 - 根据模式显示 */}
                                 {!isChartFloating && !isNormalChartMinimized && (
-                                    <div className={`mx-auto transition-all duration-300 ${
-                                        isChartFullscreen 
-                                            ? 'absolute top-0 left-0 w-full h-screen z-50 px-4 py-4' 
+                                    <div className={`mx-auto transition-all duration-300 ${isChartFullscreen
+                                            ? 'absolute top-0 left-0 w-full h-screen z-50 px-4 py-4'
                                             : 'container px-10 h-[50vh] min-h-[450px]'
-                                    }`}>
+                                        }`}>
                                         <BetterChart
                                             theme={theme == "dark" ? "dark" : "light"}
                                             gameInfo={stableGameInfo!}
@@ -1043,7 +580,7 @@ export default function ScoreBoardPage(
                                         />
                                     </div>
                                 )}
-                                
+
                                 {/* 悬浮窗图表 */}
                                 {isChartFloating && !isChartMinimized && (
                                     <div className="fixed top-0 left-0 w-[500px] h-[350px] z-50 pointer-events-none">
@@ -1066,11 +603,10 @@ export default function ScoreBoardPage(
                                     <div className="fixed bottom-4 right-4 z-50">
                                         <Button
                                             onClick={handleNormalRestore}
-                                            className={`p-3 rounded-full shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-110 ${
-                                                theme === 'dark'
+                                            className={`p-3 rounded-full shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-110 ${theme === 'dark'
                                                     ? 'bg-slate-800/90 border border-slate-600/50 text-slate-200 hover:bg-slate-700/90'
                                                     : 'bg-white/90 border border-gray-300/50 text-slate-700 hover:bg-gray-50/90'
-                                            }`}
+                                                }`}
                                             title="显示图表"
                                         >
                                             <ChartArea className="w-5 h-5" />
@@ -1084,11 +620,10 @@ export default function ScoreBoardPage(
                                     <div className="fixed bottom-4 right-4 z-50">
                                         <Button
                                             onClick={handleFloatingRestore}
-                                            className={`p-3 rounded-full shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-110 ${
-                                                theme === 'dark'
+                                            className={`p-3 rounded-full shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-110 ${theme === 'dark'
                                                     ? 'bg-slate-800/90 border border-slate-600/50 text-slate-200 hover:bg-slate-700/90'
                                                     : 'bg-white/90 border border-gray-300/50 text-slate-700 hover:bg-gray-50/90'
-                                            }`}
+                                                }`}
                                             title="显示图表"
                                         >
                                             <ChartArea className="w-5 h-5" />
@@ -1160,7 +695,7 @@ export default function ScoreBoardPage(
                                                 <div className='flex flex-1 overflow-hidden'>
                                                     {scoreBoardModel ? (!isMobile ? (
                                                         <>
-                                                            <ScoreTable 
+                                                            <ScoreTable
                                                                 scoreBoardModel={scoreBoardModel}
                                                                 setShowUserDetail={setShowUserDetail}
                                                                 challenges={challenges}

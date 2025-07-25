@@ -23,6 +23,7 @@ import ImageUploader from 'components/modules/ImageUploader';
 import { api } from 'utils/ApiHelper';
 import { SystemResourceType } from 'utils/A1API';
 import { DateTimePicker24h } from 'components/ui/data-time-picker';
+import { Editor } from '@monaco-editor/react';
 
 interface BasicInfoModuleProps {
     form: any;
@@ -165,12 +166,41 @@ export function BasicInfoModule({ form, handleDateSelect, handleTimeChange, game
                                 <FormMessage className="text-[14px]" />
                             </div>
                             <FormControl>
-                                <Textarea {...field} className="h-[300px]" />
+                                <div className="w-full h-[500px] pt-4 bg-[#1e1e1e] rounded-lg overflow-hidden">
+                                    <Editor
+                                        height="100%"
+                                        width="100%"
+                                        defaultLanguage="markdown"
+                                        theme='vs-dark'
+                                        defaultValue={field.value}
+                                        onChange={(value) => {
+                                            form.setValue("description", value)
+                                        }}
+                                    />
+                                </div>
                             </FormControl>
                             <FormDescription>比赛详细信息 (支持Markdown)</FormDescription>
                         </FormItem>
                     )}
                 />
+
+                {/* <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                        <FormItem>
+                            <div className="flex items-center h-[20px]">
+                                <FormLabel>比赛详细信息</FormLabel>
+                                <div className="flex-1" />
+                                <FormMessage className="text-[14px]" />
+                            </div>
+                            <FormControl>
+                                <Textarea {...field} className="h-[300px]" />
+                            </FormControl>
+                            <FormDescription>比赛详细信息 (支持Markdown)</FormDescription>
+                        </FormItem>
+                    )}
+                /> */}
             </div>
 
             {/* 开关设置 */}

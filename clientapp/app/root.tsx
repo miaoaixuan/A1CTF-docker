@@ -48,6 +48,14 @@ export const links: Route.LinksFunction = () => [
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap",
     },
+    {
+        rel: "stylesheet",
+        href: "'/app/css/github-markdown-dark.css'",
+    },
+    {
+        rel: "stylesheet",
+        href: "'/app/css/github-markdown-light.css'",
+    }
 ];
 
 const AnimationPresent = (path: string) => {
