@@ -52,6 +52,7 @@ import {
 } from "components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "components/ui/card";
 import { useTranslation } from "react-i18next"
+import { useTheme } from "next-themes"
 
 interface LogTableRow {
     id: string;
@@ -375,6 +376,8 @@ export function AdminSystemLogs() {
         },
     });
 
+    const { theme } = useTheme()
+
     return (
         <div className="w-full space-y-6">
             {/* 统计卡片 */}
@@ -533,7 +536,9 @@ export function AdminSystemLogs() {
 
             {/* 表格 */}
             <div className="rounded-md border">
-                <MacScrollbar>
+                <MacScrollbar
+                    skin={theme == "light" ? "light" : "dark"}
+                >
                     <Table>
                         <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (

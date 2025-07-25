@@ -18,6 +18,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useSearchParams } from "react-router";
 import { AdminHeader } from "./AdminHeader";
 import AboutPage from "./AboutPage";
+import { useTheme } from "next-themes";
+import SystemAboutSettings from "./SystemAboutSettings";
 
 interface SystemSettings {
     // 基本信息
@@ -368,6 +370,8 @@ export const AdminSystemSettingsView = () => {
         console.log(activeModule)
     }, [activeModule])
 
+    const { theme } = useTheme()
+
     return (
         <Form {...form}>
             <div className="w-full h-full overflow-hidden gap-2 flex">
@@ -392,7 +396,9 @@ export const AdminSystemSettingsView = () => {
                 </div>
                 <div className="flex flex-1 h-full overflow-hidden">
                     {activeModule != "aboutus" && (
-                        <MacScrollbar className="w-full h-full overflow-hidden">
+                        <MacScrollbar className="w-full h-full overflow-hidden"
+                            skin={theme == "light" ? "light" : "dark"}
+                        >
                             <div className="p-10 flex flex-col gap-4">
                                 {activeModule == "basic" && <>
                                     <span className="text-2xl font-bold">基本设置</span>
@@ -1161,7 +1167,10 @@ export const AdminSystemSettingsView = () => {
                     )}
                     {activeModule == "aboutus" && (
                         <div className="w-full h-full">
-                            <AboutPage />
+                            <AboutPage 
+                                form={form}
+                                onSubmit={onSubmit}
+                            />
                         </div>
                     )}
                 </div>

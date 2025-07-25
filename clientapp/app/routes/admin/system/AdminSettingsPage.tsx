@@ -25,6 +25,7 @@ import SecurityPolicySettings from "./SecurityPolicy";
 import OtherSettings from "./OtherSettings";
 import UserPolicySettings from "./UserPolicy";
 import { api } from "utils/ApiHelper";
+import { useTheme } from "next-themes";
 
 interface SystemSettings {
     // 基本信息
@@ -276,6 +277,8 @@ export const AdminSettingsPage = () => {
         },
     ];
 
+    const { theme } = useTheme()
+
     return (
         <div className="w-screen h-screen flex flex-col">
             <AdminHeader />
@@ -309,7 +312,9 @@ export const AdminSettingsPage = () => {
                                 />
                             </div>
                         ) : (
-                            <MacScrollbar className="w-full h-full overflow-hidden select-none">
+                            <MacScrollbar className="w-full h-full overflow-hidden select-none"
+                                skin={theme == "light" ? "light" : "dark"}
+                            >
                                 <div className="p-10 flex flex-col gap-4">
                                     {activeModule == "basic" && (
                                         <BasicSettings

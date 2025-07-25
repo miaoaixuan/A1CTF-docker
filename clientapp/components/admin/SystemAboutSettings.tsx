@@ -9,7 +9,7 @@ import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { UseFormReturn, useWatch } from 'react-hook-form';
 import { SystemSettingsValues } from '~/routes/admin/system/AdminSettingsPage';
 
-export default function AboutPage(
+export default function SystemAboutSettings(
     { form, onSubmit }: {
         form: UseFormReturn<SystemSettingsValues>,
         onSubmit: (value: SystemSettingsValues) => Promise<void>

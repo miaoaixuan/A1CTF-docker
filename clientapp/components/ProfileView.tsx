@@ -24,6 +24,7 @@ import { AxiosError } from "axios";
 import { api, ErrorMessage } from "utils/GZApi";
 import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "next-themes";
 
 export function ProfileView () {
 
@@ -87,8 +88,12 @@ export function ProfileView () {
         })
     }
 
+    const { theme } = useTheme()
+
     return (
-        <MacScrollbar className="w-full h-full flex flex-col overflow-hidden overflow-y-auto select-none">
+        <MacScrollbar className="w-full h-full flex flex-col overflow-hidden overflow-y-auto select-none"
+            skin={theme == "light" ? "light" : "dark"}
+        >
             <div className="w-full flex flex-col items-center pt-12">
                 <div className="flex w-[80%] lg:w-[40%]">
                     <span className="font-bold text-2xl mb-10">{ t("change_profile_below") }</span>

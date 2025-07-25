@@ -57,6 +57,7 @@ import {
     AlertDialogTitle,
 } from "components/ui/alert-dialog";
 import { UserEditDialog } from "../dialogs/UserEditDialog";
+import { useTheme } from "next-themes"
 
 export type UserModel = {
     id: string,
@@ -428,8 +429,12 @@ export function UserManageView() {
         fetchUsers();
     }, [curPage, pageSize, debouncedSearchKeyword]);
 
+    const { theme } = useTheme()
+
     return (
-        <MacScrollbar className="overflow-hidden w-full">
+        <MacScrollbar className="overflow-hidden w-full"
+            skin={theme == "light" ? "light" : "dark"}
+        >
             <div className="w-full flex justify-center pb-10 pt-4">
                 <div className="w-[80%]">
                     <div className="flex items-center justify-end space-x-2 select-none">

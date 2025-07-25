@@ -8,6 +8,7 @@ import { ParticipationStatus, UserFullGameInfo } from "utils/A1API";
 import GamePosterInfoModule from "./GamePosterInfoModule";
 import GameTeamStatusCard, { LoginFirstCard } from "components/modules/game/GameTeamStatusCard";
 import { A1GameStatus } from "components/modules/game/GameStatusEnum";
+import { useTheme } from "next-themes";
 
 export default function GameInfoView(
     {
@@ -29,9 +30,13 @@ export default function GameInfoView(
 
     const { clientConfig, checkLoginStatus } = useGlobalVariableContext()
 
+    const { theme } = useTheme()
+
     return (
         <div className="w-full h-full">
-            <MacScrollbar className="w-full h-full">
+            <MacScrollbar className="w-full h-full"
+                skin={theme == "light" ? "light" : "dark"}
+            >
                 <div className="px-10 flex">
                     <div className="lg:w-[60%] w-full h-full py-10 pr-5 flex flex-col">
                         <div className="lg:hidden w-full aspect-video mb-10">

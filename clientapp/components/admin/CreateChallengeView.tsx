@@ -45,6 +45,7 @@ import dayjs from "dayjs";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
 import { useNavigate } from "react-router";
+import { useTheme } from "next-themes";
 
 interface ContainerFormProps {
     control: any;
@@ -510,10 +511,14 @@ export function CreateChallengeView() {
         // form.setValue("category", "MISC")
     }, [])
 
+    const { theme } = useTheme()
+
     return (
         <div className="absolute w-screen h-screen bg-background items-center justify-center flex select-none overflow-x-hidden overflow-hidden">
             <Form {...form}>
-                <MacScrollbar className="h-full w-full flex flex-col items-center">
+                <MacScrollbar className="h-full w-full flex flex-col items-center"
+                    skin={theme == "light" ? "light" : "dark"}
+                >
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20 pt-20 w-[80%] flex flex-col">
                         <div className="flex">
                             <Button type="button" variant={"default"} onClick={() => {

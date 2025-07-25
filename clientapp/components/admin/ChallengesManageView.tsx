@@ -126,7 +126,9 @@ export function ChallengesManageView() {
                 {/* Main Content */}
                 <div className="flex-1 overflow-hidden">
                     {filtedData.length ? (
-                        <MacScrollbar className="h-full">
+                        <MacScrollbar className="h-full"
+                            skin={theme == "light" ? "light" : "dark"}
+                        >
                             <div className="p-6">
                                 <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
                                     {filtedData.map((chal, index) => (
