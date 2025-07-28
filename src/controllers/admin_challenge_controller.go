@@ -205,12 +205,14 @@ func AdminUpdateChallenge(c *gin.Context) {
 		return
 	}
 
-	if err := k8stool.ValidContainerConfig(*payload.ContainerConfig); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": err.Error(),
-		})
-		return
+	if payload.ContainerConfig != nil {
+		if err := k8stool.ValidContainerConfig(*payload.ContainerConfig); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    400,
+				"message": err.Error(),
+			})
+			return
+		}
 	}
 
 	var existingChallenge models.Challenge

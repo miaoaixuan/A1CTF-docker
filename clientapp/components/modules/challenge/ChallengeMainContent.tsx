@@ -1,5 +1,5 @@
 import { Button } from "components/ui/button"
-import { AlarmClock, AudioWaveform, ChartNoAxesCombined, CheckCheck, CirclePower, CircleX, ClockArrowUp, Flag, Loader2, Network, Package, Paperclip } from "lucide-react"
+import { AlarmClock, AudioWaveform, ChartNoAxesCombined, CheckCheck, CirclePower, CircleX, ClockArrowUp, Flag, Loader2, Network, Package, Paperclip, Wrench } from "lucide-react"
 import { MacScrollbar } from "mac-scrollbar"
 import TimerDisplay from "../TimerDisplay"
 import { ContainerStatus, ExposePortInfo, GameScoreboardData, UserDetailGameChallenge, UserFullGameInfo } from "utils/A1API"
@@ -16,6 +16,7 @@ import { useTheme } from "next-themes"
 import FileDownloader from "./FileDownloader"
 import copy from "copy-to-clipboard"
 import GameTeamStatusCard from "../game/GameTeamStatusCard"
+import ChallengeManageSheet from "components/admin/game/ChallengeManageSheet"
 
 export default function ChallengeMainContent(
     { 
@@ -167,6 +168,7 @@ export default function ChallengeMainContent(
 
     return (
         <>
+            {/* 提交 Flag 按钮 */}
             <div className="absolute bottom-27 right-7 z-10 flex justify-end flex-col gap-[8px]">
                 <div className="flex">
                     <div className="flex-1" />
@@ -190,6 +192,24 @@ export default function ChallengeMainContent(
                     }
                 </div>
             </div>
+
+            {/* 管理员管理菜单按钮 */}
+            <div className="absolute bottom-0 left-0 p-5">
+                <ChallengeManageSheet
+                    gameID={gameID}
+                    challengeID={curChallenge?.challenge_id ?? 0}
+                >
+                    <Button variant="ghost" size="icon" className="rounded-xl w-12 h-12 [&_svg]:size-6 bg-foreground/10 hover:hover:bg-foreground/20 cursor-pointer"
+                        data-tooltip-id="my-tooltip"
+                        data-tooltip-html="妙妙小工具"
+                        data-tooltip-place="right"
+                    >
+                        <Wrench />
+                    </Button>
+                </ChallengeManageSheet>
+            </div>
+
+            {/* 题目信息 */}
             <MacScrollbar
                 className="w-full h-full"
                 skin={theme === "dark" ? "dark" : "light"}
@@ -204,7 +224,7 @@ export default function ChallengeMainContent(
 
                     {curChallenge?.containers?.length ? (
                         <div className="flex flex-col gap-4 mb-8">
-                            <div className={`flex items-center gap-2 px-5 py-[9px] border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md select-none`}>
+                            <div className={`flex items-center gap-2 px-5 py-[9px] border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-sm select-none`}>
                                 <Package />
                                 <span className="font-bold text-lg">靶机列表</span>
                                 <div className="flex-1" />
@@ -287,7 +307,7 @@ export default function ChallengeMainContent(
 
                     {curChallenge?.attachments?.length ? (
                         <div className="flex flex-col gap-2 mb-4">
-                            <div className={`flex items-center gap-2 px-5 py-3 border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md `}>
+                            <div className={`flex items-center gap-2 px-5 py-3 border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-sm `}>
                                 <Paperclip />
                                 <span className="font-bold text-lg">附件列表</span>
                             </div>

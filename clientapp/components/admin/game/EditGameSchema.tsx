@@ -21,6 +21,35 @@ export const categories: { [key: string]: any } = {
     OSINT: <Github size={21} />,
 };
 
+export const GameChallengeSchema = z.object({
+    challenge_id: z.number(),
+    challenge_name: z.string(),
+    category: z.enum(Object.keys(categories) as [string, ...string[]], {
+        errorMap: () => ({ message: '需要选择一个有效的题目类别' }),
+    }),
+    total_score: z.coerce.number().min(1, '请输入一个有效的数字'),
+    cur_score: z.number(),
+    solve_count: z.number(),
+    minimal_score: z.coerce.number().min(0, '请输入一个有效的数字'),
+    enable_blood_reward: z.boolean(),
+    hints: z.array(
+        z.object({
+            content: z.string().optional(),
+            create_time: z.string(),
+            visible: z.boolean(),
+        })
+    ),
+    visible: z.boolean(),
+    belong_stage: z.string().nullable(),
+    judge_config: z.object({
+        judge_type: z.enum(['DYNAMIC', 'SCRIPT'], {
+            errorMap: () => ({ message: '需要选择一个有效的题目类别' }),
+        }),
+        judge_script: z.string().optional(),
+        flag_template: z.string().optional(),
+    }),
+})
+
 // 比赛编辑表单校验 Schema
 export const EditGameFormSchema = z.object({
     name: z.string().min(2, { message: '名字最短要两个字符' }),
@@ -48,34 +77,34 @@ export const EditGameFormSchema = z.object({
         })
     ).optional(),
     visible: z.boolean(),
-    challenges: z.array(
-        z.object({
-            challenge_id: z.number(),
-            challenge_name: z.string(),
-            category: z.enum(Object.keys(categories) as [string, ...string[]], {
-                errorMap: () => ({ message: '需要选择一个有效的题目类别' }),
-            }),
-            total_score: z.coerce.number().min(1, '请输入一个有效的数字'),
-            cur_score: z.number(),
-            solve_count: z.number(),
-            minimal_score: z.coerce.number().min(0, '请输入一个有效的数字'),
-            enable_blood_reward: z.boolean(),
-            hints: z.array(
-                z.object({
-                    content: z.string(),
-                    create_time: z.date(),
-                    visible: z.boolean(),
-                })
-            ),
-            visible: z.boolean(),
-            belong_stage: z.string().nullable(),
-            judge_config: z.object({
-                judge_type: z.enum(['DYNAMIC', 'SCRIPT'], {
-                    errorMap: () => ({ message: '需要选择一个有效的题目类别' }),
-                }),
-                judge_script: z.string().optional(),
-                flag_template: z.string().optional(),
-            }),
-        })
-    ),
+    // challenges: z.array(
+    //     z.object({
+    //         challenge_id: z.number(),
+    //         challenge_name: z.string(),
+    //         category: z.enum(Object.keys(categories) as [string, ...string[]], {
+    //             errorMap: () => ({ message: '需要选择一个有效的题目类别' }),
+    //         }),
+    //         total_score: z.coerce.number().min(1, '请输入一个有效的数字'),
+    //         cur_score: z.number(),
+    //         solve_count: z.number(),
+    //         minimal_score: z.coerce.number().min(0, '请输入一个有效的数字'),
+    //         enable_blood_reward: z.boolean(),
+    //         hints: z.array(
+    //             z.object({
+    //                 content: z.string(),
+    //                 create_time: z.date(),
+    //                 visible: z.boolean(),
+    //             })
+    //         ),
+    //         visible: z.boolean(),
+    //         belong_stage: z.string().nullable(),
+    //         judge_config: z.object({
+    //             judge_type: z.enum(['DYNAMIC', 'SCRIPT'], {
+    //                 errorMap: () => ({ message: '需要选择一个有效的题目类别' }),
+    //             }),
+    //             judge_script: z.string().optional(),
+    //             flag_template: z.string().optional(),
+    //         }),
+    //     })
+    // ),
 }); 

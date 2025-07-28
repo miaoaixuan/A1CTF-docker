@@ -1,5 +1,6 @@
 import Editor, { Monaco } from '@monaco-editor/react';
 import { Mdx } from 'components/MdxCompoents';
+import ThemedEditor from 'components/modules/ThemedEditor';
 import { Button } from 'components/ui/button';
 import { Save } from 'lucide-react';
 import { MacScrollbar } from 'mac-scrollbar';
@@ -75,20 +76,17 @@ export default function SystemAboutSettings(
             </div>
             <div className='w-full h-full overflow-hidden'>
                 <div className="h-full w-full flex gap-4">
-                    <div className='h-full w-1/2 bg-[#1e1e1e] pt-2 rounded-md overflow-hidden'>
-                        <Editor
-                            height="100%"
-                            width="100%"
-                            defaultLanguage="markdown"
-                            theme='vs-dark'
-                            defaultValue={aboutMeSource}
+                    <div className='h-full w-1/2'>
+                        <ThemedEditor
+                            value={aboutMeSource}
                             onChange={(value) => {
                                 const newValue = value || "";
                                 form.setValue("aboutus", value)
                                 setAboutMeSource(newValue);
                                 debouncedUpdateSource(newValue);
                             }}
-                            onMount={handleEditorDidMount}
+                            language="markdown"
+                            className='h-full'
                         />
                     </div>
                     <div className='h-full w-1/2 border-2 rounded-md overflow-hidden relative'>

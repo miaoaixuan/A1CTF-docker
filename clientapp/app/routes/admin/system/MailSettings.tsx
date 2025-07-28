@@ -6,6 +6,7 @@ import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessa
 import { SystemSettingsValues } from "./AdminSettingsPage";
 import { Editor } from "@monaco-editor/react";
 import { Mail } from "lucide-react";
+import ThemedEditor from "components/modules/ThemedEditor";
 
 
 export const MailSettings = (
@@ -116,18 +117,12 @@ export const MailSettings = (
                             <FormMessage className="text-[14px]" />
                         </div>
                         <FormControl>
-                            <div className="w-full h-[500px] pt-4 bg-[#1e1e1e] rounded-lg overflow-hidden">
-                                <Editor
-                                    height="100%"
-                                    width="100%"
-                                    defaultLanguage="html"
-                                    theme='vs-dark'
-                                    defaultValue={field.value}
-                                    onChange={(value) => {
-                                        form.setValue("emailTemplate", value)
-                                    }}
-                                />
-                            </div>
+                            <ThemedEditor
+                                value={field.value}
+                                onChange={field.onChange}
+                                language="html"
+                                className='h-[500px]'
+                            />
                         </FormControl>
                         <FormDescription>可以在这里输入你的邮件模板, 关键数据的模板名称请参考文档</FormDescription>
                     </FormItem>

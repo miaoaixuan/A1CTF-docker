@@ -1,30 +1,23 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from 'components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from 'components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from 'components/ui/alert-dialog';
-import { Popover, PopoverContent, PopoverTrigger } from 'components/ui/popover';
-import { Calendar } from 'components/ui/calendar';
-import { ScrollArea, ScrollBar } from 'components/ui/scroll-area';
-import { Switch } from 'components/ui/switch';
 import { Badge } from 'components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'components/ui/select';
-import { format } from 'date-fns';
-import { cn } from 'lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/ui/table';
-import { Dispatch, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { challengeCategoryIcons, challengeCategoryColorMap } from 'utils/ClientAssets';
+import { challengeCategoryIcons } from 'utils/ClientAssets';
 import { api, ErrorMessage } from 'utils/ApiHelper';
 import { Button } from 'components/ui/button';
-import { ArrowLeft, ArrowRight, ArrowUpDown, Loader2, LoaderPinwheel, PlusCircle, Search, Trophy } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUpDown, Loader2, PlusCircle, Search, Trophy } from 'lucide-react';
 import { Input } from 'components/ui/input';
 
 import { AxiosError } from 'axios';
 
-import { ChallengeCategory, AdminDetailGameChallenge, AdminFullGameInfo, JudgeType } from 'utils/A1API';
+import { ChallengeCategory, AdminFullGameInfo, JudgeType } from 'utils/A1API';
 import { useFieldArray, UseFormReturn } from 'react-hook-form';
 
 import * as z from 'zod';
 import { EditGameFormSchema } from './EditGameSchema';
-import { ColumnDef, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, SortingState, useReactTable, VisibilityState } from '@tanstack/react-table';
+import { ColumnDef, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
 import { Checkbox } from 'components/ui/checkbox';
 import dayjs from 'dayjs';
 import { toast } from 'sonner';
@@ -48,7 +41,7 @@ export default function EditGameChallengesModule(
     {
         game_info,
         form
-    } : {
+    }: {
         game_info: AdminFullGameInfo,
         form: UseFormReturn<z.infer<typeof EditGameFormSchema>>
     }
@@ -351,25 +344,28 @@ export default function EditGameChallengesModule(
         return () => clearTimeout(timer);
     }, [teamSearchTerm, searchTeams]);
 
+    useEffect(() => {
+        console.log("114514")
+        if (isOpen) {
+            setLoadingHover(true)
+            api.admin.searchChallenges({ keyword: curKeyWord.current }).then((res) => {
+                setSearchResult(res.data.data.map((c) => ({
+                    "Category": c.category,
+                    "ChallengeID": c.challenge_id || 0,
+                    "Name": c.name,
+                    "GameID": game_info.game_id,
+                    "CreateTime": c.create_time
+                })))
+                setTotalCount(res.data.data.length)
+                setLoadingHover(false)
+            })
+        }
+    }, [isOpen])
 
     return (
         <>
             <Dialog open={isOpen} onOpenChange={(status) => {
                 setIsOpen(status)
-                if (status && searchResult.length == 0 && curKeyWord.current == "") {
-                    setLoadingHover(true)
-                    api.admin.searchChallenges({ keyword: curKeyWord.current }).then((res) => {
-                        setSearchResult(res.data.data.map((c) => ({
-                            "Category": c.category,
-                            "ChallengeID": c.challenge_id || 0,
-                            "Name": c.name,
-                            "GameID": game_info.game_id,
-                            "CreateTime": c.create_time
-                        })))
-                        setTotalCount(res.data.data.length)
-                        setLoadingHover(false)
-                    })
-                }
             }}>
                 <DialogContent className="sm:max-w-[825px]" onInteractOutside={(e) => e.preventDefault()}>
                     <DialogHeader className="select-none">

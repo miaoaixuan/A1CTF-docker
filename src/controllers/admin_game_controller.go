@@ -155,25 +155,6 @@ func AdminGetGame(c *gin.Context) {
 		return
 	}
 
-	var gameChallenges []models.GameChallenge
-
-	// 使用 Preload 进行关联查询
-	if err := dbtool.DB().Preload("Challenge").
-		Where("game_id = ?", gameID).
-		Find(&gameChallenges).Error; err != nil {
-
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "Failed to load game challenges",
-		})
-		return
-	}
-
-	// 避免因为更改先后造成顺序变动
-	sort.Slice(gameChallenges, func(i, j int) bool {
-		return gameChallenges[i].Challenge.Name < gameChallenges[j].Challenge.Name
-	})
-
 	result := gin.H{
 		"game_id":                game.GameID,
 		"name":                   game.Name,
@@ -195,34 +176,201 @@ func AdminGetGame(c *gin.Context) {
 		"first_blood_reward":     game.FirstBloodReward,
 		"second_blood_reward":    game.SecondBloodReward,
 		"third_blood_reward":     game.ThirdBloodReward,
-		"challenges":             make([]gin.H, 0, len(gameChallenges)),
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": result,
+	})
+}
+
+func AdminGetGameChallenge(c *gin.Context) {
+
+	gameIDStr := c.Param("game_id")
+	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid game ID",
+		})
+		return
 	}
 
-	for _, gc := range gameChallenges {
-		judgeConfig := gc.JudgeConfig
-		if judgeConfig == nil {
-			judgeConfig = gc.Challenge.JudgeConfig
-		}
-
-		result["challenges"] = append(result["challenges"].([]gin.H), gin.H{
-			"challenge_id":        gc.Challenge.ChallengeID,
-			"challenge_name":      gc.Challenge.Name,
-			"total_score":         gc.TotalScore,
-			"cur_score":           gc.CurScore,
-			"hints":               gc.Hints,
-			"solve_count":         gc.SolveCount,
-			"category":            gc.Challenge.Category,
-			"judge_config":        judgeConfig,
-			"belong_stage":        gc.BelongStage,
-			"visible":             gc.Visible,
-			"minimal_score":       gc.MinimalScore,
-			"enable_blood_reward": gc.BloodRewardEnabled,
+	challengeIDStr := c.Param("challenge_id")
+	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid challenge ID",
 		})
+		return
+	}
+
+	var gc models.GameChallenge
+
+	// 使用 Preload 进行关联查询
+	if err := dbtool.DB().Preload("Challenge").
+		Where("game_id = ? AND challenge_id = ?", gameID, challengeID).
+		First(&gc).Error; err != nil {
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load game challenge",
+		})
+		return
+	}
+
+	judgeConfig := gc.JudgeConfig
+	if judgeConfig == nil {
+		judgeConfig = gc.Challenge.JudgeConfig
+	}
+
+	result := gin.H{
+		"challenge_id":        gc.Challenge.ChallengeID,
+		"challenge_name":      gc.Challenge.Name,
+		"total_score":         gc.TotalScore,
+		"cur_score":           gc.CurScore,
+		"hints":               gc.Hints,
+		"solve_count":         gc.SolveCount,
+		"category":            gc.Challenge.Category,
+		"judge_config":        judgeConfig,
+		"belong_stage":        gc.BelongStage,
+		"visible":             gc.Visible,
+		"minimal_score":       gc.MinimalScore,
+		"enable_blood_reward": gc.BloodRewardEnabled,
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
 		"data": result,
+	})
+}
+
+func AdminUpdateGameChallenge(c *gin.Context) {
+
+	gameIDStr := c.Param("game_id")
+	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid game ID",
+		})
+		return
+	}
+
+	challengeIDStr := c.Param("challenge_id")
+	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid challenge ID",
+		})
+		return
+	}
+
+	var payload webmodels.AdminUpdateGameChallengePayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	var game models.Game
+	if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"code":    404,
+				"message": "Game not found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to load game",
+			})
+		}
+		return
+	}
+
+	shouldSendNotice := false
+	noticeData := []string{}
+
+	// 获取当前数据库中的GameChallenge
+	var existingGameChallenge models.GameChallenge
+	if err := dbtool.DB().Where("challenge_id = ? AND game_id = ?", challengeID, gameID).First(&existingGameChallenge).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load existing challenge",
+		})
+		return
+	}
+
+	if game.StartTime.Before(time.Now().UTC()) {
+		existingGameChallenge.CurScore = existingGameChallenge.TotalScore
+	}
+
+	// 检测新增的Hint
+	existingHints := existingGameChallenge.Hints
+	newHints := payload.Hints
+
+	// 如果存在新增的可见Hint，发送通知
+	if existingHints != nil && newHints != nil {
+		existingVisibleCount := 0
+		newVisibleCount := 0
+
+		// 计算现有可见Hint数量
+		for _, hint := range *existingHints {
+			if hint.Visible {
+				existingVisibleCount++
+			}
+		}
+
+		// 计算新的可见Hint数量
+		for _, hint := range *newHints {
+			if hint.Visible {
+				newVisibleCount++
+			}
+		}
+
+		// 如果新的可见Hint数量大于现有的，说明有新增的可见Hint
+		if newVisibleCount > existingVisibleCount {
+			var challenge models.Challenge
+			if err := dbtool.DB().Where("challenge_id = ?", payload.ChallengeID).First(&challenge).Error; err == nil {
+				shouldSendNotice = true
+				noticeData = append(noticeData, challenge.Name)
+			}
+		}
+	}
+
+	updateModel := models.GameChallenge{
+		TotalScore:         payload.TotalScore,
+		Hints:              payload.Hints,
+		JudgeConfig:        payload.JudgeConfig,
+		Visible:            payload.Visible,
+		MinimalScore:       payload.MinimalScore,
+		BloodRewardEnabled: payload.BloodRewardEnabled,
+		BelongStage:        payload.BelongStage,
+		CurScore:           existingGameChallenge.CurScore,
+	}
+
+	if err := dbtool.DB().Model(&models.GameChallenge{}).
+		Select("total_score", "hints", "judge_config", "visible", "belong_stage", "minimal_score", "enable_blood_reward").
+		Where("challenge_id = ? AND game_id = ?", challengeID, gameID).Updates(updateModel).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to save challenge",
+		})
+		return
+	}
+
+	if shouldSendNotice {
+		go func() {
+			noticetool.InsertNotice(gameID, models.NoticeNewHint, noticeData)
+		}()
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
 	})
 }
 
@@ -288,85 +436,6 @@ func AdminUpdateGame(c *gin.Context) {
 			"message": "Failed to save game",
 		})
 		return
-	}
-
-	shouldSendNotice := false
-	noticeData := []string{}
-
-	for _, chal := range payload.Challenges {
-		// 获取当前数据库中的GameChallenge
-		var existingGameChallenge models.GameChallenge
-		if err := dbtool.DB().Where("challenge_id = ? AND game_id = ?", chal.ChallengeID, gameID).First(&existingGameChallenge).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    500,
-				"message": "Failed to load existing challenge",
-			})
-			return
-		}
-
-		if game.StartTime.Before(time.Now().UTC()) {
-			existingGameChallenge.CurScore = existingGameChallenge.TotalScore
-		}
-
-		// 检测新增的Hint
-		existingHints := existingGameChallenge.Hints
-		newHints := chal.Hints
-
-		// 如果存在新增的可见Hint，发送通知
-		if existingHints != nil && newHints != nil {
-			existingVisibleCount := 0
-			newVisibleCount := 0
-
-			// 计算现有可见Hint数量
-			for _, hint := range *existingHints {
-				if hint.Visible {
-					existingVisibleCount++
-				}
-			}
-
-			// 计算新的可见Hint数量
-			for _, hint := range *newHints {
-				if hint.Visible {
-					newVisibleCount++
-				}
-			}
-
-			// 如果新的可见Hint数量大于现有的，说明有新增的可见Hint
-			if newVisibleCount > existingVisibleCount {
-				var challenge models.Challenge
-				if err := dbtool.DB().Where("challenge_id = ?", chal.ChallengeID).First(&challenge).Error; err == nil {
-					shouldSendNotice = true
-					noticeData = append(noticeData, challenge.Name)
-				}
-			}
-		}
-
-		updateModel := models.GameChallenge{
-			TotalScore:         chal.TotalScore,
-			Hints:              chal.Hints,
-			JudgeConfig:        chal.JudgeConfig,
-			Visible:            chal.Visible,
-			MinimalScore:       chal.MinimalScore,
-			BloodRewardEnabled: chal.BloodRewardEnabled,
-			BelongStage:        chal.BelongStage,
-			CurScore:           existingGameChallenge.CurScore,
-		}
-
-		if err := dbtool.DB().Model(&models.GameChallenge{}).
-			Select("total_score", "hints", "judge_config", "visible", "belong_stage", "minimal_score", "enable_blood_reward").
-			Where("challenge_id = ? AND game_id = ?", chal.ChallengeID, gameID).Updates(updateModel).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    500,
-				"message": "Failed to save challenge",
-			})
-			return
-		}
-	}
-
-	if shouldSendNotice {
-		go func() {
-			noticetool.InsertNotice(gameID, models.NoticeNewHint, noticeData)
-		}()
 	}
 
 	c.JSON(http.StatusOK, gin.H{

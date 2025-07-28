@@ -39,7 +39,10 @@ type RegisterPayload struct {
 
 type AdminUpdateGamePayload struct {
 	models.Game
-	Challenges []models.GameChallenge `json:"challenges"`
+}
+
+type AdminUpdateGameChallengePayload struct {
+	models.GameChallenge
 }
 
 type AdminListGamePayload struct {

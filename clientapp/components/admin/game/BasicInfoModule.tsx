@@ -24,6 +24,7 @@ import { api } from 'utils/ApiHelper';
 import { SystemResourceType } from 'utils/A1API';
 import { DateTimePicker24h } from 'components/ui/data-time-picker';
 import { Editor } from '@monaco-editor/react';
+import ThemedEditor from 'components/modules/ThemedEditor';
 
 interface BasicInfoModuleProps {
     form: any;
@@ -166,18 +167,12 @@ export function BasicInfoModule({ form, handleDateSelect, handleTimeChange, game
                                 <FormMessage className="text-[14px]" />
                             </div>
                             <FormControl>
-                                <div className="w-full h-[500px] pt-4 bg-[#1e1e1e] rounded-lg overflow-hidden">
-                                    <Editor
-                                        height="100%"
-                                        width="100%"
-                                        defaultLanguage="markdown"
-                                        theme='vs-dark'
-                                        defaultValue={field.value}
-                                        onChange={(value) => {
-                                            form.setValue("description", value)
-                                        }}
-                                    />
-                                </div>
+                                <ThemedEditor
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    language="markdown"
+                                    className='h-[500px]'
+                                />
                             </FormControl>
                             <FormDescription>比赛详细信息 (支持Markdown)</FormDescription>
                         </FormItem>

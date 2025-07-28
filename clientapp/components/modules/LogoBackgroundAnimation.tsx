@@ -44,20 +44,20 @@ const LogoBackgroundAnimation: React.FC<SquaresProps> = ({
 
     const logoImage = useRef<HTMLImageElement>(new Image())
 
-    const animationMrk = useRef<number>(100);
+    const animationMrk = useRef<number>(200);
     const shouldAnimation = useRef<boolean>(true)
 
     useEffect(() => {
         themeRef.current = theme
         systemThemeRef.current = systemTheme
-        animationMrk.current = 10
+        animationMrk.current = 200
         setImageLogo()
     }, [theme, systemTheme])
 
     useEffect(() => {
         shouldAnimation.current = clientConfig.BGAnimation
         if (clientConfig.BGAnimation) {
-            animationMrk.current = 100
+            animationMrk.current = 200
         }
     }, [clientConfig.BGAnimation])
 
@@ -121,7 +121,7 @@ const LogoBackgroundAnimation: React.FC<SquaresProps> = ({
             numSquaresX.current = Math.ceil(canvas.width / imageSizeX) + 1;
             numSquaresY.current = Math.ceil(canvas.height / imageSizeY) + 1;
 
-            animationMrk.current = 100
+            animationMrk.current = 200
         };
 
         window.addEventListener("resize", resizeCanvas);

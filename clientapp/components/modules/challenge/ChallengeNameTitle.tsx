@@ -1,5 +1,5 @@
 import { CircleCheckBig, Citrus, Flag, Info, ScanHeart } from "lucide-react";
-import { ChallengeSolveStatus } from "components/ChallengesView";
+import { ChallengeSolveStatus } from "components/user/game/ChallengesView";
 import { UserDetailGameChallenge } from "utils/A1API";
 import { Badge } from "components/ui/badge";
 import { Dispatch, SetStateAction } from "react";
@@ -14,7 +14,7 @@ export default function ChallengeNameTitle({
     setShowHintsWindowVisible: Dispatch<SetStateAction<boolean>> 
 }) {
     return (
-        <div className={`flex items-center gap-2 px-5 h-[56px] border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-md`}>
+        <div className={`flex items-center gap-2 px-5 h-[56px] border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-sm`}>
             <Info />
             <span className="font-bold text-lg">题目信息 - {curChallenge.challenge_name}</span>
             { curChallenge.hints?.length ? (

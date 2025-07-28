@@ -289,7 +289,11 @@ func main() {
 			gameGroup.POST("/list", controllers.AdminListGames)
 			gameGroup.POST("/create", controllers.AdminCreateGame)
 			gameGroup.GET("/:game_id", controllers.AdminGetGame)
-			gameGroup.PUT("/:game_id/challenge/:challenge_id", controllers.AdminAddGameChallenge)
+
+			gameGroup.GET("/:game_id/challenge/:challenge_id", controllers.AdminGetGameChallenge)
+			gameGroup.PUT("/:game_id/challenge/:challenge_id", controllers.AdminUpdateGameChallenge)
+			gameGroup.POST("/:game_id/challenge/:challenge_id", controllers.AdminAddGameChallenge)
+
 			gameGroup.PUT("/:game_id", controllers.AdminUpdateGame)
 
 			gameGroup.POST("/:game_id/submits", controllers.AdminGetSubmits)

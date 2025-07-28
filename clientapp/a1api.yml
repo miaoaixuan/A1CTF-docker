@@ -453,7 +453,48 @@ paths:
           schema:
             type: integer
   /api/admin/game/{game_id}/challenge/{challenge_id}:
-    put:
+    get:
+      tags: [admin]
+      operationId: getGameChallenge
+      summary: Get a gamechallenge from a game
+      description: Get a gamechallenge from a game
+      responses:
+        '200':
+          description: AdminDetailGameChallenge add successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: '#/components/schemas/AdminDetailGameChallenge'
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to add
+          schema:
+            type: integer
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge to add
+          schema:
+            type: integer
+    post:
       tags: [admin]
       operationId: addGameChallenge
       summary: Add a challenge to a game
@@ -494,6 +535,50 @@ paths:
           description: The ID of the challenge to add
           schema:
             type: integer
+    put:
+      tags: [admin]
+      operationId: updateGameChallenge
+      summary: Update a game challenge
+      description: Update a game challenge
+      responses:
+        '200':
+          description: AdminDetailGameChallenge add successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to add
+          schema:
+            type: integer
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge to add
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminDetailGameChallenge'
   /api/admin/game/{game_id}/score-adjustments:
     get:
       tags: [admin]
@@ -3593,10 +3678,6 @@ components:
           type: number
         third_blood_reward:
           type: number
-        challenges:
-          type: array
-          items:
-            $ref: '#/components/schemas/AdminDetailGameChallenge'
       required:
         - game_id
         - name

@@ -109,12 +109,7 @@ export default function Games() {
     }
 
     return (
-        <div className="p-0 h-screen relative">
-            <div className="absolute top-0 left-0 w-screen h-screen z-[-19] overflow-hidden">
-                <div className="w-[400px] h-[400px] absolute bottom-[-120px] right-[-120px] rotate-[-20deg]">
-                    <A1LogoWithoutAnimation />
-                </div>
-            </div>
+        <div className="p-0 h-screen relative"> 
             <div className="flex w-full h-full">
                 <GameViewSidebar 
                     curChoicedModule={curChoicedModule} 

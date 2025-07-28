@@ -46,6 +46,7 @@ import { toast } from "sonner";
 import { AxiosError } from "axios";
 import { useNavigate } from "react-router";
 import { useTheme } from "next-themes";
+import ThemedEditor from "components/modules/ThemedEditor";
 
 interface ContainerFormProps {
     control: any;
@@ -645,7 +646,12 @@ export function CreateChallengeView() {
                                         <FormMessage className="text-[14px]" />
                                     </div>
                                     <FormControl>
-                                        <Textarea {...field} className="h-[300px]" />
+                                        <ThemedEditor
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            language="markdown"
+                                            className='h-[500px]'
+                                        />
                                     </FormControl>
                                     <FormDescription>
                                         题目简介

@@ -306,7 +306,6 @@ export interface AdminFullGameInfo {
   first_blood_reward?: number;
   second_blood_reward?: number;
   third_blood_reward?: number;
-  challenges?: AdminDetailGameChallenge[];
 }
 
 export interface UserGameSimpleInfo {
@@ -2429,12 +2428,38 @@ export class Api<
       }),
 
     /**
+     * @description Get a gamechallenge from a game
+     *
+     * @tags admin
+     * @name GetGameChallenge
+     * @summary Get a gamechallenge from a game
+     * @request GET:/api/admin/game/{game_id}/challenge/{challenge_id}
+     */
+    getGameChallenge: (
+      gameId: number,
+      challengeId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: AdminDetailGameChallenge;
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/admin/game/${gameId}/challenge/${challengeId}`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * @description Add a challenge to a game
      *
      * @tags admin
      * @name AddGameChallenge
      * @summary Add a challenge to a game
-     * @request PUT:/api/admin/game/{game_id}/challenge/{challenge_id}
+     * @request POST:/api/admin/game/{game_id}/challenge/{challenge_id}
      */
     addGameChallenge: (
       gameId: number,
@@ -2449,7 +2474,35 @@ export class Api<
         void | ErrorMessage
       >({
         path: `/api/admin/game/${gameId}/challenge/${challengeId}`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Update a game challenge
+     *
+     * @tags admin
+     * @name UpdateGameChallenge
+     * @summary Update a game challenge
+     * @request PUT:/api/admin/game/{game_id}/challenge/{challenge_id}
+     */
+    updateGameChallenge: (
+      gameId: number,
+      challengeId: number,
+      data: AdminDetailGameChallenge,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/admin/game/${gameId}/challenge/${challengeId}`,
         method: "PUT",
+        body: data,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),

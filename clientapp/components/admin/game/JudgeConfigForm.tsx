@@ -15,14 +15,14 @@ import { Switch } from 'components/ui/switch';
 import { useFieldArray, useWatch } from 'react-hook-form';
 import CodeEditor from '@uiw/react-textarea-code-editor';
 import dayjs from 'dayjs';
-import { ScanBarcode, FileCode, ClockArrowUp, PlusCircle } from 'lucide-react';
+import { ScanBarcode, FileCode, ClockArrowUp, PlusCircle, Trash2, Megaphone, AppWindowMac, PencilRulerIcon } from 'lucide-react';
 import { Button } from 'components/ui/button';
+import EditorDialog from 'components/modules/EditorDialog';
+import AlertConformer from 'components/modules/AlertConformer';
 
 interface JudgeConfigFormProps {
     /** react-hook-form control 对象 */
     control: any;
-    /** 当前题目的索引 */
-    index: number;
     /** 传入整个 form 实例, 用于校验 */
     form: any;
 }
@@ -31,11 +31,11 @@ interface JudgeConfigFormProps {
  * 比赛题目评测配置表单
  * 从 EditGameView.tsx 中抽离出的子模块, 使主文件更简洁
  */
-export function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) {
+export function JudgeConfigForm({ control, form }: JudgeConfigFormProps) {
     // 根据评测类型动态渲染 flag / script 输入框
     const attachType = useWatch({
         control,
-        name: `challenges.${index}.judge_config.judge_type`,
+        name: `judge_config.judge_type`,
     });
 
     // Hints 动态字段
@@ -45,16 +45,15 @@ export function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) 
         remove: removeHint,
     } = useFieldArray({
         control,
-        name: `challenges.${index}.hints`,
+        name: `hints`,
     });
 
     return (
         <>
-            <span className="text-lg font-bold">评测设置: </span>
             {/* 评测模式选择 */}
             <FormField
                 control={form.control}
-                name={`challenges.${index}.judge_config.judge_type`}
+                name={`judge_config.judge_type`}
                 render={({ field }) => (
                     <FormItem className="select-none">
                         <div className="flex items-center h-[20px]">
@@ -62,30 +61,31 @@ export function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) 
                             <div className="flex-1" />
                             <FormMessage className="text-[14px]" />
                         </div>
-                        <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                        >
-                            <FormControl>
+                        <FormControl>
+                            <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                            >
+
                                 <SelectTrigger>
                                     <SelectValue placeholder="选择一个评测模式" />
                                 </SelectTrigger>
-                            </FormControl>
-                            <SelectContent className="w-full flex">
-                                <SelectItem value="DYNAMIC">
-                                    <div className="w-full flex gap-2 items-center h-[25px]">
-                                        <ScanBarcode />
-                                        <span className="text-[12px] font-bold">文字匹配</span>
-                                    </div>
-                                </SelectItem>
-                                <SelectItem value="SCRIPT" disabled>
-                                    <div className="w-full flex gap-2 items-center h-[25px]">
-                                        <FileCode />
-                                        <span className="text-[12px] font-bold">脚本匹配</span>
-                                    </div>
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
+                                <SelectContent className="w-full flex">
+                                    <SelectItem value="DYNAMIC">
+                                        <div className="w-full flex gap-2 items-center h-[25px]">
+                                            <ScanBarcode />
+                                            <span className="text-[12px] font-bold">文字匹配</span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="SCRIPT" disabled>
+                                        <div className="w-full flex gap-2 items-center h-[25px]">
+                                            <FileCode />
+                                            <span className="text-[12px] font-bold">脚本匹配</span>
+                                        </div>
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </FormControl>
                         <FormDescription>请选择一个类别</FormDescription>
                     </FormItem>
                 )}
@@ -93,7 +93,7 @@ export function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) 
 
             <FormField
                 control={form.control}
-                name={`challenges.${index}.enable_blood_reward`}
+                name={`enable_blood_reward`}
                 render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/50 p-4">
                         <div className="space-y-0.5">
@@ -111,7 +111,7 @@ export function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) 
             {attachType === 'SCRIPT' ? (
                 <FormField
                     control={form.control}
-                    name={`challenges.${index}.judge_config.judge_script`}
+                    name={`judge_config.judge_script`}
                     render={({ field }) => (
                         <FormItem className="select-none">
                             <div className="flex items-center h-[20px]">
@@ -141,7 +141,7 @@ export function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) 
             ) : (
                 <FormField
                     control={form.control}
-                    name={`challenges.${index}.judge_config.flag_template`}
+                    name={`judge_config.flag_template`}
                     render={({ field }) => (
                         <FormItem className="select-none">
                             <div className="flex items-center h-[20px]">
@@ -166,7 +166,7 @@ export function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) 
             {/* 所属阶段 */}
             <FormField
                 control={form.control}
-                name={`challenges.${index}.belong_stage`}
+                name={`belong_stage`}
                 render={({ field }) => (
                     <FormItem className="select-none">
                         <div className="flex items-center h-[20px]">
@@ -182,7 +182,7 @@ export function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) 
             {/* 题目总分 */}
             <FormField
                 control={form.control}
-                name={`challenges.${index}.total_score`}
+                name={`total_score`}
                 render={({ field }) => (
                     <FormItem className="select-none">
                         <div className="flex items-center h-[20px]">
@@ -204,7 +204,7 @@ export function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) 
             {/* 题目最小分数 */}
             <FormField
                 control={form.control}
-                name={`challenges.${index}.minimal_score`}
+                name={`minimal_score`}
                 render={({ field }) => (
                     <FormItem className="select-none">
                         <div className="flex items-center h-[20px]">
@@ -229,8 +229,8 @@ export function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) 
                 <div className="flex-1" />
                 <Button
                     type="button"
-                    variant={"outline"}
-                    className="[&_svg]:size-5"
+                    variant={"ghost"}
+                    className="[&_svg]:size-5 bg-foreground/10 hover:hover:bg-foreground/15"
                     onClick={() => {
                         appendHint({
                             content: "",
@@ -246,19 +246,24 @@ export function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) 
             </div>
 
             {hintFields.length > 0 ? (
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-3">
                     {hintFields.map((e, hintIndex) => (
                         <div className="w-full flex flex-col" key={e.id}>
-                            <div className="flex gap-2 items-center mb-4 select-none">
+                            <div className="flex gap-2 items-center select-none bg-foreground/5 rounded-2xl px-5 py-2">
+                                <div className='flex gap-4'>
+                                    <AppWindowMac />
+                                    <span>提示{hintIndex + 1}</span>
+                                </div>
+                                <div className="flex-1" />
                                 <FormField
                                     control={control}
-                                    name={`challenges.${index}.hints.${hintIndex}.visible`}
+                                    name={`hints.${hintIndex}.visible`}
                                     render={({ field }) => (
                                         <FormItem className="flex">
                                             <FormControl>
                                                 <Switch checked={field.value} onCheckedChange={(v) => {
                                                     field.onChange(v)
-                                                    form.setValue(`challenges.${index}.hints.${hintIndex}.create_time`, new Date())
+                                                    form.setValue(`hints.${hintIndex}.create_time`, new Date())
                                                 }} />
                                             </FormControl>
                                         </FormItem>
@@ -266,11 +271,11 @@ export function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) 
                                 />
                                 <FormField
                                     control={control}
-                                    name={`challenges.${index}.hints.${hintIndex}.create_time`}
+                                    name={`hints.${hintIndex}.create_time`}
                                     render={({ field }) => (
                                         <FormItem className="flex">
                                             <FormControl>
-                                                <div className="bg-foreground/[0.03] flex gap-2 items-center px-[9px] py-[5px] rounded-full">
+                                                <div className="bg-foreground/10 flex gap-2 items-center px-[9px] py-[5px] rounded-full">
                                                     <ClockArrowUp size={20} />
                                                     <span className="text-sm">
                                                         {field.value ? dayjs(field.value).format('YYYY-MM-DD HH:mm:ss') : ''}
@@ -280,25 +285,37 @@ export function JudgeConfigForm({ control, index, form }: JudgeConfigFormProps) 
                                         </FormItem>
                                     )}
                                 />
-                                <div className="flex-1" />
-                                <Button variant="destructive" type="button" onClick={() => removeHint(hintIndex)}>
-                                    删除提示
-                                </Button>
+                                <FormField
+                                    control={control}
+                                    name={`hints.${hintIndex}.content`}
+                                    render={({ field }) => (
+                                        <FormItem className="flex">
+                                            <FormControl>
+                                                <EditorDialog
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                    language="markdown"
+                                                    title={`编辑内容 - 提示${hintIndex + 1}`}
+                                                >
+                                                    <Button variant="ghost" size="icon" className='rounded-full bg-foreground/10 hover:hover:bg-foreground/15 cursor-pointer' type="button" onClick={() => { }}>
+                                                        <PencilRulerIcon />
+                                                    </Button>
+                                                </EditorDialog>
+                                            </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
+                                <AlertConformer
+                                    title='删除提示'
+                                    description='你确定要删除这条 Hint 吗'
+                                    type='danger'
+                                    onConfirm={() => removeHint(hintIndex)}
+                                >
+                                    <Button variant="ghost" size="icon" className='rounded-full bg-foreground/10 hover:hover:bg-red-400/90 cursor-pointer' type="button">
+                                        <Trash2 />
+                                    </Button>
+                                </AlertConformer>
                             </div>
-                            <FormField
-                                control={control}
-                                name={`challenges.${index}.hints.${hintIndex}.content`}
-                                render={({ field }) => (
-                                    <FormItem className="flex-1">
-                                        <FormControl>
-                                            <Textarea value={field.value ?? ''} onChange={(v) => {
-                                                field.onChange(v)
-                                                form.setValue(`challenges.${index}.hints.${hintIndex}.create_time`, new Date())
-                                            }} />
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
                         </div>
                     ))}
                 </div>

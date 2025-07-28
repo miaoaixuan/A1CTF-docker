@@ -48,6 +48,7 @@ import { useNavigate } from "react-router";
 import { UploadFileDialog } from "components/dialogs/UploadFileDialog";
 import { Switch } from "components/ui/switch";
 import { useTheme } from "next-themes";
+import ThemedEditor from "components/modules/ThemedEditor";
 
 interface ContainerFormProps {
     control: any;
@@ -758,7 +759,12 @@ export function EditChallengeView({ challenge_info }: { challenge_info: AdminCha
                                         <FormMessage className="text-[14px]" />
                                     </div>
                                     <FormControl>
-                                        <Textarea {...field} className="h-[300px]" />
+                                        <ThemedEditor
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            language="markdown"
+                                            className='h-[500px]'
+                                        />
                                     </FormControl>
                                     <FormDescription>
                                         题目简介
