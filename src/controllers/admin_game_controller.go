@@ -19,6 +19,7 @@ import (
 	"a1ctf/src/webmodels"
 	"mime"
 
+	"github.com/bytedance/sonic"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
@@ -267,7 +268,8 @@ func AdminUpdateGameChallenge(c *gin.Context) {
 		return
 	}
 
-	var payload webmodels.AdminUpdateGameChallengePayload
+	// 使用 map 来接收部分字段更新
+	var payload map[string]interface{}
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -309,53 +311,105 @@ func AdminUpdateGameChallenge(c *gin.Context) {
 		existingGameChallenge.CurScore = existingGameChallenge.TotalScore
 	}
 
-	// 检测新增的Hint
-	existingHints := existingGameChallenge.Hints
-	newHints := payload.Hints
+	// 检测新增的Hint（如果payload中包含hints字段）
+	if hintsData, hasHints := payload["hints"]; hasHints {
+		existingHints := existingGameChallenge.Hints
 
-	// 如果存在新增的可见Hint，发送通知
-	if existingHints != nil && newHints != nil {
-		existingVisibleCount := 0
-		newVisibleCount := 0
+		// 将interface{}转换为Hints类型
+		var newHints *models.Hints
+		if hintsBytes, err := sonic.Marshal(hintsData); err == nil {
+			newHints = &models.Hints{}
+			if err := sonic.Unmarshal(hintsBytes, newHints); err == nil {
+				// 如果存在新增的可见Hint，发送通知
+				if existingHints != nil && newHints != nil {
+					existingVisibleCount := 0
+					newVisibleCount := 0
 
-		// 计算现有可见Hint数量
-		for _, hint := range *existingHints {
-			if hint.Visible {
-				existingVisibleCount++
-			}
-		}
+					// 计算现有可见Hint数量
+					for _, hint := range *existingHints {
+						if hint.Visible {
+							existingVisibleCount++
+						}
+					}
 
-		// 计算新的可见Hint数量
-		for _, hint := range *newHints {
-			if hint.Visible {
-				newVisibleCount++
-			}
-		}
+					// 计算新的可见Hint数量
+					for _, hint := range *newHints {
+						if hint.Visible {
+							newVisibleCount++
+						}
+					}
 
-		// 如果新的可见Hint数量大于现有的，说明有新增的可见Hint
-		if newVisibleCount > existingVisibleCount {
-			var challenge models.Challenge
-			if err := dbtool.DB().Where("challenge_id = ?", payload.ChallengeID).First(&challenge).Error; err == nil {
-				shouldSendNotice = true
-				noticeData = append(noticeData, challenge.Name)
+					// 如果新的可见Hint数量大于现有的，说明有新增的可见Hint
+					if newVisibleCount > existingVisibleCount {
+						var challenge models.Challenge
+						if err := dbtool.DB().Where("challenge_id = ?", challengeID).First(&challenge).Error; err == nil {
+							shouldSendNotice = true
+							noticeData = append(noticeData, challenge.Name)
+						}
+					}
+				}
 			}
 		}
 	}
 
-	updateModel := models.GameChallenge{
-		TotalScore:         payload.TotalScore,
-		Hints:              payload.Hints,
-		JudgeConfig:        payload.JudgeConfig,
-		Visible:            payload.Visible,
-		MinimalScore:       payload.MinimalScore,
-		BloodRewardEnabled: payload.BloodRewardEnabled,
-		BelongStage:        payload.BelongStage,
-		CurScore:           existingGameChallenge.CurScore,
+	// 构建更新数据和字段列表
+	updateData := make(map[string]interface{})
+	updateFields := make([]string, 0)
+
+	// 根据payload中的字段动态构建更新数据
+	if totalScore, ok := payload["total_score"]; ok {
+		updateData["total_score"] = totalScore
+		updateFields = append(updateFields, "total_score")
+	}
+	if hintsData, ok := payload["hints"]; ok {
+		// 将 hints 数据转换为正确的 Hints 类型
+		var hints models.Hints
+		if hintsBytes, err := sonic.Marshal(hintsData); err == nil {
+			if err := sonic.Unmarshal(hintsBytes, &hints); err == nil {
+				updateData["hints"] = hints
+				updateFields = append(updateFields, "hints")
+			}
+		}
+	}
+	if judgeConfigData, ok := payload["judge_config"]; ok {
+		// 将 judge_config 数据转换为正确的 JudgeConfig 类型
+		var judgeConfig models.JudgeConfig
+		if judgeConfigBytes, err := sonic.Marshal(judgeConfigData); err == nil {
+			if err := sonic.Unmarshal(judgeConfigBytes, &judgeConfig); err == nil {
+				updateData["judge_config"] = judgeConfig
+				updateFields = append(updateFields, "judge_config")
+			}
+		}
+	}
+	if visible, ok := payload["visible"]; ok {
+		updateData["visible"] = visible
+		updateFields = append(updateFields, "visible")
+	}
+	if belongStage, ok := payload["belong_stage"]; ok {
+		updateData["belong_stage"] = belongStage
+		updateFields = append(updateFields, "belong_stage")
+	}
+	if minimalScore, ok := payload["minimal_score"]; ok {
+		updateData["minimal_score"] = minimalScore
+		updateFields = append(updateFields, "minimal_score")
+	}
+	if bloodRewardEnabled, ok := payload["enable_blood_reward"]; ok {
+		updateData["enable_blood_reward"] = bloodRewardEnabled
+		updateFields = append(updateFields, "enable_blood_reward")
 	}
 
+	// 如果没有要更新的字段，直接返回
+	if len(updateFields) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"code": 200,
+		})
+		return
+	}
+
+	// 执行数据库更新
 	if err := dbtool.DB().Model(&models.GameChallenge{}).
-		Select("total_score", "hints", "judge_config", "visible", "belong_stage", "minimal_score", "enable_blood_reward").
-		Where("challenge_id = ? AND game_id = ?", challengeID, gameID).Updates(updateModel).Error; err != nil {
+		Select(updateFields).
+		Where("challenge_id = ? AND game_id = ?", challengeID, gameID).Updates(updateData).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"message": "Failed to save challenge",

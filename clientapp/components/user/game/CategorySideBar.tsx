@@ -1,4 +1,4 @@
-import { BadgeCent, Binary, Bot, Bug, ChevronDown, ChevronUp, Chrome, CircleArrowLeft, Earth, FileSearch, Github, GlobeLock, HardDrive, Loader2, MessageSquareLock, Radar, Smartphone, SquareCode, Underline } from "lucide-react"
+import { Asterisk, BadgeCent, Bed, BedDouble, Binary, Bot, Bug, ChevronDown, ChevronUp, Chrome, CircleArrowLeft, Earth, FileSearch, Github, GlobeLock, HardDrive, Loader2, MessageSquareLock, Radar, Smartphone, SquareCode, Underline } from "lucide-react"
 
 import {
     Sidebar,
@@ -293,22 +293,32 @@ export function CategorySidebar({
                         </div>
 
                         {!loadingVisible ? (
-                            <div className="pl-[7px] pr-[7px] mt-2 pb-6">
-                                {
-                                    Object.entries(challenges ?? {}).map(([category, challengeList]) => (
-                                        <CategoryChallenges
-                                            key={category}
-                                            category={category}
-                                            challengeList={challengeList}
-                                            curChallenge={curChallenge}
-                                            observeItem={observeItem}
-                                            visibleItems={visibleItems}
-                                            handleChangeChallenge={handleChangeChallenge}
-                                            challengeSolveStatusList={challengeSolveStatusList}
-                                        />
-                                    ))
-                                }
-                            </div>
+                            Object.entries(challenges).length > 0 ? (
+                                <div className="pl-[7px] pr-[7px] mt-2 pb-6">
+                                    {
+                                        Object.entries(challenges ?? {}).map(([category, challengeList]) => (
+                                            <CategoryChallenges
+                                                key={category}
+                                                category={category}
+                                                challengeList={challengeList}
+                                                curChallenge={curChallenge}
+                                                observeItem={observeItem}
+                                                visibleItems={visibleItems}
+                                                handleChangeChallenge={handleChangeChallenge}
+                                                challengeSolveStatusList={challengeSolveStatusList}
+                                            />
+                                        ))
+                                    }
+                                </div>
+                            ) : (
+                                <div className="w-full items-center justify-center flex flex-col gap-4 h-full">
+                                    <div className="flex gap-2 items-center">
+                                        <BedDouble size={28} />
+                                        <span className="text-lg">暂时没有题目哦</span>
+                                    </div>
+                                    <span className="text-muted-foreground line-through">该休息了</span>
+                                </div>
+                            )
                         ) : (
                             <LoadingModule />
                         )}

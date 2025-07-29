@@ -255,12 +255,12 @@ export interface GameStage {
 }
 
 export interface AdminDetailGameChallenge {
-  challenge_id: number;
-  challenge_name: string;
+  challenge_id?: number;
+  challenge_name?: string;
   /** @format double */
-  total_score: number;
+  total_score?: number;
   /** @format double */
-  cur_score: number;
+  cur_score?: number;
   hints?: {
     content: string;
     /** @format date-time */

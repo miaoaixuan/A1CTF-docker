@@ -2,7 +2,7 @@ import { Button } from "components/ui/button"
 import { AlarmClock, AudioWaveform, ChartNoAxesCombined, CheckCheck, CircleFadingArrowUp, CirclePower, CircleX, ClockArrowUp, Flag, Loader2, Network, Package, PanelBottomClose, PanelTopClose, PanelTopOpen, Paperclip, Wrench } from "lucide-react"
 import { MacScrollbar } from "mac-scrollbar"
 import TimerDisplay from "../TimerDisplay"
-import { ContainerStatus, ExposePortInfo, GameScoreboardData, UserDetailGameChallenge, UserFullGameInfo } from "utils/A1API"
+import { ContainerStatus, ExposePortInfo, GameScoreboardData, UserDetailGameChallenge, UserFullGameInfo, UserRole, UserSimpleGameChallenge } from "utils/A1API"
 import { ChallengeSolveStatus } from "components/user/game/ChallengesView"
 import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react"
 import { api } from "utils/ApiHelper"
@@ -17,11 +17,15 @@ import FileDownloader from "./FileDownloader"
 import copy from "copy-to-clipboard"
 import GameTeamStatusCard from "../game/GameTeamStatusCard"
 import ChallengeManageSheet from "components/admin/game/ChallengeManageSheet"
+import InChallengeViewManager from "components/admin/game/InChallengeViewManager"
+import { useGlobalVariableContext } from "contexts/GlobalVariableContext"
 
 export default function ChallengeMainContent(
     {
         gameID,
         curChallenge,
+        setChallenges,
+        setCurChallenge,
         challengeSolveStatusList,
         setSubmitFlagWindowVisible,
         gameInfo,
@@ -31,6 +35,8 @@ export default function ChallengeMainContent(
     }: {
         gameID: number,
         curChallenge: UserDetailGameChallenge | undefined,
+        setChallenges: Dispatch<SetStateAction<Record<string, UserSimpleGameChallenge[]>>>,
+        setCurChallenge: Dispatch<SetStateAction<UserDetailGameChallenge | undefined>>
         challengeSolveStatusList: Record<number, ChallengeSolveStatus>,
         setSubmitFlagWindowVisible: Dispatch<SetStateAction<boolean>>,
         gameInfo: UserFullGameInfo | undefined,
@@ -48,6 +54,8 @@ export default function ChallengeMainContent(
     const [containerRunningTrigger, setContainerRunningTrigger] = useState(false);
     const [refreshContainerTrigger, setRefreshContainerTrigger] = useState(false);
     const [containerExpireTime, setContainerExpireTime] = useState<dayjs.Dayjs | null>(dayjs())
+
+    const { curProfile } = useGlobalVariableContext()
 
     const { theme } = useTheme()
 
@@ -165,6 +173,9 @@ export default function ChallengeMainContent(
         }
     }, [curChallenge])
 
+    useEffect(() => {
+        console.log(curProfile)
+    }, [curProfile])
 
     return (
         <>
@@ -194,28 +205,14 @@ export default function ChallengeMainContent(
             </div>
 
             {/* 管理员管理菜单按钮 */}
-            <div className="absolute bottom-0 left-0 p-5 z-10 flex flex-col gap-2">
-                <Button variant="ghost" size="icon" 
-                    className={`rounded-xl w-12 h-12 [&_svg]:size-6 bg-foreground/10 hover:hover:bg-foreground/20 cursor-pointer ${curChallenge?.visible ? "text-red-400" : "text-blue-400"}`}
-                    data-tooltip-id="my-tooltip"
-                    data-tooltip-html={ curChallenge?.visible ? "下线题目" : "上线题目" }
-                    data-tooltip-place="right"
-                >
-                    { curChallenge?.visible ? <PanelTopOpen /> : <PanelTopClose /> }
-                </Button>
-                <ChallengeManageSheet
+            {curProfile.role == UserRole.ADMIN && (
+                <InChallengeViewManager
                     gameID={gameID}
-                    challengeID={curChallenge?.challenge_id ?? 0}
-                >
-                    <Button variant="ghost" size="icon" className="rounded-xl w-12 h-12 [&_svg]:size-6 bg-foreground/10 hover:hover:bg-foreground/20 cursor-pointer"
-                        data-tooltip-id="my-tooltip"
-                        data-tooltip-html="妙妙小工具"
-                        data-tooltip-place="right"
-                    >
-                        <Wrench />
-                    </Button>
-                </ChallengeManageSheet>
-            </div>
+                    curChallenge={curChallenge}
+                    setChallenges={setChallenges}
+                    setCurChallenge={setCurChallenge}
+                />
+            )}
 
             {/* 题目信息 */}
             <MacScrollbar

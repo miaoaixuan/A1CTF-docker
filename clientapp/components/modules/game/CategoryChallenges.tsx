@@ -7,6 +7,7 @@ import { Button } from 'components/ui/button';
 import { ChallengeCard } from 'components/ChallengeCard';
 import { challengeCategoryColorMap, challengeCategoryIcons } from 'utils/ClientAssets';
 import { ChallengeSolveStatus } from 'components/user/game/ChallengesView';
+import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
 
 export default function CategoryChallenges({
     category,
@@ -38,6 +39,8 @@ export default function CategoryChallenges({
     const [categoryFolded, setCategoryFolded] = useState(!shouldExtend);
     const [hasPadding, setCategoryPadding] = useState(true);
     const contentRef = useRef<HTMLDivElement>(null);
+
+    const { isAdmin } = useGlobalVariableContext()
 
     const transitions = useTransition(!categoryFolded, {
         from: { 
@@ -101,7 +104,7 @@ export default function CategoryChallenges({
                         }}
                     >
                         {cateIcon[category.toLowerCase()]}
-                        <span className="font-bold text-[1.1em]">{category} ({ challengeList.length })</span>
+                        <span className="font-bold text-[1.1em]">{category} ({ isAdmin() ? challengeList.length : challengeList.filter((e) => e.visible).length })</span>
                     </div>
                     <div className="flex-1" />
                     <div className="justify-end">
@@ -136,6 +139,7 @@ export default function CategoryChallenges({
                                                 solved={challenge?.solve_count ?? 0}
                                                 score={challenge?.cur_score ?? 0}
                                                 rank={3}
+                                                visible={challenge?.visible ?? false}
                                                 choiced={curChallenge?.challenge_id == challenge.challenge_id}
                                                 onClick={handleChangeChallenge(challenge?.challenge_id ?? 0)}
                                                 status={challengeSolveStatusList[challenge?.challenge_id ?? 0].solved}

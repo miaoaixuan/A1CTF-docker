@@ -1,7 +1,7 @@
 import { AxiosError } from "axios";
 import React, { createContext, Dispatch, SetStateAction, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { browserName } from "react-device-detect";
-import { UserProfile } from "utils/A1API";
+import { UserProfile, UserRole } from "utils/A1API";
 import { api } from "utils/ApiHelper";
 import axios from 'axios';
 import { useTheme } from "next-themes";
@@ -58,6 +58,7 @@ interface GlobalVariableContextType {
     unsetLoginStatus: () => void;
     getSystemLogo: () => string;
     getSystemLogoDefault: () => string;
+    isAdmin: () => boolean;
 }
 
 const globalVariableContext = createContext<GlobalVariableContextType | undefined>(undefined);
@@ -158,14 +159,13 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
     }
     
     useEffect(() => {
-        if (!curProfile.user_id && localStorageUID) {
-            api.user.getUserProfile().then((res) => {
-                setCurProfile(res.data.data)
-                setLocalStorageUID(res.data.data.user_id)
-            }).catch((error: AxiosError) => {
-                removeUID()
-            })
-        }
+        // if (!curProfile.user_id && localStorageUID) {
+        api.user.getUserProfile().then((res) => {
+            setCurProfile(res.data.data)
+            setLocalStorageUID(res.data.data.user_id)
+        }).catch((error: AxiosError) => {
+            removeUID()
+        })
 
         if (localStorageClientConfig) {
             setClientConfig(localStorageClientConfig)
@@ -252,6 +252,10 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
         }
         
     }, []);
+
+    const isAdmin = () => {
+        return curProfile.role == UserRole.ADMIN
+    }
     
     // 监听暗色模式变化
     useEffect(() => {
@@ -259,7 +263,7 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
     }, [isDarkMode]);
 
     return (
-        <globalVariableContext.Provider value={{ curProfile, updateProfile, serialOptions, clientConfig, updateClientConfg, isDarkMode, setIsDarkMode, refreshClientConfig, checkLoginStatus, unsetLoginStatus, getSystemLogo, getSystemLogoDefault }}>
+        <globalVariableContext.Provider value={{ curProfile, updateProfile, serialOptions, clientConfig, updateClientConfg, isDarkMode, setIsDarkMode, refreshClientConfig, checkLoginStatus, unsetLoginStatus, getSystemLogo, getSystemLogoDefault, isAdmin }}>
             {children}
         </globalVariableContext.Provider>
     );

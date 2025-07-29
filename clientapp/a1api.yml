@@ -3608,11 +3608,6 @@ components:
           type: number
         enable_blood_reward:
           type: boolean
-      required:
-        - challenge_id
-        - challenge_name
-        - total_score
-        - cur_score
     AddGameChallengePayload:
       type: object
       properties:

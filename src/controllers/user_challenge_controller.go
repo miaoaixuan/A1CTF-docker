@@ -21,54 +21,54 @@ func UserGetGameChallenges(c *gin.Context) {
 	if user.Role == models.UserRoleAdmin {
 		AdminGetSimpleGameChallenges(c)
 		return
-	}
+	} else {
+		game := c.MustGet("game").(models.Game)
+		team := c.MustGet("team").(models.Team)
 
-	game := c.MustGet("game").(models.Game)
-	team := c.MustGet("team").(models.Team)
+		simpleGameChallenges, err := ristretto_tool.CachedGameSimpleChallenges(game.GameID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+				Code:    500,
+				Message: "Failed to load game challenges",
+			})
+			return
+		}
 
-	simpleGameChallenges, err := ristretto_tool.CachedGameSimpleChallenges(game.GameID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-			Code:    500,
-			Message: "Failed to load game challenges",
+		// Cache all solves to redis
+
+		solveMap, err := ristretto_tool.CachedSolvedChallengesForGame(game.GameID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+				Code:    500,
+				Message: "Failed to load solves",
+			})
+			return
+		}
+
+		solves, ok := solveMap[team.TeamID]
+		if !ok {
+			solves = make([]models.Solve, 0)
+		}
+
+		var solved_challenges []webmodels.UserSimpleGameSolvedChallenge = make([]webmodels.UserSimpleGameSolvedChallenge, 0, len(solves))
+
+		for _, solve := range solves {
+			solved_challenges = append(solved_challenges, webmodels.UserSimpleGameSolvedChallenge{
+				ChallengeID:   solve.ChallengeID,
+				ChallengeName: solve.Challenge.Name,
+				SolveTime:     solve.SolveTime,
+				Rank:          solve.Rank,
+			})
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"code": 200,
+			"data": gin.H{
+				"challenges":        simpleGameChallenges,
+				"solved_challenges": solved_challenges,
+			},
 		})
-		return
 	}
-
-	// Cache all solves to redis
-
-	solveMap, err := ristretto_tool.CachedSolvedChallengesForGame(game.GameID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-			Code:    500,
-			Message: "Failed to load solves",
-		})
-		return
-	}
-
-	solves, ok := solveMap[team.TeamID]
-	if !ok {
-		solves = make([]models.Solve, 0)
-	}
-
-	var solved_challenges []webmodels.UserSimpleGameSolvedChallenge = make([]webmodels.UserSimpleGameSolvedChallenge, 0, len(solves))
-
-	for _, solve := range solves {
-		solved_challenges = append(solved_challenges, webmodels.UserSimpleGameSolvedChallenge{
-			ChallengeID:   solve.ChallengeID,
-			ChallengeName: solve.Challenge.Name,
-			SolveTime:     solve.SolveTime,
-			Rank:          solve.Rank,
-		})
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code": 200,
-		"data": gin.H{
-			"challenges":        simpleGameChallenges,
-			"solved_challenges": solved_challenges,
-		},
-	})
 }
 
 func UserGetGameChallenge(c *gin.Context) {

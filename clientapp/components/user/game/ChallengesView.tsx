@@ -7,10 +7,10 @@ import { Mdx } from "components/MdxCompoents";
 import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from "react";
 
 import { api } from "utils/ApiHelper"
-import { ErrorMessage, GameNotice, GameScoreboardData, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "utils/A1API"
+import { GameNotice, GameScoreboardData, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "utils/A1API"
 
 import dayjs from "dayjs";
-import { Loader2, LoaderPinwheel } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { AxiosError } from "axios";
 
 import { AnimatePresence, motion } from "framer-motion";
@@ -20,7 +20,6 @@ import { NoticesView } from "components/NoticesView";
 import { MacScrollbar } from 'mac-scrollbar';
 import { useTheme } from "next-themes";
 
-import { useGameSwitchContext } from "contexts/GameSwitchContext";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 
 import { randomInt } from "mathjs";
@@ -574,6 +573,8 @@ export function ChallengesView({
                                                 <ChallengeMainContent
                                                     gameID={gameID}
                                                     curChallenge={curChallenge}
+                                                    setChallenges={setChallenges}
+                                                    setCurChallenge={setCurChallenge}
                                                     challengeSolveStatusList={challengeSolveStatusList}
                                                     setSubmitFlagWindowVisible={setSubmitFlagWindowVisible}
                                                     gameInfo={gameInfo}
