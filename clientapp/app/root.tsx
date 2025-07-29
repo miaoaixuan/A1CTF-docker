@@ -1,3 +1,5 @@
+import "wdyr"
+
 import {
     isRouteErrorResponse,
     Links,
@@ -7,7 +9,7 @@ import {
     ScrollRestoration,
     useLocation,
 } from "react-router";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 import type { Route } from "./+types/root";
 
@@ -101,7 +103,7 @@ function ThemeAwareLinks() {
 
     if (!mounted) return null;
 
-    const cssFile = resolvedTheme === 'dark' 
+    const cssFile = resolvedTheme === 'dark'
         ? '/app/css/github-markdown-dark.css'
         : '/app/css/github-markdown-light.css';
 
@@ -111,13 +113,12 @@ function ThemeAwareLinks() {
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
-
     const href = useLocation().pathname
     const animationPresent = AnimationPresent(href)
 
     const checkPageMobileShouldVisible = () => {
         if (!isMobile) return true
-        
+
         const hrefs = [
             "/",
             "/login",
@@ -153,7 +154,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                                             <div className="bg-background absolute top-0 left-0 w-screen h-screen z-[-1]" />
                                             {animationPresent && <FancyBackground />}
                                             <GameSwitchHover animation={true} />
-                                            { checkPageMobileShouldVisible() ? children : <ScreenTooSmall /> }
+                                            {checkPageMobileShouldVisible() ? children : <ScreenTooSmall />}
                                         </CanvasProvider>
                                     </GameSwitchProvider>
                                 </GlobalVariableProvider>

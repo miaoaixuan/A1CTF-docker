@@ -188,8 +188,9 @@ export default function ChallengeTools(
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog >
-            <div className="flex flex-col gap-4">
-                <span className="text-xl font-bold">解题记录操作</span>
+
+            <div className="flex flex-col gap-2 pt-5">
+                <span className="text-lg font-bold">解题记录操作</span>
                 <div className="flex gap-4">
                     <Button
                         variant="ghost"

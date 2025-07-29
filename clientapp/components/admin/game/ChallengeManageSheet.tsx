@@ -100,7 +100,11 @@ export default function ChallengeManageSheet(
                             {curChoicedModule == "game_settings" ? (
                                 <>
                                     <SheetHeader className="p-0 mb-5">
-                                        <SheetTitle>题目设置</SheetTitle>
+                                        <SheetTitle>
+                                            <div className="flex w-full items-center  h-[38px]">
+                                                <span className="font-bold text-2xl">题目设置</span>
+                                            </div>
+                                        </SheetTitle>
                                         <SheetDescription>
                                             在这里可以覆盖题目的默认评测
                                         </SheetDescription>
@@ -132,25 +136,35 @@ export default function ChallengeManageSheet(
                             ) : <></>}
 
                             {curChoicedModule == "containers" ? (
-                                <ContainerManageView
-                                    gameId={gameID}
-                                    challengeID={challengeID}
-                                />
+                                <div>
+                                    <div className="flex w-full items-center  h-[38px]">
+                                        <span className="font-bold text-2xl">容器管理</span>
+                                    </div>
+                                    <ContainerManageView
+                                        gameId={gameID}
+                                        challengeID={challengeID}
+                                    />
+                                </div>
                             ) : <></>}
 
-                            { curChoicedModule == "submissions" ? (
+                            {curChoicedModule == "submissions" ? (
                                 <GameEventModule
                                     GgameID={gameID}
                                     GchallengeID={challengeID}
                                 />
-                            ) : <></> }
+                            ) : <></>}
 
-                            { curChoicedModule == "tools" ? (
-                                <ChallengeTools
-                                    gameID={gameID}
-                                    challengeID={challengeID}
-                                />
-                            ) : <></> }
+                            {curChoicedModule == "tools" ? (
+                                <div>
+                                    <div className="flex w-full items-center  h-[38px]">
+                                        <span className="font-bold text-2xl">题目工具</span>
+                                    </div>
+                                    <ChallengeTools
+                                        gameID={gameID}
+                                        challengeID={challengeID}
+                                    />
+                                </div>
+                            ) : <></>}
                         </div>
                     </MacScrollbar>
                 </div>

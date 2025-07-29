@@ -10,7 +10,7 @@ import { api } from "utils/ApiHelper"
 import { GameNotice, GameScoreboardData, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "utils/A1API"
 
 import dayjs from "dayjs";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { AxiosError } from "axios";
 
 import { AnimatePresence, motion } from "framer-motion";
@@ -37,6 +37,8 @@ import LoadingModule from "components/modules/LoadingModule";
 import GameTeamStatusCard from "components/modules/game/GameTeamStatusCard";
 import { A1GameStatus } from "components/modules/game/GameStatusEnum";
 import useConditionalState from "hooks/ContidionalState";
+import AddChallengeFromLibraryDialog from "components/admin/game/AddChallengeFromLibraryDialog";
+import { Button } from "components/ui/button";
 
 export interface ChallengeSolveStatus {
     solved: boolean;
@@ -111,7 +113,7 @@ export function ChallengesView({
 
     const { theme } = useTheme()
 
-    const { curProfile } = useGlobalVariableContext()
+    const { curProfile, isAdmin } = useGlobalVariableContext()
 
 
     const [beforeGameTime, setBeforeGameTime] = useState("")
@@ -496,27 +498,25 @@ export function ChallengesView({
 
             {/* 题目侧栏和题目信息 */}
             <SidebarProvider>
-                <div className="">
-                    <CategorySidebar
-                        gameid={id}
-                        curChallenge={curChallenge}
-                        setCurChallenge={setCurChallenge}
-                        // setGameDetail={setGameDeatail}
-                        curChallengeRef={curChallengeDetail}
-                        resizeTrigger={setResizeTrigger}
-                        setPageSwitching={setPageSwitch}
-                        challenges={challenges || {}}
-                        setChallenges={setChallenges}
-                        challengeSolveStatusList={challengeSolveStatusList}
-                        setChallengeSolveStatusList={setChallengeSolveStatusList}
-                        gameStatus={gameStatus}
-                        setGameStatus={setGameStatus}
-                        teamStatus={teamStatus}
-                        setTeamStatus={setTeamStatus}
-                        loadingVisible={loadingVisible}
-                        gameInfo={gameInfo}
-                    />
-                </div>
+                <CategorySidebar
+                    gameid={id}
+                    curChallenge={curChallenge}
+                    setCurChallenge={setCurChallenge}
+                    // setGameDetail={setGameDeatail}
+                    curChallengeRef={curChallengeDetail}
+                    resizeTrigger={setResizeTrigger}
+                    setPageSwitching={setPageSwitch}
+                    challenges={challenges || {}}
+                    setChallenges={setChallenges}
+                    challengeSolveStatusList={challengeSolveStatusList}
+                    setChallengeSolveStatusList={setChallengeSolveStatusList}
+                    gameStatus={gameStatus}
+                    setGameStatus={setGameStatus}
+                    teamStatus={teamStatus}
+                    setTeamStatus={setTeamStatus}
+                    loadingVisible={loadingVisible}
+                    gameInfo={gameInfo}
+                />
                 <div className="w-full h-screen relative">
                     <div className="absolute h-full w-full top-0 left-0">
                         <div className="flex flex-col h-full w-full overflow-hidden relative">
@@ -567,7 +567,7 @@ export function ChallengesView({
                                         )}
                                     </div>
                                 ) : (
-                                    !loadingVisible ? (
+                                    !loadingVisible && curChallenge ? (
                                         <>
                                             {!pageSwitch ? (
                                                 <ChallengeMainContent

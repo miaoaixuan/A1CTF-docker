@@ -35,8 +35,6 @@ const ThemeSwitcher = (
 
     const { i18n } = useTranslation();
 
-    const asPath = useLocation().pathname + ( useLocation().search.length ? "?" + useLocation().search : ""); // 获取当前路径
-
     useEffect(() => {
         setMounted(true)
     }, [])

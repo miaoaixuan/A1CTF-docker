@@ -59,7 +59,7 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
 
     return (
         <div className={
-            `w-full h-[100px] ${isAdmin() && (visible ? "" : "opacity-40")} border-2 rounded-xl relative hover:scale-[1.04] pl-4 pt-4 pr-4 pb-3 select-none overflow-hidden transition-[transform,border-color,scale] duration-300 will-change-transform ${solveStatus ? "bg-green-200/[0.3] border-green-300/40" : "bg-background/[0.3]"
+            `w-full h-[100px] ${isAdmin() && (visible ? "" : "opacity-40")} border-2 rounded-xl relative hover:scale-[1.04] pl-4 pt-4 pr-4 pb-3 select-none overflow-hidden transition-all duration-300 will-change-transform ${solveStatus ? "bg-green-200/[0.3] border-green-300/40" : "bg-background/[0.3]"
             }`}
             {...props}
         >
@@ -112,8 +112,8 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
                     <div id="card-title" className="flex justify-start items-center gap-2 min-w-0 h-[32px]" >
                         {isAdmin() && !visible ? (
                             <>
-                                <EyeOff size={23} className="flex-none transition-colors duration-300" />
-                                <span className={`font-bold text-ellipsis whitespace-nowrap overflow-hidden transition-colors duration-300`} >{name}</span>
+                                <EyeOff size={23} className="flex-none transition-colors duration-300" style={{ color: !choiced ? "" : colorClass }} />
+                                <span className={`font-bold text-ellipsis whitespace-nowrap overflow-hidden transition-colors duration-300`} style={{ color: !choiced ? "" : colorClass }} >{name}</span>
                             </>
                         ) : (
                             <>

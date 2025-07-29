@@ -1,4 +1,4 @@
-import { Asterisk, BadgeCent, Bed, BedDouble, Binary, Bot, Bug, ChevronDown, ChevronUp, Chrome, CircleArrowLeft, Earth, FileSearch, Github, GlobeLock, HardDrive, Loader2, MessageSquareLock, Radar, Smartphone, SquareCode, Underline } from "lucide-react"
+import { Asterisk, BadgeCent, Bed, BedDouble, Binary, Bot, Bug, ChevronDown, ChevronUp, Chrome, CircleArrowLeft, Earth, FileSearch, Github, GlobeLock, HardDrive, Loader2, MessageSquareLock, Plus, Radar, Smartphone, SquareCode, Underline } from "lucide-react"
 
 import {
     Sidebar,
@@ -29,6 +29,8 @@ import { challengeCategoryColorMap, challengeCategoryIcons } from "utils/ClientA
 import LoadingModule from "components/modules/LoadingModule";
 import { useNavigate } from "react-router";
 import { A1GameStatus } from "components/modules/game/GameStatusEnum";
+import AddChallengeFromLibraryDialog from "components/admin/game/AddChallengeFromLibraryDialog";
+import { log } from "console";
 
 export function CategorySidebar({
     gameid,
@@ -71,8 +73,7 @@ export function CategorySidebar({
     // 比赛 ID
     const gameID = parseInt(gameid, 10)
 
-    // 为了实时更新
-
+    const [challengesLoaded, setChallengesLoaded] = useState<boolean>(false)
 
     // 之前的题目列表
     const prevChallenges = useRef<Record<string, UserSimpleGameChallenge[]>>()
@@ -185,7 +186,7 @@ export function CategorySidebar({
                 {
                     rootMargin: "200px 0px",
                 });
-
+            setChallengesLoaded(true)
         }).catch((error: AxiosError) => {
             if (error.response?.status == 400) {
                 clearInterval(updateChallengeInter)
@@ -254,77 +255,93 @@ export function CategorySidebar({
         }
     };
 
-    const { clientConfig, getSystemLogo, getSystemLogoDefault } = useGlobalVariableContext()
+    const { clientConfig, isAdmin, getSystemLogoDefault } = useGlobalVariableContext()
+    const [addChallengeOpen, setAddChallengeOpen] = useState(false)
 
-    const navigate = useNavigate()
-
-    const getGameIcon = () => {
-        if (theme === "dark") {
-            return gameInfo?.game_icon_dark ?? clientConfig.SVGIconDark
-        } else {
-            return gameInfo?.game_icon_light ?? clientConfig.SVGIconLight
-        }
-    }
+    console.log("Father reRender!")
 
     return (
-        <Sidebar className="hide-scrollbar select-none transition-all duration-200 ml-16" onTransitionEnd={() => {
-            resizeTrigger(Math.floor(Math.random() * 1000000))
-        }} >
-            <SidebarContent>
-                <MacScrollbar
-                    skin={theme == "light" ? "light" : "dark"}
-                    trackStyle={(horizontal) => ({ [horizontal ? "height" : "width"]: 0, borderWidth: 0 })}
-                    thumbStyle={(horizontal) => ({ [horizontal ? "height" : "width"]: 6 })}
-                    className="pr-1 pl-1 h-full"
-                >
-                    <SidebarGroup className="h-full">
-                        <div className="flex justify-center w-full items-center pl-2 pr-2 pt-6 mb-4">
-                            <div className="justify-start flex gap-4 items-center">
-                                <img
-                                    className="transition-all duration-300"
-                                    src={getSystemLogoDefault()}
-                                    alt={clientConfig.SVGAltData}
-                                    width={40}
-                                    height={40}
-                                />
-                                <span className="font-bold text-xl transition-colors duration-300">A1CTF Platform</span>
-                            </div>
-                            <div className="flex-1" />
+        <>
+            <AddChallengeFromLibraryDialog
+                gameID={gameID}
+                setChallenges={setChallenges}
+                isOpen={addChallengeOpen}
+                setIsOpen={setAddChallengeOpen}
+            />
+            <Sidebar className="hide-scrollbar select-none transition-all duration-200 ml-16" onTransitionEnd={() => {
+                resizeTrigger(Math.floor(Math.random() * 1000000))
+            }} >
+                <SidebarContent>
+                    {isAdmin() && (
+                        <div className="absolute bottom-5 right-5 z-10">
+                            <Button variant="ghost" size="icon"
+                                className={`rounded-xl w-12 h-12 [&_svg]:size-6 bg-foreground/10 hover:hover:bg-foreground/20 cursor-pointer`}
+                                data-tooltip-id="my-tooltip"
+                                data-tooltip-html="添加题目"
+                                data-tooltip-place="left"
+                                onClick={() => setAddChallengeOpen(true)}
+                            >
+                                <Plus />
+                            </Button>
                         </div>
+                    )}
+                    <MacScrollbar
+                        skin={theme == "light" ? "light" : "dark"}
+                        trackStyle={(horizontal) => ({ [horizontal ? "height" : "width"]: 0, borderWidth: 0 })}
+                        thumbStyle={(horizontal) => ({ [horizontal ? "height" : "width"]: 6 })}
+                        className="pr-1 pl-1 h-full"
+                    >
+                        <SidebarGroup className="h-full">
+                            <div className="flex justify-center w-full items-center pl-2 pr-2 pt-6 mb-4">
+                                <div className="justify-start flex gap-4 items-center">
+                                    <img
+                                        className="transition-all duration-300"
+                                        src={getSystemLogoDefault()}
+                                        alt={clientConfig.SVGAltData}
+                                        width={40}
+                                        height={40}
+                                    />
+                                    <span className="font-bold text-xl transition-colors duration-300">A1CTF Platform</span>
+                                </div>
+                                <div className="flex-1" />
+                            </div>
 
-                        {!loadingVisible ? (
-                            Object.entries(challenges).length > 0 ? (
-                                <div className="pl-[7px] pr-[7px] mt-2 pb-6">
-                                    {
-                                        Object.entries(challenges ?? {}).map(([category, challengeList]) => (
-                                            <CategoryChallenges
-                                                key={category}
-                                                category={category}
-                                                challengeList={challengeList}
-                                                curChallenge={curChallenge}
-                                                observeItem={observeItem}
-                                                visibleItems={visibleItems}
-                                                handleChangeChallenge={handleChangeChallenge}
-                                                challengeSolveStatusList={challengeSolveStatusList}
-                                            />
-                                        ))
-                                    }
-                                </div>
-                            ) : (
-                                <div className="w-full items-center justify-center flex flex-col gap-4 h-full">
-                                    <div className="flex gap-2 items-center">
-                                        <BedDouble size={28} />
-                                        <span className="text-lg">暂时没有题目哦</span>
+                            {!loadingVisible && challengesLoaded ? (
+                                Object.entries(challenges).length > 0 ? (
+                                    <div className="pl-[7px] pr-[7px] mt-2 pb-6">
+                                        {
+                                            Object.entries(challenges ?? {}).map(([category, challengeList]) => (
+                                                <CategoryChallenges
+                                                    key={category}
+                                                    category={category}
+                                                    challengeList={challengeList}
+                                                    curChallenge={curChallenge}
+                                                    observeItem={observeItem}
+                                                    visibleItems={visibleItems}
+                                                    handleChangeChallenge={handleChangeChallenge}
+                                                    challengeSolveStatusList={challengeSolveStatusList}
+                                                />
+                                            ))
+                                        }
                                     </div>
-                                    <span className="text-muted-foreground line-through">该休息了</span>
-                                </div>
-                            )
-                        ) : (
-                            <LoadingModule />
-                        )}
-                    </SidebarGroup>
-                </MacScrollbar>
-            </SidebarContent>
-        </Sidebar>
+                                ) : (
+                                    <div className="w-full items-center justify-center flex flex-col gap-4 h-full">
+                                        <div className="flex gap-2 items-center">
+                                            <BedDouble size={28} />
+                                            <span className="text-lg">暂时没有题目哦</span>
+                                        </div>
+                                        <span className="text-muted-foreground line-through">该休息了</span>
+                                    </div>
+                                )
+                            ) : (
+                                <LoadingModule />
+                            )}
+                        </SidebarGroup>
+                    </MacScrollbar>
+                </SidebarContent>
+            </Sidebar>
+        </>
     )
 }
+
+CategorySidebar.whyDidYouRender = true
