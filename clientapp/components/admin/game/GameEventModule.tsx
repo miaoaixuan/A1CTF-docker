@@ -23,10 +23,21 @@ import {
 } from "components/ui/select"
 import copy from "copy-to-clipboard"
 
-export function GameEventModule() {
+export function GameEventModule(
+    { GgameID = undefined, GchallengeID = undefined }: {
+        GgameID?: number | undefined,
+        GchallengeID?: number | undefined
+    }
+) {
 
-    const { game_id } = useParams<{ game_id: string }>()
-    const gameId = parseInt(game_id || '0')
+    let gameId = 0;
+
+    if (!GgameID) {
+        const { game_id } = useParams<{ game_id: string }>()
+        gameId = parseInt(game_id || '0')
+    } else {
+        gameId = GgameID
+    }
 
     const [curChoicedType, setCurChoicedType] = useState<string>("submissions")
 
@@ -92,6 +103,7 @@ export function GameEventModule() {
     type JudgeStatus = "JudgeAC" | "JudgeWA"
     const [judgeStatuses, setJudgeStatuses] = useState<JudgeStatus[]>([])
     const statusOptions: JudgeStatus[] = ["JudgeAC", "JudgeWA"]
+
 
     // cheats filter state
     const [cheatsChallengeNames, setCheatsChallengeNames] = useState<string[]>([])
@@ -187,6 +199,13 @@ export function GameEventModule() {
     }
 
     useEffect(() => {
+        if (GchallengeID) {
+            setChallengeIds(prev => prev.includes(GchallengeID) ? prev : [...prev, GchallengeID])
+            setCheatsChallengeIds(prev => prev.includes(GchallengeID) ? prev : [...prev, GchallengeID])
+        }
+    }, [])
+
+    useEffect(() => {
         // 初次加载
         if (gameId) {
             loadSubmissions(1)
@@ -245,7 +264,7 @@ export function GameEventModule() {
             {/* Header */}
             <div className="flex items-center justify-between select-none">
                 <span className="font-bold text-2xl">比赛事件</span>
-                <div className="flex items-center overflow-hidden rounded-3xl border-2">
+                <div className="flex items-center overflow-hidden rounded-3xl border-1">
                     <Button
                         variant={`${curChoicedType === "submissions" ? "default" : "ghost"}`}
                         onClick={() => setCurChoicedType("submissions")}
@@ -342,8 +361,8 @@ export function GameEventModule() {
                                             <span className="truncate">{dayjs(sub.judge_time).format('YYYY-MM-DD HH:mm:ss')}</span>
                                         </div>
                                         <div className="flex-[0.5] justify-center flex">
-                                            <Badge 
-                                                variant="outline" 
+                                            <Badge
+                                                variant="outline"
                                                 className={`flex items-center gap-1 select-none min-w-0 px-3 py-1 rounded-full font-medium shadow-sm transition-all duration-200 ${statusColor(sub.judge_status)}`}
                                             >
                                                 {statusIcon(sub.judge_status)}
@@ -357,9 +376,9 @@ export function GameEventModule() {
                                         <div className="flex items-center flex-[1] gap-1 min-w-0" title={sub.team_name}>
                                             <Users className="w-4 h-4 flex-shrink-0" />
                                             <span className="truncate">{sub.team_name}</span>
-                                            <Badge 
-                                                variant="outline" 
-                                                className="text-xs select-none hover:bg-primary/10 hover:border-primary/30 cursor-pointer transition-all duration-200 rounded-md px-2 py-1 font-mono" 
+                                            <Badge
+                                                variant="outline"
+                                                className="text-xs select-none hover:bg-primary/10 hover:border-primary/30 cursor-pointer transition-all duration-200 rounded-md px-2 py-1 font-mono"
                                                 onClick={() => {
                                                     copy(sub.team_id.toString())
                                                     toast.success('已复制队伍ID')
@@ -371,9 +390,9 @@ export function GameEventModule() {
                                         <div className="flex items-center flex-[2] gap-1 min-w-0" title={sub.challenge_name}>
                                             <Trophy className="w-4 h-4 flex-shrink-0" />
                                             <span className="truncate">{sub.challenge_name}</span>
-                                            <Badge 
-                                                variant="outline" 
-                                                className="text-xs select-none hover:bg-blue/10 hover:border-blue/30 cursor-pointer transition-all duration-200 rounded-md px-2 py-1 font-mono" 
+                                            <Badge
+                                                variant="outline"
+                                                className="text-xs select-none hover:bg-blue/10 hover:border-blue/30 cursor-pointer transition-all duration-200 rounded-md px-2 py-1 font-mono"
                                                 onClick={() => {
                                                     gotoChallenge(sub.challenge_id)
                                                 }}
@@ -384,9 +403,9 @@ export function GameEventModule() {
                                         <div className="flex items-center flex-[3] gap-1 font-mono min-w-0" title={sub.flag_content}>
                                             <Flag className="w-4 h-4 flex-shrink-0" />
                                             <span className="truncate">{sub.flag_content}</span>
-                                            <Badge 
-                                                variant="outline" 
-                                                className="text-xs select-none hover:bg-green/10 hover:border-green/30 cursor-pointer transition-all duration-200 rounded-md p-1.5 hover:scale-105" 
+                                            <Badge
+                                                variant="outline"
+                                                className="text-xs select-none hover:bg-green/10 hover:border-green/30 cursor-pointer transition-all duration-200 rounded-md p-1.5 hover:scale-105"
                                                 onClick={() => {
                                                     copy(sub.flag_content)
                                                     toast.success('已复制')
@@ -404,10 +423,10 @@ export function GameEventModule() {
                     {/* Pagination */}
                     {totalPages > 1 && (
                         <div className="flex justify-center gap-2 mt-4 select-none flex-wrap">
-                            <Button 
-                                size="sm" 
-                                variant="outline" 
-                                disabled={currentPage === 1} 
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={currentPage === 1}
                                 onClick={() => setCurrentPage(prev => prev - 1)}
                                 className="hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
                             >
@@ -417,10 +436,10 @@ export function GameEventModule() {
                                 const page = idx + 1
                                 if (page > totalPages) return null
                                 return (
-                                    <Button 
-                                        key={page} 
-                                        size="sm" 
-                                        variant={currentPage === page ? 'default' : 'outline'} 
+                                    <Button
+                                        key={page}
+                                        size="sm"
+                                        variant={currentPage === page ? 'default' : 'outline'}
                                         onClick={() => setCurrentPage(page)}
                                         className={`transition-all duration-200 ${currentPage === page ? 'shadow-md' : 'hover:bg-primary/10 hover:border-primary/30'}`}
                                     >
@@ -431,10 +450,10 @@ export function GameEventModule() {
                             {totalPages > 10 && (
                                 <span className="text-sm mx-2 text-muted-foreground">...</span>
                             )}
-                            <Button 
-                                size="sm" 
-                                variant="outline" 
-                                disabled={currentPage === totalPages} 
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={currentPage === totalPages}
                                 onClick={() => setCurrentPage(prev => prev + 1)}
                                 className="hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
                             >
@@ -643,8 +662,8 @@ export function GameEventModule() {
                                             <span className="truncate">{dayjs(cheat.cheat_time).format('YYYY-MM-DD HH:mm:ss')}</span>
                                         </div>
                                         <div className="flex-[1] justify-center flex">
-                                            <Badge 
-                                                variant="outline" 
+                                            <Badge
+                                                variant="outline"
                                                 className={`flex items-center gap-1 select-none min-w-0 px-3 py-1 rounded-full font-medium shadow-sm transition-all duration-200 ${cheatTypeColor(cheat.cheat_type)}`}
                                             >
                                                 {cheatTypeIcon(cheat.cheat_type)}
@@ -658,9 +677,9 @@ export function GameEventModule() {
                                         <div className="flex items-center flex-[1] gap-1 min-w-0" title={cheat.team_name}>
                                             <Users className="w-4 h-4 flex-shrink-0" />
                                             <span className="truncate">{cheat.team_name}</span>
-                                            <Badge 
-                                                variant="outline" 
-                                                className="text-xs select-none hover:bg-primary/10 hover:border-primary/30 cursor-pointer transition-all duration-200 rounded-md px-2 py-1 font-mono" 
+                                            <Badge
+                                                variant="outline"
+                                                className="text-xs select-none hover:bg-primary/10 hover:border-primary/30 cursor-pointer transition-all duration-200 rounded-md px-2 py-1 font-mono"
                                                 onClick={() => {
                                                     copy(cheat.team_id.toString())
                                                     toast.success('已复制队伍ID')
@@ -672,9 +691,9 @@ export function GameEventModule() {
                                         <div className="flex items-center flex-[2] gap-1 min-w-0" title={cheat.challenge_name}>
                                             <Trophy className="w-4 h-4 flex-shrink-0" />
                                             <span className="truncate">{cheat.challenge_name}</span>
-                                            <Badge 
-                                                variant="outline" 
-                                                className="text-xs select-none hover:bg-blue/10 hover:border-blue/30 cursor-pointer transition-all duration-200 rounded-md px-2 py-1 font-mono" 
+                                            <Badge
+                                                variant="outline"
+                                                className="text-xs select-none hover:bg-blue/10 hover:border-blue/30 cursor-pointer transition-all duration-200 rounded-md px-2 py-1 font-mono"
                                                 onClick={() => {
                                                     gotoChallenge(cheat.challenge_id)
                                                 }}
@@ -695,9 +714,9 @@ export function GameEventModule() {
                                                             >
                                                                 <Users className="w-4 h-4 flex-shrink-0" />
                                                                 <span className="truncate" title={extraData.relevant_teamname}>{extraData.relevant_teamname}</span>
-                                                                <Badge 
-                                                                    variant="outline" 
-                                                                    className="text-xs select-none hover:bg-orange/10 hover:border-orange/30 cursor-pointer transition-all duration-200 rounded-md px-2 py-1 font-mono" 
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="text-xs select-none hover:bg-orange/10 hover:border-orange/30 cursor-pointer transition-all duration-200 rounded-md px-2 py-1 font-mono"
                                                                     onClick={() => {
                                                                         copy(extraData.relevant_team.toString())
                                                                         toast.success('已复制队伍ID')
@@ -712,9 +731,9 @@ export function GameEventModule() {
                                                 return (
                                                     <>
                                                         <span className="truncate text-muted-foreground" title={JSON.stringify(cheat.extra_data)}>{JSON.stringify(cheat.extra_data)}</span>
-                                                        <Badge 
-                                                            variant="outline" 
-                                                            className="text-xs select-none hover:bg-purple/10 hover:border-purple/30 cursor-pointer transition-all duration-200 rounded-md p-1.5 hover:scale-105" 
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="text-xs select-none hover:bg-purple/10 hover:border-purple/30 cursor-pointer transition-all duration-200 rounded-md p-1.5 hover:scale-105"
                                                             onClick={() => {
                                                                 copy(JSON.stringify(cheat.extra_data))
                                                                 toast.success('已复制异常信息')
@@ -730,9 +749,9 @@ export function GameEventModule() {
                                             <div className="flex items-center flex-[1] gap-1 font-mono min-w-0" title={cheat.submiter_ip}>
                                                 <MapPin className="w-4 h-4 flex-shrink-0" />
                                                 <span className="truncate">{cheat.submiter_ip}</span>
-                                                <Badge 
-                                                    variant="outline" 
-                                                    className="text-xs select-none hover:bg-cyan/10 hover:border-cyan/30 cursor-pointer transition-all duration-200 rounded-md p-1.5 hover:scale-105" 
+                                                <Badge
+                                                    variant="outline"
+                                                    className="text-xs select-none hover:bg-cyan/10 hover:border-cyan/30 cursor-pointer transition-all duration-200 rounded-md p-1.5 hover:scale-105"
                                                     onClick={() => {
                                                         copy(cheat.submiter_ip || '')
                                                         toast.success('已复制IP')
@@ -751,10 +770,10 @@ export function GameEventModule() {
                     {/* Pagination */}
                     {cheatsTotalPages > 1 && (
                         <div className="flex justify-center gap-2 mt-4 select-none flex-wrap">
-                            <Button 
-                                size="sm" 
-                                variant="outline" 
-                                disabled={cheatsCurrentPage === 1} 
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={cheatsCurrentPage === 1}
                                 onClick={() => setCheatsCurrentPage(prev => prev - 1)}
                                 className="hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
                             >
@@ -764,10 +783,10 @@ export function GameEventModule() {
                                 const page = idx + 1
                                 if (page > cheatsTotalPages) return null
                                 return (
-                                    <Button 
-                                        key={page} 
-                                        size="sm" 
-                                        variant={cheatsCurrentPage === page ? 'default' : 'outline'} 
+                                    <Button
+                                        key={page}
+                                        size="sm"
+                                        variant={cheatsCurrentPage === page ? 'default' : 'outline'}
                                         onClick={() => setCheatsCurrentPage(page)}
                                         className={`transition-all duration-200 ${cheatsCurrentPage === page ? 'shadow-md' : 'hover:bg-primary/10 hover:border-primary/30'}`}
                                     >
@@ -778,10 +797,10 @@ export function GameEventModule() {
                             {cheatsTotalPages > 10 && (
                                 <span className="text-sm mx-2 text-muted-foreground">...</span>
                             )}
-                            <Button 
-                                size="sm" 
-                                variant="outline" 
-                                disabled={cheatsCurrentPage === cheatsTotalPages} 
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={cheatsCurrentPage === cheatsTotalPages}
                                 onClick={() => setCheatsCurrentPage(prev => prev + 1)}
                                 className="hover:bg-primary/10 hover:border-primary/30 transition-all duration-200"
                             >

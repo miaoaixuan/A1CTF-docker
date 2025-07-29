@@ -250,20 +250,22 @@ func CreatePod(podInfo *PodInfo) error {
 		}
 	}
 
-	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: podName,
-		},
-		Spec: corev1.ServiceSpec{
-			Type:     corev1.ServiceTypeNodePort,
-			Selector: podInfo.Labels,
-			Ports:    servicePorts,
-		},
-	}
+	if len(servicePorts) > 0 {
+		service := &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: podName,
+			},
+			Spec: corev1.ServiceSpec{
+				Type:     corev1.ServiceTypeNodePort,
+				Selector: podInfo.Labels,
+				Ports:    servicePorts,
+			},
+		}
 
-	_, err = clientset.CoreV1().Services(namespace).Create(context.Background(), service, metav1.CreateOptions{})
-	if err != nil {
-		return fmt.Errorf("error creating service: %v", err)
+		_, err = clientset.CoreV1().Services(namespace).Create(context.Background(), service, metav1.CreateOptions{})
+		if err != nil {
+			return fmt.Errorf("error creating service: %v", err)
+		}
 	}
 
 	allowedPorts := []networkingv1.NetworkPolicyPort{}
@@ -411,24 +413,26 @@ func DeletePod(podInfo *PodInfo) error {
 	namespace := "a1ctf-challenges"
 	podName := fmt.Sprintf("%s-%s", podInfo.Name, podInfo.TeamHash)
 
+	// 忽略所有错误，删除三个组件，防止出问题
+
 	// 删除 Pod
-	err = clientset.CoreV1().Pods(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
-	if err != nil {
-		return fmt.Errorf("error deleting pod: %v", err)
-	}
+	_ = clientset.CoreV1().Pods(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
+	// if err != nil {
+	// 	return fmt.Errorf("error deleting pod: %v", err)
+	// }
 
 	// 删除 Service
-	err = clientset.CoreV1().Services(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
-	if err != nil {
-		return fmt.Errorf("error deleting service: %v", err)
-	}
+	_ = clientset.CoreV1().Services(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
+	// if err != nil {
+	// 	return fmt.Errorf("error deleting service: %v", err)
+	// }
 
 	if !podInfo.AllowWAN {
 		// 删除 NetworkPolicy
-		err = clientset.NetworkingV1().NetworkPolicies(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
-		if err != nil {
-			return fmt.Errorf("error deleting network policy: %v", err)
-		}
+		_ = clientset.NetworkingV1().NetworkPolicies(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
+		// if err != nil {
+		// 	return fmt.Errorf("error deleting network policy: %v", err)
+		// }
 	}
 
 	return nil

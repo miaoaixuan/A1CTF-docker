@@ -3758,6 +3758,8 @@ components:
           format: double
         solve_count:
           type: number
+        visible:
+          type: boolean
         category:
           $ref: '#/components/schemas/ChallengeCategory'
       required:
@@ -3857,6 +3859,8 @@ components:
           $ref: '#/components/schemas/ChallengeCategory'
         container_type:
           $ref: '#/components/schemas/ChallengeContainerType'
+        visible:
+          type: boolean
         container_status:
           $ref: '#/components/schemas/ContainerStatus'
         container_expiretime:
@@ -4512,6 +4516,8 @@ components:
       type: object
       properties:
         game_id:
+          type: integer
+        challenge_id:
           type: integer
         size:
           type: integer

@@ -17,6 +17,7 @@ import { useGameSwitchContext } from "contexts/GameSwitchContext";
 import { LoadingPage } from "components/LoadingPage";
 import { Panda } from "lucide-react";
 import { A1GameStatus } from "components/modules/game/GameStatusEnum";
+import useConditionalState from "hooks/ContidionalState";
 
 export default function Games() {
     
@@ -34,8 +35,8 @@ export default function Games() {
     }, [module])
 
     // 比赛详细信息
-    const [gameInfo, setGameInfo] = useState<UserFullGameInfo>()
-    const [gameStatus, setGameStatus] = useState<A1GameStatus | undefined>(undefined)
+    const [gameInfo, setGameInfo] = useConditionalState<UserFullGameInfo>()
+    const [gameStatus, setGameStatus] = useConditionalState<A1GameStatus | undefined>(undefined)
     const [teamStatus, setTeamStatus] = useState<ParticipationStatus>(ParticipationStatus.UnLogin)
 
     const [curChoicedModule, setCurChoicedModule] = useState(module || "info")

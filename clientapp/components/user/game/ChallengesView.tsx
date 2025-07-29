@@ -37,6 +37,7 @@ import ChallengeMainContent from "components/modules/challenge/ChallengeMainCont
 import LoadingModule from "components/modules/LoadingModule";
 import GameTeamStatusCard from "components/modules/game/GameTeamStatusCard";
 import { A1GameStatus } from "components/modules/game/GameStatusEnum";
+import useConditionalState from "hooks/ContidionalState";
 
 export interface ChallengeSolveStatus {
     solved: boolean;
@@ -65,7 +66,7 @@ export function ChallengesView({
     const { t } = useTranslation()
 
     // 所有题目
-    const [challenges, setChallenges] = useState<Record<string, UserSimpleGameChallenge[]>>({})
+    const [challenges, setChallenges] = useConditionalState<Record<string, UserSimpleGameChallenge[]>>({})
 
     // 当前选中的题目
     const [curChallenge, setCurChallenge] = useState<UserDetailGameChallenge>()
@@ -134,7 +135,7 @@ export function ChallengesView({
 
     const challengeSearched = searchParams.get("id") ? true : false
 
-    const [scoreBoardModel, setScoreBoardModel] = useState<GameScoreboardData | undefined>(undefined)
+    const [scoreBoardModel, setScoreBoardModel] = useConditionalState<GameScoreboardData | undefined>(undefined)
 
     useEffect(() => {
         const updateScoreBoard = () => {

@@ -340,6 +340,7 @@ export interface UserSimpleGameChallenge {
   /** @format double */
   cur_score: number;
   solve_count?: number;
+  visible?: boolean;
   category?: ChallengeCategory;
 }
 
@@ -399,6 +400,7 @@ export interface UserDetailGameChallenge {
   solve_count?: number;
   category?: ChallengeCategory;
   container_type?: ChallengeContainerType;
+  visible?: boolean;
   /**
    * Possible statuses of a container:
    * - `ContainerStopped`: The container is stopped.
@@ -740,6 +742,7 @@ export interface AdminContainerItem {
 
 export interface AdminListContainersPayload {
   game_id: number;
+  challenge_id?: number;
   /** @min 0 */
   size: number;
   offset?: number;

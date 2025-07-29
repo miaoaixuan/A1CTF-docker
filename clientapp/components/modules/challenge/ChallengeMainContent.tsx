@@ -1,5 +1,5 @@
 import { Button } from "components/ui/button"
-import { AlarmClock, AudioWaveform, ChartNoAxesCombined, CheckCheck, CirclePower, CircleX, ClockArrowUp, Flag, Loader2, Network, Package, Paperclip, Wrench } from "lucide-react"
+import { AlarmClock, AudioWaveform, ChartNoAxesCombined, CheckCheck, CircleFadingArrowUp, CirclePower, CircleX, ClockArrowUp, Flag, Loader2, Network, Package, PanelBottomClose, PanelTopClose, PanelTopOpen, Paperclip, Wrench } from "lucide-react"
 import { MacScrollbar } from "mac-scrollbar"
 import TimerDisplay from "../TimerDisplay"
 import { ContainerStatus, ExposePortInfo, GameScoreboardData, UserDetailGameChallenge, UserFullGameInfo } from "utils/A1API"
@@ -19,7 +19,7 @@ import GameTeamStatusCard from "../game/GameTeamStatusCard"
 import ChallengeManageSheet from "components/admin/game/ChallengeManageSheet"
 
 export default function ChallengeMainContent(
-    { 
+    {
         gameID,
         curChallenge,
         challengeSolveStatusList,
@@ -28,7 +28,7 @@ export default function ChallengeMainContent(
         setShowHintsWindowVisible,
         setRedirectURL,
         scoreBoardModel
-    } : {
+    }: {
         gameID: number,
         curChallenge: UserDetailGameChallenge | undefined,
         challengeSolveStatusList: Record<number, ChallengeSolveStatus>,
@@ -148,7 +148,7 @@ export default function ChallengeMainContent(
         }
     }, [refreshContainerTrigger])
 
-    
+
     useEffect(() => {
         setContainerInfo(curChallenge?.containers ?? [])
         setContainerExpireTime(curChallenge?.container_expiretime
@@ -194,7 +194,15 @@ export default function ChallengeMainContent(
             </div>
 
             {/* 管理员管理菜单按钮 */}
-            <div className="absolute bottom-0 left-0 p-5">
+            <div className="absolute bottom-0 left-0 p-5 z-10 flex flex-col gap-2">
+                <Button variant="ghost" size="icon" 
+                    className={`rounded-xl w-12 h-12 [&_svg]:size-6 bg-foreground/10 hover:hover:bg-foreground/20 cursor-pointer ${curChallenge?.visible ? "text-red-400" : "text-blue-400"}`}
+                    data-tooltip-id="my-tooltip"
+                    data-tooltip-html={ curChallenge?.visible ? "下线题目" : "上线题目" }
+                    data-tooltip-place="right"
+                >
+                    { curChallenge?.visible ? <PanelTopOpen /> : <PanelTopClose /> }
+                </Button>
                 <ChallengeManageSheet
                     gameID={gameID}
                     challengeID={curChallenge?.challenge_id ?? 0}

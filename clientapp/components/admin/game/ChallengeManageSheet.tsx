@@ -23,6 +23,9 @@ import { Save, X } from "lucide-react"
 import { toast } from "sonner"
 import LoadingModule from "components/modules/LoadingModule"
 import ChallengeSettingsSidebar from "./ChallengeSettingsSidebar"
+import { ContainerManageView } from "./ContainerManageView"
+import { GameEventModule } from "./GameEventModule"
+import ChallengeTools from "./ChallengeTools"
 
 export default function ChallengeManageSheet(
     {
@@ -126,6 +129,27 @@ export default function ChallengeManageSheet(
                                         </Button>
                                     </div>
                                 </>
+                            ) : <></>}
+
+                            {curChoicedModule == "containers" ? (
+                                <ContainerManageView
+                                    gameId={gameID}
+                                    challengeID={challengeID}
+                                />
+                            ) : <></>}
+
+                            { curChoicedModule == "submissions" ? (
+                                <GameEventModule
+                                    GgameID={gameID}
+                                    GchallengeID={challengeID}
+                                />
+                            ) : <></> }
+
+                            { curChoicedModule == "tools" ? (
+                                <ChallengeTools
+                                    gameID={gameID}
+                                    challengeID={challengeID}
+                                />
                             ) : <></> }
                         </div>
                     </MacScrollbar>

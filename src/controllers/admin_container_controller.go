@@ -27,7 +27,11 @@ func AdminListContainers(c *gin.Context) {
 
 	// 如果提供了游戏ID，则按游戏ID过滤
 	if payload.GameID > 0 {
-		query = query.Where("game_id = ? AND container_status NOT IN ?", payload.GameID, []models.ContainerStatus{models.ContainerStopped}).Order("team_id ASC")
+		query = query.Where("game_id = ? AND container_status NOT IN ?", payload.GameID, []models.ContainerStatus{models.ContainerStopped})
+	}
+
+	if payload.ChallengeID > 0 {
+		query = query.Where("challenge_id = ?", payload.ChallengeID)
 	}
 
 	// 如果有搜索关键词，添加搜索条件
@@ -35,6 +39,8 @@ func AdminListContainers(c *gin.Context) {
 	// 	searchPattern := "%" + payload.Search + "%"
 	// 	query = query.Where("challenge_name LIKE ?", searchPattern)
 	// }
+
+	query = query.Order("team_id ASC")
 
 	// 分页查询容器列表
 	var total int64

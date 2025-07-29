@@ -95,10 +95,11 @@ type AdminUserOperationPayload struct {
 
 // 容器列表请求参数
 type AdminListContainersPayload struct {
-	GameID int    `json:"game_id"`
-	Size   int    `json:"size" binding:"min=0"`
-	Offset int    `json:"offset"`
-	Search string `json:"search"`
+	GameID      int    `json:"game_id"`
+	Size        int    `json:"size" binding:"min=0"`
+	Offset      int    `json:"offset"`
+	Search      string `json:"search"`
+	ChallengeID int    `json:"challenge_id"`
 }
 
 // 容器操作请求参数

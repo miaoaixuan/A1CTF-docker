@@ -5,6 +5,7 @@ import (
 	dbtool "a1ctf/src/utils/db_tool"
 	"context"
 	"fmt"
+	"log"
 
 	"a1ctf/src/utils/zaphelper"
 
@@ -66,6 +67,8 @@ func HandleContainerStartTask(ctx context.Context, t *asynq.Task) error {
 			"container_id": task.ContainerID,
 		}, err)
 		zaphelper.Logger.Error("CreatePod", zap.Error(err), zap.Any("task", task))
+		// 强制关闭
+		dbtool.DB().Model(&task).Update("container_status", models.ContainerStopping)
 		return fmt.Errorf("CreatePod %+v error: %v", task, err)
 	} else {
 		task.ContainerStatus = models.ContainerStarting
@@ -109,6 +112,7 @@ func HandleContainerStopTask(ctx context.Context, t *asynq.Task) error {
 		AllowDNS: task.Challenge.AllowDNS,
 	}
 
+	log.Printf("data %+v\n", podInfo)
 	err := k8stool.DeletePod(&podInfo)
 	if err != nil {
 		LogContainerOperation(nil, nil, models.ActionContainerStopping, task.ContainerID, map[string]interface{}{

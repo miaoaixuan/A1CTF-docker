@@ -3,6 +3,7 @@ package controllers
 import (
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -13,6 +14,8 @@ import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
 	k8stool "a1ctf/src/utils/k8s_tool"
+	"a1ctf/src/utils/ristretto_tool"
+	"a1ctf/src/webmodels"
 )
 
 type ListChallengePayload struct {
@@ -242,6 +245,73 @@ func AdminUpdateChallenge(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
 		"message": "Updated",
+	})
+}
+
+func AdminGetSimpleGameChallenges(c *gin.Context) {
+	game := c.MustGet("game").(models.Game)
+	team := c.MustGet("team").(models.Team)
+	// 查找队伍
+	var tmpSimpleGameChallenges []webmodels.UserSimpleGameChallenge = make([]webmodels.UserSimpleGameChallenge, 0)
+	var gameChallenges []models.GameChallenge
+
+	// 使用 Preload 进行关联查询
+	if err := dbtool.DB().Preload("Challenge").Where("game_id = ?", game.GameID).Find(&gameChallenges).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: "Failed to load challenges",
+		})
+		return
+	}
+
+	sort.Slice(gameChallenges, func(i, j int) bool {
+		return gameChallenges[i].Challenge.Name < gameChallenges[j].Challenge.Name
+	})
+
+	for _, gc := range gameChallenges {
+
+		tmpSimpleGameChallenges = append(tmpSimpleGameChallenges, webmodels.UserSimpleGameChallenge{
+			ChallengeID:   *gc.Challenge.ChallengeID,
+			ChallengeName: gc.Challenge.Name,
+			TotalScore:    gc.TotalScore,
+			CurScore:      gc.CurScore,
+			SolveCount:    gc.SolveCount,
+			Category:      gc.Challenge.Category,
+			Visible:       gc.Visible,
+		})
+	}
+
+	solveMap, err := ristretto_tool.CachedSolvedChallengesForGame(game.GameID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: "Failed to load solves",
+		})
+		return
+	}
+
+	solves, ok := solveMap[team.TeamID]
+	if !ok {
+		solves = make([]models.Solve, 0)
+	}
+
+	var solved_challenges []webmodels.UserSimpleGameSolvedChallenge = make([]webmodels.UserSimpleGameSolvedChallenge, 0, len(solves))
+
+	for _, solve := range solves {
+		solved_challenges = append(solved_challenges, webmodels.UserSimpleGameSolvedChallenge{
+			ChallengeID:   solve.ChallengeID,
+			ChallengeName: solve.Challenge.Name,
+			SolveTime:     solve.SolveTime,
+			Rank:          solve.Rank,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": gin.H{
+			"challenges":        tmpSimpleGameChallenges,
+			"solved_challenges": solved_challenges,
+		},
 	})
 }
 

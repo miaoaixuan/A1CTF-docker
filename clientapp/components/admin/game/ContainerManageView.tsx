@@ -11,7 +11,7 @@ import {
     useReactTable,
 } from "@tanstack/react-table"
 
-import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, PlayIcon, StopCircle, TimerIcon, CopyIcon, ClockIcon, ClipboardList, ZapOff, RefreshCw, Check, ChevronsUpDown, CalendarIcon, LinkIcon } from "lucide-react"
+import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, CopyIcon, ClockIcon, ClipboardList, ZapOff, RefreshCw } from "lucide-react"
 
 import * as React from "react"
 
@@ -23,7 +23,6 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "components/ui/dropdown-menu"
 
@@ -37,8 +36,7 @@ import {
     TableRow,
 } from "components/ui/table"
 
-import { api, ErrorMessage } from "utils/ApiHelper";
-import { MacScrollbar } from "mac-scrollbar";
+import { api } from "utils/ApiHelper";
 import { Badge } from "../../ui/badge";
 import { 
     AlertDialog,
@@ -53,22 +51,6 @@ import {
 import { AdminContainerItem, ContainerStatus } from "utils/A1API";
 import { toast } from "sonner";
 import dayjs from "dayjs";
-import { 
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "components/ui/popover";
-import { Calendar } from "components/ui/calendar";
-import { cn } from "lib/utils";
-import { format } from "date-fns";
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-} from "components/ui/command"
-import { AdminListTeamItem, ParticipationStatus, UserGameSimpleInfo } from "utils/A1API";
 import {
     HoverCard,
     HoverCardContent,
@@ -116,7 +98,13 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     );
 };
 
-export function ContainerManageView({ gameId }: { gameId: number }) {
+export function ContainerManageView({ 
+    gameId,
+    challengeID = undefined
+}: { 
+    gameId: number,
+    challengeID?: number | undefined
+}) {
     const [data, setData] = React.useState<ContainerModel[]>([])
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -462,7 +450,8 @@ export function ContainerManageView({ gameId }: { gameId: number }) {
         const payload: any = { 
             game_id: gameId, 
             size: pageSize, 
-            offset: pageSize * curPage 
+            offset: pageSize * curPage,
+            challenge_id: challengeID ?? -1
         };
         
         // 如果有搜索关键词，添加到请求中

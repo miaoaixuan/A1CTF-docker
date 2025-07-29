@@ -15,7 +15,16 @@ import (
 )
 
 func UserGetGameChallenges(c *gin.Context) {
+	user := c.MustGet("user").(models.User)
+
+	// 管理员前台需要返回所有题目
+	if user.Role == models.UserRoleAdmin {
+		AdminGetSimpleGameChallenges(c)
+		return
+	}
+
 	game := c.MustGet("game").(models.Game)
+	team := c.MustGet("team").(models.Team)
 
 	simpleGameChallenges, err := ristretto_tool.CachedGameSimpleChallenges(game.GameID)
 	if err != nil {
@@ -26,8 +35,6 @@ func UserGetGameChallenges(c *gin.Context) {
 		return
 	}
 
-	var team = c.MustGet("team").(models.Team)
-
 	// Cache all solves to redis
 
 	solveMap, err := ristretto_tool.CachedSolvedChallengesForGame(game.GameID)
@@ -36,6 +43,7 @@ func UserGetGameChallenges(c *gin.Context) {
 			Code:    500,
 			Message: "Failed to load solves",
 		})
+		return
 	}
 
 	solves, ok := solveMap[team.TeamID]
@@ -66,6 +74,7 @@ func UserGetGameChallenges(c *gin.Context) {
 func UserGetGameChallenge(c *gin.Context) {
 	game := c.MustGet("game").(models.Game)
 	team := c.MustGet("team").(models.Team)
+	user := c.MustGet("user").(models.User)
 
 	challengeIDStr := c.Param("challenge_id")
 	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
@@ -88,10 +97,11 @@ func UserGetGameChallenge(c *gin.Context) {
 		return
 	}
 
-	if !isVisible {
+	// 管理员可以查看到所有题目
+	if !isVisible && user.Role == models.UserRoleUser {
 		c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 			Code:    404,
-			Message: "Challenge not found or not visible",
+			Message: "Challenge not found",
 		})
 		return
 	}
@@ -157,6 +167,7 @@ func UserGetGameChallenge(c *gin.Context) {
 		ContainerType:       gameChallenge.Challenge.ContainerType,
 		ContainerStatus:     models.NoContainer,
 		ContainerExpireTime: nil,
+		Visible:             gameChallenge.Visible,
 	}
 
 	// 6. 容器状态处理 - 使用短时缓存（200ms）平衡性能和实时性
