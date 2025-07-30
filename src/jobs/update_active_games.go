@@ -117,7 +117,7 @@ func UpdateActiveGameScoreBoard() {
 		// 先获取比赛下的所有队伍
 		var teamsParticipated []models.Team = make([]models.Team, 0)
 		var participatedTeamIDs []int64
-		if err := dbtool.DB().Where("game_id = ?", gameID).Find(&teamsParticipated).Error; err != nil {
+		if err := dbtool.DB().Where("game_id = ? AND team_type = ?", gameID, models.TeamTypePlayer).Find(&teamsParticipated).Error; err != nil {
 			zaphelper.Logger.Error("Failed to load teams for game ", zap.Error(err), zap.Int64("game_id", gameID))
 			return
 		}

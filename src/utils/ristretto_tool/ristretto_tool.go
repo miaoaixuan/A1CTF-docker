@@ -120,10 +120,27 @@ func CachedMemberSearchTeamMap(gameID int64) (map[string]models.Team, error) {
 			return nil, err
 		}
 
+		var adminTeam models.Team
+
 		for _, team := range allTeams {
-			for _, teamMember := range team.TeamMembers {
-				memberBelongSearchMap[teamMember] = team
+			if team.TeamType == models.TeamTypePlayer {
+				for _, teamMember := range team.TeamMembers {
+					memberBelongSearchMap[teamMember] = team
+				}
 			}
+			if team.TeamType == models.TeamTypeAdmin {
+				adminTeam = team
+			}
+		}
+
+		// 处理下管理员，所有管理员默认属于系统创建的管理员队伍
+		var allAdmins []models.User
+		if err := dbtool.DB().Where("role = ?", models.UserRoleAdmin).Find(&allAdmins).Error; err != nil {
+			return nil, err
+		}
+
+		for _, admin := range allAdmins {
+			memberBelongSearchMap[admin.UserID] = adminTeam
 		}
 
 		return memberBelongSearchMap, nil
@@ -249,9 +266,9 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 	var finalScoreBoardMap map[int64]webmodels.TeamScoreItem = make(map[int64]webmodels.TeamScoreItem)
 	var timeLines []webmodels.TimeLineItem = make([]webmodels.TimeLineItem, 0)
 
-	// 获取所有队伍
+	// 获取所有队伍，排除掉 Admin 第五
 	var teams []models.Team
-	if err := dbtool.DB().Where("game_id = ? AND team_status = ?", gameID, models.ParticipateApproved).Preload("Group").Find(&teams).Error; err != nil {
+	if err := dbtool.DB().Where("game_id = ? AND team_status = ? AND team_type = ?", gameID, models.ParticipateApproved, models.TeamTypePlayer).Preload("Group").Find(&teams).Error; err != nil {
 		return nil, errors.New("failed to load teams")
 	}
 
@@ -487,7 +504,7 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 
 	var teamsParticipated []models.Team = make([]models.Team, 0)
 	var participatedTeamIDs []int64
-	if err := dbtool.DB().Model(&models.Team{}).Where("game_id = ?", gameID).Find(&teamsParticipated).Error; err != nil {
+	if err := dbtool.DB().Model(&models.Team{}).Where("game_id = ? AND team_type = ?", gameID, models.TeamTypePlayer).Find(&teamsParticipated).Error; err != nil {
 		return nil, errors.New("failed to load teams for game")
 	}
 

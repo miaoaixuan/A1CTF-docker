@@ -164,17 +164,28 @@ export function ChallengesView({
     }
 
     const setChallengeSolved = (id: number) => {
-        setChallengeSolveStatusList((prev) => ({
-            ...prev,
-            [id]: {
-                solved: true,
-                solve_count: (prev[id]?.solve_count ?? 0) + 1,
-                cur_score: prev[id]?.cur_score ?? 0,
-            },
-        }))
+        if (isAdmin()) {
+            setChallengeSolveStatusList((prev) => ({
+                ...prev,
+                [id]: {
+                    solved: true,
+                    solve_count: (prev[id]?.solve_count ?? 0),
+                    cur_score: prev[id]?.cur_score ?? 0,
+                },
+            }))
+        } else {
+            setChallengeSolveStatusList((prev) => ({
+                ...prev,
+                [id]: {
+                    solved: true,
+                    solve_count: (prev[id]?.solve_count ?? 0) + 1,
+                    cur_score: prev[id]?.cur_score ?? 0,
+                },
+            }))
 
-        if (curChallengeDetail.current?.challenge_id == id) {
-            curChallengeDetail.current.solve_count = (curChallengeDetail.current.solve_count ?? 0) + 1
+            if (curChallengeDetail.current?.challenge_id == id) {
+                curChallengeDetail.current.solve_count = (curChallengeDetail.current.solve_count ?? 0) + 1
+            }
         }
     }
 

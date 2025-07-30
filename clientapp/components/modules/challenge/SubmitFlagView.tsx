@@ -11,8 +11,9 @@ import { JudgeType, UserDetailGameChallenge } from "utils/A1API";
 import { api } from "utils/ApiHelper";
 import { toast } from "sonner";
 import { ChallengeSolveStatus } from "components/user/game/ChallengesView";
+import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 
-const SubmitFlagView = ({ curChallenge, gameID, setChallengeSolved, challengeSolveStatusList, visible, setVisible } : { curChallenge: UserDetailGameChallenge | undefined, gameID: number, setChallengeSolved: (id: number) => void, challengeSolveStatusList: Record<number, ChallengeSolveStatus>, visible: boolean, setVisible: Dispatch<SetStateAction<boolean>> }) => {
+const SubmitFlagView = ({ curChallenge, gameID, setChallengeSolved, challengeSolveStatusList, visible, setVisible }: { curChallenge: UserDetailGameChallenge | undefined, gameID: number, setChallengeSolved: (id: number) => void, challengeSolveStatusList: Record<number, ChallengeSolveStatus>, visible: boolean, setVisible: Dispatch<SetStateAction<boolean>> }) => {
 
     const [flag, setFlag] = useState<string>("");
     const [judgeing, setJudgeing] = useState(false);
@@ -58,6 +59,7 @@ const SubmitFlagView = ({ curChallenge, gameID, setChallengeSolved, challengeSol
                                         setTimeout(() => {
                                             setChallengeSolved(curChallenge?.challenge_id || 0)
                                         }, 200)
+
                                     } else if (res2.data.data.judge_status == "JudgeWA") {
                                         toast.error("错误");
                                         setBorderRed(true)
@@ -77,10 +79,10 @@ const SubmitFlagView = ({ curChallenge, gameID, setChallengeSolved, challengeSol
                     }, 1000)
                 }
             }
-        ).catch((err) => {  
-            toast.error("提交 Flag 失败: " + err.message);
-            setJudgeing(false)
-        });
+            ).catch((err) => {
+                toast.error("提交 Flag 失败: " + err.message);
+                setJudgeing(false)
+            });
     }
 
     return (
@@ -114,7 +116,7 @@ const SubmitFlagView = ({ curChallenge, gameID, setChallengeSolved, challengeSol
                                 </div>
 
                                 <input
-                                    className={`${ borderRed ? "border-red-600 text-red-600" : "" } flex w-full bg-transparent px-3 shadow-sm transition-colors duration-300 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 h-[50px] border-foreground rounded-lg border-4 text-xl font-bold py-0 focus-visible:border-blue-400 focus-visible:text-blue-400`}
+                                    className={`${borderRed ? "border-red-600 text-red-600" : ""} flex w-full bg-transparent px-3 shadow-sm transition-colors duration-300 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 h-[50px] border-foreground rounded-lg border-4 text-xl font-bold py-0 focus-visible:border-blue-400 focus-visible:text-blue-400`}
                                     placeholder="Enter your flag here"
                                     value={flag}
                                     onFocus={() => setBorderRed(false)}
@@ -136,7 +138,7 @@ const SubmitFlagView = ({ curChallenge, gameID, setChallengeSolved, challengeSol
                                         onClick={handleSubmitFlag}
                                         disabled={judgeing}
                                     >
-                                        { judgeing ? (
+                                        {judgeing ? (
                                             <div className="flex gap-4 items-center">
                                                 <Loader2 className="animate-spin" />
                                                 <span className="font-bold text-xl">Judgeing</span>
@@ -146,7 +148,7 @@ const SubmitFlagView = ({ curChallenge, gameID, setChallengeSolved, challengeSol
                                                 <SendHorizonal />
                                                 <span className="font-bold text-xl">Submit</span>
                                             </div>
-                                        ) }
+                                        )}
                                     </Button>
                                 </div>
                             </div>

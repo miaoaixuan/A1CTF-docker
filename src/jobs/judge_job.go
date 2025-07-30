@@ -28,6 +28,12 @@ func processQueueingJudge(judge *models.Judge) error {
 
 		if flagCorrect {
 
+			// 如果是系统管理员队伍，不插入 Solves，防止影响积分榜
+			if judge.Team.TeamType == models.TeamTypeAdmin {
+				judge.JudgeStatus = models.JudgeAC
+				return nil
+			}
+
 			// 查询已经解出来的人
 			var solves []models.Solve
 			if err := dbtool.DB().Where("game_id = ? AND challenge_id = ?", judge.GameID, judge.ChallengeID).Find(&solves).Error; err != nil {
@@ -119,7 +125,7 @@ func FlagJudgeJob() {
 	if err := dbtool.DB().Where(
 		"judge_status IN (?)",
 		[]interface{}{models.JudgeQueueing, models.JudgeRunning},
-	).Preload("TeamFlag").Preload("GameChallenge").Preload("Challenge").Find(&judges).Error; err != nil {
+	).Preload("TeamFlag").Preload("GameChallenge").Preload("Challenge").Preload("Team").Find(&judges).Error; err != nil {
 		fmt.Printf("database error: %v\n", err)
 		return
 	}

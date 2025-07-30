@@ -15,6 +15,7 @@ import (
 
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
+	"a1ctf/src/utils/general"
 	noticetool "a1ctf/src/utils/notice_tool"
 	"a1ctf/src/webmodels"
 	"mime"
@@ -117,6 +118,30 @@ func AdminCreateGame(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"message": "Failed to create game",
+		})
+		return
+	}
+
+	newTeam := models.Team{
+		TeamID:          0,
+		GameID:          game.GameID,
+		TeamName:        "A1CTF",
+		TeamDescription: nil,
+		TeamAvatar:      nil,
+		TeamSlogan:      nil,
+		TeamMembers:     []string{},
+		TeamScore:       0,
+		TeamHash:        general.RandomHash(16),
+		InviteCode:      nil,
+		TeamStatus:      models.ParticipateApproved,
+		GroupID:         nil,
+		TeamType:        models.TeamTypeAdmin,
+	}
+
+	if err := dbtool.DB().Create(&newTeam).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to create admin team",
 		})
 		return
 	}

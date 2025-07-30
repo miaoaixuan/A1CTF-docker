@@ -83,6 +83,7 @@ func UserCreateGameTeam(c *gin.Context) {
 		InviteCode:      &inviteCode,
 		TeamStatus:      models.ParticipatePending,
 		GroupID:         payload.GroupID,
+		TeamType:        models.TeamTypePlayer,
 	}
 
 	if err := dbtool.DB().Create(&newTeam).Error; err != nil {

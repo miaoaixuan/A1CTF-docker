@@ -268,6 +268,24 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 		return
 	}
 
+	// 判断题目是否可见，管理员不检查
+	isVisible, err := ristretto_tool.CachedGameChallengeVisibility(game.GameID, challengeID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: "Failed to check challenge visibility",
+		})
+		return
+	}
+
+	if user.Role != models.UserRoleAdmin && !isVisible {
+		c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
+			Code:    403,
+			Message: "Challenge not found",
+		})
+		return
+	}
+
 	// 2. 使用缓存检查是否已解决
 	hasSolved, err := ristretto_tool.CachedTeamSolveStatus(game.GameID, team.TeamID, challengeID)
 	if err != nil {
