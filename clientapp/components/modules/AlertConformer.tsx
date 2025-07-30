@@ -37,8 +37,10 @@ export default function AlertConformer(
             <AlertDialogContent className="select-none">
                 <AlertDialogHeader>
                     <AlertDialogTitle>
-                        <div className="flex gap-2 items-center">
-                            <Asterisk />
+                        <div 
+                            className={`flex gap-2 items-center ${ type == "danger" ? "text-red-500" : "" }`}
+                        >
+                            <Asterisk size={30} />
                             {title}
                         </div>
                     </AlertDialogTitle>
@@ -48,6 +50,7 @@ export default function AlertConformer(
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel
+                        className="cursor-pointer"
                         onClick={() => {
                             if (onCancel) onCancel()
                         }}
@@ -56,7 +59,7 @@ export default function AlertConformer(
                         onClick={() => {
                             if (onConfirm) onConfirm()
                         }}
-                        className={`${type == "danger" ? "bg-destructive hover:bg-destructive/90" : ""}`}
+                        className={`${type == "danger" ? "bg-destructive hover:bg-destructive/90 cursor-pointer" : ""}`}
                     >继续操作</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

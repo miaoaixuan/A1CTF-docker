@@ -13,6 +13,7 @@ import { api } from 'utils/ApiHelper';
 import { AdminNoticeItem } from 'utils/A1API';
 import { PlusCircle, Trash2, MessageSquare, Calendar, AlertCircle, Eye, MoreHorizontal } from 'lucide-react';
 import dayjs from 'dayjs';
+import ThemedEditor from 'components/modules/ThemedEditor';
 
 interface GameNoticeManagerProps {
     gameId: number;
@@ -118,7 +119,7 @@ export function GameNoticeManager({ gameId }: GameNoticeManagerProps) {
                             创建公告
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[700px]">
+                    <DialogContent className="sm:max-w-[60%]">
                         <DialogHeader>
                             <DialogTitle>创建新公告</DialogTitle>
                             <DialogDescription>
@@ -137,17 +138,11 @@ export function GameNoticeManager({ gameId }: GameNoticeManagerProps) {
                             </div>
                             <div>
                                 <label className="text-sm font-medium mb-2 block">公告内容</label>
-                                <Textarea
+                                <ThemedEditor
                                     value={createForm.content}
-                                    onChange={(e) => setCreateForm(prev => ({ ...prev, content: e.target.value }))}
-                                    placeholder="请输入公告内容，支持 Markdown 格式"
-                                    className="h-48 bg-background/50 resize-none break-words min-w-0 max-w-full"
-                                    style={{
-                                        wordWrap: 'break-word', 
-                                        overflowWrap: 'break-word',
-                                        whiteSpace: 'pre-wrap',
-                                        boxSizing: 'border-box'
-                                    }}
+                                    onChange={(value) => setCreateForm(prev => ({ ...prev, content: value ?? "" }))}
+                                    language="markdown"
+                                    className='h-[500px]'
                                 />
                             </div>
                             <div className="flex justify-end gap-2">

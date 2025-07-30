@@ -1,12 +1,13 @@
 import { Button } from "components/ui/button";
 import ChallengeManageSheet from "./ChallengeManageSheet";
-import { Loader2, PanelTopClose, PanelTopOpen, Wrench } from "lucide-react";
+import { Loader2, PanelTopClose, PanelTopOpen, Trash2, Wrench } from "lucide-react";
 import { api } from "utils/ApiHelper";
 import { UserDetailGameChallenge, UserSimpleGameChallenge } from "utils/A1API";
 import { Dispatch, SetStateAction, useState } from "react";
+import AlertConformer from "components/modules/AlertConformer";
 
 export default function InChallengeViewManager(
-    { gameID, curChallenge, setCurChallenge, setChallenges } : {
+    { gameID, curChallenge, setCurChallenge, setChallenges }: {
         gameID: number,
         curChallenge: UserDetailGameChallenge | undefined,
         setCurChallenge: Dispatch<SetStateAction<UserDetailGameChallenge | undefined>>,
@@ -45,20 +46,43 @@ export default function InChallengeViewManager(
         })
     }
 
+    const deleteChallenge = () => {
+    }
+
     return (
         <div className="absolute bottom-0 left-0 p-5 z-10 flex flex-col gap-2">
-            <Button variant="ghost" size="icon"
-                className={`rounded-xl w-12 h-12 [&_svg]:size-6 bg-foreground/10 hover:hover:bg-foreground/20 cursor-pointer ${curChallenge?.visible ? "text-red-400" : "text-blue-400"}`}
-                data-tooltip-id="my-tooltip"
-                data-tooltip-html={curChallenge?.visible ? "下线题目" : "上线题目"}
-                data-tooltip-place="right"
-                disabled={switchVisibleLoading}
-                onClick={switchVisible}
+            <AlertConformer
+                title="注意"
+                description="你确定要删除这个题目吗（此操作不可逆）"
+                onConfirm={deleteChallenge}
+                type="danger"
             >
-                {switchVisibleLoading ? (
-                    <Loader2 className="animate-spin" />
-                ) : curChallenge?.visible ? <PanelTopOpen /> : <PanelTopClose />}
-            </Button>
+                <Button variant="ghost" size="icon"
+                    className={`rounded-xl w-12 h-12 [&_svg]:size-6 bg-foreground/10 hover:hover:bg-foreground/20 cursor-pointer text-red-400`}
+                    data-tooltip-id="my-tooltip"
+                    data-tooltip-html="删除题目"
+                    data-tooltip-place="right"
+                >
+                    <Trash2 />
+                </Button>
+            </AlertConformer>
+            <AlertConformer
+                title="注意"
+                description="此操作会切换题目状态, 请再次确认"
+                onConfirm={switchVisible}
+            >
+                <Button variant="ghost" size="icon"
+                    className={`rounded-xl w-12 h-12 [&_svg]:size-6 bg-foreground/10 hover:hover:bg-foreground/20 cursor-pointer ${curChallenge?.visible ? "text-red-400" : "text-blue-400"}`}
+                    data-tooltip-id="my-tooltip"
+                    data-tooltip-html={curChallenge?.visible ? "下线题目" : "上线题目"}
+                    data-tooltip-place="right"
+                    disabled={switchVisibleLoading}
+                >
+                    {switchVisibleLoading ? (
+                        <Loader2 className="animate-spin" />
+                    ) : curChallenge?.visible ? <PanelTopOpen /> : <PanelTopClose />}
+                </Button>
+            </AlertConformer>
             <ChallengeManageSheet
                 gameID={gameID}
                 challengeID={curChallenge?.challenge_id ?? 0}
