@@ -119,7 +119,9 @@ export function LoginForm({
                     name="userName"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>{t("form_account")}</FormLabel>
+                            <div className="h-[20px] items-center flex">
+                                <FormLabel>{t("form_account")}</FormLabel>
+                            </div>
                             <FormControl>
                                 <Input {...field} />
                             </FormControl>
@@ -136,7 +138,7 @@ export function LoginForm({
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>
-                                <div className="flex items-center">
+                                <div className="flex items-center h-[40px]">
                                     <Label htmlFor="password">{t("password")}</Label>
                                     <a
                                         href="#"
@@ -188,7 +190,7 @@ export function LoginForm({
                         </svg>
                         {t("login_with_github")}
                     </Button>
-                    <Button variant="outline" className="w-full" disabled>
+                    {/* <Button variant="outline" className="w-full" disabled>
                         <img
                             src={clientConfig.SchoolSmallIcon}
                             alt={clientConfig.SchoolUnionAuthText}
@@ -196,7 +198,7 @@ export function LoginForm({
                             height={24}
                         />
                         {t("login_with_zjnu")}
-                    </Button>
+                    </Button> */}
                 </div>
             </form>
         </Form>

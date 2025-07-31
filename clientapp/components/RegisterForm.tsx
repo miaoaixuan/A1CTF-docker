@@ -79,7 +79,7 @@ export function RegisterForm({
         }).then((res) => {
             updateProfile(() => {
                 router(`/login`)
-    
+
                 setTimeout(() => {
                     toast.success(t("signup_success"))
                 }, 300)
@@ -100,9 +100,9 @@ export function RegisterForm({
     return (
         <div className='w-full select-none'>
             <div className="flex flex-col items-center gap-2 text-center mb-10">
-                <h1 className="text-2xl font-bold">{ t("signup_title") }</h1>
+                <h1 className="text-2xl font-bold">{t("signup_title")}</h1>
                 <p className="text-balance text-sm text-muted-foreground">
-                   { t("register_account_below") }
+                    {t("register_account_below")}
                 </p>
             </div>
             <Form {...form}>
@@ -112,12 +112,14 @@ export function RegisterForm({
                         name="email"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>{ t("form_email_address") }</FormLabel>
+                                <div className="h-[20px] items-center flex">
+                                    <FormLabel>{t("form_email_address")}</FormLabel>
+                                </div>
                                 <FormControl>
                                     <Input {...field} />
                                 </FormControl>
                                 <FormDescription>
-                                    { t("form_email_desc") }
+                                    {t("form_email_desc")}
                                 </FormDescription>
                                 <FormMessage />
                             </FormItem>
@@ -128,12 +130,14 @@ export function RegisterForm({
                         name="userName"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>{ t("form_username") }</FormLabel>
+                                <div className="h-[20px] items-center flex">
+                                    <FormLabel>{t("form_username")}</FormLabel>
+                                </div>
                                 <FormControl>
                                     <Input {...field} />
                                 </FormControl>
                                 <FormDescription>
-                                    { t("form_username_desc") }
+                                    {t("form_username_desc")}
                                 </FormDescription>
                                 <FormMessage />
                             </FormItem>
@@ -144,12 +148,14 @@ export function RegisterForm({
                         name="password"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>{ t("form_password") }</FormLabel>
+                                <div className="h-[20px] items-center flex">
+                                    <FormLabel>{t("form_password")}</FormLabel>
+                                </div>
                                 <FormControl>
                                     <Input type="password" {...field} />
                                 </FormControl>
                                 <FormDescription>
-                                    { t("form_password_desc") }
+                                    {t("form_password_desc")}
                                 </FormDescription>
                                 <FormMessage />
                             </FormItem>
@@ -160,7 +166,9 @@ export function RegisterForm({
                         name="confirmPassword"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>{ t("form_confirm_password") }</FormLabel>
+                                <div className="h-[20px] items-center flex">
+                                    <FormLabel>{t("form_confirm_password")}</FormLabel>
+                                </div>
                                 <FormControl>
                                     <Input type="password" {...field} />
                                 </FormControl>
@@ -168,7 +176,7 @@ export function RegisterForm({
                             </FormItem>
                         )}
                     />
-                    { clientConfig.captchaEnabled ? (
+                    {clientConfig.captchaEnabled ? (
                         <CapWidget
                             endpoint="/api/cap/"
                             onSolve={(token) => {
@@ -178,15 +186,15 @@ export function RegisterForm({
                                 toast.error("获取验证码失败")
                             }}
                         />
-                    ) : <></> } 
+                    ) : <></>}
                     <div className='h-0' />
-                    <Button type="submit" className="transition-all duration-300 w-full" disabled={loading || (clientConfig.captchaEnabled && token == "")}>{ t("signup") }</Button>
+                    <Button type="submit" className="transition-all duration-300 w-full" disabled={loading || (clientConfig.captchaEnabled && token == "")}>{t("signup")}</Button>
                     <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border transition-[border-color] duration-300">
                         <span className="relative z-10 bg-background px-2 text-muted-foreground transition-all duration-300">
                             {t("or_continue_with")}
                         </span>
                     </div>
-                    <Button type="button" variant={"outline"} className="transition-all duration-300 w-full" onClick={() => router(`/login`)}>{ t("login") }</Button>
+                    <Button type="button" variant={"outline"} className="transition-all duration-300 w-full" onClick={() => router(`/login`)}>{t("login")}</Button>
                 </form>
             </Form>
         </div>
