@@ -65,7 +65,8 @@ func Init() {
 		viper.GetString("postgres.port"),
 		viper.GetString("postgres.sslmode"))
 	db_local, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: newLogger, // 设置自定义 Logger
+		Logger:         newLogger, // 设置自定义 Logger
+		TranslateError: true,
 	})
 	if err != nil {
 		panic(err)

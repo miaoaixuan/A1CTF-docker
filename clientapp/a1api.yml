@@ -30,8 +30,6 @@ paths:
       operationId: getUserProfile
       summary: Get current user profile
       description: Get current user profile information
-      security:
-        - cookieAuth: []
       responses:
         '200':
           description: OK
@@ -47,6 +45,119 @@ paths:
                 required:
                   - code
                   - data
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server Error
+    put:
+      tags: [user]
+      operationId: updateUserProfile
+      summary: Update current user's profile
+      description: Update current user's profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdatePayload'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                required:
+                  - code
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server Error
+  /api/account/updateEmail:
+    post:
+      tags: [user]
+      operationId: updateEmailAddress
+      summary: Update user's email address
+      description: Update user's email address
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required:
+                - email
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                required:
+                  - code
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server Error
+  /api/account/sendVerifyEmail:
+    post:
+      tags: [user]
+      operationId: sendVerifyEmail
+      summary: Send verify email
+      description: Send verify email to user's email address
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                required:
+                  - code
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server Error
+  /api/verifyEmailCode:
+    post:
+      tags: [user]
+      operationId: verifyEmailCode
+      summary: Verify email code
+      description: Verify email code
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+              required:
+                - code
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                required:
+                  - code
         '401':
           description: Unauthorized
         '500':
@@ -788,8 +899,6 @@ paths:
       operationId: uploadGamePoster
       summary: 上传比赛海报
       description: 上传比赛海报图片并更新比赛信息，需要管理员权限
-      security:
-        - cookieAuth: []
       parameters:
         - name: game_id
           in: path
@@ -2022,8 +2131,6 @@ paths:
       operationId: uploadFile
       summary: 上传文件
       description: 上传文件并存储到服务器，返回文件ID
-      security:
-        - cookieAuth: []
       responses:
         '200':
           description: 文件上传成功
@@ -2069,14 +2176,57 @@ paths:
               required:
                 - file
         required: true
+  /api/admin/system/test-smtp:
+    post:
+      tags: [system]
+      operationId: sendSmtpTestMail
+      summary: Send a test mail to a email address
+      description: Send a test mail to a email address
+      responses:
+        '200':
+          description: 文件上传成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                required:
+                  - code
+                  - data
+        '400':
+          description: 请求错误，未上传文件或格式不正确
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '401':
+          description: 未授权，用户未登录
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                to:
+                  type: string
+                  description: 接收邮件的邮箱地址
+              required:
+                - to
   /api/admin/system/upload:
     post:
       tags: [system]
       operationId: uploadSystemFile
       summary: 上传系统文件
       description: 上传系统文件并存储到服务器，返回文件ID
-      security:
-        - cookieAuth: []
       responses:
         '200':
           description: 文件上传成功
@@ -2135,8 +2285,6 @@ paths:
       operationId: downloadFile
       summary: 下载文件
       description: 根据文件ID下载之前上传的文件
-      security:
-        - cookieAuth: []
       parameters:
         - name: file_id
           in: path
@@ -2177,8 +2325,6 @@ paths:
       operationId: uploadUserAvatar
       summary: 上传用户头像
       description: 上传用户头像图片并更新用户资料
-      security:
-        - cookieAuth: []
       responses:
         '200':
           description: 头像上传成功
@@ -2239,8 +2385,6 @@ paths:
       operationId: uploadTeamAvatar
       summary: 上传团队头像
       description: 上传团队头像图片并更新团队资料，需要团队成员权限
-      security:
-        - cookieAuth: []
       responses:
         '200':
           description: 团队头像上传成功
@@ -2317,8 +2461,6 @@ paths:
       operationId: teamAccept
       summary: 申请加入战队
       description: 使用邀请码申请加入战队
-      security:
-        - cookieAuth: []
       responses:
         '200':
           description: 申请提交成功
@@ -2368,8 +2510,6 @@ paths:
       operationId: getTeamJoinRequests
       summary: 获取战队加入申请列表
       description: 队长获取战队的加入申请列表
-      security:
-        - cookieAuth: []
       parameters:
         - name: team_id
           in: path
@@ -2422,8 +2562,6 @@ paths:
       operationId: handleTeamJoinRequest
       summary: 处理加入申请
       description: 队长批准或拒绝加入申请
-      security:
-        - cookieAuth: []
       parameters:
         - name: request_id
           in: path
@@ -2487,8 +2625,6 @@ paths:
       operationId: transferTeamCaptain
       summary: 转移队长
       description: 队长将队长权限转移给其他成员
-      security:
-        - cookieAuth: []
       parameters:
         - name: team_id
           in: path
@@ -2552,8 +2688,6 @@ paths:
       operationId: removeTeamMember
       summary: 踢出队员
       description: 队长踢出战队成员
-      security:
-        - cookieAuth: []
       parameters:
         - name: team_id
           in: path
@@ -2617,8 +2751,6 @@ paths:
       operationId: deleteTeam
       summary: 解散战队
       description: 队长解散战队
-      security:
-        - cookieAuth: []
       parameters:
         - name: team_id
           in: path
@@ -2675,8 +2807,6 @@ paths:
       operationId: updateTeamInfo
       summary: 更新战队信息
       description: 队长更新战队信息（只能修改口号）
-      security:
-        - cookieAuth: []
       parameters:
         - name: team_id
           in: path
@@ -2973,8 +3103,6 @@ paths:
       operationId: adminGetSystemLogs
       summary: 获取系统日志
       description: 管理员获取系统操作日志，支持分页和筛选
-      security:
-        - cookieAuth: []
       parameters:
         - name: offset
           in: query
@@ -3121,8 +3249,6 @@ paths:
       operationId: adminGetSystemLogStats
       summary: 获取系统日志统计
       description: 管理员获取系统日志统计信息（最近24小时）
-      security:
-        - cookieAuth: []
       responses:
         '200':
           description: 成功获取系统日志统计
@@ -4588,6 +4714,25 @@ components:
         - register_time
         - last_login_time
         - last_login_ip
+    UserProfileUpdatePayload:
+      type: object
+      properties:
+        phone:
+          type: string
+          nullable: true
+        student_number:
+          type: string
+          nullable: true
+        realname:
+          type: string
+          nullable: true
+        slogan:
+          type: string
+          nullable: true
+        username:
+          type: string
+      required:
+        - username
     TeamJoinPayload:
       type: object
       properties:
@@ -5361,6 +5506,11 @@ components:
           minimum: 1
           maximum: 65535
           example: 587
+        smtpName:
+          type: string
+        smtpPortType:
+          type: string
+          enum: ["none", "tls", "starttls"]
         smtpUsername:
           type: string
           description: SMTP用户名
@@ -5547,6 +5697,11 @@ components:
           description: SMTP服务器端口
           minimum: 1
           maximum: 65535
+        smtpName:
+          type: string
+        smtpPortType:
+          type: string
+          enum: ["none", "tls", "starttls"]
         smtpUsername:
           type: string
           description: SMTP用户名

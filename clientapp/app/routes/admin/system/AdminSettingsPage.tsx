@@ -27,55 +27,55 @@ import UserPolicySettings from "./UserPolicy";
 import { api } from "utils/ApiHelper";
 import { useTheme } from "next-themes";
 
-interface SystemSettings {
-    // 基本信息
-    systemName: string;
-    systemLogo: string;
-    systemSlogan: string;
-    systemSummary: string;
-    systemFooter: string;
-    systemFavicon: string;
+// interface SystemSettings {
+//     // 基本信息
+//     systemName: string;
+//     systemLogo: string;
+//     systemSlogan: string;
+//     systemSummary: string;
+//     systemFooter: string;
+//     systemFavicon: string;
 
-    // 主题设置
-    themeColor: string;
-    darkModeDefault: boolean;
-    allowUserTheme: boolean;
+//     // 主题设置
+//     themeColor: string;
+//     darkModeDefault: boolean;
+//     allowUserTheme: boolean;
 
-    // 品牌资源
-    fancyBackGroundIconWhite: string;
-    fancyBackGroundIconBlack: string;
-    defaultBGImage: string;
-    svgIconLight: string;
-    svgIconDark: string;
-    svgAltData: string;
-    trophysGold: string;
-    trophysSilver: string;
-    trophysBronze: string;
-    schoolLogo: string;
-    schoolSmallIcon: string;
-    schoolUnionAuthText: string;
-    bgAnimation: boolean;
+//     // 品牌资源
+//     fancyBackGroundIconWhite: string;
+//     fancyBackGroundIconBlack: string;
+//     defaultBGImage: string;
+//     svgIconLight: string;
+//     svgIconDark: string;
+//     svgAltData: string;
+//     trophysGold: string;
+//     trophysSilver: string;
+//     trophysBronze: string;
+//     schoolLogo: string;
+//     schoolSmallIcon: string;
+//     schoolUnionAuthText: string;
+//     bgAnimation: boolean;
 
-    // SMTP设置
-    smtpHost: string;
-    smtpPort: number;
-    smtpUsername: string;
-    smtpPassword: string;
-    smtpFrom: string;
-    smtpEnabled: boolean;
+//     // SMTP设置
+//     smtpHost: string;
+//     smtpPort: number;
+//     smtpUsername: string;
+//     smtpPassword: string;
+//     smtpFrom: string;
+//     smtpEnabled: boolean;
 
-    // Cloudflare Turnstile设置
-    captchaEnabled: boolean;
+//     // Cloudflare Turnstile设置
+//     captchaEnabled: boolean;
 
-    // 账户激活策略
-    accountActivationMethod: "auto" | "email" | "admin";
-    registrationEnabled: boolean;
+//     // 账户激活策略
+//     accountActivationMethod: "auto" | "email" | "admin";
+//     registrationEnabled: boolean;
 
-    // 其他系统设置
-    defaultLanguage: string;
-    timeZone: string;
-    maxUploadSize: number;
-}
+//     // 其他系统设置
+//     defaultLanguage: string;
+//     timeZone: string;
+//     maxUploadSize: number;
+// }
 
 // 使用Zod定义表单验证模式
 const systemSettingsSchema = z.object({
@@ -116,7 +116,9 @@ const systemSettingsSchema = z.object({
 
     // SMTP设置
     smtpHost: z.string().optional(),
-    smtpPort: z.number().int().positive().optional(),
+    smtpPort: z.coerce.number().int().positive().optional(),
+    smtpName: z.string().optional(),
+    smtpPortType: z.string().optional(),
     smtpUsername: z.string().optional(),
     smtpPassword: z.string().optional(),
     smtpFrom: z.string().optional(),
@@ -144,6 +146,7 @@ export const AdminSettingsPage = () => {
     const [isLoading, setIsLoading] = useState(false);
 
     const { action } = useParams();
+    const [dataLoaded, setDataLoaded] = useState(false)
     const [activeModule, setActiveModule] = useState(action);
 
     useEffect(() => {
@@ -194,6 +197,8 @@ export const AdminSettingsPage = () => {
 
             smtpHost: "",
             smtpPort: 587,
+            smtpName: "",
+            smtpPortType: "starttls",
             smtpUsername: "",
             smtpPassword: "",
             smtpFrom: "",
@@ -231,6 +236,7 @@ export const AdminSettingsPage = () => {
             toast.error("获取系统设置失败，请稍后再试");
         } finally {
             setIsLoading(false);
+            setDataLoaded(true)
         }
     };
 
@@ -318,7 +324,7 @@ export const AdminSettingsPage = () => {
                     <div className="flex flex-1 h-full overflow-hidden">
                         {activeModule == "aboutus" ? (
                             <div className="w-full h-full">
-                                <AboutPage 
+                                <AboutPage
                                     form={form}
                                     onSubmit={onSubmit}
                                 />
@@ -328,53 +334,57 @@ export const AdminSettingsPage = () => {
                                 skin={theme == "light" ? "light" : "dark"}
                             >
                                 <div className="p-10 flex flex-col gap-4">
-                                    {activeModule == "basic" && (
-                                        <BasicSettings
-                                            form={form}
-                                            onSubmit={onSubmit}
-                                        />
-                                    )}
+                                    {dataLoaded && (
+                                        <>
+                                            {activeModule == "basic" && (
+                                                <BasicSettings
+                                                    form={form}
+                                                    onSubmit={onSubmit}
+                                                />
+                                            )}
 
-                                    {activeModule == "resource" && (
-                                        <ResourceSettings
-                                            form={form}
-                                        />
-                                    )}
+                                            {activeModule == "resource" && (
+                                                <ResourceSettings
+                                                    form={form}
+                                                />
+                                            )}
 
-                                    {activeModule == "mail" && (
-                                        <MailSettings
-                                            form={form}
-                                        />
-                                    )}
+                                            {activeModule == "mail" && (
+                                                <MailSettings
+                                                    form={form}
+                                                />
+                                            )}
 
-                                    {activeModule == "security" && (
-                                        <SecurityPolicySettings
-                                            form={form}
-                                        />
-                                    )}
+                                            {activeModule == "security" && (
+                                                <SecurityPolicySettings
+                                                    form={form}
+                                                />
+                                            )}
 
-                                    {activeModule == "account-policy" && (
-                                        <UserPolicySettings
-                                            form={form}
-                                        />
-                                    )}
+                                            {activeModule == "account-policy" && (
+                                                <UserPolicySettings
+                                                    form={form}
+                                                />
+                                            )}
 
-                                    {activeModule == "others" && (
-                                        <OtherSettings
-                                            form={form}
-                                        />
-                                    )}
+                                            {activeModule == "others" && (
+                                                <OtherSettings
+                                                    form={form}
+                                                />
+                                            )}
 
-                                    <div className="w-full mt-4">
-                                        <Button
-                                            type="button"
-                                            onClick={form.handleSubmit(onSubmit)}
-                                            disabled={isLoading}
-                                        >
-                                            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save />}
-                                            {isLoading ? '保存中...' : '保存设置'}
-                                        </Button>
-                                    </div>
+                                            <div className="w-full mt-4">
+                                                <Button
+                                                    type="button"
+                                                    onClick={form.handleSubmit(onSubmit)}
+                                                    disabled={isLoading}
+                                                >
+                                                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save />}
+                                                    {isLoading ? '保存中...' : '保存设置'}
+                                                </Button>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </MacScrollbar>
                         )}

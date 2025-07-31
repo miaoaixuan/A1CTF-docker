@@ -1,5 +1,3 @@
-import "wdyr"
-
 import {
     isRouteErrorResponse,
     Links,
@@ -8,6 +6,7 @@ import {
     Scripts,
     ScrollRestoration,
     useLocation,
+    useNavigate,
 } from "react-router";
 import React, { useState, useEffect } from "react";
 
@@ -34,6 +33,7 @@ import HydrateFallbackPage from "components/HydrateFallbackPage";
 import ScreenTooSmall from "components/modules/ScreenTooSmall";
 import { isMobile } from "react-device-detect";
 import { useTheme } from "next-themes";
+import { setGlobalNavigate } from "utils/ApiHelper";
 
 export const links: Route.LinksFunction = () => [
     { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -114,7 +114,13 @@ function ThemeAwareLinks() {
 
 export function Layout({ children }: { children: React.ReactNode }) {
     const href = useLocation().pathname
+    const navigate = useNavigate()
     const animationPresent = AnimationPresent(href)
+
+    // 设置全局导航函数
+    React.useEffect(() => {
+        setGlobalNavigate(navigate);
+    }, [navigate]);
 
     const checkPageMobileShouldVisible = () => {
         if (!isMobile) return true

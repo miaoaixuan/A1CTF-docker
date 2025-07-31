@@ -2,7 +2,7 @@ import PageHeader from "components/A1Headers"
 
 import A1Footer from "components/A1Footer";
 import SafeComponent from "components/SafeComponent";
-import { PasswordView } from "components/PasswordView";
+import { PasswordView } from "components/user/profile/PasswordView";
 import { useParams } from "react-router";
 
 export default function UserResetPasswordPage() {

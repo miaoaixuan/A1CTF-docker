@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"a1ctf/src/db/models"
+	clientconfig "a1ctf/src/modules/client_config"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/webmodels"
 	"net/http"
@@ -124,6 +125,24 @@ func TeamStatusMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("team", team)
+		c.Next()
+	}
+}
+
+func EmailVerifiedMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user := c.MustGet("user").(models.User)
+
+		// 检查邮箱验证状态
+		if !user.EmailVerified && clientconfig.ClientConfig.AccountActivationMethod == "email" {
+			c.JSON(421, webmodels.ErrorMessage{
+				Code:    421,
+				Message: "You must verify your email first",
+			})
+			c.Abort()
+			return
+		}
+
 		c.Next()
 	}
 }

@@ -4,14 +4,14 @@ import { redirect } from "react-router";
 export default [
     route("", "routes/A1CTFMainPage.tsx"),
     route("games/", "routes/games/UserGameList.tsx"),
+    route("email-verify", "routes/EmailVerify.tsx"),
 
     route("games/:id/:module", "routes/games/[id]/UserGameView.tsx"),
 
     route("about/", "routes/about/SystemAboutPage.tsx"),
     route("version/", "routes/version/SystemVersionPage.tsx"),
 
-    route("profile/", "routes/profile/UserProfileSettings.tsx"),
-    route("profile/password/", "routes/profile/password/UserResetPasswordPage.tsx"),
+    route("profile/:action", "routes/profile/UserProfileSettings.tsx"),
 
     route("login/", "routes/login/UserLoginPage.tsx"),
     route("signup/", "routes/signup/UserSignupPage.tsx"),

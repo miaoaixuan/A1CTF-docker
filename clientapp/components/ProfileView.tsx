@@ -1,212 +1,109 @@
-import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from "components/ui/form"
 
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
-import { Input } from "./ui/input";
+
 import { Button } from "./ui/button";
-import { UploadImageDialog } from "./dialogs/UploadImageDialog";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
-import { Skeleton } from "./ui/skeleton";
 import { MacScrollbar } from "mac-scrollbar";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { AxiosError } from "axios";
-import { api, ErrorMessage } from "utils/GZApi";
-import { useNavigate } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
+import { Accessibility, KeyRound, Mail, Save, UserRoundPen } from "lucide-react";
+import UserBaiscInfo from "./user/profile/UserBaiscInfo";
+import { PasswordView } from "./user/profile/PasswordView";
+import EmailSettings from "./user/profile/EmailSettings";
+import DeleteAccount from "./user/profile/DeleteAccount";
 
-export function ProfileView () {
+export function ProfileView() {
 
-    const router = useNavigate()
-
-    const [submitDisabled, setSubmitDisabled] = useState(false)
+    const navigate = useNavigate()
+    const { action } = useParams();
 
     const { t } = useTranslation("profile_settings")
 
-
-    const formSchema = z.object({
-        userName: z.string().min(2, {
-            message: t("form_username_error")
-        }),
-        phone: z.string().optional(),
-        studentNumber: z.string(),
-        realName: z.string(),
-        desc: z.string()
-    })
-
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            userName: "",
-            phone: "",
-            studentNumber: "",
-            realName: "",
-            desc: ""
+    const modules = [
+        {
+            id: "basic",
+            name: "基本信息",
+            icon: <UserRoundPen className="h-4 w-4" />
         },
-    })
+        {
+            id: "password",
+            name: "修改密码",
+            icon: <KeyRound className="h-4 w-4" />
+        },
+        {
+            id: "email",
+            name: "邮箱设置",
+            icon: <Mail className="h-4 w-4" />
+        },
+        {
+            id: "mambaout",
+            name: "删号跑路",
+            icon: <Accessibility className="h-4 w-4" />
+        },
+    ];
 
-    const { curProfile, updateProfile } = useGlobalVariableContext()
+    const [activeModule, setActiveModule] = useState(action || 'events');
 
     useEffect(() => {
-        form.setValue("userName", curProfile.username || "")
-        form.setValue("phone", curProfile.phone || "")
-        form.setValue("studentNumber", curProfile.student_number || "")
-        form.setValue("realName", curProfile.realname || "")
-        form.setValue("desc", curProfile.slogan || "")
-    }, [curProfile])
-    
-    function onSubmit(values: z.infer<typeof formSchema>) {
-        setSubmitDisabled(true)
-        api.account.accountUpdate({
-            "userName": values.userName,
-            "realName": values.realName,
-            "stdNumber": values.studentNumber,
-            "bio": values.desc,
-            "phone": values.phone
-        }).then((res) => {
-            toast.success(t("save_profile_success"))
-        }).catch((error: AxiosError) => {
-            if (error.response?.status) {
-                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.title)
-            } else {
-                toast.error(t("unknow_error"))
-            }
-        })
-    }
+        if (!modules.filter(m => m.id == action).length) {
+            navigate("/404")
+            return
+        }
+        setActiveModule(action || "events")
+    }, [action])
 
     const { theme } = useTheme()
 
     return (
-        <MacScrollbar className="w-full h-full flex flex-col overflow-hidden overflow-y-auto select-none"
-            skin={theme == "light" ? "light" : "dark"}
-        >
-            <div className="w-full flex flex-col items-center pt-12">
-                <div className="flex w-[80%] lg:w-[40%]">
-                    <span className="font-bold text-2xl mb-10">{ t("change_profile_below") }</span>
+
+        <div className="w-full flex justify-center h-full">
+            <div className="flex container h-full overflow-hidden">
+                {/* 左侧模块导航 */}
+                <div className="w-64 flex-none border-r-1 select-none">
+                    <div className="px-6 pt-5">
+                        <h3 className="font-bold text-lg mb-4 text-foreground/90">个人资料</h3>
+                        <div className="space-y-2">
+                            {modules.map((module) => (
+                                <Button
+                                    key={module.id}
+                                    type="button"
+                                    className='w-full h-10 flex justify-start gap-2'
+                                    variant={activeModule === module.id ? "default" : "ghost"}
+                                    onClick={() => {
+                                        navigate(`/profile/${module.id}`)
+                                    }}
+                                >
+                                    {module.icon}
+                                    <span className="font-medium">{module.name}</span>
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
-                <div className="w-[80%] lg:w-[40%] pb-12">
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                            <div className="flex gap-10">
-                                <div className="flex-1">
-                                    <FormField
-                                        control={form.control}
-                                        name="userName"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>{ t("form_username_label") }</FormLabel>
-                                                <FormControl>
-                                                    <Input {...field} />
-                                                </FormControl>
-                                                <FormDescription>
-                                                    { t("form_username_desc") }
-                                                </FormDescription>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                                <div className="flex h-full items-center">
-                                    <UploadImageDialog type="person" updateTeam={updateProfile}>
-                                        <Avatar className="select-none w-20 h-20">
-                                            { curProfile.avatar ? (
-                                                <>
-                                                    <AvatarImage src={curProfile.avatar || "#"} alt="@shadcn"
-                                                        className={`rounded-2xl`}
-                                                    />
-                                                    <AvatarFallback><Skeleton className="h-20 w-20 rounded-full" /></AvatarFallback>
-                                                </>
-                                            ) : ( 
-                                                <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
-                                                    <span className='text-background text-xl'> { curProfile.username?.substring(0, 2) } </span>
-                                                </div>
-                                            ) }
-                                        </Avatar>
-                                    </UploadImageDialog>
-                                </div>
-                            </div>
-                            <FormField
-                                control={form.control}
-                                name="phone"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>{ t("form_phone_label") }</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} />
-                                        </FormControl>
-                                        <FormDescription>
-                                            { t("form_phone_desc") }
-                                        </FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="realName"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>{ t("form_realname_label") }</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} />
-                                        </FormControl>
-                                        <FormDescription>
-                                            { t("form_realname_desc") }
-                                        </FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="studentNumber"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>{ t("form_student_number_label") }</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} />
-                                        </FormControl>
-                                        <FormDescription>
-                                            { t("form_student_number_desc") }
-                                        </FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="desc"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>{ t("form_desc_label") }</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} />
-                                        </FormControl>
-                                        <FormDescription>
-                                            { t("form_desc_desc") }
-                                        </FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <Button type="submit" className="transition-all duration-300 mr-4">{ t("submit") }</Button>
-                            <Button type="button" className="transition-all duration-300" onClick={() => router(`/profile/email`)}>{ t("change_email") }</Button>
-                        </form>
-                    </Form>
+                <div className="flex-1 overflow-hidden">
+                    <MacScrollbar className="w-full h-full overflow-hidden select-none"
+                        skin={theme == "light" ? "light" : "dark"}
+                    >
+                        <div className="w-full h-full px-10 pt-10">
+                            {activeModule == "basic" && (
+                                <UserBaiscInfo />
+                            )}
+
+                            {activeModule == "password" && (
+                                <PasswordView />
+                            )}
+
+                            {activeModule == "email" && (
+                                <EmailSettings />
+                            )}
+
+                            {activeModule == "mambaout" && (
+                                <DeleteAccount />
+                            )}
+                        </div>
+                    </MacScrollbar>
                 </div>
             </div>
-        </MacScrollbar>
+        </div>
     )
 }

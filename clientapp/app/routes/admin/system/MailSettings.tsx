@@ -7,6 +7,10 @@ import { SystemSettingsValues } from "./AdminSettingsPage";
 import { Editor } from "@monaco-editor/react";
 import { Mail } from "lucide-react";
 import ThemedEditor from "components/modules/ThemedEditor";
+import { useState } from "react";
+import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper";
+import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "components/ui/select";
 
 
 export const MailSettings = (
@@ -14,6 +18,8 @@ export const MailSettings = (
         form: UseFormReturn<SystemSettingsValues>,
     }
 ) => {
+
+    const [smtpTestTarget, setSmtpTestTarget] = useState("")
 
     return (
         <>
@@ -43,6 +49,56 @@ export const MailSettings = (
                     <FormItem>
                         <div className="flex items-center h-[20px]">
                             <FormLabel>SMTP端口</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
+                        <FormControl>
+                            <Input {...field} />
+                        </FormControl>
+                    </FormItem>
+                )}
+            />
+
+            <FormField
+                control={form.control}
+                name="smtpPortType"
+                render={({ field }) => {
+                    console.log(field.value)
+                    return (
+                        <FormItem>
+                            <div className="flex items-center h-[20px]">
+                                <FormLabel>SMTP端口类型</FormLabel>
+                                <div className="flex-1" />
+                                <FormMessage className="text-[14px]" />
+                            </div>
+                            <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                            >
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="选择账户激活方式" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="none">无(25端口默认)</SelectItem>
+                                    <SelectItem value="tls">TLS</SelectItem>
+                                    <SelectItem value="starttls">STARTTLS</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )
+                }}
+            />
+
+            <FormField
+                control={form.control}
+                name="smtpName"
+                render={({ field }) => (
+                    <FormItem>
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>发件人名字</FormLabel>
                             <div className="flex-1" />
                             <FormMessage className="text-[14px]" />
                         </div>
@@ -132,8 +188,18 @@ export const MailSettings = (
             <div className="flex flex-col gap-2 mt-1">
                 <FormLabel>邮件测试</FormLabel>
                 <div className="flex gap-4 mt-1">
-                    <Input />
-                    <Button>
+                    <Input value={smtpTestTarget} onChange={(val) => setSmtpTestTarget(val.target.value)} />
+                    <Button
+                        onClick={() => {
+                            api.system.sendSmtpTestMail({
+                                to: smtpTestTarget
+                            }, createSkipGlobalErrorConfig()).then((res) => {
+                                toast.success("测试邮件已发送")
+                            }).catch((err) => {
+                                toast.success("测试邮件发送失败，请查看系统日志检查错误")
+                            })
+                        }}
+                    >
                         <Mail />
                         发送
                     </Button>

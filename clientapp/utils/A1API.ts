@@ -784,6 +784,14 @@ export interface UserProfile {
   client_config_version?: string;
 }
 
+export interface UserProfileUpdatePayload {
+  phone?: string | null;
+  student_number?: string | null;
+  realname?: string | null;
+  slogan?: string | null;
+  username: string;
+}
+
 export interface TeamJoinPayload {
   /** 战队邀请码 */
   invite_code: string;
@@ -1320,6 +1328,8 @@ export interface SystemSettings {
    * @example 587
    */
   smtpPort: number;
+  smtpName?: string;
+  smtpPortType?: "none" | "tls" | "starttls";
   /**
    * SMTP用户名
    * @example "noreply@example.com"
@@ -1467,6 +1477,8 @@ export interface SystemSettingsPartialUpdate {
    * @max 65535
    */
   smtpPort?: number;
+  smtpName?: string;
+  smtpPortType?: "none" | "tls" | "starttls";
   /** SMTP用户名 */
   smtpUsername?: string;
   /**
@@ -1738,7 +1750,6 @@ export class Api<
      * @name GetUserProfile
      * @summary Get current user profile
      * @request GET:/api/account/profile
-     * @secure
      */
     getUserProfile: (params: RequestParams = {}) =>
       this.request<
@@ -1750,7 +1761,110 @@ export class Api<
       >({
         path: `/api/account/profile`,
         method: "GET",
-        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Update current user's profile
+     *
+     * @tags user
+     * @name UpdateUserProfile
+     * @summary Update current user's profile
+     * @request PUT:/api/account/profile
+     */
+    updateUserProfile: (
+      data: UserProfileUpdatePayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+        },
+        void
+      >({
+        path: `/api/account/profile`,
+        method: "PUT",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Update user's email address
+     *
+     * @tags user
+     * @name UpdateEmailAddress
+     * @summary Update user's email address
+     * @request POST:/api/account/updateEmail
+     */
+    updateEmailAddress: (
+      data: {
+        /** @format email */
+        email: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+        },
+        void
+      >({
+        path: `/api/account/updateEmail`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Send verify email to user's email address
+     *
+     * @tags user
+     * @name SendVerifyEmail
+     * @summary Send verify email
+     * @request POST:/api/account/sendVerifyEmail
+     */
+    sendVerifyEmail: (params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+        },
+        void
+      >({
+        path: `/api/account/sendVerifyEmail`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Verify email code
+     *
+     * @tags user
+     * @name VerifyEmailCode
+     * @summary Verify email code
+     * @request POST:/api/verifyEmailCode
+     */
+    verifyEmailCode: (
+      data: {
+        code: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+        },
+        void
+      >({
+        path: `/api/verifyEmailCode`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),
@@ -2107,7 +2221,6 @@ export class Api<
      * @name UploadUserAvatar
      * @summary 上传用户头像
      * @request POST:/api/user/avatar/upload
-     * @secure
      */
     uploadUserAvatar: (
       data: {
@@ -2133,7 +2246,6 @@ export class Api<
         path: `/api/user/avatar/upload`,
         method: "POST",
         body: data,
-        secure: true,
         type: ContentType.FormData,
         format: "json",
         ...params,
@@ -2655,7 +2767,6 @@ export class Api<
      * @name UploadGamePoster
      * @summary 上传比赛海报
      * @request POST:/api/admin/game/{game_id}/poster/upload
-     * @secure
      */
     uploadGamePoster: (
       gameId: number,
@@ -2682,7 +2793,6 @@ export class Api<
         path: `/api/admin/game/${gameId}/poster/upload`,
         method: "POST",
         body: data,
-        secure: true,
         type: ContentType.FormData,
         format: "json",
         ...params,
@@ -3252,7 +3362,6 @@ export class Api<
      * @name AdminGetSystemLogs
      * @summary 获取系统日志
      * @request GET:/api/admin/system/logs
-     * @secure
      */
     adminGetSystemLogs: (
       query?: {
@@ -3316,7 +3425,6 @@ export class Api<
         path: `/api/admin/system/logs`,
         method: "GET",
         query: query,
-        secure: true,
         format: "json",
         ...params,
       }),
@@ -3328,7 +3436,6 @@ export class Api<
      * @name AdminGetSystemLogStats
      * @summary 获取系统日志统计
      * @request GET:/api/admin/system/logs/stats
-     * @secure
      */
     adminGetSystemLogStats: (params: RequestParams = {}) =>
       this.request<
@@ -3341,7 +3448,6 @@ export class Api<
       >({
         path: `/api/admin/system/logs/stats`,
         method: "GET",
-        secure: true,
         format: "json",
         ...params,
       }),
@@ -3439,7 +3545,6 @@ export class Api<
      * @name UploadFile
      * @summary 上传文件
      * @request POST:/api/file/upload
-     * @secure
      */
     uploadFile: (
       data: {
@@ -3466,7 +3571,6 @@ export class Api<
         path: `/api/file/upload`,
         method: "POST",
         body: data,
-        secure: true,
         type: ContentType.FormData,
         format: "json",
         ...params,
@@ -3479,17 +3583,45 @@ export class Api<
      * @name DownloadFile
      * @summary 下载文件
      * @request GET:/api/file/download/{file_id}
-     * @secure
      */
     downloadFile: (fileId: string, params: RequestParams = {}) =>
       this.request<File, ErrorMessage>({
         path: `/api/file/download/${fileId}`,
         method: "GET",
-        secure: true,
         ...params,
       }),
   };
   system = {
+    /**
+     * @description Send a test mail to a email address
+     *
+     * @tags system
+     * @name SendSmtpTestMail
+     * @summary Send a test mail to a email address
+     * @request POST:/api/admin/system/test-smtp
+     */
+    sendSmtpTestMail: (
+      data: {
+        /** 接收邮件的邮箱地址 */
+        to: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/admin/system/test-smtp`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
     /**
      * @description 上传系统文件并存储到服务器，返回文件ID
      *
@@ -3497,7 +3629,6 @@ export class Api<
      * @name UploadSystemFile
      * @summary 上传系统文件
      * @request POST:/api/admin/system/upload
-     * @secure
      */
     uploadSystemFile: (
       data: {
@@ -3539,7 +3670,6 @@ export class Api<
         path: `/api/admin/system/upload`,
         method: "POST",
         body: data,
-        secure: true,
         type: ContentType.FormData,
         format: "json",
         ...params,
@@ -3608,7 +3738,6 @@ export class Api<
      * @name UploadTeamAvatar
      * @summary 上传团队头像
      * @request POST:/api/team/avatar/upload
-     * @secure
      */
     uploadTeamAvatar: (
       data: {
@@ -3636,7 +3765,6 @@ export class Api<
         path: `/api/team/avatar/upload`,
         method: "POST",
         body: data,
-        secure: true,
         type: ContentType.FormData,
         format: "json",
         ...params,
@@ -3649,7 +3777,6 @@ export class Api<
      * @name TeamAccept
      * @summary 申请加入战队
      * @request POST:/api/team/join
-     * @secure
      */
     teamAccept: (data: TeamJoinPayload, params: RequestParams = {}) =>
       this.request<
@@ -3664,7 +3791,6 @@ export class Api<
         path: `/api/team/join`,
         method: "POST",
         body: data,
-        secure: true,
         type: ContentType.Json,
         format: "json",
         ...params,
@@ -3677,7 +3803,6 @@ export class Api<
      * @name GetTeamJoinRequests
      * @summary 获取战队加入申请列表
      * @request GET:/api/team/{team_id}/requests
-     * @secure
      */
     getTeamJoinRequests: (teamId: number, params: RequestParams = {}) =>
       this.request<
@@ -3690,7 +3815,6 @@ export class Api<
       >({
         path: `/api/team/${teamId}/requests`,
         method: "GET",
-        secure: true,
         format: "json",
         ...params,
       }),
@@ -3702,7 +3826,6 @@ export class Api<
      * @name HandleTeamJoinRequest
      * @summary 处理加入申请
      * @request POST:/api/team/request/{request_id}/handle
-     * @secure
      */
     handleTeamJoinRequest: (
       requestId: number,
@@ -3721,7 +3844,6 @@ export class Api<
         path: `/api/team/request/${requestId}/handle`,
         method: "POST",
         body: data,
-        secure: true,
         type: ContentType.Json,
         format: "json",
         ...params,
@@ -3734,7 +3856,6 @@ export class Api<
      * @name TransferTeamCaptain
      * @summary 转移队长
      * @request POST:/api/team/{team_id}/transfer-captain
-     * @secure
      */
     transferTeamCaptain: (
       teamId: number,
@@ -3753,7 +3874,6 @@ export class Api<
         path: `/api/team/${teamId}/transfer-captain`,
         method: "POST",
         body: data,
-        secure: true,
         type: ContentType.Json,
         format: "json",
         ...params,
@@ -3766,7 +3886,6 @@ export class Api<
      * @name RemoveTeamMember
      * @summary 踢出队员
      * @request DELETE:/api/team/{team_id}/member/{user_id}
-     * @secure
      */
     removeTeamMember: (
       teamId: number,
@@ -3784,7 +3903,6 @@ export class Api<
       >({
         path: `/api/team/${teamId}/member/${userId}`,
         method: "DELETE",
-        secure: true,
         format: "json",
         ...params,
       }),
@@ -3796,7 +3914,6 @@ export class Api<
      * @name DeleteTeam
      * @summary 解散战队
      * @request DELETE:/api/team/{team_id}
-     * @secure
      */
     deleteTeam: (teamId: number, params: RequestParams = {}) =>
       this.request<
@@ -3810,7 +3927,6 @@ export class Api<
       >({
         path: `/api/team/${teamId}`,
         method: "DELETE",
-        secure: true,
         format: "json",
         ...params,
       }),
@@ -3822,7 +3938,6 @@ export class Api<
      * @name UpdateTeamInfo
      * @summary 更新战队信息
      * @request PUT:/api/team/{team_id}
-     * @secure
      */
     updateTeamInfo: (
       teamId: number,
@@ -3841,7 +3956,6 @@ export class Api<
         path: `/api/team/${teamId}`,
         method: "PUT",
         body: data,
-        secure: true,
         type: ContentType.Json,
         format: "json",
         ...params,

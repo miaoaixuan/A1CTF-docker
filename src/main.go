@@ -16,6 +16,7 @@ import (
 	"a1ctf/src/jobs"
 	clientconfig "a1ctf/src/modules/client_config"
 	jwtauth "a1ctf/src/modules/jwt_auth"
+	emailjwt "a1ctf/src/modules/jwt_email"
 	"a1ctf/src/modules/monitoring"
 	proofofwork "a1ctf/src/modules/proof_of_work"
 	"a1ctf/src/tasks"
@@ -193,6 +194,9 @@ func main() {
 	// JWT 鉴权中间件
 	authMiddleware := jwtauth.InitJwtMiddleWare()
 
+	// 初始化 email jwt
+	emailjwt.InitRSAKeys()
+
 	// 公共接口
 	public := r.Group("/api")
 	{
@@ -214,6 +218,9 @@ func main() {
 		public.POST("/cap/challenge", controllers.CapCreateChallenge)
 		public.POST("/cap/redeem", controllers.CapRedeemChallenge)
 		public.POST("/cap/validate", controllers.CapValidateToken)
+
+		// 邮箱验证接口
+		public.POST("/verifyEmailCode", controllers.VerifyEmailCode)
 	}
 
 	// 鉴权接口
@@ -225,26 +232,26 @@ func main() {
 			fileGroup.POST("/upload", controllers.UploadFile)
 		}
 
-		// 添加账户相关接口
+		// 获取用户资料和更新用户资料的接口
 		accountGroup := auth.Group("/account")
 		{
 			accountGroup.GET("/profile", controllers.GetProfile)
+			accountGroup.PUT("/profile", controllers.UpdateUserProfile)
+
+			accountGroup.POST("/updateEmail", controllers.UpdateUserEmail)
+			accountGroup.POST("/sendVerifyEmail", controllers.SendVerifyEmail)
 		}
 
 		// 用户头像上传接口
 		userAvatarGroup := auth.Group("/user")
+		userAvatarGroup.Use(controllers.EmailVerifiedMiddleware())
 		{
 			userAvatarGroup.POST("/avatar/upload", controllers.UploadUserAvatar)
 		}
 
-		// 团队头像上传接口
-		teamAvatarGroup := auth.Group("/team")
-		{
-			teamAvatarGroup.POST("/avatar/upload", controllers.UploadTeamAvatar)
-		}
-
-		// 团队管理接口
+		// 团队相关管理接口
 		teamManageGroup := auth.Group("/team")
+		teamManageGroup.Use(controllers.EmailVerifiedMiddleware())
 		{
 			teamManageGroup.POST("/join", controllers.TeamJoinRequest)
 			teamManageGroup.GET("/:team_id/requests", controllers.GetTeamJoinRequests)
@@ -253,9 +260,12 @@ func main() {
 			teamManageGroup.DELETE("/:team_id/member/:user_id", controllers.RemoveTeamMember)
 			teamManageGroup.DELETE("/:team_id", controllers.DeleteTeam)
 			teamManageGroup.PUT("/:team_id", controllers.UpdateTeamInfo)
+
+			teamManageGroup.POST("/avatar/upload", controllers.UploadTeamAvatar)
 		}
 
 		challengeGroup := auth.Group("/admin/challenge")
+		challengeGroup.Use(controllers.EmailVerifiedMiddleware())
 		{
 			challengeGroup.POST("/list", controllers.AdminListChallenges)
 
@@ -267,6 +277,7 @@ func main() {
 			challengeGroup.POST("/search", controllers.AdminSearchChallenges)
 		}
 
+		// 管理员用户管理接口
 		userGroup := auth.Group("/admin/user")
 		{
 			userGroup.POST("/list", controllers.AdminListUsers)
@@ -275,6 +286,7 @@ func main() {
 			userGroup.POST("/delete", controllers.AdminDeleteUser)
 		}
 
+		// 管理员队伍管理接口
 		teamGroup := auth.Group("/admin/team")
 		{
 			teamGroup.POST("/list", controllers.AdminListTeams)
@@ -284,17 +296,19 @@ func main() {
 			teamGroup.POST("/delete", controllers.AdminDeleteTeam)
 		}
 
+		// 管理员游戏管理接口
 		gameGroup := auth.Group("/admin/game")
 		{
 			gameGroup.POST("/list", controllers.AdminListGames)
 			gameGroup.POST("/create", controllers.AdminCreateGame)
-			gameGroup.GET("/:game_id", controllers.AdminGetGame)
 
+			gameGroup.GET("/:game_id", controllers.AdminGetGame)
+			gameGroup.PUT("/:game_id", controllers.AdminUpdateGame)
+
+			// gamechallenges 操作接口
 			gameGroup.GET("/:game_id/challenge/:challenge_id", controllers.AdminGetGameChallenge)
 			gameGroup.PUT("/:game_id/challenge/:challenge_id", controllers.AdminUpdateGameChallenge)
 			gameGroup.POST("/:game_id/challenge/:challenge_id", controllers.AdminAddGameChallenge)
-
-			gameGroup.PUT("/:game_id", controllers.AdminUpdateGame)
 
 			gameGroup.POST("/:game_id/submits", controllers.AdminGetSubmits)
 			gameGroup.POST("/:game_id/cheats", controllers.AdminGetCheats)
@@ -323,9 +337,11 @@ func main() {
 			gameGroup.POST("/:game_id/challenge/:challenge_id/solves/delete", controllers.AdminDeleteChallengeSolves)
 		}
 
-		// 用户相关接口
+		// 用户比赛访问相关接口
 		userGameGroup := auth.Group("/game")
+		userGameGroup.Use(controllers.EmailVerifiedMiddleware())
 		{
+			// 获取比赛的题目列表
 			userGameGroup.GET("/:game_id/challenges", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenges)
 
 			// 查询比赛中的某道题
@@ -351,6 +367,7 @@ func main() {
 			userGameGroup.GET("/:game_id/flag/:judge_id", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserGameGetJudgeResult)
 		}
 
+		// 实时通知服务
 		auth.GET("/hub", func(c *gin.Context) {
 			// 在升级为WebSocket前获取查询参数
 			gameID := c.Query("game")

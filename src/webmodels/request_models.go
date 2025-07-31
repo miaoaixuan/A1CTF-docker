@@ -200,3 +200,20 @@ const (
 	GameIconLight            SystemResourceType = "gameIconLight"
 	GameIconDark             SystemResourceType = "gameIconDark"
 )
+
+// 用户个人资料更新
+type UpdateUserProfilePayload struct {
+	RealName  *string `json:"real_name"`
+	StudentID *string `json:"student_id"`
+	Phone     *string `json:"phone"`
+	Slogan    *string `json:"slogan"`
+	UserName  *string `json:"username"`
+}
+
+type UpdateUserEmailPayload struct {
+	NewEmail string `json:"email"`
+}
+
+type EmailVerifyPayload struct {
+	Code string `json:"code"`
+}

@@ -124,10 +124,6 @@ const PageHeader = () => {
                                                 <Settings />
                                                 <span>{ t("settings") }</span>
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => navigate(`/teams`)}>
-                                                <UsersRound />
-                                                <span>{ t("team") }</span>
-                                            </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => navigate(`/profile/password`)}>
                                                 <KeyRound />
                                                 <span>{ t("change_password_header") }</span>
@@ -241,10 +237,6 @@ const PageHeader = () => {
                                                         <DropdownMenuItem onClick={() => navigate(`/profile`)}>
                                                             <Settings />
                                                             <span>{ t("settings") }</span>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => navigate(`/teams`)}>
-                                                            <UsersRound />
-                                                            <span>{ t("team") }</span>
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => navigate(`/profile/password`)}>
                                                             <KeyRound />

@@ -34,7 +34,6 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
 
     const navigate = useNavigate()
 
-    const [searchParams, setSearchParams] = useSearchParams()
     const [formEdited, setFormEdited] = useState(false)
 
     // 添加状态来管理当前选中的模块
@@ -49,27 +48,6 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
     }, [action])
 
     const { theme } = useTheme()
-
-    const env_to_string = (data: { name: string, value: string }[]) => {
-        console.log(data)
-        let env = ""
-        data.forEach((item) => {
-            env += `${item.name}=${item.value},`
-        })
-        return env.substring(0, env.length - 1)
-    }
-
-    const string_to_env = (data: string): { name: string, value: string }[] => {
-        const env: { name: string, value: string }[] = []
-
-        data.split(",").forEach((item) => {
-            const [name, value] = item.split("=")
-            env.push({ name, value })
-        })
-
-        return env
-    }
-
     const { clientConfig } = useGlobalVariableContext()
 
     const form = useForm<z.infer<typeof EditGameFormSchema>>({
@@ -166,9 +144,9 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
             third_blood_reward: values.third_blood_reward
         };
 
-        api.admin.updateGame(game_info.game_id, finalData as any as AdminFullGameInfo).then((res) => {
+        api.admin.updateGame(game_info.game_id, finalData as any as AdminFullGameInfo).then(() => {
             toast.success("比赛信息更新成功")
-        }).catch((err: AxiosError) => {
+        }).catch(() => {
             toast.error("更新失败")
         })
     }

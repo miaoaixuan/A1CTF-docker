@@ -49,6 +49,8 @@ type SystemSettings struct {
 	SmtpPort      int    `json:"smtpPort"`
 	SmtpUsername  string `json:"smtpUsername"`
 	SmtpPassword  string `json:"smtpPassword"`
+	SmtpName      string `json:"smtpName"`
+	SmtpPortType  string `json:"smtpPortType"`
 	SmtpFrom      string `json:"smtpFrom"`
 	SmtpEnabled   bool   `json:"smtpEnabled"`
 	EmailTemplate string `json:"emailTemplate"`
@@ -109,7 +111,8 @@ var DefaultSettings = SystemSettings{
 	CaptchaEnabled: true,
 	AboutUS:        "A1CTF Platform",
 
-	SmtpPort:                587,
+	SmtpPort:                25,
+	SmtpPortType:            "none",
 	DefaultLanguage:         "zh-CN",
 	TimeZone:                "Asia/Shanghai",
 	MaxUploadSize:           10,

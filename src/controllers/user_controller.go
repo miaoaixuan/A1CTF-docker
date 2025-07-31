@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 
 	"a1ctf/src/db/models"
 	clientconfig "a1ctf/src/modules/client_config"
+	emailjwt "a1ctf/src/modules/jwt_email"
 	proofofwork "a1ctf/src/modules/proof_of_work"
 	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
@@ -238,5 +240,135 @@ func GetClientConfig(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
 		"data": clientConfig,
+	})
+}
+
+func UpdateUserProfile(c *gin.Context) {
+	var payload webmodels.UpdateUserProfilePayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid request payload",
+		})
+		return
+	}
+
+	user := c.MustGet("user").(models.User)
+
+	if err := dbtool.DB().Model(&user).Updates(models.User{
+		Realname:      payload.RealName,
+		StudentNumber: payload.StudentID,
+		Phone:         payload.Phone,
+		Slogan:        payload.Slogan,
+		Username:      *payload.UserName,
+	}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "System error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+	})
+}
+
+func UpdateUserEmail(c *gin.Context) {
+	var payload webmodels.UpdateUserEmailPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid request payload",
+		})
+		return
+	}
+
+	user := c.MustGet("user").(models.User)
+
+	if *user.Email == payload.NewEmail {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "New email is the same as the old email",
+		})
+		return
+	}
+
+	if err := dbtool.DB().Model(&user).Select("email", "email_verified").Updates(models.User{
+		Email:         &payload.NewEmail,
+		EmailVerified: false,
+	}).Error; err != nil {
+		log.Printf("UpdateUserEmail error: %v", err)
+		if dbtool.IsDuplicateKeyError(err) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    400,
+				"message": "This email can not be used",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "System error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+	})
+}
+
+func SendVerifyEmail(c *gin.Context) {
+	user := c.MustGet("user").(models.User)
+
+	if user.EmailVerified {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Email has already been verified",
+		})
+		return
+	}
+
+	tasks.NewEmailVerificationTask(user)
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+	})
+}
+
+func VerifyEmailCode(c *gin.Context) {
+	var payload webmodels.EmailVerifyPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid request payload",
+		})
+		return
+	}
+
+	claims, err := emailjwt.GetEmailVerificationClaims(payload.Code)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": "Invalid request payload",
+		})
+		return
+	}
+
+	userID := claims.UserID
+
+	if err := dbtool.DB().Model(&models.User{}).Where("user_id = ?", userID).Updates(
+		models.User{
+			EmailVerified: true,
+		}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "System error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
 	})
 }

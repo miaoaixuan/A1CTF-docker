@@ -49,6 +49,7 @@ import type {
 import { LoadingPage } from 'components/LoadingPage';
 import { useLocation, useNavigate } from 'react-router';
 import { UploadImageDialog } from 'components/dialogs/UploadImageDialog';
+import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
 
 interface MyTeamInfomationViewProps {
     gameid: number;
@@ -68,25 +69,16 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
     const [loading, setLoading] = useState(false);
     const [sloganDialogOpen, setSloganDialogOpen] = useState(false);
     const [newSlogan, setNewSlogan] = useState('');
-    const [currentUserId, setCurrentUserId] = useState<string>('');
 
     const [dataLoaded, setDataLoaded] = useState(false)
 
+    // 获取用户资料来确定当前用户ID
+    const { curProfile } = useGlobalVariableContext()
+
     // 检查当前用户是否是队长
     const isTeamCaptain = gameInfo?.team_info?.team_members?.find(
-        member => member.user_id === currentUserId
+        member => member.user_id === curProfile.user_id
     )?.captain || false;
-
-    // 获取用户资料来确定当前用户ID
-    const fetchUserProfile = () => {
-        api.user.getUserProfile()
-            .then((response) => {
-                setCurrentUserId(response.data.data.user_id);
-            })
-            .catch((error) => {
-                console.error("Failed to fetch user profile:", error);
-            });
-    };
 
     // 获取游戏信息和战队信息
     const fetchGameInfo = () => {
@@ -157,21 +149,17 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
     };
 
     useEffect(() => {
-        fetchUserProfile();
-    }, []);
-
-    useEffect(() => {
         if (gameid) {
             fetchGameInfo();
         }
     }, [gameid]);
 
     useEffect(() => {
-        if (gameInfo && currentUserId) {
+        if (gameInfo && curProfile.user_id) {
             fetchScoreBoardData();
             fetchJoinRequests();
         }
-    }, [gameInfo, currentUserId]);
+    }, [gameInfo, curProfile.user_id]);
 
     useEffect(() => {
         if (gameInfo?.team_info?.team_id && scoreBoardData) {
@@ -481,7 +469,7 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
                                                 </div>
                                             </div>
                                         </div>
-                                        {isTeamCaptain && !member.captain && member.user_id !== currentUserId && (
+                                        {isTeamCaptain && !member.captain && member.user_id !== curProfile.user_id && (
                                             <div className="flex space-x-2">
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>

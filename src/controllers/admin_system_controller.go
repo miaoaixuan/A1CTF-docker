@@ -198,6 +198,16 @@ func UpdateSystemSettings(c *gin.Context) {
 			existingSettings.SmtpPort = int(num)
 		}
 	}
+	if value, exists := updateData["smtpName"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SmtpName = str
+		}
+	}
+	if value, exists := updateData["smtpPortType"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.SmtpPortType = str
+		}
+	}
 	if value, exists := updateData["smtpUsername"]; exists {
 		if str, ok := value.(string); ok {
 			existingSettings.SmtpUsername = str
@@ -467,12 +477,7 @@ func UploadSystemFile(c *gin.Context) {
 // TestSMTPSettings 测试SMTP设置
 func TestSMTPSettings(c *gin.Context) {
 	var smtpConfig struct {
-		Host     string `json:"host"`
-		Port     int    `json:"port"`
-		Username string `json:"username"`
-		Password string `json:"password"`
-		From     string `json:"from"`
-		To       string `json:"to"`
+		To string `json:"to"`
 	}
 
 	if err := c.ShouldBindJSON(&smtpConfig); err != nil {
@@ -483,18 +488,10 @@ func TestSMTPSettings(c *gin.Context) {
 		return
 	}
 
-	// TODO: 实现SMTP测试逻辑
-
-	// 记录测试日志
-	tasks.LogAdminOperation(c, "TEST_SMTP", models.ResourceTypeSystem, nil, map[string]interface{}{
-		"host": smtpConfig.Host,
-		"port": smtpConfig.Port,
-		"to":   smtpConfig.To,
-	})
+	tasks.NewSendTestMailTask(smtpConfig.To)
 
 	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "SMTP测试成功",
+		"code": 200,
 	})
 }
 

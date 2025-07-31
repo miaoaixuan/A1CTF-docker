@@ -3,13 +3,11 @@ import {
     Dialog,
     DialogContent,
     DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
 } from "components/ui/dialog"
 import { Input } from "components/ui/input"
-import { Label } from "components/ui/label"
 import {
     Select,
     SelectContent,
@@ -74,7 +72,6 @@ export const CreateTeamDialog: React.FC<{ callback: () => void, gameID: number, 
                     setGroups(res.data.data || [])
                 })
                 .catch((error) => {
-                    console.error("Failed to load groups:", error)
                     setGroups([])
                 })
                 .finally(() => {

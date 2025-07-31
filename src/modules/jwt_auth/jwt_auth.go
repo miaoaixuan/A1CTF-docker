@@ -178,7 +178,11 @@ type PermissionSetting struct {
 }
 
 var PermissionMap = map[string]PermissionSetting{
-	"/api/account/profile":        {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	"/api/account/profile":         {RequestMethod: []string{"GET", "PUT"}, Permissions: []models.UserRole{}},
+	"/api/account/updateEmail":     {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	"/api/account/sendVerifyEmail": {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	"/api/verifyEmailCode":         {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+
 	"/api/file/upload":            {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
 	"/api/file/download/:file_id": {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
 	"/api/user/avatar/upload":     {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},

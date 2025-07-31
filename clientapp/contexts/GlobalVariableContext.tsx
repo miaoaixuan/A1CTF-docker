@@ -75,8 +75,8 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
 
     const [localStorageClientConfig, setLocalStorageClientConfig, { removeItem: removeClientConfig }] = useLocalStorage<ClientConfig>("clientconfig")
     const [localStorageUID, setLocalStorageUID, { removeItem: removeUID }] = useLocalStorage<string>("uid")
-    
-    
+
+
     const [curProfile, setCurProfile] = useState<UserProfile>({} as UserProfile)
 
     const { theme, systemTheme, setTheme } = useTheme()
@@ -157,15 +157,17 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
         if (theme == "light") return "/images/A1natas.svg"
         else return "/images/A1natas_white.svg"
     }
-    
+
     useEffect(() => {
         // if (!curProfile.user_id && localStorageUID) {
-        api.user.getUserProfile().then((res) => {
-            setCurProfile(res.data.data)
-            setLocalStorageUID(res.data.data.user_id)
-        }).catch((error: AxiosError) => {
-            removeUID()
-        })
+        if (localStorageUID) {
+            api.user.getUserProfile().then((res) => {
+                setCurProfile(res.data.data)
+                setLocalStorageUID(res.data.data.user_id)
+            }).catch((error: AxiosError) => {
+                removeUID()
+            })
+        }
 
         if (localStorageClientConfig) {
             setClientConfig(localStorageClientConfig)
@@ -204,7 +206,7 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
 
                 setClientConfig(response.data.data);
                 setLocalStorageClientConfig(response.data.data)
-                
+
                 // 如果用户未手动设置主题，则使用配置的默认主题
                 if (!localStorage.getItem('theme-preference')) {
                     setIsDarkMode(response.data.data.darkModeDefault);
@@ -214,31 +216,31 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
             console.error('获取客户端配置失败:', error);
         }
     };
-    
+
     // 刷新客户端配置
     const refreshClientConfig = async () => {
         await fetchClientConfig();
     };
-    
+
     // 更新主题
     const updateTheme = (isDark: boolean) => {
         setIsDarkMode(isDark);
         localStorage.setItem('theme-preference', isDark ? 'dark' : 'light');
-        
+
         if (isDark) {
             document.documentElement.classList.add('dark');
         } else {
             document.documentElement.classList.remove('dark');
         }
     };
-    
+
     // 设置主题
     const handleSetIsDarkMode = (isDark: boolean) => {
         if (clientConfig.allowUserTheme) {
             updateTheme(isDark);
         }
     };
-    
+
     // 组件挂载时获取配置
     useEffect(() => {
         // 检查用户偏好
@@ -250,13 +252,13 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
         if (theme == "system") {
             setTheme(systemTheme as "dark" | "light")
         }
-        
+
     }, []);
 
     const isAdmin = () => {
         return curProfile.role == UserRole.ADMIN
     }
-    
+
     // 监听暗色模式变化
     useEffect(() => {
         updateTheme(isDarkMode);
