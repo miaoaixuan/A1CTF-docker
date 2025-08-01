@@ -28,7 +28,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 
-import { api } from "utils/ApiHelper";
+import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper";
 
 import { toast } from 'react-toastify/unstyled';
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
@@ -83,7 +83,7 @@ export function LoginForm({
             username: values.userName,
             password: values.password,
             captcha: token
-        }).then(response => {
+        }, createSkipGlobalErrorConfig()).then(response => {
             updateProfile(() => {
                 router(getNavigateFrom() ?? "/")
 
@@ -93,6 +93,11 @@ export function LoginForm({
             })
         }).catch((error: AxiosError) => {
             setToken("")
+            if (error.response?.status == 401) {
+                toast.error("用户名或者密码错误")
+            } else {
+                toast.error("未知错误")
+            }
         }).finally(() => {
             setTimeout(() => {
                 setLoading(false)

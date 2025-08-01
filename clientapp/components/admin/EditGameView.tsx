@@ -1,18 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from 'components/ui/button';
 import { Form } from 'components/ui/form';
 import { MacScrollbar } from 'mac-scrollbar';
-import { useNavigate, useParams, useSearchParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { toast } from 'react-toastify/unstyled';
 import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
 
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import dayjs from 'dayjs';
-import { CalendarIcon, CircleArrowLeft, Save, FilePenLine, Settings, Trophy, Users, Package, PackageSearch, MessageSquareLock, Activity, Info, Plane } from 'lucide-react';
+import { CalendarIcon, CircleArrowLeft, Save, Settings, Users, PackageSearch, MessageSquareLock, Activity, Info, Plane } from 'lucide-react';
 import { EditGameFormSchema } from './game/EditGameSchema';
-import { AxiosError } from 'axios';
 import { api } from 'utils/ApiHelper';
 
 import { GameTimelineEditor } from './GameTimelineEditor';
@@ -20,9 +19,7 @@ import { GameGroupManager } from './GameGroupManager';
 import { GameNoticeManager } from './GameNoticeManager';
 import { BasicInfoModule } from './game/BasicInfoModule';
 import { DetailedSettingsModule } from './game/DetailedSettingsModule';
-import EditGameChallengesModule from './game/EditGameChallengesModule';
 import { AdminFullGameInfo } from 'utils/A1API';
-import { AdminGameManagePage } from './GameManagePage';
 import { TeamManageView } from './game/TeamManageView';
 import { ContainerManageView } from './game/ContainerManageView';
 import { useTheme } from 'next-themes';
@@ -71,6 +68,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
             first_blood_reward: game_info.first_blood_reward,
             second_blood_reward: game_info.second_blood_reward,
             third_blood_reward: game_info.third_blood_reward,
+            team_policy: game_info.team_policy,
             stages: game_info.stages ? game_info.stages.map((stage) => ({
                 stage_name: stage.stage_name,
                 start_time: dayjs(stage.start_time).toDate(),
@@ -138,6 +136,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
             wp_expire_time: format_date(values.wp_expire_time ?? new Date()),
             stages: values.stages,
             visible: values.visible,
+            team_policy: values.team_policy,
             // challenges: values.challenges,
             first_blood_reward: values.first_blood_reward,
             second_blood_reward: values.second_blood_reward,

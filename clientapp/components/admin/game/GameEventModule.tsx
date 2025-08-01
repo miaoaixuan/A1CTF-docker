@@ -147,55 +147,47 @@ export function GameEventModule(
     const { theme } = useTheme()
 
     const loadSubmissions = async (page: number) => {
-        try {
-            setLoading(true)
-            const res = await api.admin.adminListGameSubmits(gameId, {
-                game_id: gameId,
-                size: pageSize,
-                offset: (page - 1) * pageSize,
-                challenge_names: challengeNames,
-                team_names: teamNames,
-                challenge_ids: challengeIds,
-                team_ids: teamIds,
-                judge_statuses: judgeStatuses,
-                start_time: startTime && startTime.trim() !== "" ? startTime : undefined,
-                end_time: endTime && endTime.trim() !== "" ? endTime : undefined
-            })
+        setLoading(true)
 
+        api.admin.adminListGameSubmits(gameId, {
+            game_id: gameId,
+            size: pageSize,
+            offset: (page - 1) * pageSize,
+            challenge_names: challengeNames,
+            team_names: teamNames,
+            challenge_ids: challengeIds,
+            team_ids: teamIds,
+            judge_statuses: judgeStatuses,
+            start_time: startTime && startTime.trim() !== "" ? startTime : undefined,
+            end_time: endTime && endTime.trim() !== "" ? endTime : undefined
+        }).then((res) => {
             const list = res.data.data || []
             setTotal(res.data.total || 0)
             setSubmissions(list)
-        } catch (err) {
-            console.error(err)
-            toast.error('加载提交记录失败')
-        } finally {
+        }).finally(() => {
             setLoading(false)
-        }
+        })
     }
 
     const loadCheats = async () => {
         setCheatsLoading(true)
-        try {
-            const response = await api.admin.adminListGameCheats(gameId, {
-                game_id: gameId,
-                size: pageSize,
-                offset: (cheatsCurrentPage - 1) * pageSize,
-                challenge_names: cheatsChallengeNames.length > 0 ? cheatsChallengeNames : undefined,
-                team_names: cheatsTeamNames.length > 0 ? cheatsTeamNames : undefined,
-                challenge_ids: cheatsChallengeIds.length > 0 ? cheatsChallengeIds : undefined,
-                team_ids: cheatsTeamIds.length > 0 ? cheatsTeamIds : undefined,
-                cheat_types: cheatTypes.length > 0 ? cheatTypes : undefined,
-                start_time: cheatsStartTime,
-                end_time: cheatsEndTime,
-            })
-            setCheats(response.data.data)
-            setCheatsTotal(response.data.total)
-        } catch (error) {
-            console.error("Failed to load cheats:", error)
-            toast.error("加载作弊记录失败")
-        } finally {
+        api.admin.adminListGameCheats(gameId, {
+            game_id: gameId,
+            size: pageSize,
+            offset: (cheatsCurrentPage - 1) * pageSize,
+            challenge_names: cheatsChallengeNames.length > 0 ? cheatsChallengeNames : undefined,
+            team_names: cheatsTeamNames.length > 0 ? cheatsTeamNames : undefined,
+            challenge_ids: cheatsChallengeIds.length > 0 ? cheatsChallengeIds : undefined,
+            team_ids: cheatsTeamIds.length > 0 ? cheatsTeamIds : undefined,
+            cheat_types: cheatTypes.length > 0 ? cheatTypes : undefined,
+            start_time: cheatsStartTime,
+            end_time: cheatsEndTime,
+        }).then((res) => {
+            setCheats(res.data.data)
+            setCheatsTotal(res.data.total)
+        }).finally(() => {
             setCheatsLoading(false)
-        }
+        })
     }
 
     useEffect(() => {

@@ -22,6 +22,7 @@ import (
 	"a1ctf/src/tasks"
 	"a1ctf/src/utils"
 	dbtool "a1ctf/src/utils/db_tool"
+	i18ntool "a1ctf/src/utils/i18n_tool"
 	k8stool "a1ctf/src/utils/k8s_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/utils/zaphelper"
@@ -124,6 +125,9 @@ func main() {
 	// 初始化 Zap
 	zaphelper.InitZap()
 	defer zaphelper.CloseZap()
+
+	// 初始化多语言文件
+	i18ntool.LoadLanguageFiles()
 
 	k8stool.InitNodeAddressMap()
 

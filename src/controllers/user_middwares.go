@@ -3,6 +3,7 @@ package controllers
 import (
 	"a1ctf/src/db/models"
 	clientconfig "a1ctf/src/modules/client_config"
+	i18ntool "a1ctf/src/utils/i18n_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/webmodels"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 // 比赛状态检查中间件
@@ -21,7 +23,7 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool, checkGameS
 		if err != nil {
 			c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 				Code:    400,
-				Message: "Invalid game ID",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidGameID"}),
 			})
 			c.Abort()
 			return
@@ -31,7 +33,7 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool, checkGameS
 		if err != nil {
 			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 				Code:    404,
-				Message: "Game not found",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "GameNotFound"}),
 			})
 			c.Abort()
 			return
@@ -40,29 +42,43 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool, checkGameS
 		if !game.Visible {
 			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 				Code:    404,
-				Message: "Game not found",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "GameNotFound"}),
 			})
 			c.Abort()
 			return
 		}
 
-		now := time.Now().UTC()
-		if game.StartTime.After(now) && checkGameStarted {
-			c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
-				Code:    403,
-				Message: "Game not started yet",
-			})
-			c.Abort()
-			return
+		user, exists := c.Get("user")
+
+		// 管理员绕过时间检查
+		var skipTimeCheck bool = false
+
+		if exists {
+			cvt := user.(models.User)
+			if cvt.Role == models.UserRoleAdmin {
+				skipTimeCheck = true
+			}
 		}
 
-		if !visibleAfterEnded && game.EndTime.Before(now) && !game.PracticeMode {
-			c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
-				Code:    403,
-				Message: "Game has ended",
-			})
-			c.Abort()
-			return
+		if !skipTimeCheck {
+			now := time.Now().UTC()
+			if game.StartTime.After(now) && checkGameStarted {
+				c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
+					Code:    403,
+					Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "GameNotStartedYet"}),
+				})
+				c.Abort()
+				return
+			}
+
+			if !visibleAfterEnded && game.EndTime.Before(now) && !game.PracticeMode {
+				c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
+					Code:    403,
+					Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "GameHasEnded"}),
+				})
+				c.Abort()
+				return
+			}
 		}
 
 		if extractUserID {
@@ -90,7 +106,7 @@ func TeamStatusMiddleware() gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
-				Message: "Failed to load teams",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadTeams"}),
 			})
 			c.Abort()
 			return
@@ -100,7 +116,7 @@ func TeamStatusMiddleware() gin.HandlerFunc {
 		if !ok {
 			c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
 				Code:    403,
-				Message: "You must join a team in this game",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "YouMustJoinTeamInThisGame"}),
 			})
 			c.Abort()
 			return
@@ -109,7 +125,7 @@ func TeamStatusMiddleware() gin.HandlerFunc {
 		if team.TeamStatus == models.ParticipateParticipated || team.TeamStatus == models.ParticipatePending || team.TeamStatus == models.ParticipateRejected {
 			c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
 				Code:    403,
-				Message: "You must join a team in this game",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "YouMustJoinTeamInThisGame"}),
 			})
 			c.Abort()
 			return
@@ -118,7 +134,7 @@ func TeamStatusMiddleware() gin.HandlerFunc {
 		if team.TeamStatus == models.ParticipateBanned {
 			c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 				Code:    400,
-				Message: "You are banned from this game",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "YouAreBannedFromThisGame"}),
 			})
 			c.Abort()
 			return
@@ -137,7 +153,7 @@ func EmailVerifiedMiddleware() gin.HandlerFunc {
 		if !user.EmailVerified && clientconfig.ClientConfig.AccountActivationMethod == "email" {
 			c.JSON(421, webmodels.ErrorMessage{
 				Code:    421,
-				Message: "You must verify your email first",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "YouMustVerifyEmailFirst"}),
 			})
 			c.Abort()
 			return
@@ -154,7 +170,7 @@ func OperationNotAllowedAfterGameStartMiddleWare() gin.HandlerFunc {
 		if game.StartTime.Before(time.Now().UTC()) {
 			c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
 				Code:    403,
-				Message: "Operation not allowed after game start",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "OperationNotAllowedAfterGameStart"}),
 			})
 			c.Abort()
 			return

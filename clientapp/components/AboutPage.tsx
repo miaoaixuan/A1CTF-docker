@@ -27,7 +27,7 @@ export function AboutPage() {
                 <MacScrollbar className="w-full"
                     skin={theme == "light" ? "light" : "dark"}
                 >
-                    <div className="container mx-auto py-5">
+                    <div className="container mx-auto py-10 pt-5 px-5 md:px-0">
                         {memoizedDescription}
                     </div>
                 </MacScrollbar>

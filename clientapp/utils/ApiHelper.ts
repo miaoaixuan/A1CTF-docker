@@ -154,9 +154,7 @@ const handleGlobalError = (error: any, config?: any) => {
             getNavigate()("/profile/email")
         }
     } else {
-        toast.error(errorMessage, {
-            duration: 4000,
-        });
+        toast.error(errorMessage);
     }
 
     return Promise.reject(error);
@@ -211,28 +209,6 @@ export const createSkipGlobalErrorConfig = (config: any = {}) => {
         ...config,
         _skipGlobalErrorHandler: true
     };
-};
-
-// 导出一个手动触发错误提示的函数
-export const showErrorToast = (message: string, code?: number) => {
-    toast.error(message, {
-        description: code ? `错误代码: ${code}` : undefined,
-        duration: 4000,
-    });
-};
-
-// 导出一个成功提示的函数
-export const showSuccessToast = (message: string) => {
-    toast.success(message, {
-        duration: 3000,
-    });
-};
-
-// 导出一个信息提示的函数
-export const showInfoToast = (message: string) => {
-    toast.info(message, {
-        duration: 3000,
-    });
 };
 
 // 导出重置错误提示防抖状态的函数

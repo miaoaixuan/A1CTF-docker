@@ -18,6 +18,7 @@ import { LoadingPage } from "components/LoadingPage";
 import { Panda } from "lucide-react";
 import { A1GameStatus } from "components/modules/game/GameStatusEnum";
 import useConditionalState from "hooks/ContidionalState";
+import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 
 export default function Games() {
     
@@ -43,6 +44,8 @@ export default function Games() {
 
     // 切换比赛动画
     const { isChangingGame, setIsChangingGame } = useGameSwitchContext();
+
+    const { isAdmin } = useGlobalVariableContext()
 
     let updateGameInterval: NodeJS.Timeout | undefined = undefined
 
@@ -121,7 +124,7 @@ export default function Games() {
                 />
                 <div className="flex-1 h-full overflow-hidden">
                     { curChoicedModule == "challenges" ? ( 
-                        [A1GameStatus.Running, A1GameStatus.PracticeMode].includes(gameStatus) || teamStatus == ParticipationStatus.Banned ? (
+                        [A1GameStatus.Running, A1GameStatus.PracticeMode].includes(gameStatus) || teamStatus == ParticipationStatus.Banned || isAdmin() ? (
                             <ChallengesView 
                                 id={id} 
                                 gameInfo={gameInfo} 

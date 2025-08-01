@@ -3830,6 +3830,9 @@ components:
           type: boolean
         team_number_limit:
           type: integer
+        team_policy:
+          type: string
+          enum: ["Manual", "Auto"]
         container_number_limit:
           type: integer
         require_wp:
@@ -3860,6 +3863,7 @@ components:
         - require_wp
         - wp_expire_time
         - stages
+        - team_policy
         - visible
     UserGameSimpleInfo:
       type: object

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"a1ctf/src/db/models"
+	i18ntool "a1ctf/src/utils/i18n_tool"
 	jwtauth "a1ctf/src/modules/jwt_auth"
 	dbtool "a1ctf/src/utils/db_tool"
 	"a1ctf/src/utils/ristretto_tool"
@@ -10,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func UserListGames(c *gin.Context) {
@@ -20,7 +22,7 @@ func UserListGames(c *gin.Context) {
 	if err := query.Find(&games).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load games",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGames"}),
 		})
 		return
 	}
@@ -70,7 +72,7 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "failed to load team data",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadTeamData"}),
 		})
 		return
 	}
@@ -122,7 +124,7 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 					Code:    500,
-					Message: "Failed to load team members",
+					Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadTeamMembers"}),
 				})
 			}
 
@@ -171,7 +173,7 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 					Code:    500,
-					Message: err.Error(),
+					Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 				})
 				return
 			}
@@ -210,7 +212,7 @@ func UserGetGameNotices(c *gin.Context) {
 	if err := dbtool.DB().Where("game_id = ?", game.GameID).Find(&notices).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load notices",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadNotices"}),
 		})
 		return
 	}
@@ -269,7 +271,7 @@ func UserGameGetScoreBoard(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "failed to load team data",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadTeamData"}),
 		})
 		return
 	}
@@ -288,7 +290,7 @@ func UserGameGetScoreBoard(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "failed to load game challenges",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGameChallengesBoard"}),
 		})
 		return
 	}
@@ -298,7 +300,7 @@ func UserGameGetScoreBoard(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "failed to load game scoreboard",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGameScoreboard"}),
 		})
 		return
 	}
@@ -308,7 +310,7 @@ func UserGameGetScoreBoard(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "failed to load game groups",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGameGroups"}),
 		})
 		return
 	}
@@ -329,7 +331,7 @@ func UserGameGetScoreBoard(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "failed to load filtered scoreboard",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadFilteredScoreboard"}),
 		})
 		return
 	}

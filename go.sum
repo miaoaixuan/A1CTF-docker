@@ -1,3 +1,5 @@
+github.com/BurntSushi/toml v1.5.0 h1:W5quZX/G/csjUnuI8SUYlsHs9M38FC7znL0lIO+DvMg=
+github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/appleboy/gin-jwt/v2 v2.10.3 h1:KNcPC+XPRNpuoBh+j+rgs5bQxN+SwG/0tHbIqpRoBGc=
 github.com/appleboy/gin-jwt/v2 v2.10.3/go.mod h1:LDUaQ8mF2W6LyXIbd5wqlV2SFebuyYs4RDwqMNgpsp8=
 github.com/appleboy/gofight/v2 v2.1.2 h1:VOy3jow4vIK8BRQJoC/I9muxyYlJ2yb9ht2hZoS3rf4=
@@ -196,6 +198,8 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/ncruces/go-strftime v0.1.9 h1:bY0MQC28UADQmHmaF5dgpLmImcShSi2kHU9XLdhx/f4=
 github.com/ncruces/go-strftime v0.1.9/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJmn9CehxcKcls=
+github.com/nicksnyder/go-i18n/v2 v2.6.0 h1:C/m2NNWNiTB6SK4Ao8df5EWm3JETSTIGNXBpMJTxzxQ=
+github.com/nicksnyder/go-i18n/v2 v2.6.0/go.mod h1:88sRqr0C6OPyJn0/KRNaEz1uWorjxIKP7rUUcvycecE=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
 github.com/nxadm/tail v1.4.8/go.mod h1:+ncqLTQzXmGhMZNUePPaPqPvBxHAIsmXswZKocGu+AU=

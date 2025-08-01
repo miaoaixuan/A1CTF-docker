@@ -336,6 +336,6 @@ cap-widget {
 .Toastify__toast {
     --animate-duration: 0.7s!important;
     width: auto!important;
-    max-width: 40vw!important;
-    min-width: var(--toastify-toast-width);
+    max-width: 80vw!important;
+    min-width: 340px;
 }

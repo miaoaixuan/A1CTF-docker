@@ -204,7 +204,7 @@ export function CategorySidebar({
 
     useEffect(() => {
 
-        if (gameStatus == "running" || gameStatus == "practiceMode") {
+        if (gameStatus == "running" || gameStatus == "practiceMode" || isAdmin()) {
             updateChalenges(true)
 
             updateChallengeInter = setInterval(() => {
@@ -257,9 +257,7 @@ export function CategorySidebar({
 
     const { clientConfig, isAdmin, getSystemLogoDefault } = useGlobalVariableContext()
     const [addChallengeOpen, setAddChallengeOpen] = useState(false)
-
-    console.log("Father reRender!")
-
+    
     return (
         <>
             <AddChallengeFromLibraryDialog

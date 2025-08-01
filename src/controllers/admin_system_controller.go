@@ -6,6 +6,7 @@ import (
 	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	"a1ctf/src/utils/general"
+	i18ntool "a1ctf/src/utils/i18n_tool"
 	"a1ctf/src/webmodels"
 	"fmt"
 	"io"
@@ -18,6 +19,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 // GetSystemSettings 获取系统设置
@@ -44,7 +46,7 @@ func UpdateSystemSettings(c *gin.Context) {
 	if err := c.ShouldBindJSON(&updateData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid request data",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -231,7 +233,12 @@ func UpdateSystemSettings(c *gin.Context) {
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Save system settings failed: " + err.Error(),
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{
+				MessageID: "FailedToSaveSystemSettings",
+				TemplateData: map[string]interface{}{
+					"Error": err.Error(),
+				},
+			}),
 		})
 		return
 	}
@@ -241,7 +248,7 @@ func UpdateSystemSettings(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"message": "System settings updated",
+		"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemSettingsUpdated"}),
 		"data":    existingSettings,
 	})
 }
@@ -254,7 +261,12 @@ func UploadSystemFile(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "文件上传失败: " + err.Error(),
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{
+				MessageID: "FileUploadFailed",
+				TemplateData: map[string]interface{}{
+					"Error": err.Error(),
+				},
+			}),
 		})
 		return
 	}
@@ -263,7 +275,7 @@ func UploadSystemFile(c *gin.Context) {
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "无效的资源类型",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidResourceType"}),
 		})
 		return
 	}
@@ -275,7 +287,7 @@ func UploadSystemFile(c *gin.Context) {
 		if !exists {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"code":    400,
-				"message": "无效的请求数据",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 			})
 			return
 		}
@@ -283,7 +295,7 @@ func UploadSystemFile(c *gin.Context) {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"code":    400,
-				"message": "无效的请求数据",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 			})
 			return
 		}
@@ -293,7 +305,7 @@ func UploadSystemFile(c *gin.Context) {
 	if !isValidFileType(file.Filename) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "不支持的文件类型",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "UnsupportedFileType"}),
 		})
 		return
 	}
@@ -303,7 +315,7 @@ func UploadSystemFile(c *gin.Context) {
 	if err := os.MkdirAll(uploadDir, 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "创建上传目录失败: " + err.Error(),
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCreateUploadDirectory"}),
 		})
 		return
 	}
@@ -323,7 +335,12 @@ func UploadSystemFile(c *gin.Context) {
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "保存文件失败: " + err.Error(),
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{
+				MessageID: "FailedToSaveFile",
+				TemplateData: map[string]interface{}{
+					"Error": err.Error(),
+				},
+			}),
 		})
 		return
 	}
@@ -353,7 +370,7 @@ func UploadSystemFile(c *gin.Context) {
 
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to save file record",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToSaveFileRecord"}),
 		})
 		return
 	}
@@ -421,7 +438,7 @@ func TestSMTPSettings(c *gin.Context) {
 	if err := c.ShouldBindJSON(&smtpConfig); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "无效的请求数据",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -511,7 +528,12 @@ func GetSystemLogs(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "查询系统日志失败: " + err.Error(),
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{
+				MessageID: "FailedToQuerySystemLogs",
+				TemplateData: map[string]interface{}{
+					"Error": err.Error(),
+				},
+			}),
 		})
 		return
 	}

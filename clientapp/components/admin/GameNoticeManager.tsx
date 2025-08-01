@@ -40,19 +40,16 @@ export function GameNoticeManager({ gameId }: GameNoticeManagerProps) {
     // 加载公告列表
     const loadNotices = async () => {
         setLoading(true);
-        try {
-            const response = await api.admin.adminListGameNotices(gameId, {
-                game_id: gameId,
-                size: 50,
-                offset: 0
-            });
+
+        api.admin.adminListGameNotices(gameId, {
+            game_id: gameId,
+            size: 50,
+            offset: 0
+        }).then((response) => {
             setNotices(response.data.data);
-        } catch (error) {
-            toast.error('加载公告列表失败');
-            console.error('Failed to load notices:', error);
-        } finally {
+        }).finally(() => {
             setLoading(false);
-        }
+        })
     };
 
     // 创建公告
@@ -62,33 +59,25 @@ export function GameNoticeManager({ gameId }: GameNoticeManagerProps) {
             return;
         }
 
-        try {
-            await api.admin.adminCreateGameNotice(gameId, {
-                title: createForm.title,
-                content: createForm.content
-            });
+        api.admin.adminCreateGameNotice(gameId, {
+            title: createForm.title,
+            content: createForm.content
+        }).then((res) => {
             toast.success('公告创建成功');
             setCreateForm({ title: '', content: '' });
             setIsCreateDialogOpen(false);
             loadNotices();
-        } catch (error) {
-            toast.error('创建公告失败');
-            console.error('Failed to create notice:', error);
-        }
+        })
     };
 
     // 删除公告
     const handleDeleteNotice = async (noticeId: number) => {
-        try {
-            await api.admin.adminDeleteGameNotice({
-                notice_id: noticeId
-            });
+        api.admin.adminDeleteGameNotice({
+            notice_id: noticeId
+        }).then((res) => {
             toast.success('公告删除成功');
             loadNotices();
-        } catch (error) {
-            toast.error('删除公告失败');
-            console.error('Failed to delete notice:', error);
-        }
+        })
     };
 
     // 查看公告详情
@@ -111,7 +100,7 @@ export function GameNoticeManager({ gameId }: GameNoticeManagerProps) {
                         共 {notices.length} 条公告
                     </span>
                 </div>
-                
+
                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                     <DialogTrigger asChild>
                         <Button size="sm">
@@ -221,7 +210,7 @@ export function GameNoticeManager({ gameId }: GameNoticeManagerProps) {
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
                                                             <AlertDialogCancel>取消</AlertDialogCancel>
-                                                            <AlertDialogAction 
+                                                            <AlertDialogAction
                                                                 onClick={() => handleDeleteNotice(notice.notice_id)}
                                                                 className="bg-destructive hover:bg-destructive/90"
                                                             >

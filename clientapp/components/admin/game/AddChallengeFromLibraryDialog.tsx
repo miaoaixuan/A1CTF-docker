@@ -194,8 +194,6 @@ export default function AddChallengeFromLibraryDialog(
         }
     }, [isOpen])
 
-    console.log("ReRender")
-
     return (
         <Dialog open={isOpen} onOpenChange={(status) => {
             setIsOpen(status)

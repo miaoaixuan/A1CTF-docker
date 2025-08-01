@@ -1,7 +1,5 @@
 import React from 'react';
 
-import { format } from 'date-fns';
-import { Button } from 'components/ui/button';
 import { Input } from 'components/ui/input';
 import {
     FormField,
@@ -11,20 +9,17 @@ import {
     FormDescription,
     FormControl,
 } from 'components/ui/form';
-import { Popover, PopoverTrigger, PopoverContent } from 'components/ui/popover';
-import { Calendar } from 'components/ui/calendar';
-import { ScrollArea, ScrollBar } from 'components/ui/scroll-area';
-import { CalendarIcon, Settings, Upload } from 'lucide-react';
-import { cn } from 'lib/utils';
+import { Settings, Upload } from 'lucide-react';
 import { useWatch } from 'react-hook-form';
 import { toast } from 'react-toastify/unstyled';
-import { useFieldArray, UseFormReturn } from 'react-hook-form';
+import { UseFormReturn } from 'react-hook-form';
 import { EditGameFormSchema } from './EditGameSchema';
 import * as z from 'zod';
 import { api } from 'utils/ApiHelper';
 import { AdminFullGameInfo } from 'utils/A1API';
 import { Slider } from 'components/ui/slider';
 import { DateTimePicker24h } from 'components/ui/data-time-picker';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'components/ui/select';
 
 interface DetailedSettingsModuleProps {
     form: UseFormReturn<z.infer<typeof EditGameFormSchema>>;
@@ -66,25 +61,14 @@ export function DetailedSettingsModule({
             return;
         }
 
-        try {
-            const formData = new FormData();
-            formData.append('poster', file);
+        const formData = new FormData();
+        formData.append('poster', file);
 
-            const response = await api.admin.uploadGamePoster(game_info.game_id, { poster: file });
-
-            if (response.status === 200) {
-                // 更新表单中的poster字段
-                form.setValue('poster', response.data.poster_url);
-                toast.success('海报上传成功');
-            }
-        } catch (error: any) {
-            console.error('海报上传失败:', error);
-            if (error.response?.data?.message) {
-                toast.error(`上传失败: ${error.response.data.message}`);
-            } else {
-                toast.error('海报上传失败，请重试');
-            }
-        }
+        api.admin.uploadGamePoster(game_info.game_id, { poster: file }).then((res) => {
+            // 更新表单中的poster字段
+            form.setValue('poster', res.data.poster_url);
+            toast.success('海报上传成功');
+        })
 
         // 清空文件输入，允许重新选择相同文件
         event.target.value = '';
@@ -117,6 +101,39 @@ export function DetailedSettingsModule({
                                     <Input {...field} />
                                 </FormControl>
                                 <FormDescription>不需要请留空</FormDescription>
+                            </FormItem>
+                        )}
+                    />
+
+                    {/* 队伍策略 */}
+                    <FormField
+                        control={form.control}
+                        name="team_policy"
+                        render={({ field }) => (
+                            <FormItem>
+                                <div className="flex items-center h-[20px]">
+                                    <FormLabel>队伍策略</FormLabel>
+                                    <div className="flex-1" />
+                                    <FormMessage className="text-[14px]" />
+                                </div>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="选择队伍策略" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent className="w-full flex">
+                                        <SelectItem key="Manual" value="Manual">
+                                            管理员手动审核
+                                        </SelectItem>
+                                        <SelectItem key="Auto" value="Auto">
+                                            自动审核
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormDescription>
+                                    请选择一个队伍策略
+                                </FormDescription>
                             </FormItem>
                         )}
                     />

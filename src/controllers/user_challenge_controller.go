@@ -4,6 +4,7 @@ import (
 	"a1ctf/src/db/models"
 	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
+	i18ntool "a1ctf/src/utils/i18n_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/webmodels"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func UserGetGameChallenges(c *gin.Context) {
@@ -29,7 +31,7 @@ func UserGetGameChallenges(c *gin.Context) {
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
-				Message: "Failed to load game challenges",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGameChallenges"}),
 			})
 			return
 		}
@@ -40,7 +42,7 @@ func UserGetGameChallenges(c *gin.Context) {
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
-				Message: "Failed to load solves",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadSolves"}),
 			})
 			return
 		}
@@ -81,7 +83,7 @@ func UserGetGameChallenge(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid challenge ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
 		})
 		c.Abort()
 		return
@@ -92,7 +94,7 @@ func UserGetGameChallenge(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to check challenge visibility",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCheckChallengeVisibility"}),
 		})
 		return
 	}
@@ -101,7 +103,7 @@ func UserGetGameChallenge(c *gin.Context) {
 	if !isVisible && user.Role == models.UserRoleUser {
 		c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 			Code:    404,
-			Message: "Challenge not found",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeNotFound"}),
 		})
 		return
 	}
@@ -111,7 +113,7 @@ func UserGetGameChallenge(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load challenge details",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadChallengeDetails"}),
 		})
 		return
 	}
@@ -122,7 +124,7 @@ func UserGetGameChallenge(c *gin.Context) {
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
-				Message: "System error",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 			})
 			return
 		}
@@ -138,7 +140,7 @@ func UserGetGameChallenge(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load challenge attachments",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadChallengeAttachments"}),
 		})
 		return
 	}
@@ -148,7 +150,7 @@ func UserGetGameChallenge(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load challenge hints",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadChallengeHints"}),
 		})
 		return
 	}
@@ -175,7 +177,7 @@ func UserGetGameChallenge(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load containers",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadContainers"}),
 		})
 		return
 	}
@@ -183,7 +185,7 @@ func UserGetGameChallenge(c *gin.Context) {
 	if len(containers) > 1 {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load containers",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadContainers"}),
 		})
 		return
 	}
@@ -242,7 +244,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid request payload",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -252,7 +254,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid challenge ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
 		})
 		c.Abort()
 		return
@@ -263,7 +265,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load challenge details",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadChallengeDetails"}),
 		})
 		return
 	}
@@ -273,7 +275,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to check challenge visibility",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCheckChallengeVisibility"}),
 		})
 		return
 	}
@@ -281,7 +283,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	if user.Role != models.UserRoleAdmin && !isVisible {
 		c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
 			Code:    403,
-			Message: "Challenge not found",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeNotFound"}),
 		})
 		return
 	}
@@ -291,7 +293,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to check solve status",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCheckSolveStatus"}),
 		})
 		return
 	}
@@ -299,7 +301,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	if hasSolved {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "You have already solved this challenge",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "YouHaveAlreadySolvedThisChallenge"}),
 		})
 		return
 	}
@@ -328,7 +330,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 		if !exsist || err != nil {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
-				Message: "Failed to get team flag",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToGetTeamFlag"}),
 			})
 			return
 		}
@@ -349,7 +351,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "System error",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
 		return
 	}
@@ -395,7 +397,7 @@ func UserGameGetJudgeResult(c *gin.Context) {
 	if _, err := uuid.Parse(judgeIDStr); err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid judge ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidJudgeID"}),
 		})
 		c.Abort()
 		return
@@ -407,12 +409,12 @@ func UserGameGetJudgeResult(c *gin.Context) {
 		if err.Error() == "judge not found" {
 			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 				Code:    404,
-				Message: "Judge not found",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "JudgeNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
-				Message: "Failed to load judge",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadJudge"}),
 			})
 		}
 		return

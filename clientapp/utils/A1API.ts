@@ -297,6 +297,7 @@ export interface AdminFullGameInfo {
   end_time: string;
   practice_mode: boolean;
   team_number_limit: number;
+  team_policy: "Manual" | "Auto";
   container_number_limit: number;
   require_wp: boolean;
   /** @format date-time */

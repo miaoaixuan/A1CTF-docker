@@ -4,6 +4,7 @@ import (
 	"a1ctf/src/db/models"
 	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
+	i18ntool "a1ctf/src/utils/i18n_tool"
 	"a1ctf/src/webmodels"
 	"net/http"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"gorm.io/gorm"
 )
 
@@ -24,7 +26,7 @@ func UserCreateGameContainer(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid challenge ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
 		})
 		c.Abort()
 		return
@@ -38,7 +40,7 @@ func UserCreateGameContainer(c *gin.Context) {
 
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load game challenges",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGameChallenges"}),
 		})
 		return
 	}
@@ -46,7 +48,7 @@ func UserCreateGameContainer(c *gin.Context) {
 	if len(gameChallenges) == 0 {
 		c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 			Code:    404,
-			Message: "Challenge not found",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeNotFound"}),
 		})
 		return
 	}
@@ -57,7 +59,7 @@ func UserCreateGameContainer(c *gin.Context) {
 	if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND (container_status = ? or container_status = ?)", game.GameID, team.TeamID, models.ContainerRunning, models.ContainerQueueing).Find(&containers).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load containers",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadContainers"}),
 		})
 		return
 	}
@@ -66,7 +68,7 @@ func UserCreateGameContainer(c *gin.Context) {
 		if container.ChallengeID == *gameChallenge.Challenge.ChallengeID && container.ContainerStatus == models.ContainerRunning {
 			c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 				Code:    400,
-				Message: "You have created a container for this challenge",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "YouHaveCreatedContainerForChallenge"}),
 			})
 			return
 		}
@@ -74,7 +76,7 @@ func UserCreateGameContainer(c *gin.Context) {
 		if container.ChallengeID == *gameChallenge.Challenge.ChallengeID && container.ContainerStatus == models.ContainerQueueing {
 			c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 				Code:    400,
-				Message: "Your container is queueing",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "YourContainerIsQueueing"}),
 			})
 			return
 		}
@@ -83,7 +85,7 @@ func UserCreateGameContainer(c *gin.Context) {
 	if len(containers) > int(game.ContainerNumberLimit) {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "You have created too many containers",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "YouHaveCreatedTooManyContainers"}),
 		})
 		return
 	}
@@ -93,13 +95,13 @@ func UserCreateGameContainer(c *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
 				Code:    403,
-				Message: "Flag haven't been created yet, please wait.",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FlagHaventBeenCreatedYet"}),
 			})
 			return
 		} else {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
-				Message: "System error.",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 			})
 			return
 		}
@@ -137,7 +139,7 @@ func UserCreateGameContainer(c *gin.Context) {
 
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    501,
-			Message: "System error",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
 		return
 	}
@@ -168,7 +170,7 @@ func UserCloseGameContainer(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid challenge ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
 		})
 		c.Abort()
 		return
@@ -178,7 +180,7 @@ func UserCloseGameContainer(c *gin.Context) {
 	if err := dbtool.DB().Where("challenge_id = ? AND team_id = ? AND container_status = ?", challengeID, team.TeamID, models.ContainerRunning).Find(&containers).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load containers",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadContainers"}),
 		})
 		return
 	}
@@ -186,7 +188,7 @@ func UserCloseGameContainer(c *gin.Context) {
 	if len(containers) == 0 {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Launch a container first.",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "LaunchContainerFirst"}),
 		})
 		return
 	}
@@ -194,7 +196,7 @@ func UserCloseGameContainer(c *gin.Context) {
 	if len(containers) != 1 {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "System error.",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
 		return
 	}
@@ -216,7 +218,7 @@ func UserCloseGameContainer(c *gin.Context) {
 
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    501,
-			Message: "System error",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
 		return
 	}
@@ -247,7 +249,7 @@ func UserExtendGameContainer(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid challenge ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
 		})
 		c.Abort()
 		return
@@ -257,7 +259,7 @@ func UserExtendGameContainer(c *gin.Context) {
 	if err := dbtool.DB().Where("challenge_id = ? AND team_id = ? AND container_status = ?", challengeID, team.TeamID, models.ContainerRunning).Find(&containers).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load containers",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadContainers"}),
 		})
 		return
 	}
@@ -265,7 +267,7 @@ func UserExtendGameContainer(c *gin.Context) {
 	if len(containers) == 0 {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Launch a container first.",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "LaunchContainerFirst"}),
 		})
 		return
 	}
@@ -273,7 +275,7 @@ func UserExtendGameContainer(c *gin.Context) {
 	if len(containers) != 1 {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "System error.",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
 		return
 	}
@@ -299,7 +301,7 @@ func UserExtendGameContainer(c *gin.Context) {
 
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    501,
-			Message: "System error",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
 		return
 	}
@@ -330,7 +332,7 @@ func UserGetGameChallengeContainerInfo(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid challenge ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
 		})
 		c.Abort()
 		return
@@ -340,7 +342,7 @@ func UserGetGameChallengeContainerInfo(c *gin.Context) {
 	if err := dbtool.DB().Where("challenge_id = ? AND team_id = ? AND (container_status = ? OR container_status = ? OR container_status = ?)", challengeID, team.TeamID, models.ContainerRunning, models.ContainerQueueing, models.ContainerStarting).Find(&containers).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load containers",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadContainers"}),
 		})
 		return
 	}
@@ -348,7 +350,7 @@ func UserGetGameChallengeContainerInfo(c *gin.Context) {
 	if len(containers) == 0 {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Launch a container first.",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "LaunchContainerFirst"}),
 		})
 		return
 	}
@@ -356,7 +358,7 @@ func UserGetGameChallengeContainerInfo(c *gin.Context) {
 	if len(containers) != 1 {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "System error.",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
 		return
 	}
@@ -370,7 +372,7 @@ func UserGetGameChallengeContainerInfo(c *gin.Context) {
 
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load game challenges",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGameChallenges"}),
 		})
 		return
 	}
@@ -378,7 +380,7 @@ func UserGetGameChallengeContainerInfo(c *gin.Context) {
 	if len(gameChallenges) == 0 {
 		c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 			Code:    404,
-			Message: "Challenge not found",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeNotFound"}),
 		})
 		return
 	}

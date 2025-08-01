@@ -69,6 +69,7 @@ export const EditGameFormSchema = z.object({
     first_blood_reward: z.coerce.number(),
     second_blood_reward: z.coerce.number(),
     third_blood_reward: z.coerce.number(),
+    team_policy: z.enum(["Manual", "Auto"]),
     stages: z.array(
         z.object({
             stage_name: z.string().nonempty(),

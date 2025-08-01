@@ -131,16 +131,16 @@ export default function ScoreBoardPage(
         if (!gameInfo || isDownloading) return;
 
         setIsDownloading(true);
-        try {
-            // 获取完整的积分榜数据（不分页，获取所有数据用于导出）
-            const params: any = {};
-            if (selectedGroupId) {
-                params.group_id = selectedGroupId;
-            }
-            params.page = 1;
-            params.size = (pagination?.total_count ?? 0) + 100; // 获取大量数据用于导出
+        // 获取完整的积分榜数据（不分页，获取所有数据用于导出）
+        const params: any = {};
+        if (selectedGroupId) {
+            params.group_id = selectedGroupId;
+        }
+        params.page = 1;
+        params.size = (pagination?.total_count ?? 0) + 100; // 获取大量数据用于导出
 
-            const response = await api.user.userGetGameScoreboard(gmid, params);
+
+        api.user.userGetGameScoreboard(gmid, params).then((response) => {
             const data = response.data.data as GameScoreboardData;
 
             if (!data?.teams || !data?.challenges) {
@@ -158,13 +158,9 @@ export default function ScoreBoardPage(
 
             // 成功提示
             toast.success(`积分榜下载成功！文件已保存为: ${filename}`);
-
-        } catch (error) {
-            console.error('下载积分榜失败:', error);
-            toast.error(`下载积分榜失败 ${error instanceof Error ? error.message : '请稍后重试'}`);
-        } finally {
+        }).finally(() => {
             setIsDownloading(false);
-        }
+        })
     }, [gameInfo, gmid, isDownloading, selectedGroupId, pagination]);
 
     // 分组选择处理
@@ -552,8 +548,8 @@ export default function ScoreBoardPage(
                                 {/* 图表区域 - 根据模式显示 */}
                                 {!isChartFloating && !isNormalChartMinimized && (
                                     <div className={`mx-auto transition-all duration-300 ${isChartFullscreen
-                                            ? 'absolute top-0 left-0 w-full h-screen z-50 px-4 py-4'
-                                            : 'container px-10 h-[50vh] min-h-[450px]'
+                                        ? 'absolute top-0 left-0 w-full h-screen z-50 px-4 py-4'
+                                        : 'container px-10 h-[50vh] min-h-[450px]'
                                         }`}>
                                         <BetterChart
                                             theme={theme == "dark" ? "dark" : "light"}
@@ -590,8 +586,8 @@ export default function ScoreBoardPage(
                                         <Button
                                             onClick={handleNormalRestore}
                                             className={`p-3 rounded-full shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-110 ${theme === 'dark'
-                                                    ? 'bg-slate-800/90 border border-slate-600/50 text-slate-200 hover:bg-slate-700/90'
-                                                    : 'bg-white/90 border border-gray-300/50 text-slate-700 hover:bg-gray-50/90'
+                                                ? 'bg-slate-800/90 border border-slate-600/50 text-slate-200 hover:bg-slate-700/90'
+                                                : 'bg-white/90 border border-gray-300/50 text-slate-700 hover:bg-gray-50/90'
                                                 }`}
                                             title="显示图表"
                                         >
@@ -607,8 +603,8 @@ export default function ScoreBoardPage(
                                         <Button
                                             onClick={handleFloatingRestore}
                                             className={`p-3 rounded-full shadow-lg backdrop-blur-sm transition-all duration-200 hover:scale-110 ${theme === 'dark'
-                                                    ? 'bg-slate-800/90 border border-slate-600/50 text-slate-200 hover:bg-slate-700/90'
-                                                    : 'bg-white/90 border border-gray-300/50 text-slate-700 hover:bg-gray-50/90'
+                                                ? 'bg-slate-800/90 border border-slate-600/50 text-slate-200 hover:bg-slate-700/90'
+                                                : 'bg-white/90 border border-gray-300/50 text-slate-700 hover:bg-gray-50/90'
                                                 }`}
                                             title="显示图表"
                                         >

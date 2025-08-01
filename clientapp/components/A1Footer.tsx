@@ -27,24 +27,33 @@ const A1Footer = () => {
         <>
             <footer className="h-16 flex justify-center items-center font-bold text-sm lg:text-base select-none">
                 <Box className="hidden md:block" />
-                <span className="ml-2 hidden md:block">{ clientConfig.systemFooter }</span>
+                <span className="ml-2 hidden md:block">{clientConfig.systemFooter}</span>
                 {/* <span className="ml-2 md:hidden">A1CTF</span> */}
-                { clientConfig.systemICP ? (
+                {clientConfig.systemICP ? (
                     <>
                         <span className="ml-2 mr-2 hidden md:block">/</span>
                         <a className="hover:underline decoration-2 underline-offset-4" onClick={() => {
                             window.open("http://beian.miit.gov.cn/")
-                        }}>{ clientConfig.systemICP }</a>
+                        }}>{clientConfig.systemICP}</a>
                     </>
-                ) : <></> }
-                { clientConfig.systemOrganizationURL ? (
+                ) : <></>}
+                {clientConfig.systemOrganizationURL ? (
                     <>
                         <span className="ml-2 mr-2 hidden md:block">/</span>
                         <a className="hover:underline decoration-2 underline-offset-4 hidden md:block" onClick={() => {
                             window.open(clientConfig.systemOrganizationURL)
-                        }}>{ clientConfig.systemOrganization }</a>
+                        }}>{clientConfig.systemOrganization}</a>
                     </>
-                ) : <></> }
+                ) : <></>}
+                <div className='flex gap-2 items-center md:hidden'>
+                    <img
+                        src={getSystemLogo()}
+                        alt={clientConfig.SVGAltData}
+                        width={28}
+                        height={28}
+                    />
+                    <span className='font-bold text-lg'>{clientConfig.systemName}</span>
+                </div>
                 <span className="ml-2 mr-2">/</span>
                 <DropdownMenu open={infoViewShow} modal={false}>
                     <DropdownMenuTrigger asChild>
@@ -71,8 +80,8 @@ const A1Footer = () => {
                                     height={34}
                                 />
                                 <div className="flex flex-col">
-                                    <span className="text-lg font-bold">{ A1CTF_NAME }</span>
-                                    <span className="text-sm mt-[-8px] text-orange-500">{ A1CTF_VERSION }</span>
+                                    <span className="text-lg font-bold">{A1CTF_NAME}</span>
+                                    <span className="text-sm mt-[-8px] text-orange-500">{A1CTF_VERSION}</span>
                                 </div>
                             </div>
                             <div className="flex gap-2 text-sm items-center mt-1 justify-center">

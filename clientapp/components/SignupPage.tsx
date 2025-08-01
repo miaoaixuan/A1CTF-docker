@@ -15,7 +15,7 @@ export default function SignupPage() {
     return (
         <div className="grid min-h-svh lg:grid-cols-2">
             <div className="flex flex-col gap-4 p-6 md:p-10">
-                <div className="flex justify-center gap-2 md:justify-between">
+                <div className="flex gap-2 justify-between">
                     <div onClick={() => {
                         navigate(`/`)
                     }} className="flex items-center gap-2 font-medium">

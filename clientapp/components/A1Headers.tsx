@@ -52,7 +52,7 @@ const PageHeader = () => {
     const { clientConfig, getSystemLogo } = useGlobalVariableContext()
 
     return (
-        <div className="sticky top-0 h-16 select-none z-1">
+        <div className="sticky top-0 h-18 select-none z-1">
             <SafeComponent animation={false}>
                 <div className="flex w-full h-full items-center justify-center">
                     <div className="container h-16 items-center hidden md:flex">
@@ -150,7 +150,7 @@ const PageHeader = () => {
                             )}
                         </div>
                     </div>
-                    <div className="flex md:hidden items-center h-full">
+                    <div className="flex md:hidden items-center h-full w-full px-5">
                         <div className="flex w-full justify-start ml-4">
                             <Link to={`/`} className="flex items-center">
                                 <img
@@ -159,7 +159,7 @@ const PageHeader = () => {
                                     width={34}
                                     height={34}
                                 />
-                                <span className="font-bold ml-2">A1CTF</span>
+                                <span className="font-bold ml-2">{clientConfig.systemName}</span>
                             </Link>
                         </div>
                         <div className="flex justify-end w-full">
@@ -176,11 +176,11 @@ const PageHeader = () => {
                                         </div>
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-54 mr-4 mt-2">
-                                    <div className="grid gap-[2px] p-[0.5px]">
+                                <DropdownMenuContent className="mr-4 mt-2">
+                                    <div className="flex flex-col gap-1">
                                         <Button variant={whetherSelected("home")} onClick={() => {
                                             if (curPath != `/`) navigate(`/`)
-                                        }}>
+                                        }} >
                                             <House />
                                             <span className="font-bold text-base ml-[-2px]">{t("home")}</span>
                                         </Button>
@@ -234,11 +234,11 @@ const PageHeader = () => {
                                                             <span>{t("settings")}</span>
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => {
-                                                            api.account.accountLogOut().then(() => {
-                                                                updateProfile(() => {
-                                                                    navigate(`/`)
-                                                                    toast.success(t("login_out_success"))
-                                                                })
+                                                            unsetLoginStatus()
+                                                            removeCookie("a1token")
+                                                            updateProfile(() => {
+                                                                navigate(`/`)
+                                                                toast.success(t("login_out_success"))
                                                             })
                                                         }}>
                                                             <UserRoundMinus />

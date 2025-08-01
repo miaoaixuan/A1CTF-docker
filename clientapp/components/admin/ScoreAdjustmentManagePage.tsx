@@ -14,12 +14,12 @@ import { MacScrollbar } from 'mac-scrollbar';
 import { useTheme } from 'next-themes';
 import { toast } from 'react-toastify/unstyled';
 import dayjs from 'dayjs';
-import { 
-    ArrowLeft, 
-    Plus, 
-    Edit, 
-    Trash2, 
-    Calculator, 
+import {
+    ArrowLeft,
+    Plus,
+    Edit,
+    Trash2,
+    Calculator,
     AlertTriangle,
     Gift,
     Ban,
@@ -40,18 +40,18 @@ export function ScoreAdjustmentManagePage() {
     const { game_id } = useParams<{ game_id: string }>();
     const navigate = useNavigate();
     const { theme } = useTheme();
-    
+
     const [adjustments, setAdjustments] = useState<ScoreAdjustmentInfo[]>([]);
     const [teams, setTeams] = useState<Team[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    
+
     // 队伍搜索相关状态
     const [teamSearchTerm, setTeamSearchTerm] = useState('');
     const [teamSearchResults, setTeamSearchResults] = useState<Team[]>([]);
     const [isSearchingTeams, setIsSearchingTeams] = useState(false);
     const [showTeamDropdown, setShowTeamDropdown] = useState(false);
-    
+
     // 创建/编辑对话框状态
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingAdjustment, setEditingAdjustment] = useState<ScoreAdjustmentInfo | null>(null);
@@ -61,7 +61,7 @@ export function ScoreAdjustmentManagePage() {
         score_change: 0,
         reason: ''
     });
-    
+
     // 分数输入框的显示值
     const [scoreInputValue, setScoreInputValue] = useState('0');
 
@@ -79,27 +79,23 @@ export function ScoreAdjustmentManagePage() {
             return;
         }
 
-        try {
-            setIsSearchingTeams(true);
-            const response = await api.admin.adminListTeams({
-                game_id: gameId,
-                size: 50,
-                offset: 0,
-                search: searchTerm
-            });
-            
-            const teamList = response.data.data?.map((team: AdminListTeamItem) => ({
+        setIsSearchingTeams(true);
+
+        api.admin.adminListTeams({
+            game_id: gameId,
+            size: 50,
+            offset: 0,
+            search: searchTerm
+        }).then((res) => {
+            const teamList = res.data.data?.map((team: AdminListTeamItem) => ({
                 team_id: team.team_id,
                 team_name: team.team_name
             })) || [];
-            
+
             setTeamSearchResults(teamList);
-        } catch (error) {
-            console.error('搜索队伍失败:', error);
-            toast.error('搜索队伍失败');
-        } finally {
+        }).finally(() => {
             setIsSearchingTeams(false);
-        }
+        })
     }, [gameId]);
 
     // 队伍搜索防抖
@@ -142,9 +138,9 @@ export function ScoreAdjustmentManagePage() {
                     offset: 0
                 })
             ]);
-            
+
             setAdjustments(adjustmentsRes.data.data || []);
-            
+
             // 转换队伍数据格式
             const teamList = teamsRes.data.data?.map((team: AdminListTeamItem) => ({
                 team_id: team.team_id,
@@ -167,30 +163,30 @@ export function ScoreAdjustmentManagePage() {
     const getAdjustmentTypeInfo = (type: string) => {
         switch (type) {
             case 'cheat':
-                return { 
-                    label: '作弊扣分', 
-                    icon: <Ban className="w-3 h-3" />, 
+                return {
+                    label: '作弊扣分',
+                    icon: <Ban className="w-3 h-3" />,
                     variant: 'destructive' as const,
                     color: 'text-red-500'
                 };
             case 'reward':
-                return { 
-                    label: '奖励加分', 
-                    icon: <Gift className="w-3 h-3" />, 
+                return {
+                    label: '奖励加分',
+                    icon: <Gift className="w-3 h-3" />,
                     variant: 'default' as const,
                     color: 'text-green-500'
                 };
             case 'other':
-                return { 
-                    label: '其他调整', 
-                    icon: <AlertTriangle className="w-3 h-3" />, 
+                return {
+                    label: '其他调整',
+                    icon: <AlertTriangle className="w-3 h-3" />,
                     variant: 'secondary' as const,
                     color: 'text-yellow-500'
                 };
             default:
-                return { 
-                    label: '未知', 
-                    icon: <AlertTriangle className="w-3 h-3" />, 
+                return {
+                    label: '未知',
+                    icon: <AlertTriangle className="w-3 h-3" />,
                     variant: 'secondary' as const,
                     color: 'text-gray-500'
                 };
@@ -198,57 +194,43 @@ export function ScoreAdjustmentManagePage() {
     };
 
     // 过滤调整记录
-    const filteredAdjustments = adjustments.filter(adj => 
+    const filteredAdjustments = adjustments.filter(adj =>
         adj.team_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         adj.reason.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     // 创建调整记录
     const handleCreate = async () => {
-        try {
-            await api.admin.createScoreAdjustment(gameId, formData);
+        api.admin.createScoreAdjustment(gameId, formData).then((res) => {
             toast.success('分数修正创建成功');
             setDialogOpen(false);
             resetForm();
             loadData();
-        } catch (error) {
-            console.error('创建失败:', error);
-            toast.error('创建分数修正失败');
-        }
+        })
     };
 
     // 更新调整记录
     const handleUpdate = async () => {
         if (!editingAdjustment) return;
-        
-        try {
-            const updateData: UpdateScoreAdjustmentPayload = {
-                adjustment_type: formData.adjustment_type,
-                score_change: formData.score_change,
-                reason: formData.reason
-            };
-            
-            await api.admin.updateScoreAdjustment(gameId, editingAdjustment.adjustment_id, updateData);
+
+        api.admin.updateScoreAdjustment(gameId, editingAdjustment.adjustment_id, {
+            adjustment_type: formData.adjustment_type,
+            score_change: formData.score_change,
+            reason: formData.reason
+        }).then((res) => {
             toast.success('分数修正更新成功');
             setDialogOpen(false);
             setEditingAdjustment(null);
             loadData();
-        } catch (error) {
-            console.error('更新失败:', error);
-            toast.error('更新分数修正失败');
-        }
+        })
     };
 
     // 删除调整记录
     const handleDelete = async (adjustmentId: number) => {
-        try {
-            await api.admin.deleteScoreAdjustment(gameId, adjustmentId);
+        api.admin.deleteScoreAdjustment(gameId, adjustmentId).then((res) => {
             toast.success('分数修正删除成功');
             loadData();
-        } catch (error) {
-            console.error('删除失败:', error);
-            toast.error('删除分数修正失败');
-        }
+        })
     };
 
     // 确认删除
@@ -318,9 +300,9 @@ export function ScoreAdjustmentManagePage() {
             <div className="backdrop-blur-sm bg-background/80 border-b p-5 lg:p-8 sticky top-0 z-10">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                        <Button 
-                            type="button" 
-                            variant="outline" 
+                        <Button
+                            type="button"
+                            variant="outline"
                             onClick={() => navigate(`/admin/games`)}
                             className="bg-background/50 backdrop-blur-sm"
                         >
@@ -337,7 +319,7 @@ export function ScoreAdjustmentManagePage() {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-4">
                         <div className="relative max-w-md">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -348,7 +330,7 @@ export function ScoreAdjustmentManagePage() {
                                 className="pl-10"
                             />
                         </div>
-                        
+
                         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                             <DialogTrigger asChild>
                                 <Button onClick={openCreateDialog} className="flex items-center gap-2">
@@ -380,7 +362,7 @@ export function ScoreAdjustmentManagePage() {
                                                         className="pl-10"
                                                     />
                                                 </div>
-                                                
+
                                                 {/* 队伍搜索下拉列表 */}
                                                 {showTeamDropdown && (teamSearchResults.length > 0 || isSearchingTeams) && (
                                                     <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
@@ -407,7 +389,7 @@ export function ScoreAdjustmentManagePage() {
                                                     </div>
                                                 )}
                                             </div>
-                                            
+
                                             {/* 显示已选择的队伍 */}
                                             {formData.team_id > 0 && (
                                                 <div className="text-sm text-muted-foreground">
@@ -416,7 +398,7 @@ export function ScoreAdjustmentManagePage() {
                                             )}
                                         </div>
                                     )}
-                                    
+
                                     {editingAdjustment && (
                                         <div className="space-y-2">
                                             <Label>队伍</Label>
@@ -426,7 +408,7 @@ export function ScoreAdjustmentManagePage() {
                                             </div>
                                         </div>
                                     )}
-                                    
+
                                     <div className="space-y-2">
                                         <Label htmlFor="type">修正类型</Label>
                                         <Select
@@ -443,7 +425,7 @@ export function ScoreAdjustmentManagePage() {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    
+
                                     <div className="space-y-2">
                                         <Label htmlFor="score">分数变化</Label>
                                         <Input
@@ -454,13 +436,13 @@ export function ScoreAdjustmentManagePage() {
                                             onChange={(e) => {
                                                 const value = e.target.value;
                                                 setScoreInputValue(value);
-                                                
+
                                                 // 如果是空值，设为0
                                                 if (value === '') {
                                                     setFormData(prev => ({ ...prev, score_change: 0 }));
                                                     return;
                                                 }
-                                                
+
                                                 // 如果是有效数字，更新状态
                                                 const numValue = parseFloat(value);
                                                 if (!isNaN(numValue)) {
@@ -471,7 +453,7 @@ export function ScoreAdjustmentManagePage() {
                                             placeholder="输入分数变化量（正数为加分，负数为扣分）"
                                         />
                                     </div>
-                                    
+
                                     <div className="space-y-2">
                                         <Label htmlFor="reason">修正原因</Label>
                                         <Textarea
@@ -482,7 +464,7 @@ export function ScoreAdjustmentManagePage() {
                                             rows={3}
                                         />
                                     </div>
-                                    
+
                                     <div className="flex gap-2 pt-4">
                                         <Button
                                             variant="outline"
@@ -647,7 +629,7 @@ export function ScoreAdjustmentManagePage() {
                         }}>
                             取消
                         </AlertDialogCancel>
-                        <AlertDialogAction 
+                        <AlertDialogAction
                             onClick={confirmDelete}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >

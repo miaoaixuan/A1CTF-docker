@@ -8,6 +8,7 @@ import (
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"a1ctf/src/db/models"
 	clientconfig "a1ctf/src/modules/client_config"
@@ -16,6 +17,7 @@ import (
 	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
+	i18ntool "a1ctf/src/utils/i18n_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/webmodels"
 )
@@ -30,7 +32,7 @@ func GetProfile(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "System error",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
 		return
 	}
@@ -39,7 +41,7 @@ func GetProfile(c *gin.Context) {
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":    404,
-			"message": "User not found",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "UserNotFound"}),
 		})
 		return
 	}
@@ -70,7 +72,7 @@ func Register(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid request payload",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -81,7 +83,7 @@ func Register(c *gin.Context) {
 		if !valid {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"code":    400,
-				"message": "Invalid request payload",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 			})
 			return
 		}
@@ -91,7 +93,7 @@ func Register(c *gin.Context) {
 	if err := dbtool.DB().Where("username = ? OR email = ?", payload.Username, payload.Email).Find(&existingUsers).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "System error",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
 		return
 	}
@@ -111,9 +113,9 @@ func Register(c *gin.Context) {
 			Status: models.LogStatusFailed,
 		})
 
-		c.JSON(http.StatusNotAcceptable, gin.H{
-			"code":    500,
-			"message": "Username or email has registered",
+		c.JSON(http.StatusConflict, gin.H{
+			"code":    409,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "UsernameOrEmailExists"}),
 		})
 		return
 	}
@@ -158,8 +160,8 @@ func Register(c *gin.Context) {
 		})
 
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    501,
-			"message": "System error",
+			"code":    500,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
 		return
 	}
@@ -248,7 +250,7 @@ func UpdateUserProfile(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid request payload",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -264,7 +266,7 @@ func UpdateUserProfile(c *gin.Context) {
 	}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "System error",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
 		return
 	}
@@ -279,7 +281,7 @@ func UpdateUserEmail(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid request payload",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -289,7 +291,7 @@ func UpdateUserEmail(c *gin.Context) {
 	if *user.Email == payload.NewEmail {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "New email is the same as the old email",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "NewEmailSameAsOld"}),
 		})
 		return
 	}
@@ -302,13 +304,13 @@ func UpdateUserEmail(c *gin.Context) {
 		if dbtool.IsDuplicateKeyError(err) {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"code":    400,
-				"message": "This email can not be used",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "EmailCannotBeUsed"}),
 			})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "System error",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
 		return
 	}
@@ -324,7 +326,7 @@ func SendVerifyEmail(c *gin.Context) {
 	if user.EmailVerified {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Email has already been verified",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "EmailAlreadyVerified"}),
 		})
 		return
 	}
@@ -340,7 +342,7 @@ func VerifyEmailCode(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid request payload",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -350,7 +352,7 @@ func VerifyEmailCode(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid request payload",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -363,7 +365,7 @@ func VerifyEmailCode(c *gin.Context) {
 		}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "System error",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
 		return
 	}

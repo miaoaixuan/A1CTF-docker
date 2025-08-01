@@ -13,7 +13,7 @@ export default function LoginPage() {
     return (
         <div className="grid min-h-svh lg:grid-cols-2 select-none">
             <div className="flex flex-col gap-4 p-6 md:p-10">
-                <div className="flex justify-center gap-2 md:justify-between">
+                <div className="flex gap-2 justify-between">
                     <a href="/" className="flex items-center gap-2 font-medium">
                         <img
                             src={getSystemLogo()}

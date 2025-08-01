@@ -33,27 +33,22 @@ export default function ChallengeTools(
             return;
         }
 
-        try {
-            setIsSearchingTeams(true);
-            const response = await api.admin.adminListTeams({
-                game_id: gameID,
-                size: 50,
-                offset: 0,
-                search: searchTerm
-            });
-
-            const teamList = response.data.data?.map((team: any) => ({
+        setIsSearchingTeams(true);
+        api.admin.adminListTeams({
+            game_id: gameID,
+            size: 50,
+            offset: 0,
+            search: searchTerm
+        }).then((res) => {
+            const teamList = res.data.data?.map((team: any) => ({
                 team_id: team.team_id,
                 team_name: team.team_name
             })) || [];
 
             setTeamSearchResults(teamList);
-        } catch (error) {
-            console.error('搜索队伍失败:', error);
-            toast.error('搜索队伍失败');
-        } finally {
+        }).finally(() => {
             setIsSearchingTeams(false);
-        }
+        })
     }, [gameID]);
 
     // 删除特定队伍的解题记录
@@ -73,14 +68,10 @@ export default function ChallengeTools(
 
     // 确认清空所有解题记录
     const confirmClearAllSolves = async () => {
-        try {
-            await api.admin.deleteChallengeSolves(gameID, clearSolvesChallengeId, {});
+        api.admin.deleteChallengeSolves(gameID, clearSolvesChallengeId, {}).then((res) => {
             toast.success('已清空所有解题记录');
             setIsClearSolvesAlertOpen(false);
-        } catch (error: any) {
-            console.error('清空解题记录失败:', error);
-            toast.error('清空解题记录失败: ' + (error.response?.data?.message || error.message));
-        }
+        })
     };
 
     // 确认删除特定队伍的解题记录
@@ -90,16 +81,12 @@ export default function ChallengeTools(
             return;
         }
 
-        try {
-            await api.admin.deleteChallengeSolves(gameID, currentChallengeId, {
-                team_id: selectedTeamId
-            });
+        api.admin.deleteChallengeSolves(gameID, currentChallengeId, {
+            team_id: selectedTeamId
+        }).then((res) => {
             toast.success('已删除队伍解题记录');
             setIsDeleteTeamSolveOpen(false);
-        } catch (error: any) {
-            console.error('删除队伍解题记录失败:', error);
-            toast.error('删除队伍解题记录失败: ' + (error.response?.data?.message || error.message));
-        }
+        })
     };
 
     return (

@@ -25,7 +25,7 @@ export default function GameViewSidebar(
     }
 ) {
 
-    const { clientConfig, curProfile, checkLoginStatus } = useGlobalVariableContext()
+    const { clientConfig, curProfile, isAdmin } = useGlobalVariableContext()
 
     type Module = {
         id: string,
@@ -117,7 +117,7 @@ export default function GameViewSidebar(
                                 navigate(`/games/${gameID}/${module.id}`)
                             }
                         }}
-                        disabled={module.shouldDisable ? module.shouldDisable() : false}
+                        disabled={ isAdmin() ? false : ( module.shouldDisable ? module.shouldDisable() : false ) }
                     >
                         {module.icon}
                     </Button>

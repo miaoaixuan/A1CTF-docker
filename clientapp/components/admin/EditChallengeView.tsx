@@ -604,18 +604,9 @@ export function EditChallengeView({ challenge_info }: { challenge_info: AdminCha
             flag_type: values.flag_type
         };
 
-        try {
-            await api.admin.updateChallenge(challenge_info.challenge_id!, finalData as AdminChallengeConfig);
+        api.admin.updateChallenge(challenge_info.challenge_id!, finalData as AdminChallengeConfig).then((res) => {
             toast.success("更新成功");
-        } catch (error: AxiosError | any) {
-            if (error.response?.status) {
-                const errorMessage: ErrorMessage = error.response.data as ErrorMessage;
-                toast.error(errorMessage.message);
-            } else {
-                toast.error("Unknow Error");
-            }
-            throw error; // 重新抛出错误以便上层处理
-        }
+        })
     }
 
     const router = useNavigate()

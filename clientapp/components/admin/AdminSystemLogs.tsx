@@ -81,12 +81,12 @@ export function AdminSystemLogs() {
     const [totalCount, setTotalCount] = React.useState(0);
     const [searchKeyword, setSearchKeyword] = React.useState("");
     const [debouncedSearchKeyword, setDebouncedSearchKeyword] = React.useState("");
-    
+
     // 筛选条件
     const [categoryFilter, setCategoryFilter] = React.useState<LogCategory | "">("");
     const [statusFilter, setStatusFilter] = React.useState<string>("");
     const [actionFilter, setActionFilter] = React.useState<string>("");
-    
+
     const [curPageData, setCurPageData] = React.useState<SystemLogItem[]>([])
     const [isLoading, setIsLoading] = React.useState(false);
     const [stats, setStats] = React.useState<SystemLogStats | null>(null);
@@ -103,44 +103,39 @@ export function AdminSystemLogs() {
 
     // 获取日志统计
     const fetchStats = React.useCallback(async () => {
-        try {
-            const response = await api.admin.adminGetSystemLogStats();
-            if (response.data.code === 200) {
-                setStats(response.data.data);
-            }
-        } catch (error) {
-            console.error('获取统计数据失败:', error);
-        }
+        api.admin.adminGetSystemLogStats().then((res) => {
+            setStats(res.data.data);
+        })
     }, []);
 
     // 获取日志数据
     const fetchLogs = React.useCallback(async () => {
         setIsLoading(true);
-        try {
-            const params: any = {
-                offset: curPage * pageSize,
-                size: pageSize,
-            };
 
-            if (debouncedSearchKeyword) {
-                params.keyword = debouncedSearchKeyword;
-            }
-            if (categoryFilter) {
-                params.category = categoryFilter;
-            }
-            if (statusFilter) {
-                params.status = statusFilter;
-            }
-            if (actionFilter) {
-                params.action = actionFilter;
-            }
+        const params: any = {
+            offset: curPage * pageSize,
+            size: pageSize,
+        };
 
-            const response = await api.admin.adminGetSystemLogs(params);
+        if (debouncedSearchKeyword) {
+            params.keyword = debouncedSearchKeyword;
+        }
+        if (categoryFilter) {
+            params.category = categoryFilter;
+        }
+        if (statusFilter) {
+            params.status = statusFilter;
+        }
+        if (actionFilter) {
+            params.action = actionFilter;
+        }
+
+        api.admin.adminGetSystemLogs(params).then((response) => {
             if (response.data.code === 200) {
                 const logs = response.data.data.logs;
                 setTotalCount(response.data.data.total);
                 setCurPageData(logs);
-                
+
                 // 转换数据格式
                 const tableData: LogTableRow[] = logs.map((log: SystemLogItem) => ({
                     id: log.log_id.toString(),
@@ -158,12 +153,9 @@ export function AdminSystemLogs() {
                 }));
                 setData(tableData);
             }
-        } catch (error) {
-            toast.error('获取日志数据失败');
-            console.error('获取日志数据失败:', error);
-        } finally {
+        }).finally(() => {
             setIsLoading(false);
-        }
+        })
     }, [curPage, pageSize, debouncedSearchKeyword, categoryFilter, statusFilter, actionFilter]);
 
     // 页面加载时获取数据
@@ -309,7 +301,7 @@ export function AdminSystemLogs() {
                         </DropdownMenuItem>
                     </>
                 )
-                
+
                 return (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -320,7 +312,7 @@ export function AdminSystemLogs() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>操作</DropdownMenuLabel>
-                            { log.user_id && (
+                            {log.user_id && (
                                 <DropdownMenuItem
                                     onClick={() => {
                                         navigator.clipboard.writeText(log.user_id || '');
@@ -329,7 +321,7 @@ export function AdminSystemLogs() {
                                 >
                                     复制用户ID
                                 </DropdownMenuItem>
-                            ) }
+                            )}
                             <DropdownMenuItem
                                 onClick={() => {
                                     const detailsText = atob(log.details as unknown as string);
@@ -349,7 +341,7 @@ export function AdminSystemLogs() {
                                     复制错误信息
                                 </DropdownMenuItem>
                             )}
-                            { log.resource_type == "CONTAINER" && containerOperations }
+                            {log.resource_type == "CONTAINER" && containerOperations}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 );
@@ -446,7 +438,7 @@ export function AdminSystemLogs() {
                         className="max-w-sm"
                     />
                 </div>
-                
+
                 <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as LogCategory | "")}>
                     <SelectTrigger className="w-32">
                         <SelectValue placeholder="类别" />

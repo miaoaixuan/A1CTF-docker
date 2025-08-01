@@ -140,9 +140,11 @@ export function ChallengesView({
 
     useEffect(() => {
         const updateScoreBoard = () => {
-            api.user.userGetGameScoreboard(gameID).then((res) => {
-                setScoreBoardModel(res.data.data)
-            })
+            if (gameStatus == "running" || gameStatus == "practiceMode") {
+                api.user.userGetGameScoreboard(gameID).then((res) => {
+                    setScoreBoardModel(res.data.data)
+                })
+            }
         }
 
         updateScoreBoard()
@@ -219,7 +221,7 @@ export function ChallengesView({
 
     useEffect(() => {
         // 根据比赛状态处理事件
-        if (gameStatus == "running" || gameStatus == "practiceMode") {
+        if (gameStatus == "running" || gameStatus == "practiceMode" || isAdmin()) {
 
             const challengeID = searchParams.get("id")
             if (challengeID) {

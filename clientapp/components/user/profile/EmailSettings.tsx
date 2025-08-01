@@ -57,7 +57,7 @@ export default function EmailSettings() {
                             render={({ field }) => (
                                 <FormItem className="w-full">
                                     <FormControl>
-                                        <div className="w-full flex items-center gap-4">
+                                        <div className="w-full grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3">
                                             <Input {...field}
                                                 className={!curProfile.email_verified
                                                     ? "border-red-400 focus-visible:border-red-400 focus-visible:ring-red-400/40"

@@ -6,11 +6,26 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
-import { Accessibility, KeyRound, Mail, Save, UserRoundPen } from "lucide-react";
+import { Accessibility, Eclipse, Ellipsis, KeyRound, Mail, Plus, Save, UserRoundPen } from "lucide-react";
 import UserBaiscInfo from "./user/profile/UserBaiscInfo";
 import { PasswordView } from "./user/profile/PasswordView";
 import EmailSettings from "./user/profile/EmailSettings";
 import DeleteAccount from "./user/profile/DeleteAccount";
+
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuPortal,
+    DropdownMenuSeparator,
+    DropdownMenuShortcut,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuTrigger,
+} from "components/ui/dropdown-menu"
 
 export function ProfileView() {
 
@@ -57,9 +72,9 @@ export function ProfileView() {
     return (
 
         <div className="w-full flex justify-center h-full">
-            <div className="flex container h-full overflow-hidden">
+            <div className="flex container h-full overflow-hidden relative">
                 {/* 左侧模块导航 */}
-                <div className="w-64 flex-none border-r-1 select-none">
+                <div className="w-64 flex-none border-r-1 select-none hidden md:block">
                     <div className="px-6 pt-5">
                         <h3 className="font-bold text-lg mb-4 text-foreground/90">个人资料</h3>
                         <div className="space-y-2">
@@ -79,6 +94,41 @@ export function ProfileView() {
                             ))}
                         </div>
                     </div>
+                </div>
+                {/* 移动端右下角按钮 */}
+                <div className="absolute bottom-8 right-8 md:hidden">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="outline"
+                                className="h-10"
+                            >
+                                <div className="flex gap-2 items-center">
+                                    <Ellipsis />
+                                    <span className="text-sm">{ modules.filter((e) => e.id == activeModule)[0].name }</span>
+                                </div>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56" align="start">
+                            <DropdownMenuLabel>资料设置</DropdownMenuLabel>
+                            {modules.map((e) => (
+                                <DropdownMenuItem
+                                    onClick={() => {
+                                        navigate(`/profile/${e.id}`)
+                                    }}
+                                >
+                                    <div className="flex gap-2 items-center">
+                                        { e.icon }
+                                        {e.name}
+                                    </div>
+                                </DropdownMenuItem>
+                            ))}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem>
+                                主页
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
                 <div className="flex-1 overflow-hidden">
                     <MacScrollbar className="w-full h-full overflow-hidden select-none"

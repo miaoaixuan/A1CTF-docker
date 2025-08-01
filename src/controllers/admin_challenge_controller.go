@@ -9,10 +9,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"gorm.io/gorm"
 
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
+	i18ntool "a1ctf/src/utils/i18n_tool"
 	k8stool "a1ctf/src/utils/k8s_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/webmodels"
@@ -37,7 +39,7 @@ func AdminListChallenges(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": err.Error(),
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -52,7 +54,7 @@ func AdminListChallenges(c *gin.Context) {
 	if err := query.Find(&challenges).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Failed to load challenges",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadChallenges"}),
 		})
 		return
 	}
@@ -80,7 +82,7 @@ func AdminGetChallenge(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid challenge ID",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
 		})
 		return
 	}
@@ -90,12 +92,12 @@ func AdminGetChallenge(c *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
 				"code":    404,
-				"message": "Challenge not found",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":    500,
-				"message": "Failed to load challenge",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadChallenge"}),
 			})
 		}
 		return
@@ -112,7 +114,7 @@ func AdminCreateChallenge(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": err.Error(),
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -131,7 +133,7 @@ func AdminCreateChallenge(c *gin.Context) {
 	if err := dbtool.DB().Create(&payload).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Failed to create challenge",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCreateChallenge"}),
 		})
 		log.Panicf("%+v %v\n", payload, err)
 		return
@@ -152,7 +154,7 @@ func AdminDeleteChallenge(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid challenge ID",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
 		})
 		return
 	}
@@ -163,12 +165,12 @@ func AdminDeleteChallenge(c *gin.Context) {
 		if result.Error.(*pgconn.PgError).Code == "23503" {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":    400,
-				"message": "This challenge is used in game",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeUsedInGame"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":    500,
-				"message": "Failed to delete challenge",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToDeleteChallenge"}),
 			})
 		}
 		return
@@ -177,14 +179,14 @@ func AdminDeleteChallenge(c *gin.Context) {
 	if result.RowsAffected == 0 {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":    404,
-			"message": "Challenge not found",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeNotFound"}),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"message": "Challenge deleted",
+		"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeDeleted"}),
 	})
 }
 
@@ -194,7 +196,7 @@ func AdminUpdateChallenge(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid challenge ID",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
 		})
 		return
 	}
@@ -203,7 +205,7 @@ func AdminUpdateChallenge(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil || challengeID != *payload.ChallengeID {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid request payload",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -223,12 +225,12 @@ func AdminUpdateChallenge(c *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
 				"code":    404,
-				"message": "Challenge not found",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":    500,
-				"message": "Failed to update challenge",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToUpdateChallenge"}),
 			})
 		}
 		return
@@ -237,14 +239,14 @@ func AdminUpdateChallenge(c *gin.Context) {
 	if err := dbtool.DB().Model(&models.Challenge{}).Where("challenge_id = ?", payload.ChallengeID).Select("*").Updates(payload).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Failed to update challenge",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToUpdateChallenge"}),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"message": "Updated",
+		"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "Updated"}),
 	})
 }
 
@@ -259,7 +261,7 @@ func AdminGetSimpleGameChallenges(c *gin.Context) {
 	if err := dbtool.DB().Preload("Challenge").Where("game_id = ?", game.GameID).Find(&gameChallenges).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load challenges",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadChallenges"}),
 		})
 		return
 	}
@@ -285,7 +287,7 @@ func AdminGetSimpleGameChallenges(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load solves",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadSolves"}),
 		})
 		return
 	}
@@ -320,7 +322,7 @@ func AdminSearchChallenges(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid request payload",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -329,7 +331,7 @@ func AdminSearchChallenges(c *gin.Context) {
 	if err := dbtool.DB().Where("name LIKE ?", "%"+payload.Keyword+"%").Find(&challenges).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Failed to load challenges",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadChallenges"}),
 		})
 		return
 	}

@@ -22,7 +22,7 @@ import { AxiosError } from 'axios';
 import { toast } from 'react-toastify/unstyled';
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
-import { api } from "utils/ApiHelper";
+import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper";
 import Turnstile, { useTurnstile } from "react-turnstile";
 import { CapWidget } from "@pitininja/cap-react-widget";
 
@@ -85,7 +85,6 @@ export function RegisterForm({
                 }, 300)
             })
         }).catch((error: AxiosError) => {
-            turnstile.reset()
             setToken("")
         }).finally(() => {
             setLoading(false)

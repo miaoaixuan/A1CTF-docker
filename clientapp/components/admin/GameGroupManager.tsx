@@ -82,9 +82,8 @@ export function GameGroupManager({ gameId }: GameGroupManagerProps) {
     // 加载分组列表
     const loadGroups = async () => {
         setLoading(true);
-        try {
-            const response = await api.admin.adminGetGameGroups(gameId);
-            // 临时转换API响应类型，直到API类型更新
+
+        api.admin.adminGetGameGroups(gameId).then((response) => {
             const groups = (response.data.data || []).map((group: any) => ({
                 group_id: group.group_id,
                 group_name: group.group_name,
@@ -94,53 +93,39 @@ export function GameGroupManager({ gameId }: GameGroupManagerProps) {
                 updated_at: group.updated_at,
             }));
             setGroups(groups);
-        } catch (error) {
-            console.error('Failed to load groups:', error);
-            toast.error('加载分组列表失败');
-        } finally {
+        }).finally(() => {
             setLoading(false);
-        }
+        })
     };
 
     // 创建分组
     const handleCreateGroup = async (data: GroupFormData) => {
-        try {
-            // 临时创建兼容的payload
-            const payload = {
-                group_name: data.group_name,
-                description: data.description || '',
-            };
-            await api.admin.adminCreateGameGroup(gameId, payload as any);
+
+        api.admin.adminCreateGameGroup(gameId, {
+            group_name: data.group_name,
+            description: data.description || '',
+        }).then((res) => {
             toast.success('分组创建成功');
             setIsCreateDialogOpen(false);
             createForm.reset();
             loadGroups();
-        } catch (error) {
-            console.error('Failed to create group:', error);
-            toast.error('分组创建失败');
-        }
+        })
     };
 
     // 更新分组
     const handleUpdateGroup = async (data: GroupFormData) => {
         if (!editingGroup) return;
 
-        try {
-            // 临时创建兼容的payload
-            const payload = {
-                group_name: data.group_name,
-                description: data.description || '',
-            };
-            await api.admin.adminUpdateGameGroup(gameId, editingGroup.group_id, payload as any);
+        api.admin.adminUpdateGameGroup(gameId, editingGroup.group_id, {
+            group_name: data.group_name,
+            description: data.description || '',
+        }).then((res) => {
             toast.success('分组更新成功');
             setIsEditDialogOpen(false);
             setEditingGroup(null);
             editForm.reset();
             loadGroups();
-        } catch (error) {
-            console.error('Failed to update group:', error);
-            toast.error('分组更新失败');
-        }
+        })
     };
 
     // 删除分组
@@ -149,19 +134,10 @@ export function GameGroupManager({ gameId }: GameGroupManagerProps) {
             return;
         }
 
-        try {
-            await api.admin.adminDeleteGameGroup(gameId, groupId);
+        api.admin.adminDeleteGameGroup(gameId, groupId).then((res) => {
             toast.success('分组删除成功');
             loadGroups();
-        } catch (error) {
-            const axiosError = error as AxiosError;
-            if (axiosError.response?.data) {
-                const errorData = axiosError.response.data as any;
-                toast.error(errorData.message || '删除分组失败');
-            } else {
-                toast.error('删除分组失败');
-            }
-        }
+        })
     };
 
     // 编辑分组
@@ -216,7 +192,7 @@ export function GameGroupManager({ gameId }: GameGroupManagerProps) {
                                         <FormItem>
                                             <FormLabel>分组描述（可选）</FormLabel>
                                             <FormControl>
-                                                <Textarea 
+                                                <Textarea
                                                     placeholder="描述这个分组的特点或要求"
                                                     {...field}
                                                 />
@@ -327,7 +303,7 @@ export function GameGroupManager({ gameId }: GameGroupManagerProps) {
                                     <FormItem>
                                         <FormLabel>分组描述（可选）</FormLabel>
                                         <FormControl>
-                                            <Textarea 
+                                            <Textarea
                                                 placeholder="描述这个分组的特点或要求"
                                                 {...field}
                                             />
