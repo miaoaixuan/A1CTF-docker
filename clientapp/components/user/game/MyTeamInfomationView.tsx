@@ -54,12 +54,14 @@ import AlertConformer from 'components/modules/AlertConformer';
 
 interface MyTeamInfomationViewProps {
     gameid: number;
-    gameInfo: UserFullGameInfo | undefined
+    gameInfo: UserFullGameInfo | undefined,
+    gameStatus: string;
 }
 
 const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
     gameid,
-    gameInfo
+    gameInfo,
+    gameStatus
 }) => {
 
     const { t } = useTranslation();
@@ -85,6 +87,12 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
 
     // 获取记分榜数据（包含解题情况）
     const fetchScoreBoardData = () => {
+
+        if (gameStatus == "pending") {
+            setDataLoaded(true)
+            return
+        }
+
         api.user.userGetGameScoreboard(gameid)
             .then((response) => {
                 setScoreBoardData(response.data.data);

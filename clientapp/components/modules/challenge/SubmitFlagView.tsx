@@ -108,7 +108,7 @@ const SubmitFlagView = ({ curChallenge, gameID, setChallengeSolved, challengeSol
                             }}
                             className="absolute w-full h-full flex items-center justify-center"
                         >
-                            <div className="w-[50%] flex flex-col gap-6 p-10 h-[290px] bg-background/80 border-4 border-foreground rounded-lg shadow-[0.5em_0.5em_0_0_#121212bb]">
+                            <div className="w-[50%] flex flex-col gap-6 p-10 h-[290px] bg-background/80 border-4 border-foreground/60 rounded-lg shadow-[0.5em_0.5em_0_0_#121212bb] dark:shadow-[0.5em_0.5em_0_0_#9a9a9abb]">
                                 <div className="flex gap-6 items-center">
                                     <Mail size={48} />
                                     <span className="font-bold text-3xl">Submit your flag!</span>

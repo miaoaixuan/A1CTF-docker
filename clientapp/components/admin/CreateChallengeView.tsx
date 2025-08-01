@@ -426,7 +426,7 @@ export function CreateChallengeView() {
             const [name, value] = item.split("=")
             env.push({ name, value })
         })
-        
+
         return env
     }
 
@@ -473,7 +473,7 @@ export function CreateChallengeView() {
     function onSubmit(values: z.infer<typeof formSchema>) {
 
         const data_time = dayjs().toISOString();
-        
+
         const finalData = {
             attachments: values.attachments,
             category: values.category.toUpperCase(),
@@ -483,7 +483,7 @@ export function CreateChallengeView() {
                 env: c.env != "" ? string_to_env(c.env || "") : [],
                 expose_ports: c.expose_ports,
                 image: c.image,
-                name: c.name    
+                name: c.name
             })),
             create_time: data_time,
             description: values.description,
@@ -652,7 +652,7 @@ export function CreateChallengeView() {
                                 </FormItem>
                             )}
                         />
-                        { showScript ? (
+                        {showScript ? (
                             <FormField
                                 control={form.control}
                                 name="judge_config.judge_script"
@@ -700,9 +700,13 @@ export function CreateChallengeView() {
                                         </FormControl>
                                         <div className="flex flex-col text-[12px] text-foreground/60">
                                             <span>Flag支持模板变量</span>
-                                            <span>[TEAMHASH] 部分会被替换成队伍唯一标识符</span>
-                                            <span>[UUID] 部分会被替换成随机UUID</span>
-                                            <span>在Flag头加上[LEET] 会把花括号内的内容用LEET替换字符</span>
+                                            <span>[team_hash] 部分会被替换成队伍唯一标识符</span>
+                                            <span>[team_name] 部分会被替换成队伍名称</span>
+                                            <span>[game_id] 部分会被替换成比赛ID</span>
+                                            <span>[uuid] 部分会被替换成随机UUID</span>
+                                            <span>[random_string_??] 部分会被替换成随机字符串, 其中??表示字符串长度</span>
+                                            <span>如果你在题目设置中选择了动态Flag, 将会启用Leet进行反作弊</span>
+                                            <span>模板变量部分不会被Leet替换</span>
                                         </div>
                                     </FormItem>
                                 )}

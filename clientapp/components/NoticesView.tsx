@@ -66,13 +66,13 @@ const NoticeCard = memo(({
     return (
         <div
             className={
-                `relative overflow-hidden flex-none transition-all duration-300 group ` +
+                `relative overflow-hidden flex-none transition-colors duration-300 group ` +
                 `rounded-2xl shadow-lg border border-foreground/10 ` +
                 `bg-gradient-to-br ` +
                 (theme === 'dark'
                     ? 'from-[#23272f]/80 to-[#181a20]/90 hover:from-[#23272f]/90 hover:to-[#23272f]/95'
                     : 'from-white/90 to-gray-100/80 hover:from-white/95 hover:to-gray-200/90') +
-                ' hover:scale-[1.005] hover:shadow-2xl w-full'
+                'hover:shadow-2xl w-full'
             }
         >
             <div className="flex flex-col gap-2 px-6 pt-5 pb-4">

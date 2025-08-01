@@ -15,7 +15,7 @@ export function ClientToaster() {
 
     const titleMap = {
         "/login": { title: "登录" },
-        "/games/\\d+/info": { title: "游戏详情" },
+        "/games/\\d+/info": { title: "比赛详情" },
         "/games/\\d+/challenges": { title: "比赛题目" },
         "/games/\\d+/scoreboard": { title: "排行榜" },
         "/games/\\d+/team": { title: "队伍管理" },

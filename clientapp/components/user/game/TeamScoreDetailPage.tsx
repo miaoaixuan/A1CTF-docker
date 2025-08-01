@@ -372,7 +372,7 @@ export default function TeamScoreDetailPage(
                                 <div className='flex flex-row h-full w-full gap-6'>
                                     <div className="flex flex-col w-full h-full gap-4 lg:basis-3/5 lg:overflow-hidden pb-5">
                                         {/* 队伍基本信息卡片 */}
-                                        <Card className="bg-background/70">
+                                        <Card className="bg-background/50 shadow-none">
                                             <CardContent className="p-6">
                                                 <div className='flex items-center gap-4 mb-4'>
                                                     <Avatar className="select-none w-16 h-16 ring-2 ring-primary/20">
@@ -443,7 +443,7 @@ export default function TeamScoreDetailPage(
                                         {/* 数据分析图表区域 */}
                                         <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 select-none'>
                                             {/* 题目分数占比饼图 */}
-                                            <Card className="bg-background/70">
+                                            <Card className="bg-background/50 shadow-none">
                                                 <CardHeader className="pb-2">
                                                     <CardTitle className="text-lg flex items-center gap-2">
                                                         <Award className="w-5 h-5" />
@@ -491,7 +491,7 @@ export default function TeamScoreDetailPage(
                                             </Card>
 
                                             {/* 成员得分饼图 */}
-                                            <Card className="bg-background/70">
+                                            <Card className="bg-background/50 shadow-none">
                                                 <CardHeader className="pb-2">
                                                     <CardTitle className="text-lg flex items-center gap-2">
                                                         <Users className="w-5 h-5" />
@@ -539,7 +539,7 @@ export default function TeamScoreDetailPage(
                                                 </CardContent>
                                             </Card>
                                         </div>
-                                        <Card className="w-full h-full flex flex-col bg-background/70">
+                                        <Card className="w-full h-full flex flex-col bg-background/50 shadow-none">
                                             <CardHeader className="pb-3 select-none">
                                                 <CardTitle className="text-xl font-bold flex items-center gap-2">
                                                     <Calculator className="w-5 h-5" />
@@ -667,8 +667,8 @@ export default function TeamScoreDetailPage(
                                     </div>
                                     <div className="h-full basis-2/5 overflow-hidden hidden lg:flex flex-col gap-4 pb-5 select-none">
                                         {/* 题目类别雷达图 */}
-                                        <Card className="bg-background/70">
-                                            <CardHeader className="pb-2">
+                                        <Card className="bg-background/50 shadow-none">
+                                            <CardHeader className="">
                                                 <CardTitle className="text-lg flex items-center gap-2">
                                                     <Target className="w-5 h-5" />
                                                     解题分布
@@ -712,7 +712,7 @@ export default function TeamScoreDetailPage(
                                         </Card>
 
                                         {/* 个人积分图表 */}
-                                        <Card className='flex-shrink-0 bg-background/70'>
+                                        <Card className='flex-shrink-0 bg-background/50 shadow-none'>
                                             <CardHeader className="pb-2">
                                                 <div className='flex items-center justify-between'>
                                                     <CardTitle className='text-xl font-bold flex items-center gap-2'>

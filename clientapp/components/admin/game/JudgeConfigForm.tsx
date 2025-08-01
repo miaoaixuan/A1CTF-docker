@@ -154,9 +154,13 @@ export function JudgeConfigForm({ control, form }: JudgeConfigFormProps) {
                             </FormControl>
                             <div className="flex flex-col text-[12px] text-foreground/60">
                                 <span>Flag支持模板变量</span>
-                                <span>[TEAMHASH] 部分会被替换成队伍唯一标识符</span>
-                                <span>[UUID] 部分会被替换成随机UUID</span>
-                                <span>在Flag头加上[LEET] 会把花括号内的内容用LEET替换字符</span>
+                                <span>[team_hash] 部分会被替换成队伍唯一标识符</span>
+                                <span>[team_name] 部分会被替换成队伍名称</span>
+                                <span>[game_id] 部分会被替换成比赛ID</span>
+                                <span>[uuid] 部分会被替换成随机UUID</span>
+                                <span>[random_string_??] 部分会被替换成随机字符串, 其中??表示字符串长度</span>
+                                <span>如果你在题目设置中选择了动态Flag, 将会启用Leet进行反作弊</span>
+                                <span>模板变量部分不会被Leet替换</span>
                             </div>
                         </FormItem>
                     )}
@@ -164,7 +168,7 @@ export function JudgeConfigForm({ control, form }: JudgeConfigFormProps) {
             )}
 
             {/* 所属阶段 */}
-            <FormField
+            {/* <FormField
                 control={form.control}
                 name={`belong_stage`}
                 render={({ field }) => (
@@ -174,10 +178,9 @@ export function JudgeConfigForm({ control, form }: JudgeConfigFormProps) {
                             <div className="flex-1" />
                             <FormMessage className="text-[14px]" />
                         </div>
-                        {/* 这里的 Select 由父组件传入 stages 值, 不在此展开 */}
                     </FormItem>
                 )}
-            />
+            /> */}
 
             {/* 题目总分 */}
             <FormField
@@ -234,7 +237,7 @@ export function JudgeConfigForm({ control, form }: JudgeConfigFormProps) {
                     onClick={() => {
                         appendHint({
                             content: "",
-                            create_time: new Date(),
+                            create_time: new Date().toISOString(),
                             visible: false
                         })
 
@@ -263,7 +266,7 @@ export function JudgeConfigForm({ control, form }: JudgeConfigFormProps) {
                                             <FormControl>
                                                 <Switch checked={field.value} onCheckedChange={(v) => {
                                                     field.onChange(v)
-                                                    form.setValue(`hints.${hintIndex}.create_time`, new Date())
+                                                    form.setValue(`hints.${hintIndex}.create_time`, new Date().toISOString())
                                                 }} />
                                             </FormControl>
                                         </FormItem>
@@ -293,7 +296,10 @@ export function JudgeConfigForm({ control, form }: JudgeConfigFormProps) {
                                             <FormControl>
                                                 <EditorDialog
                                                     value={field.value}
-                                                    onChange={field.onChange}
+                                                    onChange={(value) => {
+                                                        field.onChange(value)
+                                                        form.setValue(`hints.${hintIndex}.create_time`, new Date().toISOString())
+                                                    }}
                                                     language="markdown"
                                                     title={`编辑内容 - 提示${hintIndex + 1}`}
                                                 >

@@ -157,6 +157,7 @@ export default function Games() {
                         <MyTeamInfomationView 
                             gameid={parseInt(id)} 
                             gameInfo={gameInfo}
+                            gameStatus={gameStatus}
                         />
                     ) }
 

@@ -1,4 +1,4 @@
-import { Asterisk, BadgeCent, Bed, BedDouble, Binary, Bot, Bug, ChevronDown, ChevronUp, Chrome, CircleArrowLeft, Earth, FileSearch, Github, GlobeLock, HardDrive, Loader2, MessageSquareLock, Plus, Radar, Smartphone, SquareCode, Underline } from "lucide-react"
+import { Asterisk, BadgeCent, Bed, BedDouble, Binary, Bot, Bug, ChevronDown, ChevronUp, Chrome, CircleArrowLeft, Columns3Cog, Earth, FileSearch, Github, GlobeLock, HardDrive, Loader2, MessageSquareLock, Plus, Radar, Smartphone, SquareCode, Underline } from "lucide-react"
 
 import {
     Sidebar,
@@ -215,6 +215,7 @@ export function CategorySidebar({
         return () => { if (updateChallengeInter) clearInterval(updateChallengeInter) }
     }, [gameStatus])
 
+    const navigate = useNavigate()
 
     useEffect(() => {
         // 更新题目的解决状态
@@ -271,7 +272,18 @@ export function CategorySidebar({
             }} >
                 <SidebarContent>
                     {isAdmin() && (
-                        <div className="absolute bottom-5 right-5 z-10">
+                        <div className="absolute bottom-5 right-5 z-10 flex flex-col gap-4">
+                            <Button variant="ghost" size="icon"
+                                className={`rounded-xl w-12 h-12 [&_svg]:size-6 bg-foreground/10 hover:hover:bg-foreground/20 cursor-pointer`}
+                                data-tooltip-id="my-tooltip"
+                                data-tooltip-html="添加分数修正"
+                                data-tooltip-place="left"
+                                onClick={() => {
+                                    navigate(`/admin/games/${gameID}/score-adjustments`)
+                                }}
+                            >
+                                <Columns3Cog />
+                            </Button>
                             <Button variant="ghost" size="icon"
                                 className={`rounded-xl w-12 h-12 [&_svg]:size-6 bg-foreground/10 hover:hover:bg-foreground/20 cursor-pointer`}
                                 data-tooltip-id="my-tooltip"

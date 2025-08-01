@@ -266,16 +266,16 @@ func main() {
 		teamManageGroup.Use(controllers.TeamStatusMiddleware())
 		teamManageGroup.Use(controllers.EmailVerifiedMiddleware())
 		{
+			// 比赛开始后加入队伍之类的还是允许的
 			teamManageGroup.GET("/:team_id/requests", controllers.GetTeamJoinRequests)
 			teamManageGroup.POST("/request/:request_id/handle", controllers.HandleTeamJoinRequest)
+			teamManageGroup.PUT("/:team_id", controllers.UpdateTeamInfo)
+			teamManageGroup.POST("/avatar/upload", controllers.UploadTeamAvatar)
 
 			// 比赛开始后不允许移交队长，删除队员，解散队伍
 			teamManageGroup.POST("/:team_id/transfer-captain", controllers.OperationNotAllowedAfterGameStartMiddleWare(), controllers.TransferTeamCaptain)
 			teamManageGroup.DELETE("/:team_id/member/:user_id", controllers.OperationNotAllowedAfterGameStartMiddleWare(), controllers.RemoveTeamMember)
 			teamManageGroup.DELETE("/:team_id", controllers.OperationNotAllowedAfterGameStartMiddleWare(), controllers.DeleteTeam)
-
-			teamManageGroup.PUT("/:team_id", controllers.UpdateTeamInfo)
-			teamManageGroup.POST("/avatar/upload", controllers.UploadTeamAvatar)
 		}
 
 		challengeGroup := auth.Group("/admin/challenge")

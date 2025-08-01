@@ -124,6 +124,7 @@ export default function ChallengeManageSheet(
                                     )}
                                     <div className="flex gap-4 items-center">
                                         <Button className="mt-5"
+                                            variant="outline"
                                             onClick={form.handleSubmit(handleSubmit)}
                                         >
                                             <Save />
