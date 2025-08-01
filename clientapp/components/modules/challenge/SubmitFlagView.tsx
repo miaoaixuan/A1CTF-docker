@@ -61,17 +61,17 @@ const SubmitFlagView = ({ curChallenge, gameID, setChallengeSolved, challengeSol
                                         }, 200)
 
                                     } else if (res2.data.data.judge_status == "JudgeWA") {
-                                        toast.error("错误");
+                                        toast.error("Flag 错误, 请检查后重新尝试");
                                         setBorderRed(true)
                                         setJudgeing(false)
                                         clearInterval(judgeingInter)
                                     } else if (res2.data.data.judge_status == "JudgeError" || res2.data.data.judge_status == "JudgeTimeout") {
-                                        toast.error("Error");
+                                        toast.error("评测错误, 请联系管理员");
                                         setJudgeing(false)
                                         clearInterval(judgeingInter)
                                     }
                                 } else {
-                                    toast.error("Error");
+                                    toast.error("未知错误, 请联系管理员");
                                     setJudgeing(false)
                                     clearInterval(judgeingInter)
                                 }
@@ -80,7 +80,6 @@ const SubmitFlagView = ({ curChallenge, gameID, setChallengeSolved, challengeSol
                 }
             }
             ).catch((err) => {
-                toast.error("提交 Flag 失败: " + err.message);
                 setJudgeing(false)
             });
     }

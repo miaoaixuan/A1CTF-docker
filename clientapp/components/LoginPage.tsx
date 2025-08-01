@@ -21,7 +21,7 @@ export default function LoginPage() {
                             width={40}
                             height={40}
                         />
-                        <span className="font-bold text-lg">A1natas SSO</span>
+                        <span className="font-bold text-lg">{ clientConfig.systemName } SSO</span>
                     </a>
                     <ThemeSwitcher />
                 </div>

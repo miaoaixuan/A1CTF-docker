@@ -3737,9 +3737,10 @@ export class Api<
      * @tags team
      * @name UploadTeamAvatar
      * @summary 上传团队头像
-     * @request POST:/api/team/avatar/upload
+     * @request POST:/api/game/{game_id}/team/avatar/upload
      */
     uploadTeamAvatar: (
+      gameId: number,
       data: {
         /**
          * 要上传的团队头像图片文件，支持jpg、png、gif等常见图片格式
@@ -3762,7 +3763,7 @@ export class Api<
         },
         ErrorMessage | void
       >({
-        path: `/api/team/avatar/upload`,
+        path: `/api/game/${gameId}/team/avatar/upload`,
         method: "POST",
         body: data,
         type: ContentType.FormData,
@@ -3776,9 +3777,13 @@ export class Api<
      * @tags team
      * @name TeamAccept
      * @summary 申请加入战队
-     * @request POST:/api/team/join
+     * @request POST:/api/game/{game_id}/team/join
      */
-    teamAccept: (data: TeamJoinPayload, params: RequestParams = {}) =>
+    teamAccept: (
+      gameId: number,
+      data: TeamJoinPayload,
+      params: RequestParams = {},
+    ) =>
       this.request<
         {
           /** @example 200 */
@@ -3788,7 +3793,7 @@ export class Api<
         },
         ErrorMessage | void
       >({
-        path: `/api/team/join`,
+        path: `/api/game/${gameId}/team/join`,
         method: "POST",
         body: data,
         type: ContentType.Json,
@@ -3802,9 +3807,13 @@ export class Api<
      * @tags team
      * @name GetTeamJoinRequests
      * @summary 获取战队加入申请列表
-     * @request GET:/api/team/{team_id}/requests
+     * @request GET:/api/game/{game_id}/team/{team_id}/requests
      */
-    getTeamJoinRequests: (teamId: number, params: RequestParams = {}) =>
+    getTeamJoinRequests: (
+      teamId: number,
+      gameId: number,
+      params: RequestParams = {},
+    ) =>
       this.request<
         {
           /** @example 200 */
@@ -3813,7 +3822,7 @@ export class Api<
         },
         ErrorMessage | void
       >({
-        path: `/api/team/${teamId}/requests`,
+        path: `/api/game/${gameId}/team/${teamId}/requests`,
         method: "GET",
         format: "json",
         ...params,
@@ -3825,10 +3834,11 @@ export class Api<
      * @tags team
      * @name HandleTeamJoinRequest
      * @summary 处理加入申请
-     * @request POST:/api/team/request/{request_id}/handle
+     * @request POST:/api/game/{game_id}/team/request/{request_id}/handle
      */
     handleTeamJoinRequest: (
       requestId: number,
+      gameId: number,
       data: HandleJoinRequestPayload,
       params: RequestParams = {},
     ) =>
@@ -3841,7 +3851,7 @@ export class Api<
         },
         ErrorMessage | void
       >({
-        path: `/api/team/request/${requestId}/handle`,
+        path: `/api/game/${gameId}/team/request/${requestId}/handle`,
         method: "POST",
         body: data,
         type: ContentType.Json,
@@ -3855,10 +3865,11 @@ export class Api<
      * @tags team
      * @name TransferTeamCaptain
      * @summary 转移队长
-     * @request POST:/api/team/{team_id}/transfer-captain
+     * @request POST:/api/game/{game_id}/team/{team_id}/transfer-captain
      */
     transferTeamCaptain: (
       teamId: number,
+      gameId: number,
       data: TransferCaptainPayload,
       params: RequestParams = {},
     ) =>
@@ -3871,7 +3882,7 @@ export class Api<
         },
         ErrorMessage | void
       >({
-        path: `/api/team/${teamId}/transfer-captain`,
+        path: `/api/game/${gameId}/team/${teamId}/transfer-captain`,
         method: "POST",
         body: data,
         type: ContentType.Json,
@@ -3885,11 +3896,12 @@ export class Api<
      * @tags team
      * @name RemoveTeamMember
      * @summary 踢出队员
-     * @request DELETE:/api/team/{team_id}/member/{user_id}
+     * @request DELETE:/api/game/{game_id}/team/{team_id}/member/{user_id}
      */
     removeTeamMember: (
       teamId: number,
       userId: string,
+      gameId: number,
       params: RequestParams = {},
     ) =>
       this.request<
@@ -3901,7 +3913,7 @@ export class Api<
         },
         ErrorMessage | void
       >({
-        path: `/api/team/${teamId}/member/${userId}`,
+        path: `/api/game/${gameId}/team/${teamId}/member/${userId}`,
         method: "DELETE",
         format: "json",
         ...params,
@@ -3913,9 +3925,9 @@ export class Api<
      * @tags team
      * @name DeleteTeam
      * @summary 解散战队
-     * @request DELETE:/api/team/{team_id}
+     * @request DELETE:/api/game/{game_id}/team/{team_id}
      */
-    deleteTeam: (teamId: number, params: RequestParams = {}) =>
+    deleteTeam: (teamId: number, gameId: number, params: RequestParams = {}) =>
       this.request<
         {
           /** @example 200 */
@@ -3925,7 +3937,7 @@ export class Api<
         },
         ErrorMessage | void
       >({
-        path: `/api/team/${teamId}`,
+        path: `/api/game/${gameId}/team/${teamId}`,
         method: "DELETE",
         format: "json",
         ...params,
@@ -3937,10 +3949,11 @@ export class Api<
      * @tags team
      * @name UpdateTeamInfo
      * @summary 更新战队信息
-     * @request PUT:/api/team/{team_id}
+     * @request PUT:/api/game/{game_id}/team/{team_id}
      */
     updateTeamInfo: (
       teamId: number,
+      gameId: number,
       data: UpdateTeamInfoPayload,
       params: RequestParams = {},
     ) =>
@@ -3953,7 +3966,7 @@ export class Api<
         },
         ErrorMessage | void
       >({
-        path: `/api/team/${teamId}`,
+        path: `/api/game/${gameId}/team/${teamId}`,
         method: "PUT",
         body: data,
         type: ContentType.Json,

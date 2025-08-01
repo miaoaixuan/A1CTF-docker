@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { ErrorMessage, ParticipationStatus, UserFullGameInfo } from "utils/A1API";
 import dayjs from "dayjs";
-import { api } from "utils/ApiHelper";
+import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper";
 import { parse } from "path";
 import { AxiosError } from "axios";
 import GameCountDowner from "components/modules/game/GameCountDowner";
@@ -69,7 +69,7 @@ export default function Games() {
                     setGameStatus(A1GameStatus.PracticeMode)
                 }
             }
-        }).catch((error: AxiosError) => {
+        }, createSkipGlobalErrorConfig()).catch((error: AxiosError) => {
             clearInterval(updateGameInterval)
             if (error.response?.status) {
                 const errorMessage: ErrorMessage = error.response.data as ErrorMessage
@@ -153,6 +153,7 @@ export default function Games() {
                     { curChoicedModule == "team" && (
                         <MyTeamInfomationView 
                             gameid={parseInt(id)} 
+                            gameInfo={gameInfo}
                         />
                     ) }
 

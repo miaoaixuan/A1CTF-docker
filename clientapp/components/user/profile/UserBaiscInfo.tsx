@@ -69,13 +69,6 @@ export default function UserBaiscInfo() {
             "phone": values.phone
         }).then((res) => {
             toast.success(t("save_profile_success"))
-        }).catch((error: AxiosError) => {
-            if (error.response?.status) {
-                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.message)
-            } else {
-                toast.error(t("unknow_error"))
-            }
         })
     }
 
@@ -106,7 +99,7 @@ export default function UserBaiscInfo() {
                         />
                     </div>
                     <div className="flex h-full items-center">
-                        <UploadImageDialog type="person" updateTeam={updateProfile}>
+                        <UploadImageDialog type="person" updateTeam={updateProfile} >
                             <Avatar className="select-none w-20 h-20">
                                 {curProfile.avatar ? (
                                     <>

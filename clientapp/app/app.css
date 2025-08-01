@@ -97,7 +97,7 @@ body {
     --chart-5: oklch(0.769 0.188 70.08);
 
     --strong-markdown-color: oklch(0.70 0.19 48);
-    --toastify-toast-padding: 10px 15px 10px 15px!important;
+    --toastify-toast-padding: 10px 30px 10px 20px!important;
     --toastify-toast-min-height: 58px!important;
 }
 
@@ -335,4 +335,7 @@ cap-widget {
 
 .Toastify__toast {
     --animate-duration: 0.7s!important;
+    width: auto!important;
+    max-width: 40vw!important;
+    min-width: var(--toastify-toast-width);
 }

@@ -38,7 +38,7 @@ import {
 
 import { api } from "utils/ApiHelper";
 import { Badge } from "../../ui/badge";
-import { 
+import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -56,6 +56,7 @@ import {
     HoverCardContent,
     HoverCardTrigger,
 } from "components/ui/hover-card"
+import { AxiosResponse } from "axios"
 
 export type ContainerModel = {
     ID: string,
@@ -98,10 +99,10 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     );
 };
 
-export function ContainerManageView({ 
+export function ContainerManageView({
     gameId,
     challengeID = undefined
-}: { 
+}: {
     gameId: number,
     challengeID?: number | undefined
 }) {
@@ -117,15 +118,15 @@ export function ContainerManageView({
 
     const [searchKeyword, setSearchKeyword] = React.useState("");
     const [debouncedSearchKeyword, setDebouncedSearchKeyword] = React.useState("");
-    
+
     // 对话框状态
     const [confirmDialog, setConfirmDialog] = React.useState({
         isOpen: false,
         title: "",
         description: "",
-        onConfirm: () => {},
+        onConfirm: () => { },
     });
-    
+
     // 防抖处理搜索关键词
     React.useEffect(() => {
         const timer = setTimeout(() => {
@@ -135,7 +136,7 @@ export function ContainerManageView({
 
         return () => clearTimeout(timer);
     }, [searchKeyword]);
-    
+
 
     // 处理容器删除
     const handleDeleteContainer = (containerId: string) => {
@@ -147,11 +148,13 @@ export function ContainerManageView({
                 toast.promise(
                     api.admin.adminDeleteContainer({ container_id: containerId }),
                     {
-                        loading: '正在停止容器...',
-                        success: (data) => {
-                            fetchContainers(); // 刷新数据
-                            setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-                            return '容器正在停止';
+                        pending: '正在停止容器...',
+                        success: {
+                            render({ data }) {
+                                fetchContainers(); // 刷新数据
+                                setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                                return '容器正在停止';
+                            }
                         },
                         error: '停止容器失败'
                     }
@@ -164,7 +167,7 @@ export function ContainerManageView({
     const handleBatchDeleteContainers = () => {
         const selectedRows = table.getFilteredSelectedRowModel().rows;
         const selectedContainerIds = selectedRows.map(row => row.original.ID);
-        
+
         if (selectedContainerIds.length === 0) {
             toast.error("请至少选择一个容器");
             return;
@@ -176,26 +179,28 @@ export function ContainerManageView({
             description: `您确定要停止选中的 ${selectedContainerIds.length} 个容器吗？`,
             onConfirm: () => {
                 // 批量停止容器
-                const promises = selectedContainerIds.map(containerId => 
+                const promises = selectedContainerIds.map(containerId =>
                     api.admin.adminDeleteContainer({ container_id: containerId })
                 );
-                
+
                 toast.promise(
                     Promise.allSettled(promises),
                     {
-                        loading: `正在停止 ${selectedContainerIds.length} 个容器...`,
-                        success: (results) => {
-                            const successCount = results.filter(result => result.status === 'fulfilled').length;
-                            const failCount = results.length - successCount;
-                            
-                            fetchContainers(); // 刷新数据
-                            setRowSelection({}); // 清空选择
-                            setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-                            
-                            if (failCount === 0) {
-                                return `成功停止 ${successCount} 个容器`;
-                            } else {
-                                return `成功停止 ${successCount} 个容器，${failCount} 个失败`;
+                        pending: `正在停止 ${selectedContainerIds.length} 个容器...`,
+                        success: {
+                            render({ data: results }: { data: PromiseSettledResult<AxiosResponse>[] }) {
+                                const successCount = results.filter(result => result.status === 'fulfilled').length;
+                                const failCount = results.length - successCount;
+
+                                fetchContainers(); // 刷新数据
+                                setRowSelection({}); // 清空选择
+                                setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+
+                                if (failCount === 0) {
+                                    return `成功停止 ${successCount} 个容器`;
+                                } else {
+                                    return `成功停止 ${successCount} 个容器，${failCount} 个失败`;
+                                }
                             }
                         },
                         error: '批量停止容器失败'
@@ -204,7 +209,7 @@ export function ContainerManageView({
             }
         });
     };
-    
+
     // 提交延长容器生命周期
     const submitExtendContainer = (containerId: string) => {
         toast.promise(
@@ -212,27 +217,31 @@ export function ContainerManageView({
                 container_id: containerId,
             }),
             {
-                loading: '正在延长容器生命周期...',
-                success: (response) => {
-                    fetchContainers(); // 刷新数据
-                    return '容器生命周期已延长';
+                pending: '正在延长容器生命周期...',
+                success: {
+                    render({ data }) {
+                        fetchContainers(); // 刷新数据
+                        return '容器生命周期已延长';
+                    }
                 },
                 error: '延长容器生命周期失败'
             }
         );
     };
-    
+
     // 获取容器Flag
     const handleGetContainerFlag = (containerId: string) => {
         toast.promise(
             api.admin.adminGetContainerFlag({ container_id: containerId }),
             {
-                loading: '正在获取容器Flag...',
-                success: (response) => {
-                    const flagContent = response.data.data.flag_content;
-                    // 复制到剪贴板
-                    navigator.clipboard.writeText(flagContent);
-                    return `Flag已复制到剪贴板`;
+                pending: '正在获取容器Flag...',
+                success: {
+                    render({ data: response } : { data: AxiosResponse }) {
+                        const flagContent = response.data.data.flag_content;
+                        // 复制到剪贴板
+                        navigator.clipboard.writeText(flagContent);
+                        return `Flag已复制到剪贴板`;
+                    }
                 },
                 error: '获取容器Flag失败'
             }
@@ -287,7 +296,7 @@ export function ContainerManageView({
         {
             accessorKey: "TeamName",
             header: "队伍名称",
-            cell: ({ row }) => {    
+            cell: ({ row }) => {
                 return (
                     <div className="flex gap-3 items-center">
                         {row.getValue("TeamName")}
@@ -309,7 +318,7 @@ export function ContainerManageView({
                 const status = row.getValue("Status") as ContainerStatus;
                 const { color, text } = getStatusColorAndText(status);
                 return (
-                    <Badge 
+                    <Badge
                         className="capitalize w-[60px] px-[5px] flex justify-center select-none"
                         style={{ backgroundColor: color }}
                     >
@@ -390,11 +399,11 @@ export function ContainerManageView({
             enableHiding: false,
             cell: ({ row }) => {
                 const container = row.original;
-                
+
                 return (
                     <div className="flex gap-2">
-                        <Button 
-                            variant="ghost" 
+                        <Button
+                            variant="ghost"
                             className="h-8 w-8 p-0"
                             onClick={() => handleGetContainerFlag(container.ID)}
                             data-tooltip-id="my-tooltip"
@@ -404,8 +413,8 @@ export function ContainerManageView({
                             <span className="sr-only">复制Flag</span>
                             <CopyIcon className="h-4 w-4" />
                         </Button>
-                        <Button 
-                            variant="ghost" 
+                        <Button
+                            variant="ghost"
                             className="h-8 w-8 p-0 text-red-600"
                             onClick={() => handleDeleteContainer(container.ID)}
                             data-tooltip-id="my-tooltip"
@@ -447,29 +456,29 @@ export function ContainerManageView({
 
     // 获取容器列表数据
     const fetchContainers = () => {
-        const payload: any = { 
-            game_id: gameId, 
-            size: pageSize, 
+        const payload: any = {
+            game_id: gameId,
+            size: pageSize,
             offset: pageSize * curPage,
             challenge_id: challengeID ?? -1
         };
-        
+
         // 如果有搜索关键词，添加到请求中
         if (debouncedSearchKeyword.trim()) {
             payload.search = debouncedSearchKeyword.trim();
         }
-        
+
         api.admin.adminListContainers(payload).then((res: any) => {
             setTotalCount(res.data.total ?? 0);
             const formattedData: ContainerModel[] = res.data.data.map((item: AdminContainerItem) => {
                 // 格式化端口信息为可读字符串
                 let portsStr = "";
                 if (item.container_ports && item.container_ports.length > 0) {
-                    portsStr = item.container_ports.map(port => 
+                    portsStr = item.container_ports.map(port =>
                         `${port.ip}:${port.port} (${port.port_name})`
                     ).join(", ");
                 }
-                
+
                 return {
                     ID: item.container_id,
                     TeamName: item.team_name || "未知队伍",
@@ -481,10 +490,7 @@ export function ContainerManageView({
                 };
             });
             setData(formattedData);
-        }).catch((err: any) => {
-            toast.error("获取容器列表失败");
-            console.error("获取容器列表失败:", err);
-        });
+        })
     };
 
     // 处理搜索
@@ -528,8 +534,8 @@ export function ContainerManageView({
                         <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => setCurPage( curPage - 1 )}
-                            disabled={ curPage == 0 }
+                            onClick={() => setCurPage(curPage - 1)}
+                            disabled={curPage == 0}
                         >
                             <ArrowLeft />
                         </Button>
@@ -539,8 +545,8 @@ export function ContainerManageView({
                         <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => setCurPage( curPage + 1 )}
-                            disabled={ curPage >= Math.ceil(totalCount / pageSize) - 1 }
+                            onClick={() => setCurPage(curPage + 1)}
+                            disabled={curPage >= Math.ceil(totalCount / pageSize) - 1}
                         >
                             <ArrowRight />
                         </Button>
@@ -570,7 +576,7 @@ export function ContainerManageView({
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="select-none">
-                                { table
+                                {table
                                     .getAllColumns()
                                     .filter((column) => column.getCanHide())
                                     .map((column) => {
@@ -586,7 +592,7 @@ export function ContainerManageView({
                                                 {column.id}
                                             </DropdownMenuCheckboxItem>
                                         )
-                                    }) }
+                                    })}
                             </DropdownMenuContent>
                         </DropdownMenu>
                         <Button variant="outline" size={"icon"} onClick={() => fetchContainers()}>
@@ -645,7 +651,7 @@ export function ContainerManageView({
                     </Table>
                 </div>
             </div>
-            
+
             {/* 确认对话框 */}
             <ConfirmDialog
                 isOpen={confirmDialog.isOpen}

@@ -2379,12 +2379,19 @@ paths:
               required:
                 - avatar
         required: true
-  /api/team/avatar/upload:
+  /api/game/{game_id}/team/avatar/upload:
     post:
       tags: [team]
       operationId: uploadTeamAvatar
       summary: 上传团队头像
       description: 上传团队头像图片并更新团队资料，需要团队成员权限
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
       responses:
         '200':
           description: 团队头像上传成功
@@ -2455,12 +2462,19 @@ paths:
                 - avatar
                 - team_id
         required: true
-  /api/team/join:
+  /api/game/{game_id}/team/join:
     post:
       tags: [team]
       operationId: teamAccept
       summary: 申请加入战队
       description: 使用邀请码申请加入战队
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
       responses:
         '200':
           description: 申请提交成功
@@ -2504,7 +2518,7 @@ paths:
             schema:
               $ref: '#/components/schemas/TeamJoinPayload'
         required: true
-  /api/team/{team_id}/requests:
+  /api/game/{game_id}/team/{team_id}/requests:
     get:
       tags: [team]
       operationId: getTeamJoinRequests
@@ -2518,6 +2532,12 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
       responses:
         '200':
           description: 成功获取申请列表
@@ -2556,7 +2576,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorMessage'
-  /api/team/request/{request_id}/handle:
+  /api/game/{game_id}/team/request/{request_id}/handle:
     post:
       tags: [team]
       operationId: handleTeamJoinRequest
@@ -2570,6 +2590,12 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
       responses:
         '200':
           description: 申请处理成功
@@ -2619,7 +2645,7 @@ paths:
             schema:
               $ref: '#/components/schemas/HandleJoinRequestPayload'
         required: true
-  /api/team/{team_id}/transfer-captain:
+  /api/game/{game_id}/team/{team_id}/transfer-captain:
     post:
       tags: [team]
       operationId: transferTeamCaptain
@@ -2633,6 +2659,12 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
       responses:
         '200':
           description: 队长转移成功
@@ -2682,7 +2714,7 @@ paths:
             schema:
               $ref: '#/components/schemas/TransferCaptainPayload'
         required: true
-  /api/team/{team_id}/member/{user_id}:
+  /api/game/{game_id}/team/{team_id}/member/{user_id}:
     delete:
       tags: [team]
       operationId: removeTeamMember
@@ -2702,6 +2734,12 @@ paths:
           description: 用户ID
           schema:
             type: string
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
       responses:
         '200':
           description: 队员已移除
@@ -2745,7 +2783,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorMessage'
-  /api/team/{team_id}:
+  /api/game/{game_id}/team/{team_id}:
     delete:
       tags: [team]
       operationId: deleteTeam
@@ -2759,6 +2797,12 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
       responses:
         '200':
           description: 战队已解散
@@ -2815,6 +2859,12 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
       responses:
         '200':
           description: 战队信息已更新

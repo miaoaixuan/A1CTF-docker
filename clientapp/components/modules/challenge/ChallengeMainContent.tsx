@@ -140,7 +140,6 @@ export default function ChallengeMainContent(
                         setRefreshContainerTrigger(false)
                     }
                 }).catch(() => {
-                    toast.error("靶机开启失败")
                     setContainerLaunching(false)
                     setContainerRunningTrigger(false)
 

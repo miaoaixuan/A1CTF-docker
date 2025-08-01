@@ -9,7 +9,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "components/ui/alert-dialog"
-import { Asterisk, MessageCircleQuestion } from "lucide-react"
+import { Asterisk } from "lucide-react"
 import { ReactNode } from "react"
 
 export default function AlertConformer(

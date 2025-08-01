@@ -34,9 +34,6 @@ export function ChangeEmailView() {
             } else {
                 toast.error(res.data.title)
             }
-        }).catch((error: AxiosError) => {
-            const errorMessage: ErrorMessage = error.response?.data as ErrorMessage
-            toast.error(errorMessage.title)
         })
     };
 

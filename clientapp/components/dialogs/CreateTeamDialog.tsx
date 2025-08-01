@@ -96,13 +96,6 @@ export const CreateTeamDialog: React.FC<{ callback: () => void, gameID: number, 
             toast.success(t("create_team_success"))
             updateTeam()
             setIsOpen(false)
-        }).catch((error: AxiosError) => {
-            if (error.response?.status) {
-                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.message)
-            } else {
-                toast.error(t("unknow_error"))
-            }
         })
     }
 

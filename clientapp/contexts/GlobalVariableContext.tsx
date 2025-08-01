@@ -2,7 +2,7 @@ import { AxiosError } from "axios";
 import React, { createContext, Dispatch, SetStateAction, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { browserName } from "react-device-detect";
 import { UserProfile, UserRole } from "utils/A1API";
-import { api } from "utils/ApiHelper";
+import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper";
 import axios from 'axios';
 import { useTheme } from "next-themes";
 
@@ -133,7 +133,7 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
         api.user.getUserProfile().then((res) => {
             setCurProfile(res.data.data)
             setLocalStorageUID(res.data.data.user_id)
-        }).catch((error: AxiosError) => {
+        }, createSkipGlobalErrorConfig()).catch((error: AxiosError) => {
             removeUID()
         }).finally(() => {
             if (callback) callback()
@@ -164,7 +164,7 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
             api.user.getUserProfile().then((res) => {
                 setCurProfile(res.data.data)
                 setLocalStorageUID(res.data.data.user_id)
-            }).catch((error: AxiosError) => {
+            }, createSkipGlobalErrorConfig()).catch((error: AxiosError) => {
                 removeUID()
             })
         }

@@ -92,12 +92,7 @@ export function LoginForm({
                 }, 300)
             })
         }).catch((error: AxiosError) => {
-            if (error.response?.status == 401) {
-                toast.error((error.response.data as any).message)
-                setToken("")
-            } else {
-                toast.error(t("unknow_error"))
-            }
+            setToken("")
         }).finally(() => {
             setTimeout(() => {
                 setLoading(false)

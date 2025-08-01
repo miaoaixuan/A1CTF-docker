@@ -87,11 +87,6 @@ export function RegisterForm({
         }).catch((error: AxiosError) => {
             turnstile.reset()
             setToken("")
-            if (error.response?.status == 400) {
-                toast.error((error.response.data as any).message)
-            } else {
-                toast.error(t("unknow_error"))
-            }
         }).finally(() => {
             setLoading(false)
         })

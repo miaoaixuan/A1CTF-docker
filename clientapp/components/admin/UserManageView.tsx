@@ -46,7 +46,7 @@ import { AdminListUserItem, UserRole } from "utils/A1API";
 
 import { api, ErrorMessage } from "utils/ApiHelper";
 import { toast } from 'react-toastify/unstyled';
-import { 
+import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -58,6 +58,7 @@ import {
 } from "components/ui/alert-dialog";
 import { UserEditDialog } from "../dialogs/UserEditDialog";
 import { useTheme } from "next-themes"
+import { AxiosResponse } from "axios"
 
 export type UserModel = {
     id: string,
@@ -123,13 +124,13 @@ export function UserManageView() {
     const [debouncedSearchKeyword, setDebouncedSearchKeyword] = React.useState("");
 
     const [curPageData, setCurPageData] = React.useState<AdminListUserItem[]>([])
-    
+
     // 对话框状态
     const [confirmDialog, setConfirmDialog] = React.useState({
         isOpen: false,
         title: "",
         description: "",
-        onConfirm: () => {},
+        onConfirm: () => { },
     });
 
     // 防抖处理搜索关键词
@@ -141,7 +142,7 @@ export function UserManageView() {
 
         return () => clearTimeout(timer);
     }, [searchKeyword]);
-    
+
     // 处理用户删除
     const handleDeleteUser = (userId: string) => {
         setConfirmDialog({
@@ -154,11 +155,13 @@ export function UserManageView() {
                 toast.promise(
                     deleteUserApi.adminDeleteUser({ user_id: userId }),
                     {
-                        loading: '正在删除用户...',
-                        success: (data) => {
-                            fetchUsers(); // 刷新数据
-                            setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-                            return '用户已删除';
+                        pending: '正在删除用户...',
+                        success: {
+                            render({ data }) {
+                                fetchUsers(); // 刷新数据
+                                setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                                return '用户已删除';
+                            }
                         },
                         error: '删除用户失败'
                     }
@@ -166,7 +169,7 @@ export function UserManageView() {
             }
         });
     };
-    
+
     // 处理重置密码
     const handleResetPassword = (userId: string) => {
         setConfirmDialog({
@@ -175,16 +178,17 @@ export function UserManageView() {
             description: "您确定要重置这个用户的密码吗？",
             onConfirm: () => {
                 // 临时修复 API 类型问题
-                const resetPasswordApi = api.admin as any;
                 toast.promise(
-                    resetPasswordApi.adminResetUserPassword({ user_id: userId }),
+                    api.admin.adminResetUserPassword({ user_id: userId }),
                     {
-                        loading: '正在重置密码...',
-                        success: (response: any) => {
-                            setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-                            // 显示新密码
-                            navigator.clipboard.writeText(response.data.new_password);
-                            return `新密码: ${response.data.new_password}，已复制到剪切板`;
+                        pending: '正在重置密码...',
+                        success: {
+                            render({ data: response } : { data: AxiosResponse }) {
+                                setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                                // 显示新密码
+                                navigator.clipboard.writeText(response.data.new_password);
+                                return `新密码: ${response.data.new_password}，已复制到剪切板`;
+                            }
                         },
                         error: '重置密码失败'
                     }
@@ -235,22 +239,22 @@ export function UserManageView() {
             header: "用户名",
             cell: ({ row }) => {
                 const avatar_url = row.original.Avatar;
-    
+
                 return (
                     <div className="flex gap-3 items-center">
                         <Avatar className="select-none w-[35px] h-[35px]">
-                            { avatar_url ? (
+                            {avatar_url ? (
                                 <>
                                     <AvatarImage src={avatar_url || "#"} alt="@shadcn"
                                         className={`rounded-2xl`}
                                     />
                                     <AvatarFallback><Skeleton className="h-full w-full rounded-full" /></AvatarFallback>
                                 </>
-                            ) : ( 
+                            ) : (
                                 <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
-                                    <span className='text-background text-md'> { (row.getValue("Username") as string).substring(0, 2) } </span>
+                                    <span className='text-background text-md'> {(row.getValue("Username") as string).substring(0, 2)} </span>
                                 </div>
-                            ) }
+                            )}
                         </Avatar>
                         {row.getValue("Username")}
                     </div>
@@ -264,7 +268,7 @@ export function UserManageView() {
                 const role = row.getValue("Role") as UserRole;
                 const { color, text } = getRoleColorAndText(role);
                 return (
-                    <Badge 
+                    <Badge
                         className="capitalize w-[60px] px-[5px] flex justify-center select-none"
                         style={{ backgroundColor: color }}
                     >
@@ -316,9 +320,9 @@ export function UserManageView() {
             cell: ({ row }) => {
                 const user = row.original;
                 const userItem = curPageData.find(u => u.user_id === user.id);
-                
+
                 if (!userItem) return null;
-                
+
                 return (
                     <div className="flex gap-2">
                         <UserEditDialog user={userItem} updateUsers={fetchUsers}>
@@ -366,16 +370,16 @@ export function UserManageView() {
 
     // 获取用户列表数据
     const fetchUsers = () => {
-        const payload: any = { 
-            size: pageSize, 
-            offset: pageSize * curPage 
+        const payload: any = {
+            size: pageSize,
+            offset: pageSize * curPage
         };
-        
+
         // 如果有搜索关键词，添加到请求中
         if (debouncedSearchKeyword.trim()) {
             payload.search = debouncedSearchKeyword.trim();
         }
-        
+
         api.admin.listUsers(payload).then((res) => {
             setTotalCount(res.data.total ?? 0);
             setCurPageData(res.data.data);
@@ -394,10 +398,7 @@ export function UserManageView() {
                 LastLoginTime: user.last_login_time
             }));
             setData(formattedData);
-        }).catch((err) => {
-            toast.error("获取用户列表失败");
-            console.error("获取用户列表失败:", err);
-        });
+        })
     };
 
     // 处理搜索
@@ -446,8 +447,8 @@ export function UserManageView() {
                             <Button
                                 variant="outline"
                                 size="icon"
-                                onClick={() => setCurPage( curPage - 1 )}
-                                disabled={ curPage == 0 }
+                                onClick={() => setCurPage(curPage - 1)}
+                                disabled={curPage == 0}
                             >
                                 <ArrowLeft />
                             </Button>
@@ -457,8 +458,8 @@ export function UserManageView() {
                             <Button
                                 variant="outline"
                                 size="icon"
-                                onClick={() => setCurPage( curPage + 1 )}
-                                disabled={ curPage >= Math.ceil(totalCount / pageSize) - 1 }
+                                onClick={() => setCurPage(curPage + 1)}
+                                disabled={curPage >= Math.ceil(totalCount / pageSize) - 1}
                             >
                                 <ArrowRight />
                             </Button>
@@ -478,7 +479,7 @@ export function UserManageView() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="select-none">
-                                { table
+                                {table
                                     .getAllColumns()
                                     .filter((column) => column.getCanHide())
                                     .map((column) => {
@@ -494,7 +495,7 @@ export function UserManageView() {
                                                 {column.id}
                                             </DropdownMenuCheckboxItem>
                                         )
-                                    }) }
+                                    })}
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>

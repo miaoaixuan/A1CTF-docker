@@ -21,7 +21,7 @@ import SafeComponent from "components/SafeComponent";
 import { randomInt } from "mathjs";
 import { toast } from 'react-toastify/unstyled';
 import { ErrorMessage, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "utils/A1API";
-import { api } from "utils/ApiHelper";
+import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper";
 import { ChallengeSolveStatus } from "components/user/game/ChallengesView";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import CategoryChallenges from "components/modules/game/CategoryChallenges";
@@ -187,7 +187,7 @@ export function CategorySidebar({
                     rootMargin: "200px 0px",
                 });
             setChallengesLoaded(true)
-        }).catch((error: AxiosError) => {
+        }, createSkipGlobalErrorConfig()).catch((error: AxiosError) => {
             if (error.response?.status == 400) {
                 clearInterval(updateChallengeInter)
 

@@ -62,11 +62,6 @@ func UpdateSystemSettings(c *gin.Context) {
 			existingSettings.SystemName = str
 		}
 	}
-	if value, exists := updateData["systemLogo"]; exists {
-		if str, ok := value.(string); ok {
-			existingSettings.SystemLogo = str
-		}
-	}
 	if value, exists := updateData["systemSlogan"]; exists {
 		if str, ok := value.(string); ok {
 			existingSettings.SystemSlogan = str
@@ -80,11 +75,6 @@ func UpdateSystemSettings(c *gin.Context) {
 	if value, exists := updateData["systemFooter"]; exists {
 		if str, ok := value.(string); ok {
 			existingSettings.SystemFooter = str
-		}
-	}
-	if value, exists := updateData["systemFavicon"]; exists {
-		if str, ok := value.(string); ok {
-			existingSettings.SystemFavicon = str
 		}
 	}
 	if value, exists := updateData["systemICP"]; exists {
@@ -119,61 +109,9 @@ func UpdateSystemSettings(c *gin.Context) {
 			existingSettings.AllowUserTheme = b
 		}
 	}
-
-	// 品牌资源
-	if value, exists := updateData["fancyBackGroundIconWhite"]; exists {
-		if str, ok := value.(string); ok {
-			existingSettings.FancyBackGroundIconWhite = str
-		}
-	}
-	if value, exists := updateData["fancyBackGroundIconBlack"]; exists {
-		if str, ok := value.(string); ok {
-			existingSettings.FancyBackGroundIconBlack = str
-		}
-	}
-	if value, exists := updateData["defaultBGImage"]; exists {
-		if str, ok := value.(string); ok {
-			existingSettings.DefaultBGImage = str
-		}
-	}
-	if value, exists := updateData["svgIconLight"]; exists {
-		if str, ok := value.(string); ok {
-			existingSettings.SVGIconLight = str
-		}
-	}
-	if value, exists := updateData["svgIconDark"]; exists {
-		if str, ok := value.(string); ok {
-			existingSettings.SVGIconDark = str
-		}
-	}
 	if value, exists := updateData["svgAltData"]; exists {
 		if str, ok := value.(string); ok {
 			existingSettings.SVGAltData = str
-		}
-	}
-	if value, exists := updateData["trophysGold"]; exists {
-		if str, ok := value.(string); ok {
-			existingSettings.TrophysGold = str
-		}
-	}
-	if value, exists := updateData["trophysSilver"]; exists {
-		if str, ok := value.(string); ok {
-			existingSettings.TrophysSilver = str
-		}
-	}
-	if value, exists := updateData["trophysBronze"]; exists {
-		if str, ok := value.(string); ok {
-			existingSettings.TrophysBronze = str
-		}
-	}
-	if value, exists := updateData["schoolLogo"]; exists {
-		if str, ok := value.(string); ok {
-			existingSettings.SchoolLogo = str
-		}
-	}
-	if value, exists := updateData["schoolSmallIcon"]; exists {
-		if str, ok := value.(string); ok {
-			existingSettings.SchoolSmallIcon = str
 		}
 	}
 	if value, exists := updateData["schoolUnionAuthText"]; exists {

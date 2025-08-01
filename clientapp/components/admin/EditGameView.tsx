@@ -146,8 +146,6 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
 
         api.admin.updateGame(game_info.game_id, finalData as any as AdminFullGameInfo).then(() => {
             toast.success("比赛信息更新成功")
-        }).catch(() => {
-            toast.error("更新失败")
         })
     }
 

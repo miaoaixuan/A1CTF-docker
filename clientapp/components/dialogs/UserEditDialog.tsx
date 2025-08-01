@@ -108,7 +108,6 @@ export const UserEditDialog: React.FC<UserEditDialogProps> = ({
             setSubmitDisabled(false);
             setIsOpen(false);
         }).catch((_) => {
-            toast.error("更新用户信息失败");
             setSubmitDisabled(false);
         });
     }

@@ -157,17 +157,11 @@ export default function ScoreBoardPage(
             XLSX.writeFile(workbook, filename);
 
             // 成功提示
-            toast.success('积分榜下载成功！', {
-                description: `文件已保存为: ${filename}`,
-                duration: 4000,
-            });
+            toast.success(`积分榜下载成功！文件已保存为: ${filename}`);
 
         } catch (error) {
             console.error('下载积分榜失败:', error);
-            toast.error('下载积分榜失败', {
-                description: error instanceof Error ? error.message : '请稍后重试',
-                duration: 4000,
-            });
+            toast.error(`下载积分榜失败 ${error instanceof Error ? error.message : '请稍后重试'}`);
         } finally {
             setIsDownloading(false);
         }
@@ -192,10 +186,7 @@ export default function ScoreBoardPage(
         setCurrentPage(1); // 重置到第一页
 
         if (pagination && pagination.current_page > 1) {
-            toast.info('页面大小已更改', {
-                description: '已重置到第一页',
-                duration: 2000,
-            });
+            toast.info('页面大小已更改, 已重置到第一页');
         }
     }, [pagination]);
 
@@ -500,13 +491,8 @@ export default function ScoreBoardPage(
                 // 结束加载状态
                 setTimeout(() => setPageLoading(false), 200)
             }).catch(error => {
-                console.error('加载积分榜失败:', error);
                 // 出错时也要结束加载状态
                 setPageLoading(false);
-                toast.error('加载积分榜失败', {
-                    description: '请稍后重试',
-                    duration: 3000,
-                });
             })
         }
 

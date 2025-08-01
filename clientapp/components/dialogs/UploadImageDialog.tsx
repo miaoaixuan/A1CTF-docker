@@ -19,7 +19,7 @@ interface ErrorMessage {
     title: string;
 }
 
-export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number, type: "team" | "person",  children: React.ReactNode }> = ({ updateTeam, id, type, children }) => {
+export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number, game_id?: number, type: "team" | "person",  children: React.ReactNode }> = ({ updateTeam, id, game_id, type, children }) => {
 
     const [isOpen, setIsOpen] = useState(false)
 
@@ -38,7 +38,7 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number,
     const handleFileChange = (event: any) => {
         const file = event.target.files[0];
         if (type == "team" && id) {
-            api.team.uploadTeamAvatar({
+            api.team.uploadTeamAvatar(game_id ?? 0, {
                 avatar: file,
                 team_id: id
             }).then((res) => {
@@ -48,13 +48,6 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number,
                 setTimeout(() => {
                     setIsOpen(false)
                 }, 200)
-            }).catch((error: AxiosError) => {
-                if (error.response?.status) {
-                    const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                    toast.error(errorMessage.title)
-                } else {
-                    toast.error(t("unknow_error"))
-                }
             })
         }
         if (type == "person") {
@@ -66,13 +59,6 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number,
                     setIsOpen(false)
                     if (updateTeam) updateTeam()
                 }, 200)
-            }).catch((error: AxiosError) => {
-                if (error.response?.status) {
-                    const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                    toast.error(errorMessage.title)
-                } else {
-                    toast.error(t("unknow_error"))
-                }
             })
         }
     };

@@ -29,7 +29,7 @@ import { useTranslation } from "react-i18next";
 import { UserRole } from "utils/A1API"
 
 const PageHeader = () => {
-    
+
     const { t } = useTranslation()
 
     const [isOpen, setIsOpen] = useState(false);
@@ -67,62 +67,62 @@ const PageHeader = () => {
                             </Link>
                             <nav className="flex items-center pl-6 gap-1 text-sm xl:gap-2">
                                 <Button variant={whetherSelected("home")} onClick={() => {
-                                    if (curPath != `/` ) navigate(`/`)
+                                    if (curPath != `/`) navigate(`/`)
                                 }}>
                                     <House />
                                     <span className="font-bold text-base ml-[-2px]">{t("home")}</span>
                                 </Button>
                                 <Button variant={whetherSelected("games")} onClick={() => {
-                                    if (curPath != `/games` ) navigate(`/games`)
+                                    if (curPath != `/games`) navigate(`/games`)
                                 }}>
                                     <Flag />
                                     <span className="font-bold text-base ml-[-2px]">{t("race")}</span>
                                 </Button>
                                 <Button variant={whetherSelected("about")} onClick={() => {
-                                    if (curPath != `/about` ) navigate(`/about`)
+                                    if (curPath != `/about`) navigate(`/about`)
                                 }}>
                                     <Info />
                                     <span className="font-bold text-base ml-[-2px]">{t("about")}</span>
                                 </Button>
 
-                                <Button variant={whetherSelected("wp")} onClick={() => {
+                                {/* <Button variant={whetherSelected("wp")} onClick={() => {
                                         window.open("https://wp.a1natas.com")
                                 }}>
                                     <NotebookText />
                                     <span className="font-bold text-base ml-[-2px]">{t("wp")}</span>
-                                </Button>
+                                </Button> */}
                             </nav>
                         </div>
                         <div className="flex flex-1 items-center justify-between gap-3 md:justify-end">
-                            { ((curProfile.role == UserRole.ADMIN || curProfile.role == UserRole.MONITOR) && checkLoginStatus()) && (
+                            {((curProfile.role == UserRole.ADMIN || curProfile.role == UserRole.MONITOR) && checkLoginStatus()) && (
                                 <Button variant={"outline"} onClick={() => {
                                     navigate(`/admin/`)
                                 }}><Wrench />Admin</Button>
-                            ) }
+                            )}
                             <ThemeSwitcher />
-                            { checkLoginStatus() ? (
+                            {checkLoginStatus() ? (
                                 <>
                                     <DropdownMenu modal={false}>
                                         <DropdownMenuTrigger>
-                                        <Avatar className="select-none">
-                                            { curProfile.avatar ? (
-                                                <>
-                                                    <AvatarImage src={curProfile.avatar || "#"} alt="@shadcn"
-                                                        className={`rounded-2xl`}
-                                                    />
-                                                    <AvatarFallback><Skeleton className="h-full w-full rounded-full" /></AvatarFallback>
-                                                </>
-                                            ) : ( 
-                                                <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
-                                                    <span className='text-background text-md'> { curProfile.username?.substring(0, 2) } </span>
-                                                </div>
-                                            ) }
-                                        </Avatar>
+                                            <Avatar className="select-none cursor-pointer">
+                                                {curProfile.avatar ? (
+                                                    <>
+                                                        <AvatarImage src={curProfile.avatar || "#"} alt="@shadcn"
+                                                            className={`rounded-2xl`}
+                                                        />
+                                                        <AvatarFallback><Skeleton className="h-full w-full rounded-full" /></AvatarFallback>
+                                                    </>
+                                                ) : (
+                                                    <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
+                                                        <span className='text-background text-md'> {curProfile.username?.substring(0, 2)} </span>
+                                                    </div>
+                                                )}
+                                            </Avatar>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent className="mt-2">
                                             <DropdownMenuItem onClick={() => navigate(`/profile/basic`)}>
                                                 <Settings />
-                                                <span>{ t("settings") }</span>
+                                                <span>{t("settings")}</span>
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => {
                                                 unsetLoginStatus()
@@ -133,7 +133,7 @@ const PageHeader = () => {
                                                 })
                                             }}>
                                                 <UserRoundMinus />
-                                                <span>{ t("login_out") }</span>
+                                                <span>{t("login_out")}</span>
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -147,7 +147,7 @@ const PageHeader = () => {
                                         <Link to={`/login`}>{t("login")}</Link>
                                     </Button>
                                 </>
-                            ) }
+                            )}
                         </div>
                     </div>
                     <div className="flex md:hidden items-center h-full">
@@ -168,71 +168,70 @@ const PageHeader = () => {
                             <DropdownMenu onOpenChange={(open) => setIsOpen(open)}>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" className="mr-4" size="icon">
-                                    <div
-                                        className={`transition-transform duration-300 ${
-                                            isOpen ? "rotate-180" : "rotate-0"
-                                        }`}
-                                    >
-                                        {isOpen ? <ArrowUpToLine /> : <ArrowUpToLine />}
-                                    </div>
+                                        <div
+                                            className={`transition-transform duration-300 ${isOpen ? "rotate-180" : "rotate-0"
+                                                }`}
+                                        >
+                                            {isOpen ? <ArrowUpToLine /> : <ArrowUpToLine />}
+                                        </div>
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className="w-54 mr-4 mt-2">
                                     <div className="grid gap-[2px] p-[0.5px]">
-                                    <Button variant={whetherSelected("home")} onClick={() => {
-                                        if (curPath != `/` ) navigate(`/`)
-                                    }}>
-                                        <House />
-                                        <span className="font-bold text-base ml-[-2px]">{t("home")}</span>
-                                    </Button>
-                                    <Button variant={whetherSelected("games")} onClick={() => {
-                                        if (curPath != `/games` ) navigate(`/games`)
-                                    }}>
-                                        <Flag />
-                                        <span className="font-bold text-base ml-[-2px]">{t("race")}</span>
-                                    </Button>
-                                    <Button variant={whetherSelected("about")} onClick={() => {
-                                        if (curPath != `/about` ) navigate(`/about`)
-                                    }}>
-                                        <Info />
-                                        <span className="font-bold text-base ml-[-2px]">{t("about")}</span>
-                                    </Button>
+                                        <Button variant={whetherSelected("home")} onClick={() => {
+                                            if (curPath != `/`) navigate(`/`)
+                                        }}>
+                                            <House />
+                                            <span className="font-bold text-base ml-[-2px]">{t("home")}</span>
+                                        </Button>
+                                        <Button variant={whetherSelected("games")} onClick={() => {
+                                            if (curPath != `/games`) navigate(`/games`)
+                                        }}>
+                                            <Flag />
+                                            <span className="font-bold text-base ml-[-2px]">{t("race")}</span>
+                                        </Button>
+                                        <Button variant={whetherSelected("about")} onClick={() => {
+                                            if (curPath != `/about`) navigate(`/about`)
+                                        }}>
+                                            <Info />
+                                            <span className="font-bold text-base ml-[-2px]">{t("about")}</span>
+                                        </Button>
 
-                                    <Button variant={whetherSelected("wp")} onClick={() => {
+                                        {/* <Button variant={whetherSelected("wp")} onClick={() => {
                                         window.open("https://wp.a1natas.com")
                                     }}>
                                         <NotebookText />
                                         <span className="font-bold text-base ml-[-2px]">{t("wp")}</span>
-                                    </Button>
-                                        
+                                    </Button> */}
+
                                         <DropdownMenuSeparator />
 
-                                        { checkLoginStatus() ? (
+                                        {checkLoginStatus() ? (
                                             <>
                                                 <DropdownMenu modal={false}>
                                                     <DropdownMenuTrigger>
                                                         <div className="flex w-full h-full items-center justify-center gap-2 pl-2 pr-2 pb-1">
-                                                            <Avatar className="select-none">
-                                                                { curProfile.avatar ? (
+                                                            <Avatar className="select-none cursor-pointer">
+                                                                {curProfile.avatar ? (
                                                                     <>
                                                                         <AvatarImage src={curProfile.avatar || "#"} alt="@shadcn"
                                                                             className={`rounded-2xl`}
                                                                         />
                                                                         <AvatarFallback><Skeleton className="h-full w-full rounded-full" /></AvatarFallback>
                                                                     </>
-                                                                ) : ( 
+                                                                ) : (
                                                                     <div className='w-full h-full bg-foreground/80 flex items-center justify-center rounded-2xl'>
-                                                                        <span className='text-background text-md'> { curProfile.username?.substring(0, 2) } </span>
+                                                                        <span className='text-background text-md'> {curProfile.username?.substring(0, 2)} </span>
                                                                     </div>
-                                                                ) }
+                                                                )}
                                                             </Avatar>
-                                                            <span className="text-md"> { curProfile.username } </span>
+                                                            <span className="text-md"> {curProfile.username} </span>
                                                         </div>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent className="mt-2">
                                                         <DropdownMenuItem onClick={() => navigate(`/profile/basic`)}>
                                                             <Settings />
-                                                            <span>{ t("settings") }</span>
+                                                            <span>{t("settings")}</span>
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => {
                                                             api.account.accountLogOut().then(() => {
@@ -243,7 +242,7 @@ const PageHeader = () => {
                                                             })
                                                         }}>
                                                             <UserRoundMinus />
-                                                            <span>{ t("login_out") }</span>
+                                                            <span>{t("login_out")}</span>
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
@@ -261,7 +260,7 @@ const PageHeader = () => {
                                                     </Link>
                                                 </Button>
                                             </>
-                                        ) }
+                                        )}
                                     </div>
                                 </DropdownMenuContent>
                             </DropdownMenu>

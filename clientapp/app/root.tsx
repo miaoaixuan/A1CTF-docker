@@ -54,11 +54,11 @@ export const links: Route.LinksFunction = () => [
     },
     {
         rel: "stylesheet",
-        href: "'/app/css/github-markdown-dark.css'",
+        href: "/css/github-markdown-dark.css",
     },
     {
         rel: "stylesheet",
-        href: "'/app/css/github-markdown-light.css'",
+        href: "/css/github-markdown-light.css",
     }
 ];
 
@@ -106,8 +106,8 @@ function ThemeAwareLinks() {
     if (!mounted) return null;
 
     const cssFile = resolvedTheme === 'dark'
-        ? '/app/css/github-markdown-dark.css'
-        : '/app/css/github-markdown-light.css';
+        ? '/css/github-markdown-dark.css'
+        : '/css/github-markdown-light.css';
 
     return (
         <link rel="stylesheet" href={cssFile} />
@@ -142,6 +142,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <head>
                 <meta charSet="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
+                <title>Loading....</title>
                 <Meta />
                 <Links />
             </head>

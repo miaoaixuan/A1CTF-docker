@@ -5,8 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "utils/GZApi";
 import { LoadingPage } from "./LoadingPage";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
+import { Rss } from "lucide-react";
 
-export function AboutPage () {
+export function AboutPage() {
 
     const { theme } = useTheme()
 
@@ -15,26 +16,27 @@ export function AboutPage () {
     const [source, setSource] = useState(clientConfig.AboutUS)
 
     const memoizedDescription = useMemo(() => {
-        return source ? (
-          <div className="flex flex-col gap-0">
+        return <div className="w-full">
             <Mdx source={source} />
-          </div>
-        ) : (
-          <span>Empty</span>
-        );
+        </div>
     }, [source]); // 只依赖description
 
     return (
         <div className="flex w-full h-full relative">
-            <MacScrollbar className="overflow-y-auto w-full h-full pl-3 pr-3 md:pl-8 md:pr-8 lg:pl-20 lg:pr-20 pt-4 pb-4"
-                skin={theme == "light" ? "light" : "dark"}
-            >
-                <div className="flex w-full justify-center">
-                    <div className="max-w-[90%] md:max-w-[80%] lg:max-w-[75%] xl:max-w-[70%]">
-                        { memoizedDescription }
+            {source ? (
+                <MacScrollbar className="w-full"
+                    skin={theme == "light" ? "light" : "dark"}
+                >
+                    <div className="container mx-auto py-5">
+                        {memoizedDescription}
                     </div>
+                </MacScrollbar>
+            ) : (
+                <div className="w-full h-full flex items-center justify-center flex-col gap-6">
+                    <Rss size={64} />
+                    <span className="font-bold text-3xl">Content is empty..</span>
                 </div>
-            </MacScrollbar>
+            )}
         </div>
     )
 }

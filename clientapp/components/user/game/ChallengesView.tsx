@@ -6,7 +6,7 @@ import { toastNewNotice, toastNewHint } from "utils/ToastUtil";
 import { Mdx } from "components/MdxCompoents";
 import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from "react";
 
-import { api } from "utils/ApiHelper"
+import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper"
 import { GameNotice, GameScoreboardData, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "utils/A1API"
 
 import dayjs from "dayjs";
@@ -231,7 +231,7 @@ export function ChallengesView({
                     // setPageSwitch(true)
 
                     finishLoading()
-                }).catch((error: AxiosError) => { })
+                }, createSkipGlobalErrorConfig()).catch((error: AxiosError) => { })
             } else {
                 finishLoading()
             }
@@ -463,7 +463,7 @@ export function ChallengesView({
                 setTimeout(() => {
                     setGameStatus(A1GameStatus.Running)
                 }, randomInt(1000, 2000))
-            }).catch((error: AxiosError) => { })
+            }, createSkipGlobalErrorConfig()).catch((error: AxiosError) => { })
         }, 2000)
     }
 
@@ -573,7 +573,7 @@ export function ChallengesView({
 
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center select-none">
-                                                <span className="font-bold text-lg">{t("choose_something")}</span>
+                                                <span className="font-bold text-lg">Emmmmmm</span>
                                             </div>
                                         )}
                                     </div>

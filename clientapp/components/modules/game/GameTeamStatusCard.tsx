@@ -50,7 +50,9 @@ export default function GameTeamStatusCard(
                     }} gameID={gameInfo?.game_id ?? 0}>
                         <Button variant="outline" className="border-blue-300 hover:hover:bg-blue-300/10" type="button"><Pickaxe />创建队伍</Button>
                     </CreateTeamDialog>
-                    <JoinTeamDialog callback={() => {
+                    <JoinTeamDialog 
+                        game_id={gameInfo?.game_id ?? 0}
+                        callback={() => {
                         // setTimeout(() => {
                         //     fetchGameInfoWithTeamInfo()
                         // }, 600)

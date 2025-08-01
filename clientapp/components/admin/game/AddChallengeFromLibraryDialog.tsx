@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'c
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify/unstyled';
 import { AxiosError } from 'axios';
-import { api, ErrorMessage } from 'utils/ApiHelper';
+import { api, createSkipGlobalErrorConfig, ErrorMessage } from 'utils/ApiHelper';
 import { ChallengeCategory, JudgeType, UserSimpleGameChallenge } from 'utils/A1API';
 import { Button } from 'components/ui/button';
 import { Checkbox } from 'components/ui/checkbox';
@@ -154,7 +154,7 @@ export default function AddChallengeFromLibraryDialog(
                 [category]: [...(prev[category] || []), newSimpleChallenge]
             }))
             toast.success("题目添加成功")
-        }).catch((err: AxiosError) => {
+        }, createSkipGlobalErrorConfig()).catch((err: AxiosError) => {
             const errorMessage: ErrorMessage = err.response?.data as ErrorMessage
             if (err.response?.status == 409) {
                 toast.error("此题目已经添加到比赛中了")

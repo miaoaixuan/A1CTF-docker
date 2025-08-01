@@ -68,8 +68,6 @@ export default function ChallengeManageSheet(
     const handleSubmit = (values: z.infer<typeof GameChallengeSchema>) => {
         api.admin.updateGameChallenge(gameID, challengeID, values as any as AdminDetailGameChallenge).then((res) => {
             toast.success("更新成功")
-        }).catch((err) => {
-            toast.error("更新失败")
         })
     }
 

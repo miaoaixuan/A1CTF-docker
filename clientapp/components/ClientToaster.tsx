@@ -3,10 +3,45 @@ import { Tooltip } from "react-tooltip";
 import { Toaster } from "sonner";
 import { ToastContainer, cssTransition } from 'react-toastify/unstyled';
 import { cn } from "lib/utils";
+import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
+import { useEffect } from "react";
+import { title } from "process";
 
 export function ClientToaster() {
 
     const { theme } = useTheme()
+
+    const { clientConfig } = useGlobalVariableContext()
+
+    const titleMap = {
+        "/login": { title: "登录" },
+        "/games/\\d+/info": { title: "游戏详情" },
+        "/games/\\d+/challenges": { title: "比赛题目" },
+        "/games/\\d+/scoreboard": { title: "排行榜" },
+        "/games/\\d+/team": { title: "队伍管理" },
+        "/games": { title: "比赛列表" },
+        "/about": { title: "关于" },
+        "/signup": { title: "注册" },
+    }
+
+    useEffect(() => {
+        const suffix = clientConfig.systemName
+        const curURL = window.location.pathname
+        let matched = false;
+
+        Object.keys(titleMap).forEach((key) => {
+            const regex = new RegExp(`^${key}$`)
+            if (regex.test(curURL)) {
+                document.title = titleMap[key as (keyof typeof titleMap)].title + " - " + suffix
+                matched = true
+                return
+            }
+        })
+
+        if (!matched) {
+            document.title = suffix
+        }
+    }, [clientConfig, window.location.pathname])
 
     const contextClass = {
         success: "bg-green-500/5! text-green-600!",

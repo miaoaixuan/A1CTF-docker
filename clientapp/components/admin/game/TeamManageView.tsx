@@ -184,10 +184,12 @@ export function TeamManageView(
 
         // 使用toast.promise包装API调用
         toast.promise(apiCall, {
-            loading: loadingMessage,
-            success: (data) => {
-                fetchTeams(); // 刷新数据
-                return '队伍状态已更新';
+            pending: loadingMessage,
+            success: {
+                render({data}) {
+                    fetchTeams(); // 刷新数据
+                    return '队伍状态已更新';
+                },
             },
             error: '更新队伍状态失败'
         });
@@ -203,11 +205,13 @@ export function TeamManageView(
                 toast.promise(
                     api.admin.adminDeleteTeam({ team_id: teamId, game_id: gameId }),
                     {
-                        loading: '正在删除队伍...',
-                        success: (data) => {
-                            fetchTeams(); // 刷新数据
-                            setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-                            return '队伍已删除';
+                        pending: '正在删除队伍...',
+                        success: {
+                            render({data}) {
+                                fetchTeams(); // 刷新数据
+                                setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                                return '队伍已删除';
+                            },
                         },
                         error: '删除队伍失败'
                     }
@@ -456,10 +460,7 @@ export function TeamManageView(
                 score: item.score
             }));
             setData(formattedData);
-        }).catch((err) => {
-            toast.error("获取队伍列表失败");
-            console.error("获取队伍列表失败:", err);
-        });
+        })
     };
 
     // 处理搜索

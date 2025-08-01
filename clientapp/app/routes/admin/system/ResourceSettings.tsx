@@ -9,7 +9,7 @@ import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessa
 import { SystemSettingsValues } from "./AdminSettingsPage";
 import ImageUploader from "components/modules/ImageUploader";
 import { SystemResourceType } from "utils/A1API";
-import { api } from "utils/ApiHelper";
+import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper";
 import { toast } from 'react-toastify/unstyled';
 
 export const ResourceSettings = (
@@ -92,7 +92,7 @@ export const ResourceSettings = (
                 api.system.uploadSystemFile({
                     file: file,
                     resource_type: resource.type,
-                }).then((res) => {
+                }, createSkipGlobalErrorConfig()).then((res) => {
                     if (res.status === 200) {
                         form.setValue(resource.formValue as any, `/api/file/download/${res.data.data.file_id}`);
                         toast.success(`${resource.name} 上传成功`)

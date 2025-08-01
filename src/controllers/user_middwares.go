@@ -146,3 +146,20 @@ func EmailVerifiedMiddleware() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+func OperationNotAllowedAfterGameStartMiddleWare() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		game := c.MustGet("game").(models.Game)
+
+		if game.StartTime.Before(time.Now().UTC()) {
+			c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
+				Code:    403,
+				Message: "Operation not allowed after game start",
+			})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}

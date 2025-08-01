@@ -50,18 +50,21 @@ import { LoadingPage } from 'components/LoadingPage';
 import { useLocation, useNavigate } from 'react-router';
 import { UploadImageDialog } from 'components/dialogs/UploadImageDialog';
 import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
+import AlertConformer from 'components/modules/AlertConformer';
 
 interface MyTeamInfomationViewProps {
     gameid: number;
+    gameInfo: UserFullGameInfo | undefined
 }
 
 const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
-    gameid
+    gameid,
+    gameInfo
 }) => {
+
     const { t } = useTranslation();
     const { theme } = useTheme();
 
-    const [gameInfo, setGameInfo] = useState<UserFullGameInfo>();
     const [scoreBoardData, setScoreBoardData] = useState<GameScoreboardData>();
     const [currentUserTeam, setCurrentUserTeam] = useState<TeamScore>();
     const [joinRequests, setJoinRequests] = useState<TeamJoinRequestInfo[]>([]);
@@ -79,21 +82,6 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
     const isTeamCaptain = gameInfo?.team_info?.team_members?.find(
         member => member.user_id === curProfile.user_id
     )?.captain || false;
-
-    // 获取游戏信息和战队信息
-    const fetchGameInfo = () => {
-        api.user.userGetGameInfoWithTeamInfo(gameid)
-            .then((response) => {
-                setGameInfo(response.data.data);
-                if (response.data.data.team_info?.team_slogan) {
-                    setNewSlogan(response.data.data.team_info.team_slogan);
-                }
-            })
-            .catch((error) => {
-                console.error("Failed to fetch game info:", error);
-                toast.error("获取游戏信息失败");
-            });
-    };
 
     // 获取记分榜数据（包含解题情况）
     const fetchScoreBoardData = () => {
@@ -117,23 +105,16 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
 
                 setDataLoaded(true)
             })
-            .catch((error) => {
-                console.error("Failed to fetch scoreboard data:", error);
-                setDataLoaded(true)
-            });
     };
 
     // 获取加入申请列表
     const fetchJoinRequests = () => {
         if (!isTeamCaptain || !gameInfo?.team_info?.team_id) return;
 
-        api.team.getTeamJoinRequests(gameInfo.team_info.team_id)
+        api.team.getTeamJoinRequests(gameInfo.team_info.team_id, gameInfo.game_id)
             .then((response) => {
                 setJoinRequests(response.data.data);
             })
-            .catch((error) => {
-                console.error("Failed to fetch join requests:", error);
-            });
     };
 
     // 获取题目信息
@@ -147,12 +128,6 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
         }
         return target;
     };
-
-    useEffect(() => {
-        if (gameid) {
-            fetchGameInfo();
-        }
-    }, [gameid]);
 
     useEffect(() => {
         if (gameInfo && curProfile.user_id) {
@@ -170,15 +145,10 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
     // 处理加入申请
     const handleJoinRequest = (requestId: number, action: 'approve' | 'reject') => {
         setLoading(true);
-        api.team.handleTeamJoinRequest(requestId, { action } as HandleJoinRequestPayload)
+        api.team.handleTeamJoinRequest(requestId, gameInfo?.game_id ?? 0, { action } as HandleJoinRequestPayload)
             .then(() => {
                 toast.success(action === 'approve' ? '申请已批准' : '申请已拒绝');
                 fetchJoinRequests();
-                fetchGameInfo(); // 刷新战队信息
-            })
-            .catch((error: any) => {
-                const errorMessage = error.response?.data?.message || '操作失败';
-                toast.error(errorMessage);
             })
             .finally(() => {
                 setLoading(false);
@@ -190,14 +160,9 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
         if (!gameInfo?.team_info?.team_id) return;
 
         setLoading(true);
-        api.team.transferTeamCaptain(gameInfo.team_info.team_id, { new_captain_id: newCaptainId } as TransferCaptainPayload)
+        api.team.transferTeamCaptain(gameInfo.team_info.team_id, gameInfo.game_id, { new_captain_id: newCaptainId } as TransferCaptainPayload)
             .then(() => {
                 toast.success('队长已转移');
-                fetchGameInfo();
-            })
-            .catch((error: any) => {
-                const errorMessage = error.response?.data?.message || '转移队长失败';
-                toast.error(errorMessage);
             })
             .finally(() => {
                 setLoading(false);
@@ -209,14 +174,9 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
         if (!gameInfo?.team_info?.team_id) return;
 
         setLoading(true);
-        api.team.removeTeamMember(gameInfo.team_info.team_id, userId)
+        api.team.removeTeamMember(gameInfo.team_info.team_id, userId, gameInfo.game_id)
             .then(() => {
                 toast.success('队员已移除');
-                fetchGameInfo();
-            })
-            .catch((error: any) => {
-                const errorMessage = error.response?.data?.message || '移除队员失败';
-                toast.error(errorMessage);
             })
             .finally(() => {
                 setLoading(false);
@@ -228,14 +188,9 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
         if (!gameInfo?.team_info?.team_id) return;
 
         setLoading(true);
-        api.team.deleteTeam(gameInfo.team_info.team_id)
+        api.team.deleteTeam(gameInfo.team_info.team_id, gameInfo.game_id)
             .then(() => {
                 toast.success('战队已解散');
-                fetchGameInfo();
-            })
-            .catch((error: any) => {
-                const errorMessage = error.response?.data?.message || '解散战队失败';
-                toast.error(errorMessage);
             })
             .finally(() => {
                 setLoading(false);
@@ -247,15 +202,10 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
         if (!gameInfo?.team_info?.team_id) return;
 
         setLoading(true);
-        api.team.updateTeamInfo(gameInfo.team_info.team_id, { team_slogan: newSlogan } as UpdateTeamInfoPayload)
+        api.team.updateTeamInfo(gameInfo.team_info.team_id, gameInfo.game_id ?? 0, { team_slogan: newSlogan } as UpdateTeamInfoPayload)
             .then(() => {
                 toast.success('战队口号已更新');
                 setSloganDialogOpen(false);
-                fetchGameInfo();
-            })
-            .catch((error: any) => {
-                const errorMessage = error.response?.data?.message || '更新失败';
-                toast.error(errorMessage);
             })
             .finally(() => {
                 setLoading(false);
@@ -281,26 +231,26 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
     const getAdjustmentTypeInfo = (type: string) => {
         switch (type) {
             case 'cheat':
-                return { 
-                    icon: <Ban className="w-4 h-4" />, 
+                return {
+                    icon: <Ban className="w-4 h-4" />,
                     color: 'text-red-500',
                     label: '作弊扣分'
                 };
             case 'reward':
-                return { 
-                    icon: <Gift className="w-4 h-4" />, 
+                return {
+                    icon: <Gift className="w-4 h-4" />,
                     color: 'text-green-500',
                     label: '奖励加分'
                 };
             case 'other':
-                return { 
-                    icon: <AlertTriangle className="w-4 h-4" />, 
+                return {
+                    icon: <AlertTriangle className="w-4 h-4" />,
                     color: 'text-yellow-500',
                     label: '其他调整'
                 };
             default:
-                return { 
-                    icon: <Calculator className="w-4 h-4" />, 
+                return {
+                    icon: <Calculator className="w-4 h-4" />,
                     color: 'text-gray-500',
                     label: '未知'
                 };
@@ -351,7 +301,7 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
                                 </div>
                                 {isTeamCaptain && (
                                     <div className="flex space-x-2">
-                                        <UploadImageDialog type="team" updateTeam={() => {}} id={gameInfo?.team_info?.team_id}>
+                                        <UploadImageDialog type="team" game_id={gameInfo.game_id} updateTeam={() => { }} id={gameInfo?.team_info?.team_id}>
                                             <Button variant="outline" size="sm">
                                                 <Upload className="w-4 h-4" />
                                                 上传头像
@@ -640,7 +590,7 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
                                         <div key={`solved-${index}`} className="flex items-center justify-between p-3 border rounded-lg">
                                             <div>
                                                 <div className={`flex gap-2 items-center ${getAdjustmentTypeInfo(adjustedScore.adjustment_type).color}`}>
-                                                    { getAdjustmentTypeInfo(adjustedScore.adjustment_type).icon }
+                                                    {getAdjustmentTypeInfo(adjustedScore.adjustment_type).icon}
                                                     <div className={`font-medium`}>{getAdjustmentTypeInfo(adjustedScore.adjustment_type).label}</div>
                                                 </div>
                                                 <div className="text-sm text-muted-foreground">
@@ -648,11 +598,11 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
                                                 </div>
                                             </div>
                                             <div className="flex items-center space-x-2">
-                                                { adjustedScore.score_change > 0 ? (
+                                                {adjustedScore.score_change > 0 ? (
                                                     <span className="text-green-600 font-medium">+ {adjustedScore.score_change} pts</span>
                                                 ) : (
                                                     <span className="text-red-600 font-medium">- {Math.abs(adjustedScore.score_change)} pts</span>
-                                                ) }
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -674,31 +624,17 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="destructive">
-                                            <Trash2 className="w-4 h-4 mr-2" />
-                                            解散战队
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>确认解散战队</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                你确定要解散战队 "{teamInfo?.team_name}" 吗？此操作将删除所有战队数据，且不可撤销。
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>取消</AlertDialogCancel>
-                                            <AlertDialogAction
-                                                onClick={handleDeleteTeam}
-                                                className="bg-red-600 hover:bg-red-700"
-                                            >
-                                                确认解散
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
+                                <AlertConformer
+                                    title='确认解散战队'
+                                    type='danger'
+                                    description={`你确定要解散战队 ${teamInfo?.team_name} 吗？此操作将删除所有战队数据，且不可撤销。`}
+                                    onConfirm={handleDeleteTeam}
+                                >
+                                    <Button variant="destructive">
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                        解散战队
+                                    </Button>
+                                </AlertConformer>
                             </CardContent>
                         </Card>
                     )}

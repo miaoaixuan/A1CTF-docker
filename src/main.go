@@ -118,7 +118,6 @@ func RateLimiter(rateLimit int, rateInterval time.Duration) gin.HandlerFunc {
 }
 
 func main() {
-
 	// 加载配置文件
 	utils.LoadConfig()
 
@@ -250,17 +249,28 @@ func main() {
 		}
 
 		// 团队相关管理接口
-		teamManageGroup := auth.Group("/team")
+		teamManagePublicGroup := auth.Group("/game/:game_id/team")
+		teamManagePublicGroup.Use(controllers.GameStatusMiddleware(false, false, false))
+		// 专门给 Join 预留的，无需 TeamStatus 验证
+		{
+			teamManagePublicGroup.POST("/join", controllers.TeamJoinRequest)
+		}
+
+		// 这里需要验证比赛状态
+		teamManageGroup := auth.Group("/game/:game_id/team")
+		teamManageGroup.Use(controllers.GameStatusMiddleware(false, false, false))
+		teamManageGroup.Use(controllers.TeamStatusMiddleware())
 		teamManageGroup.Use(controllers.EmailVerifiedMiddleware())
 		{
-			teamManageGroup.POST("/join", controllers.TeamJoinRequest)
 			teamManageGroup.GET("/:team_id/requests", controllers.GetTeamJoinRequests)
 			teamManageGroup.POST("/request/:request_id/handle", controllers.HandleTeamJoinRequest)
-			teamManageGroup.POST("/:team_id/transfer-captain", controllers.TransferTeamCaptain)
-			teamManageGroup.DELETE("/:team_id/member/:user_id", controllers.RemoveTeamMember)
-			teamManageGroup.DELETE("/:team_id", controllers.DeleteTeam)
-			teamManageGroup.PUT("/:team_id", controllers.UpdateTeamInfo)
 
+			// 比赛开始后不允许移交队长，删除队员，解散队伍
+			teamManageGroup.POST("/:team_id/transfer-captain", controllers.OperationNotAllowedAfterGameStartMiddleWare(), controllers.TransferTeamCaptain)
+			teamManageGroup.DELETE("/:team_id/member/:user_id", controllers.OperationNotAllowedAfterGameStartMiddleWare(), controllers.RemoveTeamMember)
+			teamManageGroup.DELETE("/:team_id", controllers.OperationNotAllowedAfterGameStartMiddleWare(), controllers.DeleteTeam)
+
+			teamManageGroup.PUT("/:team_id", controllers.UpdateTeamInfo)
 			teamManageGroup.POST("/avatar/upload", controllers.UploadTeamAvatar)
 		}
 
@@ -415,7 +425,12 @@ func main() {
 	// })
 
 	r.Static("/assets", "./clientapp/build/client/assets")
-	r.Static("/favicon.ico", "./clientapp/build/client/favicon.ico")
+
+	r.StaticFile("/css/github-markdown-dark.css", "./clientapp/build/client/css/github-markdown-dark.css")
+	r.StaticFile("/css/github-markdown-light.css", "./clientapp/build/client/css/github-markdown-light.css")
+
+	r.StaticFile("/favicon.ico", viper.GetString("system.favicon"))
+
 	r.Static("/images", "./clientapp/build/client/images")
 	r.Static("/locales", "./clientapp/build/client/locales")
 	r.NoRoute(func(c *gin.Context) {
