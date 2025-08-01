@@ -30,7 +30,7 @@ import { z } from "zod"
 
 import { api } from "utils/ApiHelper";
 
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";

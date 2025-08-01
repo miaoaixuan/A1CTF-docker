@@ -3,7 +3,7 @@ import { Button } from 'components/ui/button';
 import { Form } from 'components/ui/form';
 import { MacScrollbar } from 'mac-scrollbar';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify/unstyled';
 import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
 
 import { useForm, useWatch } from 'react-hook-form';

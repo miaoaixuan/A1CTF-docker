@@ -42,7 +42,7 @@ import { MacScrollbar } from "mac-scrollbar";
 import { AdminChallengeConfig, ChallengeContainerType, FlagType } from "utils/A1API";
 import { api, ErrorMessage } from "utils/ApiHelper";
 import dayjs from "dayjs";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { AxiosError } from "axios";
 import { useNavigate } from "react-router";
 import { useTheme } from "next-themes";

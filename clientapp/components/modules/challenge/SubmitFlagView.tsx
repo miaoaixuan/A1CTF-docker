@@ -9,7 +9,7 @@ import {
 } from '@react-spring/web'
 import { JudgeType, UserDetailGameChallenge } from "utils/A1API";
 import { api } from "utils/ApiHelper";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { ChallengeSolveStatus } from "components/user/game/ChallengesView";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 

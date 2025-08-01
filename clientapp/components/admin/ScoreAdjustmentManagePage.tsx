@@ -12,7 +12,7 @@ import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { MacScrollbar } from 'mac-scrollbar';
 import { useTheme } from 'next-themes';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify/unstyled';
 import dayjs from 'dayjs';
 import { 
     ArrowLeft, 

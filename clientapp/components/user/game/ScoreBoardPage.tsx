@@ -26,7 +26,7 @@ import { LoadingPage } from 'components/LoadingPage';
 import { useLocation, useNavigate } from 'react-router';
 import { useIsMobile } from 'hooks/use-mobile';
 import { ScoreTableMobile } from 'components/ScoreTableMobile';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify/unstyled';
 
 import {
     Select,

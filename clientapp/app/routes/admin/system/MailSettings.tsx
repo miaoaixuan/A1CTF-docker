@@ -9,7 +9,7 @@ import { Mail } from "lucide-react";
 import ThemedEditor from "components/modules/ThemedEditor";
 import { useState } from "react";
 import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "components/ui/select";
 
 

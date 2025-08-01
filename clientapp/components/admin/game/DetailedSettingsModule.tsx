@@ -17,7 +17,7 @@ import { ScrollArea, ScrollBar } from 'components/ui/scroll-area';
 import { CalendarIcon, Settings, Upload } from 'lucide-react';
 import { cn } from 'lib/utils';
 import { useWatch } from 'react-hook-form';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify/unstyled';
 import { useFieldArray, UseFormReturn } from 'react-hook-form';
 import { EditGameFormSchema } from './EditGameSchema';
 import * as z from 'zod';

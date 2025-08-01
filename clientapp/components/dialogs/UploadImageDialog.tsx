@@ -9,7 +9,7 @@ import {
 
 import { useRef, useState } from "react";
 import { AxiosError } from "axios";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { api } from "utils/ApiHelper";

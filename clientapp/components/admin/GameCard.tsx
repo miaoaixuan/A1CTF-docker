@@ -11,7 +11,7 @@ import { EyeClosed, Calendar, Settings, Calculator, Trash2, Pause, Play, Square,
 import { index } from "mathjs";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { UserGameSimpleInfo } from "utils/A1API";
 import { api } from "utils/ApiHelper";
 
@@ -52,7 +52,7 @@ export default function GameCard(
 
     return (
         <div
-            className="group relative h-80 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] bg-card border border-border/50"
+            className="group relative h-80 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-transform duration-300 hover:scale-[1.02] bg-card border border-border/50"
         >
             <>
                 {/* Background Image */}

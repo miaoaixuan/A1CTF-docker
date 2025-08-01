@@ -17,11 +17,10 @@ import {
     DropdownMenuTrigger,
 } from "components/ui/dropdown-menu"
 import { api, BasicGameInfoModel, DetailedGameInfoModel, GameDetailModel, Role } from "utils/GZApi";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Skeleton } from "./ui/skeleton";
 import { useCookies } from "react-cookie";
-import { TransitionLink } from "./TransitionLink";
 import GameSwitchHover from "./GameSwitchHover";
 import { useGameSwitchContext } from "contexts/GameSwitchContext";
 import Counter from "./reactbits/Counter/Counter";

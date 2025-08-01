@@ -1,6 +1,6 @@
 import { useNavigateFrom } from "hooks/NavigateFrom";
 import { Api } from "./A1API";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 
 // 导航函数类型
 type NavigateFunction = (path: string) => void;

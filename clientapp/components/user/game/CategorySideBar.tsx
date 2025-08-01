@@ -19,7 +19,7 @@ import { useTheme } from "next-themes";
 import SafeComponent from "components/SafeComponent";
 
 import { randomInt } from "mathjs";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { ErrorMessage, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "utils/A1API";
 import { api } from "utils/ApiHelper";
 import { ChallengeSolveStatus } from "components/user/game/ChallengesView";

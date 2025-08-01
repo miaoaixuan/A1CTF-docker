@@ -42,7 +42,7 @@ import { Badge } from "../ui/badge";
 import { SystemLogItem, LogCategory, SystemLogStats } from "utils/A1API";
 
 import { api } from "utils/ApiHelper";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import {
     Select,
     SelectContent,

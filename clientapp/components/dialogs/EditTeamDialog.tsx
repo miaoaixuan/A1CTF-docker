@@ -28,7 +28,7 @@ import { useEffect, useRef, useState } from "react";
 import { Textarea } from "../ui/textarea";
 import { api, TeamInfoModel, TeamUserInfoModel } from "utils/GZApi";
 import { AxiosError } from "axios";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { Avatar } from "@radix-ui/react-avatar";
 import { AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Skeleton } from "../ui/skeleton";

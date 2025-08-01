@@ -9,7 +9,7 @@ import { Textarea } from "components/ui/textarea";
 import { Switch } from "components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "components/ui/select";
 import { Atom, Bird, Cat, Image, Loader2, Mail, Siren, Upload, UserLock } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { MacScrollbar } from "mac-scrollbar";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";

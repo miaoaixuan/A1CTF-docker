@@ -9,7 +9,7 @@ import { api, ErrorMessage } from "utils/ApiHelper";
 import { ChallengeCategory, AdminChallengeSimpleInfo } from "utils/A1API";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { AxiosError } from "axios";
 
 import { ConfirmDialog, DialogOption } from "../dialogs/ConfirmDialog";

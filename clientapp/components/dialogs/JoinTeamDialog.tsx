@@ -27,7 +27,7 @@ import { z } from "zod"
 import { useEffect, useState } from "react";
 import { Textarea } from "../ui/textarea";
 import { AxiosError } from "axios";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { useTranslation } from "react-i18next";
 import { api } from "utils/ApiHelper"
 

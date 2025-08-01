@@ -7,7 +7,7 @@ import { cn } from "lib/utils";
 import { BadgeAlert, BadgeCheck, MailPlus, Save } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { api } from "utils/ApiHelper";
 import { z } from "zod"
 

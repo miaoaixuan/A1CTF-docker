@@ -97,6 +97,8 @@ body {
     --chart-5: oklch(0.769 0.188 70.08);
 
     --strong-markdown-color: oklch(0.70 0.19 48);
+    --toastify-toast-padding: 10px 15px 10px 15px!important;
+    --toastify-toast-min-height: 58px!important;
 }
 
 .dark {
@@ -325,4 +327,12 @@ cap-widget {
 
     --cap-spinner-color: var(--foreground);
     --cap-spinner-background-color: var(--background);
+}
+
+.Toastify__progress-bar--wrp {
+    height: 3px!important;
+}
+
+.Toastify__toast {
+    --animate-duration: 0.7s!important;
 }

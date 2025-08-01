@@ -23,7 +23,7 @@ import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { Skeleton } from "./ui/skeleton";
 import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
 import { api, Role } from "utils/GZApi";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { Link, useLocation, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { UserRole } from "utils/A1API"
@@ -120,13 +120,9 @@ const PageHeader = () => {
                                         </Avatar>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent className="mt-2">
-                                            <DropdownMenuItem onClick={() => navigate(`/profile`)}>
+                                            <DropdownMenuItem onClick={() => navigate(`/profile/basic`)}>
                                                 <Settings />
                                                 <span>{ t("settings") }</span>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => navigate(`/profile/password`)}>
-                                                <KeyRound />
-                                                <span>{ t("change_password_header") }</span>
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => {
                                                 unsetLoginStatus()
@@ -234,13 +230,9 @@ const PageHeader = () => {
                                                         </div>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent className="mt-2">
-                                                        <DropdownMenuItem onClick={() => navigate(`/profile`)}>
+                                                        <DropdownMenuItem onClick={() => navigate(`/profile/basic`)}>
                                                             <Settings />
                                                             <span>{ t("settings") }</span>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => navigate(`/profile/password`)}>
-                                                            <KeyRound />
-                                                            <span>{ t("change_password_header") }</span>
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => {
                                                             api.account.accountLogOut().then(() => {

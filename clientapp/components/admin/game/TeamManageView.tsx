@@ -44,7 +44,7 @@ import { AdminListTeamItem, ParticipationStatus, UserGameSimpleInfo } from "util
 
 import { api, ErrorMessage } from "utils/ApiHelper";
 import AvatarUsername from "../../modules/AvatarUsername";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import {
     AlertDialog,
     AlertDialogAction,

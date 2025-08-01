@@ -49,7 +49,7 @@ import {
     AlertDialogTitle,
 } from "components/ui/alert-dialog";
 import { AdminContainerItem, ContainerStatus } from "utils/A1API";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import dayjs from "dayjs";
 import {
     HoverCard,

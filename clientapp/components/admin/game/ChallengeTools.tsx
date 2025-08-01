@@ -1,7 +1,7 @@
 import { Button } from "components/ui/button";
 import { Users, Trash2 } from "lucide-react";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { api } from "utils/ApiHelper";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from 'components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from 'components/ui/dialog';

@@ -10,7 +10,7 @@ import { SystemSettingsValues } from "./AdminSettingsPage";
 import ImageUploader from "components/modules/ImageUploader";
 import { SystemResourceType } from "utils/A1API";
 import { api } from "utils/ApiHelper";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 
 export const ResourceSettings = (
     { 

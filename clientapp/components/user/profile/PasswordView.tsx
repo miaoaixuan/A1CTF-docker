@@ -15,7 +15,7 @@ import { Button } from "../../ui/button";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useState } from "react";
 import { api, ErrorMessage } from "utils/GZApi";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { AxiosError } from "axios";
 import { useTranslation } from "react-i18next";
 import { Save } from "lucide-react";

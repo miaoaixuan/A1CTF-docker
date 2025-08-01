@@ -34,7 +34,7 @@ import { MacScrollbar } from "mac-scrollbar";
 import { AdminFullGameInfo } from "utils/A1API";
 import { api, ErrorMessage } from "utils/ApiHelper";
 import dayjs from "dayjs";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { AxiosError } from "axios";
 
 import { ScrollArea, ScrollBar } from "components/ui/scroll-area";

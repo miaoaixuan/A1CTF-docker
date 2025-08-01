@@ -27,7 +27,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "components/ui/alert-dialog";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import copy from "copy-to-clipboard";
 import { AxiosError } from "axios";
 import dayjs from "dayjs";

@@ -8,7 +8,7 @@ import { Badge } from 'components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/ui/card';
 import { MacScrollbar } from 'mac-scrollbar';
 import { useTheme } from 'next-themes';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify/unstyled';
 import { api } from 'utils/ApiHelper';
 import { AdminNoticeItem } from 'utils/A1API';
 import { PlusCircle, Trash2, MessageSquare, Calendar, AlertCircle, Eye, MoreHorizontal } from 'lucide-react';

@@ -19,7 +19,7 @@ import { useState } from "react";
 
 import { useTheme } from "next-themes";
 import { AxiosError } from 'axios';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify/unstyled';
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { api } from "utils/ApiHelper";

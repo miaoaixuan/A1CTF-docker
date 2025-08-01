@@ -20,7 +20,7 @@ import { EditGameFormSchema } from './EditGameSchema';
 import { ColumnDef, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
 import { Checkbox } from 'components/ui/checkbox';
 import dayjs from 'dayjs';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify/unstyled';
 import { MacScrollbar } from 'mac-scrollbar';
 import { JudgeConfigForm } from './JudgeConfigForm';
 import { useTheme } from 'next-themes';

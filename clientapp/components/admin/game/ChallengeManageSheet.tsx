@@ -20,7 +20,7 @@ import * as z from 'zod';
 import { AdminDetailGameChallenge } from "utils/A1API"
 import { api } from "utils/ApiHelper"
 import { Save, X } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from 'react-toastify/unstyled';
 import LoadingModule from "components/modules/LoadingModule"
 import ChallengeSettingsSidebar from "./ChallengeSettingsSidebar"
 import { ContainerManageView } from "./ContainerManageView"

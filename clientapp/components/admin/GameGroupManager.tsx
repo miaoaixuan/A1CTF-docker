@@ -31,7 +31,7 @@ import {
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify/unstyled';
 import { api } from 'utils/ApiHelper';
 import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
 import { AxiosError } from 'axios';

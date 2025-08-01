@@ -10,7 +10,7 @@ import { Button } from "components/ui/button"
 import { Progress } from "components/ui/progress"
 import { useRef, useState, useCallback } from "react";
 import { AxiosError, AxiosProgressEvent } from "axios";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { Upload, File, X, CheckCircle, AlertCircle } from "lucide-react";
 import { api, ErrorMessage } from "utils/ApiHelper";
 import { cn } from "lib/utils";

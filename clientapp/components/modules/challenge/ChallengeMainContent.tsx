@@ -9,7 +9,7 @@ import { api } from "utils/ApiHelper"
 import { randomInt } from "mathjs"
 import dayjs from "dayjs"
 import { Mdx } from "components/MdxCompoents"
-import { toast } from "sonner"
+import { toast } from 'react-toastify/unstyled';
 import { useTranslation } from "react-i18next"
 import ChallengeNameTitle from "./ChallengeNameTitle"
 import { useTheme } from "next-themes"

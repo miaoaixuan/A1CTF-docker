@@ -1,21 +1,14 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "components/ui/card";
 import { Button } from "components/ui/button";
-import { Input } from "components/ui/input";
-import { Label } from "components/ui/label";
-import { Textarea } from "components/ui/textarea";
-import { Switch } from "components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "components/ui/select";
-import { Atom, Bird, Cat, Image, Loader2, Mail, Save, Siren, Upload, UserLock } from "lucide-react";
-import { toast } from "sonner";
+import { Atom, Bird, Cat, Image, Loader2, Mail, Save, Siren, UserLock } from "lucide-react";
+import { toast } from 'react-toastify/unstyled';
 import { MacScrollbar } from "mac-scrollbar";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "components/ui/form";
-import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
+import { Form } from "components/ui/form";
+import { useNavigate, useParams } from "react-router";
 import { AdminHeader } from "components/admin/AdminHeader";
 import AboutPage from "components/admin/AboutPage";
 import BasicSettings from "./BasicSettings";
@@ -24,7 +17,6 @@ import MailSettings from "./MailSettings";
 import SecurityPolicySettings from "./SecurityPolicy";
 import OtherSettings from "./OtherSettings";
 import UserPolicySettings from "./UserPolicy";
-import { api } from "utils/ApiHelper";
 import { useTheme } from "next-themes";
 
 // interface SystemSettings {

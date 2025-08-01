@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight, ArrowUpDown, Loader2 } from 'lucide-react';
 import { Dispatch, memo, ReactNode, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/ui/table';
 import dayjs from 'dayjs';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify/unstyled';
 import { AxiosError } from 'axios';
 import { api, ErrorMessage } from 'utils/ApiHelper';
 import { ChallengeCategory, JudgeType, UserSimpleGameChallenge } from 'utils/A1API';

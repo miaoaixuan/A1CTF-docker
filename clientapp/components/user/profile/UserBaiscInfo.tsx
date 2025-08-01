@@ -17,7 +17,7 @@ import { Input } from "components/ui/input"
 import { useTranslation } from "react-i18next"
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext"
 import { useEffect, useState } from "react"
-import { toast } from "sonner"
+import { toast } from 'react-toastify/unstyled';
 import { api, ErrorMessage } from "utils/ApiHelper"
 import { AxiosError } from "axios"
 import { Button } from "components/ui/button"

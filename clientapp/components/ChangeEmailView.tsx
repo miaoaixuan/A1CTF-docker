@@ -5,7 +5,7 @@ import { Label } from "components/ui/label";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "components/ui/card";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { MailCheck } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { api, ErrorMessage } from "utils/GZApi";
 import { AxiosError } from "axios";
 import { useTranslation } from "react-i18next";
