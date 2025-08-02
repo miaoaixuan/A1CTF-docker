@@ -4,14 +4,12 @@ import { useTheme } from 'next-themes';
 
 
 import { useGameSwitchContext } from "contexts/GameSwitchContext";
-import { LoaderPinwheel } from 'lucide-react';
+import { Loader2, LoaderPinwheel } from 'lucide-react';
 
 export default function GameSwitchHover({ animation } : { animation: boolean }) {
 
 
     const { isChangingGame, curSwitchingGame, posterData } = useGameSwitchContext();
-
-    const [fromY, setFromY] = useState(10);
 
     const [shouldAnime, setShouldAnime] = useState(false)
     const [animeMethod, setAnimeMethod] = useState("easeInOut")
@@ -19,20 +17,10 @@ export default function GameSwitchHover({ animation } : { animation: boolean }) 
 
     const [scope, animate] = useAnimate()
 
-    const { theme } = useTheme();
-
     useEffect(() => {
-        if (animation) {
-            setShouldAnime(true)
-            setAnimeMethod("easeInOut")
-            setExitAnimationTime(0.4)
-        } else {
-            setTimeout(() => {
-                setShouldAnime(true)
-            }, 200)
-            setAnimeMethod("easeInOut")
-            setExitAnimationTime(0.4)
-        }
+        setShouldAnime(true)
+        setAnimeMethod("easeInOut")
+        setExitAnimationTime(0.4)
     }, [])
 
     return (
@@ -66,7 +54,7 @@ export default function GameSwitchHover({ animation } : { animation: boolean }) 
                             scale: 1.08
                         }}
                         transition={{
-                            duration: animation ? 2 : (shouldAnime ? exitAnimationTime : 0),
+                            duration: animation ? 3 : (shouldAnime ? exitAnimationTime : 0),
                             ease: "easeInOut"
                             // delay: 0.6
                         }}
@@ -83,7 +71,7 @@ export default function GameSwitchHover({ animation } : { animation: boolean }) 
                             backgroundColor: "rgba(0, 0, 0, 0.4)"
                         }}
                         transition={{
-                            duration: animation ? 2 : (shouldAnime ? exitAnimationTime : 0),
+                            duration: animation ? 3 : (shouldAnime ? exitAnimationTime : 0),
                             ease: "easeInOut"
                             // delay: 0.6
                         }}
@@ -138,7 +126,7 @@ export default function GameSwitchHover({ animation } : { animation: boolean }) 
                                     <span className="text-3xl font-bold">{ curSwitchingGame.name }</span>
                                     <p className="mt-2">{ curSwitchingGame.summary }</p>
                                     <div className='flex mt-4'>
-                                        <LoaderPinwheel className="animate-spin" />
+                                        <Loader2 className="animate-spin" />
                                         <span className="font-bold ml-3">Loading...</span>
                                     </div>
                                 </motion.div>

@@ -3,13 +3,11 @@ import {
     Dialog,
     DialogContent,
     DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
 } from "components/ui/dialog"
 import { Input } from "components/ui/input"
-import { Label } from "components/ui/label"
 import {
     Select,
     SelectContent,
@@ -34,7 +32,7 @@ import { z } from "zod"
 import { useEffect, useState } from "react";
 import { Textarea } from "../ui/textarea";
 import { api, ErrorMessage } from "utils/ApiHelper";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { AxiosError } from "axios";
 import { useTranslation } from "react-i18next";
 import { GameGroup } from "utils/A1API"
@@ -74,7 +72,6 @@ export const CreateTeamDialog: React.FC<{ callback: () => void, gameID: number, 
                     setGroups(res.data.data || [])
                 })
                 .catch((error) => {
-                    console.error("Failed to load groups:", error)
                     setGroups([])
                 })
                 .finally(() => {
@@ -99,13 +96,6 @@ export const CreateTeamDialog: React.FC<{ callback: () => void, gameID: number, 
             toast.success(t("create_team_success"))
             updateTeam()
             setIsOpen(false)
-        }).catch((error: AxiosError) => {
-            if (error.response?.status) {
-                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.message)
-            } else {
-                toast.error(t("unknow_error"))
-            }
         })
     }
 

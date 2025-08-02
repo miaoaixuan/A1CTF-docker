@@ -13,6 +13,11 @@ import { format } from "date-fns";
 import { CalendarIcon, Clock, Plus, Edit, Trash2, GripVertical } from "lucide-react";
 import { challengeCategoryIcons } from "utils/ClientAssets";
 import dayjs from "dayjs";
+import { EditGameFormSchema } from './game/EditGameSchema';
+import { UseFormReturn, useWatch } from 'react-hook-form';
+
+import * as z from 'zod';
+import { AdminFullGameInfo } from 'utils/A1API';
 
 interface TimePoint {
     id: string;
@@ -30,12 +35,8 @@ interface ChallengeBlock {
 }
 
 interface GameTimelineEditorProps {
-    gameStartTime: Date;
-    gameEndTime: Date;
-    timePoints: TimePoint[];
-    challenges: ChallengeBlock[];
-    onTimePointsChange: (timePoints: TimePoint[]) => void;
-    onChallengeAssignmentChange: (challengeId: number, stageId: string | null) => void;
+    game_info: AdminFullGameInfo;
+    form: UseFormReturn<z.infer<typeof EditGameFormSchema>>;
 }
 
 interface DraggedChallenge {
@@ -45,13 +46,109 @@ interface DraggedChallenge {
 }
 
 export function GameTimelineEditor({
-    gameStartTime,
-    gameEndTime,
-    timePoints,
-    challenges,
-    onTimePointsChange,
-    onChallengeAssignmentChange,
+    game_info,
+    form,
 }: GameTimelineEditorProps) {
+
+    const gameStartTime = form.getValues("start_time") || new Date();
+    const gameEndTime = form.getValues("end_time") || new Date();
+
+    // 时间线编辑器相关函数
+    const handleTimePointsChange = (timePoints: any[]) => {
+        // 检查是否有时间段被删除
+        const currentStages = form.getValues("stages") || [];
+        const deletedStageNames = currentStages
+            .filter(oldStage => !timePoints.find(newStage => newStage.name === oldStage.stage_name))
+            .map(stage => stage.stage_name);
+
+        // 将删除时间段的题目移回全局
+        if (deletedStageNames.length > 0) {
+            const currentChallenges = form.getValues("challenges") || [];
+            currentChallenges.forEach((challenge, index) => {
+                if (challenge.belong_stage && deletedStageNames.includes(challenge.belong_stage)) {
+                    form.setValue(`challenges.${index}.belong_stage`, null);
+                }
+            });
+        }
+
+        const stages = timePoints.map(tp => ({
+            stage_name: tp.name,
+            start_time: tp.startTime,
+            end_time: tp.endTime,
+        }));
+        console.log(stages)
+        form.setValue("stages", stages);
+    };
+
+    const handleChallengeAssignmentChange = (challengeId: number, stageId: string | null) => {
+
+        // 使用实时的 challenges 数据而不是静态的 challengeFields
+        const currentChallenges = form.getValues("challenges") || [];
+        const challengeIndex = currentChallenges.findIndex(c => c.challenge_id === challengeId);
+
+        if (challengeIndex !== -1) {
+            // 如果 stageId 是 null，则设置为全局
+            if (stageId === null) {
+                form.setValue(`challenges.${challengeIndex}.belong_stage`, null);
+                return;
+            }
+
+            // 从当前的时间点数据中找到对应的stage_name
+            const currentStages = form.getValues("stages") || [];
+            const stageIndex = parseInt(stageId.replace('stage_', ''));
+
+            if (stageIndex >= 0 && stageIndex < currentStages.length) {
+                const stageName = currentStages[stageIndex].stage_name;
+                form.setValue(`challenges.${challengeIndex}.belong_stage`, stageName);
+            } else {
+                console.error(`无效的时间段索引: ${stageIndex}`);
+            }
+        } else {
+            console.error(`找不到题目 ID: ${challengeId}`);
+        }
+    };
+
+    // 使用 useWatch 监听 stages 字段的变化，确保 timePoints 实时更新
+    const watchedStages = useWatch({
+        control: form.control,
+        name: "stages"
+    });
+
+    // 使用 useWatch 监听 challenges 字段的变化，确保 challengeBlocks 实时更新
+    const watchedChallenges = useWatch({
+        control: form.control,
+        name: "challenges"
+    });
+
+    // 转换数据格式给时间线编辑器
+    const timePoints = (watchedStages || []).map((stage, index) => ({
+        id: `stage_${index}`,
+        name: stage.stage_name,
+        startTime: stage.start_time,
+        endTime: stage.end_time,
+    }));
+
+    const challenges = (watchedChallenges || []).map(challenge => {
+        // 将belong_stage转换为对应的ID
+        let belongStageId = null;
+        if (challenge.belong_stage) {
+            const stages = watchedStages || [];
+            const stageIndex = stages.findIndex(stage => stage.stage_name === challenge.belong_stage);
+            if (stageIndex !== -1) {
+                belongStageId = `stage_${stageIndex}`;
+            }
+        }
+
+        return {
+            id: challenge.challenge_id || 0,
+            name: challenge.challenge_name || "",
+            category: challenge.category || "misc",
+            score: challenge.total_score || 0,
+            belongStage: belongStageId,
+        };
+    });
+
+
     const [draggedChallenge, setDraggedChallenge] = useState<DraggedChallenge | null>(null);
     const [isEditingTimePoint, setIsEditingTimePoint] = useState<string | null>(null);
     const [isCreatingTimePoint, setIsCreatingTimePoint] = useState(false);
@@ -137,7 +234,7 @@ export function GameTimelineEditor({
             }
         }
 
-        onChallengeAssignmentChange(draggedChallenge.challenge.id, targetStage);
+        handleChallengeAssignmentChange(draggedChallenge.challenge.id, targetStage);
         setDraggedChallenge(null);
     };
 
@@ -156,11 +253,11 @@ export function GameTimelineEditor({
             startTime: newTimePoint.startTime,
             endTime: newTimePoint.endTime,
         };
-        onTimePointsChange([...timePoints, newPoint]);
-        
+        handleTimePointsChange([...timePoints, newPoint]);
+
         // 重置表单
-        setNewTimePoint({ 
-            name: '', 
+        setNewTimePoint({
+            name: '',
             startTime: (() => {
                 const now = new Date();
                 now.setHours(9, 0, 0, 0);
@@ -202,7 +299,7 @@ export function GameTimelineEditor({
                 }
                 : tp
         );
-        onTimePointsChange(updatedTimePoints);
+        handleTimePointsChange(updatedTimePoints);
         setIsEditingTimePoint(null);
     };
 
@@ -211,13 +308,13 @@ export function GameTimelineEditor({
         // 先将属于这个时间段的题目重置为全局
         challenges.forEach(challenge => {
             if (challenge.belongStage === id) {
-                onChallengeAssignmentChange(challenge.id, null);
+                handleChallengeAssignmentChange(challenge.id, null);
             }
         });
 
         // 然后删除时间点
         const updatedTimePoints = timePoints.filter(tp => tp.id !== id);
-        onTimePointsChange(updatedTimePoints);
+        handleTimePointsChange(updatedTimePoints);
     };
 
     // 根据归属分组题目

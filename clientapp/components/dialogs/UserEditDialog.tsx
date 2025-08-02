@@ -27,7 +27,7 @@ import { z } from "zod"
 import { useEffect, useState } from "react";
 import { Textarea } from "../ui/textarea";
 import { api } from "utils/ApiHelper";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { Avatar } from "@radix-ui/react-avatar";
 import { AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Skeleton } from "../ui/skeleton";
@@ -108,7 +108,6 @@ export const UserEditDialog: React.FC<UserEditDialogProps> = ({
             setSubmitDisabled(false);
             setIsOpen(false);
         }).catch((_) => {
-            toast.error("更新用户信息失败");
             setSubmitDisabled(false);
         });
     }

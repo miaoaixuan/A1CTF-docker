@@ -1,17 +1,23 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"gorm.io/gorm"
 
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
+	i18ntool "a1ctf/src/utils/i18n_tool"
 	k8stool "a1ctf/src/utils/k8s_tool"
+	"a1ctf/src/utils/ristretto_tool"
+	"a1ctf/src/webmodels"
 )
 
 type ListChallengePayload struct {
@@ -33,7 +39,7 @@ func AdminListChallenges(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": err.Error(),
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -48,7 +54,7 @@ func AdminListChallenges(c *gin.Context) {
 	if err := query.Find(&challenges).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Failed to load challenges",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadChallenges"}),
 		})
 		return
 	}
@@ -76,7 +82,7 @@ func AdminGetChallenge(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid challenge ID",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
 		})
 		return
 	}
@@ -86,12 +92,12 @@ func AdminGetChallenge(c *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
 				"code":    404,
-				"message": "Challenge not found",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":    500,
-				"message": "Failed to load challenge",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadChallenge"}),
 			})
 		}
 		return
@@ -108,7 +114,7 @@ func AdminCreateChallenge(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": err.Error(),
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -127,8 +133,9 @@ func AdminCreateChallenge(c *gin.Context) {
 	if err := dbtool.DB().Create(&payload).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Failed to create challenge",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCreateChallenge"}),
 		})
+		log.Panicf("%+v %v\n", payload, err)
 		return
 	}
 
@@ -147,7 +154,7 @@ func AdminDeleteChallenge(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid challenge ID",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
 		})
 		return
 	}
@@ -158,12 +165,12 @@ func AdminDeleteChallenge(c *gin.Context) {
 		if result.Error.(*pgconn.PgError).Code == "23503" {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":    400,
-				"message": "This challenge is used in game",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeUsedInGame"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":    500,
-				"message": "Failed to delete challenge",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToDeleteChallenge"}),
 			})
 		}
 		return
@@ -172,14 +179,14 @@ func AdminDeleteChallenge(c *gin.Context) {
 	if result.RowsAffected == 0 {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":    404,
-			"message": "Challenge not found",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeNotFound"}),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"message": "Challenge deleted",
+		"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeDeleted"}),
 	})
 }
 
@@ -189,7 +196,7 @@ func AdminUpdateChallenge(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid challenge ID",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
 		})
 		return
 	}
@@ -198,17 +205,19 @@ func AdminUpdateChallenge(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil || challengeID != *payload.ChallengeID {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid request payload",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
 
-	if err := k8stool.ValidContainerConfig(*payload.ContainerConfig); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": err.Error(),
-		})
-		return
+	if payload.ContainerConfig != nil {
+		if err := k8stool.ValidContainerConfig(*payload.ContainerConfig); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    400,
+				"message": err.Error(),
+			})
+			return
+		}
 	}
 
 	var existingChallenge models.Challenge
@@ -216,28 +225,95 @@ func AdminUpdateChallenge(c *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
 				"code":    404,
-				"message": "Challenge not found",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":    500,
-				"message": "Failed to update challenge",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToUpdateChallenge"}),
 			})
 		}
 		return
 	}
 
-	if err := dbtool.DB().Model(&models.Challenge{}).Where("challenge_id = ?", payload.ChallengeID).Updates(payload).Error; err != nil {
+	if err := dbtool.DB().Model(&models.Challenge{}).Where("challenge_id = ?", payload.ChallengeID).Select("*").Updates(payload).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Failed to update challenge",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToUpdateChallenge"}),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"message": "Updated",
+		"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "Updated"}),
+	})
+}
+
+func AdminGetSimpleGameChallenges(c *gin.Context) {
+	game := c.MustGet("game").(models.Game)
+	team := c.MustGet("team").(models.Team)
+	// 查找队伍
+	var tmpSimpleGameChallenges []webmodels.UserSimpleGameChallenge = make([]webmodels.UserSimpleGameChallenge, 0)
+	var gameChallenges []models.GameChallenge
+
+	// 使用 Preload 进行关联查询
+	if err := dbtool.DB().Preload("Challenge").Where("game_id = ?", game.GameID).Find(&gameChallenges).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadChallenges"}),
+		})
+		return
+	}
+
+	sort.Slice(gameChallenges, func(i, j int) bool {
+		return gameChallenges[i].Challenge.Name < gameChallenges[j].Challenge.Name
+	})
+
+	for _, gc := range gameChallenges {
+
+		tmpSimpleGameChallenges = append(tmpSimpleGameChallenges, webmodels.UserSimpleGameChallenge{
+			ChallengeID:   *gc.Challenge.ChallengeID,
+			ChallengeName: gc.Challenge.Name,
+			TotalScore:    gc.TotalScore,
+			CurScore:      gc.CurScore,
+			SolveCount:    gc.SolveCount,
+			Category:      gc.Challenge.Category,
+			Visible:       gc.Visible,
+		})
+	}
+
+	solveMap, err := ristretto_tool.CachedSolvedChallengesForGame(game.GameID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadSolves"}),
+		})
+		return
+	}
+
+	solves, ok := solveMap[team.TeamID]
+	if !ok {
+		solves = make([]models.Solve, 0)
+	}
+
+	var solved_challenges []webmodels.UserSimpleGameSolvedChallenge = make([]webmodels.UserSimpleGameSolvedChallenge, 0, len(solves))
+
+	for _, solve := range solves {
+		solved_challenges = append(solved_challenges, webmodels.UserSimpleGameSolvedChallenge{
+			ChallengeID:   solve.ChallengeID,
+			ChallengeName: solve.Challenge.Name,
+			SolveTime:     solve.SolveTime,
+			Rank:          solve.Rank,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": gin.H{
+			"challenges":        tmpSimpleGameChallenges,
+			"solved_challenges": solved_challenges,
+		},
 	})
 }
 
@@ -246,7 +322,7 @@ func AdminSearchChallenges(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid request payload",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -255,7 +331,7 @@ func AdminSearchChallenges(c *gin.Context) {
 	if err := dbtool.DB().Where("name LIKE ?", "%"+payload.Keyword+"%").Find(&challenges).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Failed to load challenges",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadChallenges"}),
 		})
 		return
 	}

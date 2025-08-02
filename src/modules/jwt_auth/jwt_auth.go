@@ -3,10 +3,17 @@ package jwtauth
 import (
 	"a1ctf/src/db/models"
 	clientconfig "a1ctf/src/modules/client_config"
+	proofofwork "a1ctf/src/modules/proof_of_work"
+	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	"a1ctf/src/utils/general"
 	"a1ctf/src/utils/ristretto_tool"
-	"a1ctf/src/utils/turnstile"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
+	"log"
+	"os"
 	"time"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
@@ -15,7 +22,129 @@ import (
 
 var (
 	identityKey = "UserID"
+	privateKey  *rsa.PrivateKey
+	publicKey   *rsa.PublicKey
 )
+
+// generateRSAKeyPair 生成RSA密钥对
+func generateRSAKeyPair() (*rsa.PrivateKey, error) {
+	return rsa.GenerateKey(rand.Reader, 2048)
+}
+
+// savePrivateKeyToFile 保存私钥到文件
+func savePrivateKeyToFile(privateKey *rsa.PrivateKey, filename string) error {
+	keyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+
+	keyPEM := &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: keyBytes,
+	}
+
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	return pem.Encode(file, keyPEM)
+}
+
+// loadPrivateKeyFromFile 从文件加载私钥
+func loadPrivateKeyFromFile(filename string) (*rsa.PrivateKey, error) {
+	keyPEM, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	block, _ := pem.Decode(keyPEM)
+	if block == nil {
+		return nil, err
+	}
+
+	return x509.ParsePKCS1PrivateKey(block.Bytes)
+}
+
+// savePublicKeyToFile 保存公钥到文件
+func savePublicKeyToFile(publicKey *rsa.PublicKey, filename string) error {
+	keyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
+	if err != nil {
+		return err
+	}
+
+	keyPEM := &pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: keyBytes,
+	}
+
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	return pem.Encode(file, keyPEM)
+}
+
+// loadPublicKeyFromFile 从文件加载公钥
+func loadPublicKeyFromFile(filename string) (*rsa.PublicKey, error) {
+	keyPEM, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	block, _ := pem.Decode(keyPEM)
+	if block == nil {
+		return nil, err
+	}
+
+	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return pubKey.(*rsa.PublicKey), nil
+}
+
+var privKeyFile = "./data/rsa_private_key.pem"
+var pubKeyFile = "./data/rsa_public_key.pem"
+
+// initRSAKeys 初始化RSA密钥对
+func initRSAKeys() error {
+	// 尝试从文件加载私钥和公钥
+	if _, err := os.Stat(privKeyFile); err == nil {
+		if _, err := os.Stat(pubKeyFile); err == nil {
+			privKey, err := loadPrivateKeyFromFile(privKeyFile)
+			if err == nil {
+				pubKey, err := loadPublicKeyFromFile(pubKeyFile)
+				if err == nil {
+					privateKey = privKey
+					publicKey = pubKey
+					return nil
+				}
+			}
+		}
+	}
+
+	// 如果文件不存在或加载失败，生成新的密钥对
+	key, err := generateRSAKeyPair()
+	if err != nil {
+		return err
+	}
+
+	// 保存私钥到文件
+	if err := savePrivateKeyToFile(key, privKeyFile); err != nil {
+		return err
+	}
+
+	// 保存公钥到文件
+	if err := savePublicKeyToFile(&key.PublicKey, pubKeyFile); err != nil {
+		return err
+	}
+
+	privateKey = key
+	publicKey = &key.PublicKey
+	return nil
+}
 
 func identityHandler() func(c *gin.Context) interface{} {
 	return func(c *gin.Context) interface{} {
@@ -49,19 +178,24 @@ type PermissionSetting struct {
 }
 
 var PermissionMap = map[string]PermissionSetting{
-	"/api/account/profile":        {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	"/api/account/profile":         {RequestMethod: []string{"GET", "PUT"}, Permissions: []models.UserRole{}},
+	"/api/account/updateEmail":     {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	"/api/account/sendVerifyEmail": {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	"/api/account/changePassword":  {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	"/api/verifyEmailCode":         {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+
 	"/api/file/upload":            {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
 	"/api/file/download/:file_id": {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
 	"/api/user/avatar/upload":     {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
 	"/api/team/avatar/upload":     {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
 
 	// 战队管理相关权限
-	"/api/team/join":                       {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
-	"/api/team/:team_id/requests":          {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
-	"/api/team/request/:request_id/handle": {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
-	"/api/team/:team_id/transfer-captain":  {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
-	"/api/team/:team_id/member/:user_id":   {RequestMethod: []string{"DELETE"}, Permissions: []models.UserRole{}},
-	"/api/team/:team_id":                   {RequestMethod: []string{"DELETE", "PUT"}, Permissions: []models.UserRole{}},
+	"/api/game/:game_id/team/join":                       {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	"/api/game/:game_id/team/:team_id/requests":          {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+	"/api/game/:game_id/team/request/:request_id/handle": {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	"/api/game/:game_id/team/:team_id/transfer-captain":  {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	"/api/game/:game_id/team/:team_id/member/:user_id":   {RequestMethod: []string{"DELETE"}, Permissions: []models.UserRole{}},
+	"/api/game/:game_id/team/:team_id":                   {RequestMethod: []string{"DELETE", "PUT"}, Permissions: []models.UserRole{}},
 
 	"/api/admin/challenge/list":          {RequestMethod: []string{"GET", "POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/challenge/create":        {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
@@ -82,8 +216,10 @@ var PermissionMap = map[string]PermissionSetting{
 	"/api/admin/game/list":                             {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/game/create":                           {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/game/:game_id":                         {RequestMethod: []string{"GET", "POST", "PUT"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	"/api/admin/game/:game_id/challenge/:challenge_id": {RequestMethod: []string{"PUT"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/game/:game_id/challenge/:challenge_id": {RequestMethod: []string{"PUT", "GET", "POST", "DELETE"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/game/:game_id/poster/upload":           {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/game/:game_id/submits":                 {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/game/:game_id/cheats":                  {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 
 	// 分组管理相关权限
 	"/api/admin/game/:game_id/groups":           {RequestMethod: []string{"GET", "POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
@@ -97,6 +233,8 @@ var PermissionMap = map[string]PermissionSetting{
 	"/api/admin/game/:game_id/notices":      {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/game/:game_id/notices/list": {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/game/notices":               {RequestMethod: []string{"DELETE"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+
+	"/api/admin/game/:game_id/challenge/:challenge_id/solves/delete": {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 
 	"/api/game/list":                             {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
 	"/api/game/:game_id":                         {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
@@ -121,6 +259,9 @@ var PermissionMap = map[string]PermissionSetting{
 	"/api/admin/system/upload":    {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/system/test-smtp": {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/client-config":          {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
+
+	"/api/admin/system/logs":       {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/system/logs/stats": {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 }
 
 var RequestMethodMaskMap = map[string]uint64{
@@ -227,6 +368,8 @@ func authorizator() func(data interface{}, c *gin.Context) bool {
 					return false
 				}
 
+				c.Set("user", finalUser)
+
 				if finalUser.JWTVersion != v.JWTVersion {
 					c.SetCookie("a1token", "", -1, "/", "", false, false)
 					return false
@@ -261,14 +404,9 @@ func Login() func(c *gin.Context) (interface{}, error) {
 			return "", jwt.ErrMissingLoginValues
 		}
 
-		if clientconfig.ClientConfig.TurnstileEnabled {
-			turnstile := turnstile.New(clientconfig.ClientConfig.TurnstileSecretKey)
-			response, err := turnstile.Verify(loginVals.CaptCha, c.ClientIP())
-			if err != nil {
-				return nil, jwt.ErrMissingLoginValues
-			}
-
-			if !response.Success {
+		if clientconfig.ClientConfig.CaptchaEnabled {
+			valid := proofofwork.CapInstance.ValidateToken(c.Request.Context(), loginVals.CaptCha)
+			if !valid {
 				return nil, jwt.ErrMissingLoginValues
 			}
 		}
@@ -287,6 +425,19 @@ func Login() func(c *gin.Context) (interface{}, error) {
 					return nil, jwt.ErrFailedAuthentication
 				}
 
+				tasks.LogFromGinContext(c, tasks.LogEntry{
+					Category:     models.LogCategoryUser,
+					Action:       models.LoginSuccess,
+					ResourceType: models.ResourceTypeUser,
+					UserID:       &user_result.UserID,
+					Username:     &user_result.Username,
+					Details: map[string]interface{}{
+						"username":   user_result.Username,
+						"login_time": time.Now().UTC(),
+					},
+					Status: models.LogStatusSuccess,
+				})
+
 				return &models.JWTUser{
 					UserName:   user_result.Username,
 					Role:       user_result.Role,
@@ -303,12 +454,14 @@ func Login() func(c *gin.Context) (interface{}, error) {
 func initParams() *jwt.GinJWTMiddleware {
 
 	return &jwt.GinJWTMiddleware{
-		Realm:       "test zone",
-		Key:         []byte("secret key"),
-		Timeout:     time.Hour * 48,
-		MaxRefresh:  time.Hour,
-		IdentityKey: identityKey,
-		PayloadFunc: payloadFunc(),
+		Realm:            "test zone",
+		SigningAlgorithm: "RS384",
+		PrivKeyFile:      privKeyFile,
+		PubKeyFile:       pubKeyFile,
+		Timeout:          time.Hour * 48,
+		MaxRefresh:       time.Hour,
+		IdentityKey:      identityKey,
+		PayloadFunc:      payloadFunc(),
 
 		SendCookie: true,
 		CookieName: "a1token",
@@ -328,9 +481,15 @@ func initParams() *jwt.GinJWTMiddleware {
 var authMiddleware *jwt.GinJWTMiddleware
 
 func InitJwtMiddleWare() *jwt.GinJWTMiddleware {
+	// 首先初始化RSA密钥对
+	if err := initRSAKeys(); err != nil {
+		panic("Failed to initialize RSA keys: " + err.Error())
+	}
+
 	optimizePermissionMap()
 	tmpMiddleware, err := jwt.New(initParams())
 	if err != nil {
+		log.Println("Failed to initialize JWT middleware: " + err.Error())
 		panic(err)
 	}
 	authMiddleware = tmpMiddleware

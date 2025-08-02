@@ -8,6 +8,9 @@ import { LoaderCircle } from 'lucide-react';
 
 import { toastError, toastSuccess } from "utils/ToastUtil"
 
+import { CapWidget, CapWidgetElement } from '@pitininja/cap-react-widget';
+
+
 import axios, { AxiosError } from 'axios';
 import { useTheme } from "next-themes";
 
@@ -25,15 +28,15 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 
-import { api } from "utils/ApiHelper";
+import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper";
 
-import { useTransitionContext } from "contexts/TransitionContext";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 
 import Turnstile, { useTurnstile } from "react-turnstile";
+import { useNavigateFrom } from "hooks/NavigateFrom";
 
 interface ErrorLoginResponse {
     title: string;
@@ -48,10 +51,14 @@ export function LoginForm({
 
     const [token, setToken] = useState<string>("")
 
+    const resetCaptcha = () => {
+        const ele = document.getElementsByTagName("cap-widget")[0] as CapWidgetElement
+        ele.dispatchEvent("reset")
+    }
+
     const userNameRef = useRef<HTMLInputElement>(null)
     const passwordRef = useRef<HTMLInputElement>(null)
 
-    const { startTransition } = useTransitionContext()
     const router = useNavigate()
 
     const { updateProfile, clientConfig } = useGlobalVariableContext()
@@ -59,6 +66,8 @@ export function LoginForm({
     const [loading, setLoading] = useState(false)
 
     const { theme, systemTheme } = useTheme();
+
+    const [navigateFrom, getNavigateFrom] = useNavigateFrom()
 
     const formSchema = z.object({
         userName: z.string().nonempty(t("username_not_null")),
@@ -79,32 +88,26 @@ export function LoginForm({
             username: values.userName,
             password: values.password,
             captcha: token
-        }).then(response => {
+        }, createSkipGlobalErrorConfig()).then(response => {
             updateProfile(() => {
-                startTransition(() => {
-                    router(`/`)
-                })
+                router(getNavigateFrom() ?? "/")
 
                 setTimeout(() => {
                     toast.success(t("login_successful"))
                 }, 300)
             })
         }).catch((error: AxiosError) => {
+            setToken("")
             if (error.response?.status == 401) {
-                toast.error((error.response.data as any).message)
-                turnstile.reset()
-                setToken("")
+                toast.error("用户名或者密码错误")
             } else {
-                toast.error(t("unknow_error"))
+                toast.error("未知错误")
             }
         }).finally(() => {
-            setTimeout(() => {
-                setLoading(false)
-            }, 300)
+            setLoading(false)
+            resetCaptcha()
         })
     }
-
-    const turnstile = useTurnstile();
 
     return (
         <Form {...form}>
@@ -120,7 +123,9 @@ export function LoginForm({
                     name="userName"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>{t("form_account")}</FormLabel>
+                            <div className="h-[20px] items-center flex">
+                                <FormLabel>{t("form_account")}</FormLabel>
+                            </div>
                             <FormControl>
                                 <Input {...field} />
                             </FormControl>
@@ -137,7 +142,7 @@ export function LoginForm({
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>
-                                <div className="flex items-center">
+                                <div className="flex items-center h-[40px]">
                                     <Label htmlFor="password">{t("password")}</Label>
                                     <a
                                         href="#"
@@ -154,25 +159,24 @@ export function LoginForm({
                         </FormItem>
                     )}
                 />
-                { clientConfig.turnstileEnabled ? (
-                    <div className="w-full items-center justify-center flex">
-                        <Turnstile
-                            theme={(theme == "system" ? systemTheme : theme) as "dark" | "light" | "auto"}
-                            refreshExpired="auto"
-                            sitekey={clientConfig.turnstileSiteKey}
-                            onVerify={(token) => {
-                                setToken(token)
-                            }}
-                        />
-                    </div>
-                ) : <></> } 
+                {clientConfig.captchaEnabled ? (
+                    <CapWidget
+                        endpoint="/api/cap/"
+                        onSolve={(token) => {
+                            setToken(token)
+                        }}
+                        onError={() => {
+                            toast.error("获取验证码失败")
+                        }}
+                    />
+
+                ) : <></>}
+
                 <div className='h-0' />
-                <Button type="submit" className="transition-all duration-300 w-full" disabled={loading || (clientConfig.turnstileEnabled && token == "")}>{t("login")}</Button>
+                <Button type="submit" className="transition-all duration-300 w-full" disabled={loading || (clientConfig.captchaEnabled && token == "")}>{t("login")}</Button>
                 <div className="text-center text-sm">
                     {t("dont_have_account")}{" "}
-                    <a className="underline underline-offset-4" onClick={() => startTransition(() => {
-                        router(`/signup`)
-                    })}>
+                    <a className="underline underline-offset-4" onClick={() => router(`/signup`)}>
                         {t("sign_up_title")}
                     </a>
                 </div>
@@ -191,7 +195,7 @@ export function LoginForm({
                         </svg>
                         {t("login_with_github")}
                     </Button>
-                    <Button variant="outline" className="w-full" disabled>
+                    {/* <Button variant="outline" className="w-full" disabled>
                         <img
                             src={clientConfig.SchoolSmallIcon}
                             alt={clientConfig.SchoolUnionAuthText}
@@ -199,7 +203,7 @@ export function LoginForm({
                             height={24}
                         />
                         {t("login_with_zjnu")}
-                    </Button>
+                    </Button> */}
                 </div>
             </form>
         </Form>

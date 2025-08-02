@@ -415,7 +415,9 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
 
 
             // 更新完成
-            lastSerData.current = JSON.stringify(serialOptions.current[1].data)
+            if (serialOptions.current[1]) {   
+                lastSerData.current = JSON.stringify(serialOptions.current[1].data)
+            }
         }
 
         // 仅在游戏信息可用时启动定时器
@@ -423,7 +425,9 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
 
         updateChartMethod()
         const updateIns = setInterval(() => {
-            if (JSON.stringify(serialOptions.current[1].data) == lastSerData.current) return
+            if (serialOptions.current[1]) {
+                if (JSON.stringify(serialOptions.current[1].data) == lastSerData.current) return
+            }
             updateChartMethod()
         }, 1000)
 

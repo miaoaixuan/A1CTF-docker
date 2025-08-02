@@ -1,8 +1,9 @@
-import {  ChevronsRight, Dices, CircleCheckBig } from "lucide-react"
+import { ChevronsRight, Dices, CircleCheckBig, EyeOff } from "lucide-react"
 
 import { FC, useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion";
 import { challengeCategoryColorMap } from "utils/ClientAssets";
+import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 
 interface ChallengeInfo {
     type: string,
@@ -11,20 +12,25 @@ interface ChallengeInfo {
     score: number,
     rank: number,
     choiced: boolean,
-    status: boolean
+    status: boolean,
+    visible: boolean
 }
 
-export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivElement>> = ({ type, name, solved, score, rank, choiced, status, ...props }) => {
+export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivElement>> = ({
+    type, name, solved, score, rank, choiced, status, visible, ...props
+}) => {
 
     let colorClass = "bg-amber-600";
-    const [ solveStatus, setSolveStatus ] = useState(false)
-    
+    const [solveStatus, setSolveStatus] = useState(false)
+
     // 解决懒加载重新播放动画的问题
-    const [ initHook, setInitHook ] = useState(true)
-    const [ shouldAnime, setShouldAnime ] = useState(false)
+    const [initHook, setInitHook] = useState(true)
+    const [shouldAnime, setShouldAnime] = useState(false)
     const prevStatus = useRef(false)
 
-    const colorMap : { [key: string]: string } = challengeCategoryColorMap
+    const { isAdmin } = useGlobalVariableContext()
+
+    const colorMap: { [key: string]: string } = challengeCategoryColorMap
 
     if (type in colorMap) colorClass = colorMap[type]
     else colorClass = colorMap["misc"]
@@ -34,7 +40,7 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
         setSolveStatus(status)
         prevStatus.current = status
         return () => {
-            
+
         }
     }, [])
 
@@ -52,49 +58,13 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
     }, [status])
 
     return (
-        <div className={`w-full h-[100px] rounded-xl relative hover:scale-[1.04] pl-4 pt-4 pr-4 pb-3 select-none overflow-hidden transition-[transform,border-color,scale] duration-300 will-change-transform border-[2px] ${ solveStatus ? "bg-green-200/[0.3] border-green-300/40" : "bg-background/[0.3]" }`}
-            // style={{
-            //     backgroundColor: choiced ? colorClass : "transparent"
-            // }}
-            {...props} 
+        <div className={
+            `w-full h-[100px] ${isAdmin() && (visible ? "" : "opacity-40")} border-2 rounded-xl relative hover:scale-[1.04] pl-4 pt-4 pr-4 pb-3 select-none overflow-hidden transition-all duration-300 will-change-transform ${solveStatus ? "bg-green-200/[0.3] border-green-300/40" : "bg-background/[0.3]"
+            }`}
+            {...props}
         >
-            {/* <div className="absolute w-[80px] h-[120px] right-[5px] top-[-12px] rotate-[0deg] opacity-25">
-                <AnimatePresence>
-                    {
-                        choiced && (
-                            <motion.div className="flex items-center justify-center h-full"
-                                exit={{
-                                    translateX: "80%",
-                                    translateY: "-40%",
-                                    opacity: 0,
-                                    scale: 0.1
-                                }}
-                                initial={{
-                                    translateX: "80%",
-                                    translateY: "-40%",
-                                    opacity: 0,
-                                    scale: 0.1
-                                }}
-                                animate={{
-                                    translateX: "0%",
-                                    translateY: "0%",
-                                    opacity: 1,
-                                    scale: 1
-                                }}
-                                transition={{
-                                    duration: initHook ? 0 : 0.4,
-                                    ease: "anticipate"
-                                }}
-                            >
-                                <Star size={100} className="fill-yellow-300 text-yellow-600" />
-                            </motion.div>
-                        )
-                    }
-                </AnimatePresence>
-                
-            </div> */}
             <AnimatePresence>
-                { shouldAnime && (
+                {shouldAnime && (
                     <>
                         <motion.div className="absolute w-full h-full top-0 left-0 z-100"
                             initial={{
@@ -110,7 +80,7 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
                                 duration: 0.5
                             }}
                         >
-                            
+
                         </motion.div>
                         <motion.div
                             className="absolute w-full h-full top-0 left-0 flex justify-center items-center"
@@ -135,34 +105,44 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
                             </div>
                         </motion.div>
                     </>
-                ) }
+                )}
             </AnimatePresence>
             <div className={`flex flex-col h-full w-full`}>
                 <div className={`flex items-center gap-1`}>
                     <div id="card-title" className="flex justify-start items-center gap-2 min-w-0 h-[32px]" >
-                        <Dices size={23} className="flex-none transition-colors duration-300" style={{ color: !choiced ? "" : colorClass }}/>
-                        <span className={`font-bold text-ellipsis whitespace-nowrap overflow-hidden transition-colors duration-300`} style={{ color: !choiced ? "" : colorClass }}>{ name }</span>
-                    </div>
-                    
-                    { solveStatus ? (
+                        {isAdmin() && !visible ? (
                             <>
-                                <div className="flex-1" />
-                                <div className="flex justify-end gap-[2px] w-[32px] h-full items-center text-green-600">
-                                    <CircleCheckBig size={23} />
-                                </div>
+                                <EyeOff size={23} className="flex-none transition-colors duration-300" style={{ color: !choiced ? "" : colorClass }} />
+                                <span className={`font-bold text-ellipsis whitespace-nowrap overflow-hidden transition-colors duration-300`} style={{ color: !choiced ? "" : colorClass }} >{name}</span>
                             </>
-                    ) : <></> }
-                        
+                        ) : (
+                            <>
+                                <Dices size={23} className="flex-none transition-colors duration-300" style={{ color: !choiced ? "" : colorClass }} />
+                                <span className={`font-bold text-ellipsis whitespace-nowrap overflow-hidden transition-colors duration-300`} style={{ color: !choiced ? "" : colorClass }}>{name}</span>
+                            </>
+                        )}
+
+                    </div>
+
+                    {solveStatus ? (
+                        <>
+                            <div className="flex-1" />
+                            <div className="flex justify-end gap-[2px] w-[32px] h-full items-center text-green-600">
+                                <CircleCheckBig size={23} />
+                            </div>
+                        </>
+                    ) : <></>}
+
                 </div>
-                <div className="flex-1"/>
+                <div className="flex-1" />
                 <div className="flex items-center transition-colors duration-300">
                     <div className="flex justify-start">
-                        <span className="font-bold">{ solved } solves & { score } pts</span>
+                        <span className="font-bold">{solved} solves & {score} pts</span>
                     </div>
-                    <div className="flex-1"/>
+                    <div className="flex-1" />
                     <div className="flex justify-end items-center">
                         {/* <span className="font-bold">Try</span> */}
-                        <ChevronsRight size={32}/>
+                        <ChevronsRight size={32} />
                     </div>
                 </div>
             </div>

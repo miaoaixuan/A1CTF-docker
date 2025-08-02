@@ -2,51 +2,42 @@ package jobs
 
 import (
 	"a1ctf/src/db/models"
+	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	k8stool "a1ctf/src/utils/k8s_tool"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
+
+	"a1ctf/src/utils/zaphelper"
+
+	"go.uber.org/zap"
+	v1 "k8s.io/api/core/v1"
 )
 
-func processQueuedContainer(task models.Container) error {
-	podInfo := k8stool.PodInfo{
-		Name:       fmt.Sprintf("cl-%d", task.InGameID),
-		TeamHash:   task.TeamHash,
-		Containers: task.ContainerConfig,
-		Labels: map[string]string{
-			"team_hash": task.TeamHash,
-			"ingame_id": fmt.Sprintf("%d", task.InGameID),
-		},
-	}
-
-	err := k8stool.CreatePod(&podInfo)
-	if err != nil {
-		return fmt.Errorf("CreatePod %+v error: %v", task, err)
-	} else {
-		task.ContainerStatus = models.ContainerStarting
-		if err := dbtool.DB().Model(&task).Update("container_status", task.ContainerStatus).Error; err != nil {
-			return fmt.Errorf("failed to update container status: %v", err)
+func findExistContainer(containers []models.Container, teamHash string, inGameID int64) *models.Container {
+	for _, container := range containers {
+		if container.TeamHash == teamHash && container.InGameID == inGameID {
+			return &container
 		}
 	}
-
 	return nil
 }
 
-func processStartingContainer(task models.Container) error {
-	podInfo := k8stool.PodInfo{
-		Name:       fmt.Sprintf("cl-%d", task.InGameID),
-		TeamHash:   task.TeamHash,
-		Containers: task.ContainerConfig,
-		Labels: map[string]string{
-			"team_hash": task.TeamHash,
-			"ingame_id": fmt.Sprintf("%d", task.InGameID),
-		},
+func findExistPod(podList []v1.Pod, teamHash string, inGameID int64) *v1.Pod {
+	for _, pod := range podList {
+		if pod.Labels["team_hash"] == teamHash && pod.Labels["ingame_id"] == fmt.Sprintf("%d", inGameID) {
+			return &pod
+		}
 	}
+	return nil
+}
 
+func getContainerPorts(podInfo k8stool.PodInfo, task *models.Container) error {
 	ports, err := k8stool.GetPodPorts(&podInfo)
 	if err != nil {
-		return fmt.Errorf("GetPodInfo %+v error: %v", task, err)
+		return fmt.Errorf("getContainerPorts error: %w", err)
 	} else {
 		for index, container := range task.ContainerConfig {
 			for _, expose_port := range container.ExposePorts {
@@ -83,24 +74,27 @@ func processStartingContainer(task models.Container) error {
 		}).Error; err != nil {
 			return fmt.Errorf("failed to update container status: %v", err)
 		}
+
+		tasks.LogContainerOperation(nil, nil, models.ActionContainerStarted, task.ContainerID, map[string]interface{}{
+			"team_hash":    task.TeamHash,
+			"ingame_id":    task.InGameID,
+			"pod_name":     podInfo.Name,
+			"container_id": task.ContainerID,
+		}, nil)
 	}
+
 	return nil
 }
 
-func processStoppingContainer(task models.Container) error {
-
-	podInfo := k8stool.PodInfo{
-		Name:       fmt.Sprintf("cl-%d", task.InGameID),
-		TeamHash:   task.TeamHash,
-		Containers: task.ContainerConfig,
-		Labels: map[string]string{
-			"team_hash": task.TeamHash,
-			"ingame_id": fmt.Sprintf("%d", task.InGameID),
-		},
-	}
-
+func deleteRunningPod(podInfo k8stool.PodInfo, task *models.Container) error {
 	err := k8stool.DeletePod(&podInfo)
 	if err != nil {
+		tasks.LogContainerOperation(nil, nil, models.ActionContainerStopping, task.ContainerID, map[string]interface{}{
+			"team_hash":    task.TeamHash,
+			"ingame_id":    task.InGameID,
+			"pod_name":     podInfo.Name,
+			"container_id": task.ContainerID,
+		}, err)
 		return fmt.Errorf("DeletePod %+v error: %v", task, err)
 	} else {
 		if err := dbtool.DB().Model(&task).Updates(map[string]interface{}{
@@ -110,74 +104,102 @@ func processStoppingContainer(task models.Container) error {
 		}
 	}
 
-	return nil
-}
-
-func processRunningContainer(task models.Container) error {
-
-	podInfo := k8stool.PodInfo{
-		Name:       fmt.Sprintf("cl-%d", task.InGameID),
-		TeamHash:   task.TeamHash,
-		Containers: task.ContainerConfig,
-		Labels: map[string]string{
-			"team_hash": task.TeamHash,
-			"ingame_id": fmt.Sprintf("%d", task.InGameID),
-		},
-	}
-
-	if task.ExpireTime.After(time.Now().UTC()) {
-		return nil
-	}
-
-	err := k8stool.DeletePod(&podInfo)
-	if err != nil {
-		return fmt.Errorf("DeletePod %+v error: %v", task, err)
-	} else {
-		if err := dbtool.DB().Model(&task).Updates(map[string]interface{}{
-			"container_status": models.ContainerStopped,
-		}).Error; err != nil {
-			return fmt.Errorf("failed to update container status: %v", err)
-		}
-	}
+	tasks.LogContainerOperation(nil, nil, models.ActionContainerStopped, task.ContainerID, map[string]interface{}{
+		"team_hash":    task.TeamHash,
+		"ingame_id":    task.InGameID,
+		"pod_name":     podInfo.Name,
+		"container_id": task.ContainerID,
+	}, nil)
 
 	return nil
 }
 
-func ContainerOperationsJob() {
+func UpdateLivingContainers() {
 
-	// 获取所有存活容器
+	// log.Println("UpdateLivingContainers")
+
 	var containers []models.Container
-	if err := dbtool.DB().Where("container_status != ? AND container_status != ?", models.ContainerError, models.ContainerStopped).Find(&containers).Error; err != nil {
+	if err := dbtool.DB().Where("container_status != ? AND container_status != ?", models.ContainerError, models.ContainerStopped).Preload("Challenge").Preload("TeamFlag").Find(&containers).Error; err != nil {
 		log.Fatalf("Failed to find queued containers: %v\n", err)
 	}
 
-	if len(containers) == 0 {
+	podList, err := k8stool.ListPods()
+	if err != nil {
+		zaphelper.Logger.Error("Failed to list pods", zap.Error(err))
 		return
 	}
 
-	for _, container := range containers {
-		var err error
+	for _, pod := range podList.Items {
+		podLabels := pod.Labels
+		teamHash, exists1 := podLabels["team_hash"]
+		inGameID, exists2 := podLabels["ingame_id"]
 
-		switch container.ContainerStatus {
-		case models.ContainerQueueing:
-			err = processQueuedContainer(container)
-		case models.ContainerStarting:
-			err = processStartingContainer(container)
-		case models.ContainerStopping:
-			err = processStoppingContainer(container)
-		case models.ContainerRunning:
-			err = processRunningContainer(container)
-		default:
-			log.Printf("Unknown container status: %s\n", container.ContainerStatus)
+		if !exists1 || !exists2 {
+			continue
 		}
 
+		inGameIDInt, err := strconv.ParseInt(inGameID, 10, 64)
 		if err != nil {
-			log.Printf("Failed to do container operation: %v\n", err)
-			if err := dbtool.DB().Model(&container).Updates(map[string]interface{}{
-				"container_status": models.ContainerError,
-			}).Error; err != nil {
-				log.Printf("Failed to update container status: %v\n", err)
+			continue
+		}
+
+		container := findExistContainer(containers, teamHash, inGameIDInt)
+		if container == nil {
+			continue
+		}
+
+		podStatus := pod.Status.Phase
+
+		podInfo := k8stool.PodInfo{
+			Name:       fmt.Sprintf("cl-%d", container.InGameID),
+			TeamHash:   container.TeamHash,
+			Containers: container.ContainerConfig,
+			Labels: map[string]string{
+				"team_hash": container.TeamHash,
+				"ingame_id": fmt.Sprintf("%d", container.InGameID),
+			},
+			Flag:     container.TeamFlag.FlagContent,
+			AllowWAN: container.Challenge.AllowWAN,
+			AllowDNS: container.Challenge.AllowDNS,
+		}
+
+		// fmt.Printf("%s -> %s, %s\n", pod.Name, pod.Status.Phase, container.ContainerStatus)
+
+		if podStatus == v1.PodRunning && container.ContainerStatus == models.ContainerStarting {
+			// 如果远程服务器Pod已经是Running状态，就获取端口并且更新数据库
+			zaphelper.FileLogger.Info("Getting container port", zap.Any("container", container))
+			getContainerPorts(podInfo, container)
+		}
+
+		if podStatus == v1.PodRunning && time.Now().UTC().After(container.ExpireTime) {
+			// 如果远程服务器Pod已经是Running状态，并且已经超时，就删除Pod并且更新数据库
+			zaphelper.FileLogger.Info("Stopping container", zap.Any("container", container))
+			tasks.NewContainerStopTask(*container)
+		}
+
+		if podStatus == v1.PodRunning && container.ContainerStatus == models.ContainerStopped {
+			zaphelper.FileLogger.Info("Stopping deaded container", zap.Any("container", container))
+			tasks.NewContainerStopTask(*container)
+		}
+	}
+
+	for _, container := range containers {
+		if container.ContainerStatus == models.ContainerQueueing {
+			if err := dbtool.DB().Model(&container).Update("container_status", models.ContainerStarting).Error; err != nil {
+				zaphelper.Logger.Error("failed to update container status", zap.Error(err), zap.Any("container", container))
+				continue
 			}
+			zaphelper.FileLogger.Info("Starting container", zap.Any("container", container))
+			tasks.NewContainerStartTask(container)
+		}
+
+		if container.ContainerStatus == models.ContainerStopping {
+			if err := dbtool.DB().Model(&container).Update("container_status", models.ContainerStopped).Error; err != nil {
+				zaphelper.Logger.Error("failed to update container status", zap.Error(err), zap.Any("container", container))
+				continue
+			}
+			zaphelper.FileLogger.Info("Stopping container", zap.Any("container", container))
+			tasks.NewContainerStopTask(container)
 		}
 	}
 }

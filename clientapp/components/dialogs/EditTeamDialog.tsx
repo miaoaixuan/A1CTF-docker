@@ -28,7 +28,7 @@ import { useEffect, useRef, useState } from "react";
 import { Textarea } from "../ui/textarea";
 import { api, TeamInfoModel, TeamUserInfoModel } from "utils/GZApi";
 import { AxiosError } from "axios";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { Avatar } from "@radix-ui/react-avatar";
 import { AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Skeleton } from "../ui/skeleton";
@@ -93,13 +93,6 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: UserT
             updateTeam()
             setSubmitDisabled(false)
             setIsOpen(false)
-        }).catch((error: AxiosError) => {
-            if (error.response?.status) {
-                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.title)
-            } else {
-                toast.error(t("unknow_error"))
-            }
         })
     }
 
@@ -109,13 +102,6 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: UserT
             toast.success(`${t("kick_user_info_p1")} ${ member.userName } ${t("kick_user_info_p2")}`)
             setSubmitDisabled(false)
             updateTeam()
-        }).catch((error: AxiosError) => {
-            if (error.response?.status) {
-                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.title)
-            } else {
-                toast.error(t("unknow_error"))
-            }
         })
     }
 
@@ -125,13 +111,6 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: UserT
             setSubmitDisabled(false)
             updateTeam()
             setIsOpen(false)
-        }).catch((error: AxiosError) => {
-            if (error.response?.status) {
-                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.title)
-            } else {
-                toast.error(t("unknow_error"))
-            }
         })
     }
 
@@ -141,13 +120,6 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: UserT
             setSubmitDisabled(false)
             updateTeam()
             setIsOpen(false)
-        }).catch((error: AxiosError) => {
-            if (error.response?.status) {
-                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.title)
-            } else {
-                toast.error(t("unknow_error"))
-            }
         })
     }
 
@@ -219,7 +191,7 @@ export const EditTeamDialog: React.FC<{ updateTeam: () => void, teamModel: UserT
                                 />
                             </div>
                             { isLeader() ? (
-                                <UploadImageDialog id={teamModel?.team_id!} type="team" updateTeam={updateTeam}>
+                                <UploadImageDialog id={teamModel?.team_id!} game_id={teamModel?.game_id ?? 0} type="team" updateTeam={updateTeam}>
                                     <Avatar className="select-none w-20 h-20">
                                         { teamModel?.team_avatar ? (
                                             <>

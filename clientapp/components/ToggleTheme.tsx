@@ -23,7 +23,9 @@ import { useTranslation } from 'react-i18next';
 // 记忆化 SkyBackground 组件，防止不必要的重渲染
 const MemoizedSkyBackground = React.memo(SkyBackground);
 
-const ThemeSwitcher = () => {
+const ThemeSwitcher = (
+    { children }: { children?: React.ReactNode }
+) => {
 
     const { clientConfig, updateClientConfg } = useGlobalVariableContext()
 
@@ -32,8 +34,6 @@ const ThemeSwitcher = () => {
     const { t } = useTranslation()
 
     const { i18n } = useTranslation();
-
-    const asPath = useLocation().pathname + ( useLocation().search.length ? "?" + useLocation().search : ""); // 获取当前路径
 
     useEffect(() => {
         setMounted(true)
@@ -101,11 +101,13 @@ const ThemeSwitcher = () => {
     return (
         <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
-                    {/* <WandSparkles className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" /> */}
-                    <WandSparkles className="absolute h-[1.2rem] w-[1.2rem]" />
-                    <span className="sr-only">Toggle theme</span>
-                </Button>
+                { children ? children : (
+                    <Button variant="outline" size="icon">
+                        {/* <WandSparkles className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" /> */}
+                        <WandSparkles className="absolute h-[1.2rem] w-[1.2rem]" />
+                        <span className="sr-only">Toggle theme</span>
+                    </Button>
+                ) }
             </DropdownMenuTrigger>
             <DropdownMenuContent className='p-6 pr-10 bg-transparent mt-[-10px] w-52 grid gap-[5px] shadow-none mr-4'
                 style={{ border: 'none' }}

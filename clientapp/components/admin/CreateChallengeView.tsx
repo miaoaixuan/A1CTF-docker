@@ -39,12 +39,14 @@ import CodeEditor from '@uiw/react-textarea-code-editor';
 import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
 import { useEffect, useState } from "react";
 import { MacScrollbar } from "mac-scrollbar";
-import { AdminChallengeConfig } from "utils/A1API";
+import { AdminChallengeConfig, ChallengeContainerType, FlagType } from "utils/A1API";
 import { api, ErrorMessage } from "utils/ApiHelper";
 import dayjs from "dayjs";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { AxiosError } from "axios";
 import { useNavigate } from "react-router";
+import { useTheme } from "next-themes";
+import ThemedEditor from "components/modules/ThemedEditor";
 
 interface ContainerFormProps {
     control: any;
@@ -378,6 +380,7 @@ export function CreateChallengeView() {
             judge_script: z.string().optional(),
             flag_template: z.string().optional(),
         }),
+        container_type: z.enum(["DYNAMIC_CONTAINER", "STATIC_CONTAINER", "NO_CONTAINER"]),
         // 新增 container_config 部分
         container_config: z.array(
             z.object({
@@ -388,10 +391,7 @@ export function CreateChallengeView() {
                 expose_ports: z.array(
                     z.object({
                         name: z.string().min(1, { message: "请输入端口名称" }),
-                        port: z.preprocess(
-                            (a) => parseInt(a as string, 10),
-                            z.number({ invalid_type_error: "请输入数字" }).min(1, { message: "端口号不能小于 1" }).max(65535, { message: "端口号不能大于 65535" })
-                        ),
+                        port: z.number().min(1).max(65535)
                     })
                 ),
             })
@@ -407,7 +407,8 @@ export function CreateChallengeView() {
                 download_hash: z.string().nullable(),
                 generate_script: z.string().nullable(),
             })
-        )
+        ),
+        flag_type: z.enum(["FlagTypeDynamic", "FlagTypeStatic"]),
     });
 
     const env_to_string = (data: { name: string, value: string }[]) => {
@@ -425,7 +426,7 @@ export function CreateChallengeView() {
             const [name, value] = item.split("=")
             env.push({ name, value })
         })
-        
+
         return env
     }
 
@@ -442,7 +443,10 @@ export function CreateChallengeView() {
                 flag_template: ""
             },
             container_config: [],
-            attachments: []
+            attachments: [],
+            container_type: "NO_CONTAINER",
+            create_time: new Date(),
+            flag_type: "FlagTypeDynamic",
         }
     })
 
@@ -469,7 +473,7 @@ export function CreateChallengeView() {
     function onSubmit(values: z.infer<typeof formSchema>) {
 
         const data_time = dayjs().toISOString();
-        
+
         const finalData = {
             attachments: values.attachments,
             category: values.category.toUpperCase(),
@@ -479,24 +483,18 @@ export function CreateChallengeView() {
                 env: c.env != "" ? string_to_env(c.env || "") : [],
                 expose_ports: c.expose_ports,
                 image: c.image,
-                name: c.name    
+                name: c.name
             })),
             create_time: data_time,
             description: values.description,
             judge_config: values.judge_config,
             name: values.name,
-            type_: 0
+            type_: 0,
+            flag_type: "FlagTypeDynamic"
         };
 
         api.admin.createChallenge(finalData as AdminChallengeConfig).then((res) => {
             toast.success("创建成功")
-        }).catch((error: AxiosError) => {
-            if (error.response?.status) {
-                const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                toast.error(errorMessage.message)
-            } else {
-                toast.error("Unknow Error")
-            }
         })
     }
 
@@ -507,10 +505,14 @@ export function CreateChallengeView() {
         // form.setValue("category", "MISC")
     }, [])
 
+    const { theme } = useTheme()
+
     return (
         <div className="absolute w-screen h-screen bg-background items-center justify-center flex select-none overflow-x-hidden overflow-hidden">
             <Form {...form}>
-                <MacScrollbar className="h-full w-full flex flex-col items-center">
+                <MacScrollbar className="h-full w-full flex flex-col items-center"
+                    skin={theme == "light" ? "light" : "dark"}
+                >
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20 pt-20 w-[80%] flex flex-col">
                         <div className="flex">
                             <Button type="button" variant={"default"} onClick={() => {
@@ -637,7 +639,12 @@ export function CreateChallengeView() {
                                         <FormMessage className="text-[14px]" />
                                     </div>
                                     <FormControl>
-                                        <Textarea {...field} className="h-[300px]" />
+                                        <ThemedEditor
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            language="markdown"
+                                            className='h-[500px]'
+                                        />
                                     </FormControl>
                                     <FormDescription>
                                         题目简介
@@ -645,7 +652,7 @@ export function CreateChallengeView() {
                                 </FormItem>
                             )}
                         />
-                        { showScript ? (
+                        {showScript ? (
                             <FormField
                                 control={form.control}
                                 name="judge_config.judge_script"
@@ -693,9 +700,13 @@ export function CreateChallengeView() {
                                         </FormControl>
                                         <div className="flex flex-col text-[12px] text-foreground/60">
                                             <span>Flag支持模板变量</span>
-                                            <span>[TEAMHASH] 部分会被替换成队伍唯一标识符</span>
-                                            <span>[UUID] 部分会被替换成随机UUID</span>
-                                            <span>在Flag头加上[LEET] 会把花括号内的内容用LEET替换字符</span>
+                                            <span>[team_hash] 部分会被替换成队伍唯一标识符</span>
+                                            <span>[team_name] 部分会被替换成队伍名称</span>
+                                            <span>[game_id] 部分会被替换成比赛ID</span>
+                                            <span>[uuid] 部分会被替换成随机UUID</span>
+                                            <span>[random_string_??] 部分会被替换成随机字符串, 其中??表示字符串长度</span>
+                                            <span>如果你在题目设置中选择了动态Flag, 将会启用Leet进行反作弊</span>
+                                            <span>模板变量部分不会被Leet替换</span>
                                         </div>
                                     </FormItem>
                                 )}

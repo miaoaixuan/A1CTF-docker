@@ -6,6 +6,8 @@ import (
 	"a1ctf/src/webmodels"
 	"errors"
 	"fmt"
+	"log"
+	"math"
 	"math/rand"
 	"sort"
 	"time"
@@ -80,10 +82,6 @@ func GetOrCacheSingleFlight(key string, callback func() (interface{}, error), ca
 	return result, nil
 }
 
-func DeleteCache(key string) error {
-	return dbtool.Redis().Del(key).Err()
-}
-
 // 这里设置 redis 的缓存时间
 var userListCacheTime = time.Duration(0)
 var fileListCacheTime = time.Duration(0)
@@ -122,10 +120,27 @@ func CachedMemberSearchTeamMap(gameID int64) (map[string]models.Team, error) {
 			return nil, err
 		}
 
+		var adminTeam models.Team
+
 		for _, team := range allTeams {
-			for _, teamMember := range team.TeamMembers {
-				memberBelongSearchMap[teamMember] = team
+			if team.TeamType == models.TeamTypePlayer {
+				for _, teamMember := range team.TeamMembers {
+					memberBelongSearchMap[teamMember] = team
+				}
 			}
+			if team.TeamType == models.TeamTypeAdmin {
+				adminTeam = team
+			}
+		}
+
+		// 处理下管理员，所有管理员默认属于系统创建的管理员队伍
+		var allAdmins []models.User
+		if err := dbtool.DB().Where("role = ?", models.UserRoleAdmin).Find(&allAdmins).Error; err != nil {
+			return nil, err
+		}
+
+		for _, admin := range allAdmins {
+			memberBelongSearchMap[admin.UserID] = adminTeam
 		}
 
 		return memberBelongSearchMap, nil
@@ -245,328 +260,456 @@ func CachedGameInfo(gameID int64) (*models.Game, error) {
 	return &game, nil
 }
 
-func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, error) {
+func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, error) {
 	var cachedData webmodels.CachedGameScoreBoardData
 
-	obj, err := GetOrCacheSingleFlight(fmt.Sprintf("game_scoreboard_%d", gameID), func() (interface{}, error) {
-		var finalScoreBoardMap map[int64]webmodels.TeamScoreItem = make(map[int64]webmodels.TeamScoreItem)
-		var timeLines []webmodels.TimeLineItem = make([]webmodels.TimeLineItem, 0)
-
-		// 获取所有队伍
-		var teams []models.Team
-		if err := dbtool.DB().Where("game_id = ? AND team_status = ?", gameID, models.ParticipateApproved).Preload("Group").Find(&teams).Error; err != nil {
-			return nil, errors.New("failed to load teams")
-		}
-
-		// 获取所有解题记录
-		var solves []models.Solve
-		if err := dbtool.DB().Where("game_id = ?", gameID).
-			Preload("GameChallenge").
-			Preload("Solver").
-			Order("solve_time ASC").
-			Find(&solves).Error; err != nil {
-			return nil, errors.New("failed to load solves")
-		}
-
-		// 计算每道题的首杀时间
-		firstSolveTime := make(map[int64]time.Time) // challengeID -> 首杀时间
-		for _, solve := range solves {
-			if _, exists := firstSolveTime[solve.ChallengeID]; !exists {
-				firstSolveTime[solve.ChallengeID] = solve.SolveTime
-			}
-		}
-
-		// 计算每个队伍的总分和罚时
-		teamDataMap := make(map[int64]webmodels.TeamScoreItem)
-
-		// 初始化队伍数据
-		for _, team := range teams {
-			teamDataMap[team.TeamID] = webmodels.TeamScoreItem{
-				TeamID:           team.TeamID,
-				TeamName:         team.TeamName,
-				TeamAvatar:       team.TeamAvatar,
-				TeamSlogan:       team.TeamSlogan,
-				TeamDescription:  team.TeamDescription,
-				GroupID:          team.GroupID,
-				Score:            0,
-				Penalty:          0,
-				SolvedChallenges: make([]webmodels.TeamSolveItem, 0),
-				ScoreAdjustments: make([]webmodels.TeamScoreAdjustmentItem, 0),
-				LastSolveTime:    0,
-			}
-		}
-
-		// 计算每个队伍的分数和罚时
-		for _, solve := range solves {
-			if teamData, exists := teamDataMap[solve.TeamID]; exists {
-				// 计算罚时（解题时间 - 首杀时间，单位：秒）
-				penalty := int64(0)
-				if firstTime, ok := firstSolveTime[solve.ChallengeID]; ok {
-					penalty = int64(solve.SolveTime.Sub(firstTime).Seconds())
-				}
-
-				teamData.Score += solve.GameChallenge.CurScore
-				teamData.Penalty += penalty
-				teamData.SolvedChallenges = append(teamData.SolvedChallenges, webmodels.TeamSolveItem{
-					ChallengeID: solve.ChallengeID,
-					Score:       solve.GameChallenge.CurScore,
-					Solver:      solve.Solver.Username,
-					Rank:        int64(solve.Rank),
-					SolveTime:   solve.SolveTime,
-				})
-
-				if teamData.LastSolveTime < solve.SolveTime.UnixMilli() {
-					teamData.LastSolveTime = solve.SolveTime.UnixMilli()
-				}
-
-				teamDataMap[solve.TeamID] = teamData
-			}
-		}
-
-		// 获取并应用分数修正
-		var adjustments []models.ScoreAdjustment
-		if err := dbtool.DB().Where("game_id = ?", gameID).Find(&adjustments).Error; err != nil {
-			return nil, errors.New("failed to load score adjustments")
-		}
-
-		// 应用分数修正到队伍数据
-		for _, adjustment := range adjustments {
-			if teamData, exists := teamDataMap[adjustment.TeamID]; exists {
-				teamData.Score += adjustment.ScoreChange
-				// 添加分数修正到队伍的分数修正列表
-				if teamData.ScoreAdjustments == nil {
-					teamData.ScoreAdjustments = make([]webmodels.TeamScoreAdjustmentItem, 0)
-				}
-				teamData.ScoreAdjustments = append(teamData.ScoreAdjustments, webmodels.TeamScoreAdjustmentItem{
-					AdjustmentID:   adjustment.AdjustmentID,
-					AdjustmentType: string(adjustment.AdjustmentType),
-					ScoreChange:    adjustment.ScoreChange,
-					Reason:         adjustment.Reason,
-					CreatedAt:      adjustment.CreatedAt,
-				})
-				teamDataMap[adjustment.TeamID] = teamData
-			}
-		}
-
-		// 转换为切片并排序
-		teamRankings := make([]webmodels.TeamScoreItem, 0, len(teamDataMap))
-		for _, teamData := range teamDataMap {
-			teamRankings = append(teamRankings, teamData)
-		}
-
-		// 使用 sort.Slice 进行多条件排序：
-		// 1. 总分降序（分数高的排前面）
-		// 2. 总分相同时，罚时升序（罚时少的排前面）
-		// 3. 罚时相同时，最后解题时间降序（解题时间晚的排前面）
-		// 4. 最后比较队伍名称（升序，字典序小的排前面）... 这个应该不会出现
-		sort.Slice(teamRankings, func(i, j int) bool {
-			teamI, teamJ := teamRankings[i], teamRankings[j]
-
-			// 先比较总分（降序）
-			if teamI.Score != teamJ.Score {
-				return teamI.Score > teamJ.Score
-			}
-
-			// 总分相同时比较罚时（升序，罚时少的排前面）
-			if teamI.Penalty != teamJ.Penalty {
-				return teamI.Penalty < teamJ.Penalty
-			}
-
-			// 罚时相同时比较最后解题时间（降序，解题时间晚的排前面）
-			if teamI.LastSolveTime != teamJ.LastSolveTime {
-				return teamI.LastSolveTime > teamJ.LastSolveTime
-			}
-
-			// 比较队伍 ID。。。
-			return teamI.TeamID < teamJ.TeamID
-		})
-
-		processedTeamRankings := make([]webmodels.TeamScoreItem, 0, len(teamDataMap))
-
-		// 设置排名
-		for i, teamData := range teamRankings {
-			teamData.Rank = int64(i + 1)
-			tmp := webmodels.TeamScoreItem{
-				TeamID:           teamData.TeamID,
-				TeamName:         teamData.TeamName,
-				TeamAvatar:       teamData.TeamAvatar,
-				TeamSlogan:       teamData.TeamSlogan,
-				TeamDescription:  teamData.TeamDescription,
-				Rank:             teamData.Rank,
-				Score:            teamData.Score,
-				Penalty:          teamData.Penalty,
-				SolvedChallenges: teamData.SolvedChallenges,
-				ScoreAdjustments: teamData.ScoreAdjustments,
-				GroupID:          teamData.GroupID,
-			}
-			finalScoreBoardMap[teamData.TeamID] = tmp
-			processedTeamRankings = append(processedTeamRankings, tmp)
-		}
-
-		cachedData.TeamRankings = processedTeamRankings
-
-		// 获取 TOP10
-		idx := 0
-		top10Teams := make([]webmodels.TeamScoreItem, 0, min(10, len(teamRankings)))
-		for _, teamData := range teamRankings {
-			top10Teams = append(top10Teams, webmodels.TeamScoreItem{
-				TeamID:           teamData.TeamID,
-				TeamName:         teamData.TeamName,
-				TeamAvatar:       teamData.TeamAvatar,
-				TeamSlogan:       teamData.TeamSlogan,
-				TeamDescription:  teamData.TeamDescription,
-				Rank:             teamData.Rank,
-				Score:            teamData.Score,
-				Penalty:          teamData.Penalty,
-				SolvedChallenges: teamData.SolvedChallenges,
-				ScoreAdjustments: teamData.ScoreAdjustments,
-				GroupID:          teamData.GroupID,
-			})
-			idx += 1
-			if idx == 10 {
-				break
-			}
-		}
-
-		// 构建时间线数据（基于原有的 scoreboard 数据）
-		var scoreboardItems []models.ScoreBoard
-		if err := dbtool.DB().Where("game_id = ?", gameID).Find(&scoreboardItems).Error; err != nil {
-			return nil, errors.New("failed to load scoreboards")
-		}
-
-		var scoreboardRecords []models.ScoreBoardDataWithTime
-		for _, item := range scoreboardItems {
-			scoreboardRecords = append(scoreboardRecords, item.Data...)
-		}
-
-		// 如果没有历史记录，创建空的时间线
-		if len(scoreboardRecords) == 0 {
-			timeLines = make([]webmodels.TimeLineItem, 0)
-			cachedData.AllTimeLines = make([]webmodels.TimeLineItem, 0)
-		} else {
-			sort.Slice(scoreboardRecords, func(i, j int) bool {
-				return scoreboardRecords[i].RecordTime.Before(scoreboardRecords[j].RecordTime)
-			})
-
-			// 构建 TOP10 的时间线
-			timeLineMap := make(map[int64]webmodels.TimeLineItem)
-			prevScoreMap := make(map[int64]float64)
-
-			for _, team := range top10Teams {
-				timeLineMap[team.TeamID] = webmodels.TimeLineItem{
-					TeamID:   team.TeamID,
-					TeamName: team.TeamName,
-					Scores:   make([]webmodels.TimeLineScoreItem, 0),
-				}
-			}
-
-			// 构建所有队伍的时间线
-			allTimeLineMap := make(map[int64]webmodels.TimeLineItem)
-			allPrevScoreMap := make(map[int64]float64)
-
-			// 初始化所有队伍的时间线
-			for _, team := range teams {
-				if teamData, ok := teamDataMap[team.TeamID]; ok {
-					allTimeLineMap[team.TeamID] = webmodels.TimeLineItem{
-						TeamID:   team.TeamID,
-						TeamName: teamData.TeamName,
-						Scores:   make([]webmodels.TimeLineScoreItem, 0),
-					}
-				}
-			}
-
-			// 统计时间线数据
-			for _, item := range scoreboardRecords {
-				recordTime := item.RecordTime
-				for teamID, scoreValue := range item.Data {
-					// 为 TOP10 构建时间线
-					if timeline, ok := timeLineMap[teamID]; ok {
-						lastScore, valid := prevScoreMap[teamID]
-						if !valid || lastScore != scoreValue.Score {
-							timeline.Scores = append(timeline.Scores, webmodels.TimeLineScoreItem{
-								RecordTime: recordTime.UnixMilli(),
-								Score:      scoreValue.Score,
-							})
-							timeLineMap[teamID] = timeline
-							prevScoreMap[teamID] = scoreValue.Score
-						}
-					}
-
-					// 为所有队伍构建时间线
-					if allTimeline, ok := allTimeLineMap[teamID]; ok {
-						lastScore, valid := allPrevScoreMap[teamID]
-						if !valid || lastScore != scoreValue.Score {
-							allTimeline.Scores = append(allTimeline.Scores, webmodels.TimeLineScoreItem{
-								RecordTime: recordTime.UnixMilli(),
-								Score:      scoreValue.Score,
-							})
-							allTimeLineMap[teamID] = allTimeline
-							allPrevScoreMap[teamID] = scoreValue.Score
-						}
-					}
-				}
-			}
-
-			// 转换 TOP10 时间线数据
-			timeLines = make([]webmodels.TimeLineItem, 0, len(timeLineMap))
-			for _, item := range timeLineMap {
-				timeLines = append(timeLines, item)
-			}
-
-			// 按照最终排名排序时间线
-			sort.Slice(timeLines, func(i, j int) bool {
-				// 找到对应队伍的排名
-				rankI, rankJ := 999999, 999999
-				teamI, ok := finalScoreBoardMap[timeLines[i].TeamID]
-				if ok {
-					rankI = int(teamI.Rank)
-				}
-				teamJ, ok := finalScoreBoardMap[timeLines[j].TeamID]
-				if ok {
-					rankJ = int(teamJ.Rank)
-				}
-				return rankI < rankJ
-			})
-
-			// 转换所有队伍的时间线数据
-			allTimeLines := make([]webmodels.TimeLineItem, 0, len(allTimeLineMap))
-			for _, item := range allTimeLineMap {
-				allTimeLines = append(allTimeLines, item)
-			}
-
-			// 按照最终排名排序所有队伍的时间线
-			sort.Slice(allTimeLines, func(i, j int) bool {
-				// 找到对应队伍的排名
-				rankI, rankJ := 999999, 999999
-				teamI, ok := finalScoreBoardMap[allTimeLines[i].TeamID]
-				if ok {
-					rankI = int(teamI.Rank)
-				}
-				teamJ, ok := finalScoreBoardMap[allTimeLines[j].TeamID]
-				if ok {
-					rankJ = int(teamJ.Rank)
-				}
-				return rankI < rankJ
-			})
-
-			// 将所有队伍的时间线数据存储到结构体中
-			cachedData.AllTimeLines = allTimeLines
-		}
-
-		cachedData.FinalScoreBoardMap = finalScoreBoardMap
-		cachedData.Top10TimeLines = timeLines
-		cachedData.Top10Teams = top10Teams
-
-		return cachedData, nil
-	}, gameScoreBoardCacheTime, true)
-
+	// 获取用户信息
+	users, err := CachedMemberMap()
 	if err != nil {
 		return nil, err
 	}
 
-	cachedData = obj.(webmodels.CachedGameScoreBoardData)
+	var finalScoreBoardMap map[int64]webmodels.TeamScoreItem = make(map[int64]webmodels.TeamScoreItem)
+	var timeLines []webmodels.TimeLineItem = make([]webmodels.TimeLineItem, 0)
+
+	// 获取所有队伍，排除掉 Admin 第五
+	var teams []models.Team
+	if err := dbtool.DB().Where("game_id = ? AND team_status = ? AND team_type = ?", gameID, models.ParticipateApproved, models.TeamTypePlayer).Preload("Group").Find(&teams).Error; err != nil {
+		return nil, errors.New("failed to load teams")
+	}
+
+	// 获取所有解题记录
+	var solves []models.Solve
+	if err := dbtool.DB().Where("game_id = ?", gameID).
+		Preload("GameChallenge").
+		Preload("Solver").
+		Preload("Challenge").
+		Preload("Game").
+		Order("solve_time ASC").
+		Find(&solves).Error; err != nil {
+		return nil, errors.New("failed to load solves")
+	}
+
+	// 计算每道题的首杀时间
+	firstSolveTime := make(map[int64]time.Time) // challengeID -> 首杀时间
+	for _, solve := range solves {
+		if _, exists := firstSolveTime[solve.ChallengeID]; !exists {
+			firstSolveTime[solve.ChallengeID] = solve.SolveTime
+		}
+	}
+
+	// 计算每个队伍的总分和罚时
+	teamDataMap := make(map[int64]webmodels.TeamScoreItem)
+
+	// 初始化队伍数据
+	for _, team := range teams {
+
+		// 获取成员信息
+		teamMemberDetail := make([]webmodels.TeamMemberInfo, 0)
+
+		for idx, teamMember := range team.TeamMembers {
+			if member, exists := users[teamMember]; exists {
+				// 第一个是队长
+				teamMemberDetail = append(teamMemberDetail, webmodels.TeamMemberInfo{
+					Avatar:   member.Avatar,
+					UserName: member.Username,
+					UserID:   member.UserID,
+					Captain:  idx == 0,
+				})
+			}
+		}
+
+		teamDataMap[team.TeamID] = webmodels.TeamScoreItem{
+			TeamID:           team.TeamID,
+			TeamName:         team.TeamName,
+			TeamAvatar:       team.TeamAvatar,
+			Members:          teamMemberDetail,
+			TeamSlogan:       team.TeamSlogan,
+			TeamDescription:  team.TeamDescription,
+			GroupID:          team.GroupID,
+			Score:            0,
+			Penalty:          0,
+			SolvedChallenges: make([]webmodels.TeamSolveItem, 0),
+			ScoreAdjustments: make([]webmodels.TeamScoreAdjustmentItem, 0),
+			LastSolveTime:    0,
+		}
+	}
+
+	// 计算每个队伍的分数和罚时
+	for _, solve := range solves {
+		if !solve.GameChallenge.Visible {
+			continue
+		}
+
+		if teamData, exists := teamDataMap[solve.TeamID]; exists {
+			// 计算罚时（解题时间 - 首杀时间，单位：秒）
+			penalty := int64(0)
+			if firstTime, ok := firstSolveTime[solve.ChallengeID]; ok {
+				penalty = int64(solve.SolveTime.Sub(firstTime).Seconds())
+			}
+
+			challengeScore := solve.GameChallenge.CurScore
+
+			// 这里计算分数了，处理一下三血
+			if solve.GameChallenge.BloodRewardEnabled && solve.Rank <= 3 {
+
+				var rewardReason string
+				// 三血对于的奖励分数比例是否开启
+				var rankRewardEnabled bool = false
+
+				rewardScore := 0.0
+				switch solve.Rank {
+				case 3:
+					rewardScore = float64(solve.Game.ThirdBloodReward) * solve.GameChallenge.CurScore / 100
+					rewardReason = "Third Blood Reward"
+					if solve.Game.ThirdBloodReward != 0 {
+						rankRewardEnabled = true
+					}
+				case 2:
+					rewardScore = float64(solve.Game.SecondBloodReward) * solve.GameChallenge.CurScore / 100
+					rewardReason = "Second Blood Reward"
+					if solve.Game.SecondBloodReward != 0 {
+						rankRewardEnabled = true
+					}
+				case 1:
+					rewardScore = float64(solve.Game.FirstBloodReward) * solve.GameChallenge.CurScore / 100
+					rewardReason = "First Blood Reward"
+					if solve.Game.FirstBloodReward != 0 {
+						rankRewardEnabled = true
+					}
+				}
+
+				if rankRewardEnabled {
+					rewardScore = math.Max(math.Floor(rewardScore), 1)
+
+					rewardReason = fmt.Sprintf("%s for %s", rewardReason, solve.Challenge.Name)
+
+					adjustment := webmodels.TeamScoreAdjustmentItem{
+						AdjustmentID:   -1,
+						AdjustmentType: string(models.AdjustmentTypeReward),
+						ScoreChange:    rewardScore,
+						Reason:         rewardReason,
+						CreatedAt:      solve.SolveTime,
+					}
+
+					challengeScore += rewardScore
+
+					// 往前端添加解题记录
+					teamData.ScoreAdjustments = append(teamData.ScoreAdjustments, adjustment)
+				}
+			}
+
+			teamData.Score += challengeScore
+			teamData.Penalty += penalty
+
+			teamData.SolvedChallenges = append(teamData.SolvedChallenges, webmodels.TeamSolveItem{
+				ChallengeID: solve.ChallengeID,
+				Score:       challengeScore,
+				Solver:      solve.Solver.Username,
+				Rank:        int64(solve.Rank),
+				SolveTime:   solve.SolveTime,
+			})
+
+			if teamData.LastSolveTime < solve.SolveTime.UnixMilli() {
+				teamData.LastSolveTime = solve.SolveTime.UnixMilli()
+			}
+
+			teamDataMap[solve.TeamID] = teamData
+		}
+	}
+
+	// 获取并应用分数修正
+	var adjustments []models.ScoreAdjustment
+	if err := dbtool.DB().Where("game_id = ?", gameID).Find(&adjustments).Error; err != nil {
+		return nil, errors.New("failed to load score adjustments")
+	}
+
+	// 应用分数修正到队伍数据
+	for _, adjustment := range adjustments {
+		if teamData, exists := teamDataMap[adjustment.TeamID]; exists {
+			teamData.Score += adjustment.ScoreChange
+			// 添加分数修正到队伍的分数修正列表
+			if teamData.ScoreAdjustments == nil {
+				teamData.ScoreAdjustments = make([]webmodels.TeamScoreAdjustmentItem, 0)
+			}
+			teamData.ScoreAdjustments = append(teamData.ScoreAdjustments, webmodels.TeamScoreAdjustmentItem{
+				AdjustmentID:   adjustment.AdjustmentID,
+				AdjustmentType: string(adjustment.AdjustmentType),
+				ScoreChange:    adjustment.ScoreChange,
+				Reason:         adjustment.Reason,
+				CreatedAt:      adjustment.CreatedAt,
+			})
+			teamDataMap[adjustment.TeamID] = teamData
+		}
+	}
+
+	// 转换为切片并排序
+	teamRankings := make([]webmodels.TeamScoreItem, 0, len(teamDataMap))
+	for _, teamData := range teamDataMap {
+		teamRankings = append(teamRankings, teamData)
+	}
+
+	// 使用 sort.Slice 进行多条件排序：
+	// 1. 总分降序（分数高的排前面）
+	// 2. 总分相同时，罚时升序（罚时少的排前面）
+	// 3. 罚时相同时，最后解题时间降序（解题时间晚的排前面）
+	// 4. 最后比较队伍名称（升序，字典序小的排前面）... 这个应该不会出现
+	sort.Slice(teamRankings, func(i, j int) bool {
+		teamI, teamJ := teamRankings[i], teamRankings[j]
+
+		// 先比较总分（降序）
+		if teamI.Score != teamJ.Score {
+			return teamI.Score > teamJ.Score
+		}
+
+		// 总分相同时比较罚时（升序，罚时少的排前面）
+		if teamI.Penalty != teamJ.Penalty {
+			return teamI.Penalty < teamJ.Penalty
+		}
+
+		// 罚时相同时比较最后解题时间（降序，解题时间晚的排前面）
+		if teamI.LastSolveTime != teamJ.LastSolveTime {
+			return teamI.LastSolveTime > teamJ.LastSolveTime
+		}
+
+		// 比较队伍 ID。。。
+		return teamI.TeamID < teamJ.TeamID
+	})
+
+	processedTeamRankings := make([]webmodels.TeamScoreItem, 0, len(teamDataMap))
+
+	// 设置排名
+	for i, teamData := range teamRankings {
+		teamData.Rank = int64(i + 1)
+		tmp := webmodels.TeamScoreItem{
+			TeamID:           teamData.TeamID,
+			TeamName:         teamData.TeamName,
+			TeamAvatar:       teamData.TeamAvatar,
+			TeamSlogan:       teamData.TeamSlogan,
+			TeamDescription:  teamData.TeamDescription,
+			Rank:             teamData.Rank,
+			Score:            teamData.Score,
+			Members:          teamData.Members,
+			Penalty:          teamData.Penalty,
+			SolvedChallenges: teamData.SolvedChallenges,
+			ScoreAdjustments: teamData.ScoreAdjustments,
+			GroupID:          teamData.GroupID,
+		}
+		finalScoreBoardMap[teamData.TeamID] = tmp
+		processedTeamRankings = append(processedTeamRankings, tmp)
+	}
+
+	cachedData.TeamRankings = processedTeamRankings
+
+	// 获取 TOP10
+	idx := 0
+	top10Teams := make([]webmodels.TeamScoreItem, 0, min(10, len(teamRankings)))
+	for _, teamData := range teamRankings {
+		top10Teams = append(top10Teams, webmodels.TeamScoreItem{
+			TeamID:           teamData.TeamID,
+			TeamName:         teamData.TeamName,
+			TeamAvatar:       teamData.TeamAvatar,
+			TeamSlogan:       teamData.TeamSlogan,
+			TeamDescription:  teamData.TeamDescription,
+			Rank:             teamData.Rank,
+			Score:            teamData.Score,
+			Members:          teamData.Members,
+			Penalty:          teamData.Penalty,
+			SolvedChallenges: teamData.SolvedChallenges,
+			ScoreAdjustments: teamData.ScoreAdjustments,
+			GroupID:          teamData.GroupID,
+		})
+		idx += 1
+		if idx == 10 {
+			break
+		}
+	}
+
+	// 构建时间线数据（基于原有的 scoreboard 数据）
+
+	var teamsParticipated []models.Team = make([]models.Team, 0)
+	var participatedTeamIDs []int64
+	if err := dbtool.DB().Model(&models.Team{}).Where("game_id = ? AND team_type = ?", gameID, models.TeamTypePlayer).Find(&teamsParticipated).Error; err != nil {
+		return nil, errors.New("failed to load teams for game")
+	}
+
+	for _, team := range teamsParticipated {
+		participatedTeamIDs = append(participatedTeamIDs, team.TeamID)
+	}
+
+	// 获取上述队伍的积分榜
+	var teamGameScoreborad []models.ScoreBoard = make([]models.ScoreBoard, 0)
+	var teamGameScoreboardMap map[int64]models.ScoreBoard = make(map[int64]models.ScoreBoard)
+	if err := dbtool.DB().Model(&models.ScoreBoard{}).Where("game_id = ? AND team_id IN ?", gameID, participatedTeamIDs).Find(&teamGameScoreborad).Error; err != nil {
+		return nil, errors.New("failed to load gameScoreBoard for game")
+	}
+
+	for _, scoreboard := range teamGameScoreborad {
+		// 顺便排序好
+		sort.Slice(scoreboard.Data, func(i, j int) bool {
+			return scoreboard.Data[i].RecordTime.Before(scoreboard.Data[j].RecordTime)
+		})
+
+		teamGameScoreboardMap[scoreboard.TeamID] = scoreboard
+	}
+
+	if len(teamGameScoreborad) == 0 {
+		timeLines = make([]webmodels.TimeLineItem, 0)
+		cachedData.AllTimeLines = make([]webmodels.TimeLineItem, 0)
+	} else {
+		// 构建 TOP10 的时间线
+		timeLineMap := make(map[int64]webmodels.TimeLineItem)
+		prevScoreMap := make(map[int64]float64)
+
+		for _, team := range top10Teams {
+			teamID := team.TeamID
+
+			tmpTimeLine := webmodels.TimeLineItem{
+				TeamID:   teamID,
+				TeamName: team.TeamName,
+				Scores:   make([]webmodels.TimeLineScoreItem, 0),
+			}
+
+			scoreboard, exists := teamGameScoreboardMap[teamID]
+			if !exists {
+				timeLineMap[teamID] = tmpTimeLine
+				continue
+			}
+
+			for _, record := range scoreboard.Data {
+				lastScore, valid := prevScoreMap[teamID]
+				if !valid || lastScore != record.Score {
+					tmpTimeLine.Scores = append(tmpTimeLine.Scores, webmodels.TimeLineScoreItem{
+						RecordTime: record.RecordTime.UnixMilli(),
+						Score:      record.Score,
+					})
+					prevScoreMap[teamID] = record.Score
+				}
+			}
+
+			timeLineMap[teamID] = tmpTimeLine
+		}
+
+		// 构建所有队伍的时间线
+		allTimeLineMap := make(map[int64]webmodels.TimeLineItem)
+		allPrevScoreMap := make(map[int64]float64)
+
+		// 初始化所有队伍的时间线
+		for _, team := range teams {
+			teamID := team.TeamID
+
+			if teamData, ok := teamDataMap[team.TeamID]; ok {
+				tmpTimeLine := webmodels.TimeLineItem{
+					TeamID:   team.TeamID,
+					TeamName: teamData.TeamName,
+					Scores:   make([]webmodels.TimeLineScoreItem, 0),
+				}
+
+				scoreboard, exists := teamGameScoreboardMap[teamID]
+				if !exists {
+					allTimeLineMap[team.TeamID] = tmpTimeLine
+					continue
+				}
+
+				for _, record := range scoreboard.Data {
+					lastScore, valid := allPrevScoreMap[teamID]
+					if !valid || lastScore != record.Score {
+						tmpTimeLine.Scores = append(tmpTimeLine.Scores, webmodels.TimeLineScoreItem{
+							RecordTime: record.RecordTime.UnixMilli(),
+							Score:      record.Score,
+						})
+						allPrevScoreMap[teamID] = record.Score
+					}
+				}
+
+				allTimeLineMap[team.TeamID] = tmpTimeLine
+			}
+		}
+
+		// 转换 TOP10 时间线数据
+		timeLines = make([]webmodels.TimeLineItem, 0, len(timeLineMap))
+		for _, item := range timeLineMap {
+			timeLines = append(timeLines, item)
+		}
+
+		// 按照最终排名排序时间线
+		sort.Slice(timeLines, func(i, j int) bool {
+			// 找到对应队伍的排名
+			rankI, rankJ := 999999, 999999
+			teamI, ok := finalScoreBoardMap[timeLines[i].TeamID]
+			if ok {
+				rankI = int(teamI.Rank)
+			}
+			teamJ, ok := finalScoreBoardMap[timeLines[j].TeamID]
+			if ok {
+				rankJ = int(teamJ.Rank)
+			}
+			return rankI < rankJ
+		})
+
+		// 转换所有队伍的时间线数据
+		allTimeLines := make([]webmodels.TimeLineItem, 0, len(allTimeLineMap))
+		for _, item := range allTimeLineMap {
+			allTimeLines = append(allTimeLines, item)
+		}
+
+		// 按照最终排名排序所有队伍的时间线
+		sort.Slice(allTimeLines, func(i, j int) bool {
+			// 找到对应队伍的排名
+			rankI, rankJ := 999999, 999999
+			teamI, ok := finalScoreBoardMap[allTimeLines[i].TeamID]
+			if ok {
+				rankI = int(teamI.Rank)
+			}
+			teamJ, ok := finalScoreBoardMap[allTimeLines[j].TeamID]
+			if ok {
+				rankJ = int(teamJ.Rank)
+			}
+			return rankI < rankJ
+		})
+
+		// 将所有队伍的时间线数据存储到结构体中
+		cachedData.AllTimeLines = allTimeLines
+	}
+
+	cachedData.FinalScoreBoardMap = finalScoreBoardMap
+	cachedData.Top10TimeLines = timeLines
+	cachedData.Top10Teams = top10Teams
 
 	return &cachedData, nil
+}
+
+func MakeGameScoreBoardCache(gameID int64) error {
+	cacheKey := fmt.Sprintf("game_scoreboard_%d", gameID)
+
+	cachedData, err := CalculateGameScoreBoard(gameID)
+	if err != nil {
+		return err
+	}
+
+	cachePool.Set(cacheKey, cachedData, 1)
+	return nil
+}
+
+func CachedGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, error) {
+	cacheKey := fmt.Sprintf("game_scoreboard_%d", gameID)
+
+	value, found := cachePool.Get(cacheKey)
+	if found {
+		return value.(*webmodels.CachedGameScoreBoardData), nil
+	}
+
+	// zaphelper.Logger.Error("Get scoreboard from cache failed", zap.String("cache_key", cacheKey))
+
+	obj := webmodels.CachedGameScoreBoardData{
+		TeamRankings:       make([]webmodels.TeamScoreItem, 0),
+		AllTimeLines:       make([]webmodels.TimeLineItem, 0),
+		Top10TimeLines:     make([]webmodels.TimeLineItem, 0),
+		Top10Teams:         make([]webmodels.TeamScoreItem, 0),
+		FinalScoreBoardMap: make(map[int64]webmodels.TeamScoreItem),
+	}
+
+	return &obj, nil
 }
 
 func CachedGameGroups(gameID int64) (map[int64]models.GameGroup, error) {
@@ -617,6 +760,7 @@ func CachedGameSimpleChallenges(gameID int64) ([]webmodels.UserSimpleGameChallen
 
 		// 使用 Preload 进行关联查询
 		if err := dbtool.DB().Preload("Challenge").Where("game_id = ?", game.GameID).Find(&gameChallenges).Error; err != nil {
+			log.Printf("%+v\n", err)
 			return nil, errors.New("failed to load game challenges")
 		}
 
@@ -630,7 +774,7 @@ func CachedGameSimpleChallenges(gameID int64) ([]webmodels.UserSimpleGameChallen
 
 		if gameStages != nil {
 			for _, stage := range *gameStages {
-				if stage.StartTime.Before(time.Now()) && stage.EndTime.After(time.Now()) {
+				if stage.StartTime.Before(time.Now().UTC()) && stage.EndTime.After(time.Now().UTC()) {
 					curStage = stage.StageName
 					break
 				}
@@ -654,6 +798,7 @@ func CachedGameSimpleChallenges(gameID int64) ([]webmodels.UserSimpleGameChallen
 				CurScore:      gc.CurScore,
 				SolveCount:    gc.SolveCount,
 				Category:      gc.Challenge.Category,
+				Visible:       gc.Visible,
 			})
 		}
 
@@ -847,7 +992,7 @@ func CachedGameChallengeVisibility(gameID int64, challengeID int64) (bool, error
 
 		if gameStages != nil {
 			for _, stage := range *gameStages {
-				if stage.StartTime.Before(time.Now()) && stage.EndTime.After(time.Now()) {
+				if stage.StartTime.Before(time.Now().UTC()) && stage.EndTime.After(time.Now().UTC()) {
 					curStage = stage.StageName
 					break
 				}
@@ -1009,57 +1154,6 @@ func CachedAllTeamFlags(gameID int64, challengeID int64) (map[int64]*models.Team
 
 	teamFlagsMap = obj.(map[int64]*models.TeamFlag)
 	return teamFlagsMap, nil
-}
-
-// 缓存队伍Flag信息
-func CachedTeamFlag(gameID int64, teamID int64, challengeID int64, flagTemplate string) (*models.TeamFlag, error) {
-	allFlags, err := CachedAllTeamFlags(gameID, challengeID)
-	if err != nil {
-		return nil, err
-	}
-
-	// 如果缓存中存在该队伍的Flag，直接返回
-	if flag, exists := allFlags[teamID]; exists {
-		return flag, nil
-	}
-
-	// 缓存中不存在，需要创建新的Flag
-	newFlag := models.TeamFlag{
-		FlagID:      0,
-		FlagContent: flagTemplate,
-		TeamID:      teamID,
-		GameID:      gameID,
-		ChallengeID: challengeID,
-	}
-
-	// 使用事务创建Flag，避免并发重复创建
-	tx := dbtool.DB().Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
-	if err := tx.Create(&newFlag).Error; err != nil {
-		tx.Rollback()
-		// 可能是并发创建导致的唯一键冲突，再次尝试查询
-		var flag models.TeamFlag
-		if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND challenge_id = ?", gameID, teamID, challengeID).First(&flag).Error; err != nil {
-			return nil, errors.New("failed to create or find team flag")
-		}
-		// 清除缓存以确保下次查询时能获取到最新数据
-		cachePool.Del(fmt.Sprintf("all_team_flags_%d_%d", gameID, challengeID))
-		return &flag, nil
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		tx.Rollback()
-		return nil, errors.New("failed to commit team flag creation")
-	}
-
-	// 清除缓存以确保下次查询时能获取到最新数据
-	cachePool.Del(fmt.Sprintf("all_team_flags_%d_%d", gameID, challengeID))
-	return &newFlag, nil
 }
 
 // 缓存所有队伍的解题状态，用于快速检查是否已解决

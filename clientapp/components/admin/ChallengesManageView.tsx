@@ -9,7 +9,7 @@ import { api, ErrorMessage } from "utils/ApiHelper";
 import { ChallengeCategory, AdminChallengeSimpleInfo } from "utils/A1API";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { AxiosError } from "axios";
 
 import { ConfirmDialog, DialogOption } from "../dialogs/ConfirmDialog";
@@ -126,7 +126,9 @@ export function ChallengesManageView() {
                 {/* Main Content */}
                 <div className="flex-1 overflow-hidden">
                     {filtedData.length ? (
-                        <MacScrollbar className="h-full">
+                        <MacScrollbar className="h-full"
+                            skin={theme == "light" ? "light" : "dark"}
+                        >
                             <div className="p-6">
                                 <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
                                     {filtedData.map((chal, index) => (
@@ -188,13 +190,6 @@ export function ChallengesManageView() {
                                                                 api.admin.deleteChallenge(chal.challenge_id).then(() => {
                                                                     toast.success("删除成功")
                                                                     setChallenges(challenges.filter((res) => res.challenge_id !== chal.challenge_id))
-                                                                }).catch((error: AxiosError) => {
-                                                                    if (error.response?.status) {
-                                                                        const errorMessage: ErrorMessage = error.response.data as ErrorMessage
-                                                                        toast.error(errorMessage.message)
-                                                                    } else {
-                                                                        toast.error("Unknow Error")
-                                                                    }
                                                                 })
                                                             },
                                                         }))

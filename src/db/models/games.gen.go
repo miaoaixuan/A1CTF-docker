@@ -30,6 +30,25 @@ func (e *GameStages) Scan(value interface{}) error {
 	return sonic.Unmarshal(b, e)
 }
 
+type TeamPolicy string
+
+const (
+	TeamPolicyManual TeamPolicy = "Manual"
+	TeamPolicyAuto   TeamPolicy = "Auto"
+)
+
+func (e TeamPolicy) Value() (driver.Value, error) {
+	return sonic.Marshal(e)
+}
+
+func (e *TeamPolicy) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+	return sonic.Unmarshal(b, e)
+}
+
 // Game mapped from table <games>
 type Game struct {
 	GameID               int64       `gorm:"column:game_id;primaryKey;autoIncrement:true" json:"game_id"`
@@ -47,6 +66,13 @@ type Game struct {
 	WpExpireTime         time.Time   `gorm:"column:wp_expire_time;not null" json:"wp_expire_time"`
 	Stages               *GameStages `gorm:"column:stages;not null" json:"stages"`
 	Visible              bool        `gorm:"column:visible;not null" json:"visible"`
+	GameIconLight        *string     `gorm:"column:game_icon_light" json:"game_icon_light"`
+	GameIconDark         *string     `gorm:"column:game_icon_dark" json:"game_icon_dark"`
+	TeamPolicy           TeamPolicy  `gorm:"column:team_policy;not null" json:"team_policy"`
+
+	FirstBloodReward  int64 `gorm:"column:first_blood_reward" json:"first_blood_reward"`
+	SecondBloodReward int64 `gorm:"column:second_blood_reward" json:"second_blood_reward"`
+	ThirdBloodReward  int64 `gorm:"column:third_blood_reward" json:"third_blood_reward"`
 }
 
 // TableName Game's table name

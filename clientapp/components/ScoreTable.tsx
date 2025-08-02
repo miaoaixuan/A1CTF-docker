@@ -141,7 +141,12 @@ export function ScoreTable(
                     <span>{target.team_name}</span>
                     <span>{challenge.challenge_name}</span>
                     <span>{dayjs(targetChallenge.solve_time).format("YYYY-MM-DD HH:mm:ss")}</span>
-                    <span className="text-green-300">+ {challenge.cur_score}</span>
+                    <span className="text-green-300">+ {challenge.cur_score} pts</span>
+                    { (targetChallenge.rank ?? 4) <= 3 && challenge.cur_score != targetChallenge.score && (
+                        <div className='flex overflow-hidden'>
+                            <span className='text-amber-500'> + {(targetChallenge.score ?? 0) - challenge.cur_score} pts for rank { targetChallenge.rank }</span>
+                        </div>
+                    ) }
                 </div>
             )
 

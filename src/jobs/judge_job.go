@@ -4,17 +4,35 @@ import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
 	noticetool "a1ctf/src/utils/notice_tool"
+	"a1ctf/src/utils/zaphelper"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 func processQueueingJudge(judge *models.Judge) error {
 	switch judge.JudgeType {
 	case models.JudgeTypeDynamic:
-		if judge.JudgeContent == judge.TeamFlag.FlagContent {
+		flagCorrect := false
+
+		switch judge.Challenge.FlagType {
+		case models.FlagTypeDynamic:
+			// 动态和TeamFlag库里的比较
+			flagCorrect = judge.JudgeContent == judge.TeamFlag.FlagContent
+		case models.FlagTypeStatic:
+			// 静态直接比较
+			flagCorrect = judge.JudgeContent == *judge.GameChallenge.JudgeConfig.FlagTemplate
+		}
+
+		if flagCorrect {
+
+			// 如果是系统管理员队伍，不插入 Solves，防止影响积分榜
+			if judge.Team.TeamType == models.TeamTypeAdmin {
+				judge.JudgeStatus = models.JudgeAC
+				return nil
+			}
 
 			// 查询已经解出来的人
 			var solves []models.Solve
@@ -44,10 +62,14 @@ func processQueueingJudge(judge *models.Judge) error {
 				var solveDetail = models.Solve{}
 
 				if err := dbtool.DB().Where("solve_id = ?", newSolve.SolveID).Preload("Challenge").Preload("Team").First(&solveDetail).Error; err != nil {
-					log.Printf("Announce first blood error: %v", err)
+					zaphelper.Logger.Error("Announce first blood error", zap.Error(err))
 				}
 
 				var noticeCate models.NoticeCategory
+
+				// 现在由算分逻辑计算三血分数，不使用 score-adjustment
+				// var rewardScore float64
+				// var rewardReason string
 
 				if newSolve.Rank == 1 {
 					noticeCate = models.NoticeFirstBlood
@@ -56,6 +78,27 @@ func processQueueingJudge(judge *models.Judge) error {
 				} else {
 					noticeCate = models.NoticeThirdBlood
 				}
+
+				// rewardReason = fmt.Sprintf("%s for %s", rewardReason, judge.Challenge.Name)
+
+				// adjustment := models.ScoreAdjustment{
+				// 	TeamID:         judge.TeamID,
+				// 	GameID:         judge.GameID,
+				// 	AdjustmentType: models.AdjustmentTypeReward,
+				// 	ScoreChange:    rewardScore,
+				// 	Reason:         rewardReason,
+				// 	CreatedBy:      uuid.MustParse(judge.SubmiterID),
+				// 	CreatedAt:      time.Now().UTC(),
+				// 	UpdatedAt:      time.Now().UTC(),
+				// }
+
+				// if err := dbtool.DB().Create(&adjustment).Error; err != nil {
+				// 	tasks.LogJudgeOperation(nil, nil, models.ActionJudge, judge.JudgeID, map[string]interface{}{
+				// 		"team_id":      judge.TeamID,
+				// 		"game_id":      judge.GameID,
+				// 		"score_change": adjustment.ScoreChange,
+				// 	}, err)
+				// }
 
 				go func() {
 					noticetool.InsertNotice(judge.GameID, noticeCate, []string{solveDetail.Team.TeamName, solveDetail.Challenge.Name})
@@ -82,7 +125,7 @@ func FlagJudgeJob() {
 	if err := dbtool.DB().Where(
 		"judge_status IN (?)",
 		[]interface{}{models.JudgeQueueing, models.JudgeRunning},
-	).Preload("TeamFlag").Find(&judges).Error; err != nil {
+	).Preload("TeamFlag").Preload("GameChallenge").Preload("Challenge").Preload("Team").Find(&judges).Error; err != nil {
 		fmt.Printf("database error: %v\n", err)
 		return
 	}

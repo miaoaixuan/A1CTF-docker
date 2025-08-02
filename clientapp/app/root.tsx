@@ -6,32 +6,37 @@ import {
     Scripts,
     ScrollRestoration,
     useLocation,
+    useNavigate,
 } from "react-router";
+import React, { useState, useEffect } from "react";
 
 import type { Route } from "./+types/root";
+
 import "./app.css";
 import "app/css/sonner.css";
-
-// 引入i18next相关
-
+import 'animate.css';
+import 'react-toastify/dist/ReactToastify.css';
 import 'mac-scrollbar/dist/mac-scrollbar.css';
-
-import { TransitionProvider } from 'contexts/TransitionContext'
-import { TransitionLayout } from 'components/TransitionLayout'
+import '@pitininja/cap-react-widget/dist/index.css';
 
 import { ClientToaster } from 'components/ClientToaster';
 import { GameSwitchProvider } from 'contexts/GameSwitchContext';
 import { CookiesProvider } from 'react-cookie';
 import { GlobalVariableProvider } from 'contexts/GlobalVariableContext';
-import { Tooltip } from 'react-tooltip';
-import SafeComponent from 'components/SafeComponent';
 import { CanvasProvider } from 'contexts/CanvasProvider';
 import { ThemeProvider } from "components/ThemeProvider";
 import FancyBackground from 'components/modules/FancyBackground';
-import LanguageProvider from 'components/LanguageProvider';
 import { I18nextProvider } from "react-i18next";
 
 import i18n from 'i18n';
+import GameSwitchHover from "components/GameSwitchHover";
+import { LoadingPage } from "components/LoadingPage";
+import HydrateFallbackPage from "components/HydrateFallbackPage";
+import ScreenTooSmall from "components/modules/ScreenTooSmall";
+import { isMobile } from "react-device-detect";
+import { useTheme } from "next-themes";
+import { setGlobalNavigate } from "utils/ApiHelper";
+import ClientChecker from "components/modules/ClientChecker";
 
 export const links: Route.LinksFunction = () => [
     { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -48,6 +53,14 @@ export const links: Route.LinksFunction = () => [
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap",
     },
+    {
+        rel: "stylesheet",
+        href: "/css/github-markdown-dark.css",
+    },
+    {
+        rel: "stylesheet",
+        href: "/css/github-markdown-light.css",
+    }
 ];
 
 const AnimationPresent = (path: string) => {
@@ -66,49 +79,123 @@ const AnimationPresent = (path: string) => {
     return true;
 }
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+// 客户端检测组件
+function ClientOnly({ children }: { children: React.ReactNode }) {
+    const [isClient, setIsClient] = useState(false);
 
-    const href = useLocation().pathname
-    const animationPresent = AnimationPresent(href)
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    if (!isClient) {
+        return (
+            <></>
+        );
+    }
+
+    return <>{children}</>;
+}
+
+function ThemeAwareLinks() {
+    const { resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!mounted) return null;
+
+    const cssFile = resolvedTheme === 'dark'
+        ? '/css/github-markdown-dark.css'
+        : '/css/github-markdown-light.css';
 
     return (
-        <html lang="en">
+        <link rel="stylesheet" href={cssFile} />
+    );
+}
+
+export function Layout({ children }: { children: React.ReactNode }) {
+    const href = useLocation().pathname
+    const navigate = useNavigate()
+    const animationPresent = AnimationPresent(href)
+
+    // 设置全局导航函数
+    React.useEffect(() => {
+        setGlobalNavigate(navigate);
+    }, [navigate]);
+
+    const checkPageMobileShouldVisible = () => {
+        if (!isMobile) return true
+
+        const hrefs = [
+            "^/$",
+            "^/login$",
+            "^/games$",
+            "^/about$",
+            "^/signup$",
+            "^/profile"
+        ]
+
+        return hrefs.filter((e) => RegExp(e).test(href)).length > 0
+    }
+
+    const [screenTooSmall, setScreenTooSmall] = useState(checkPageMobileShouldVisible())
+
+    useEffect(() => {
+        setScreenTooSmall(checkPageMobileShouldVisible())
+    }, [href])
+
+    return (
+        <html lang="en" suppressHydrationWarning>
             <head>
                 <meta charSet="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
+                <title>Loading....</title>
                 <Meta />
                 <Links />
             </head>
             <body>
-                {/* <NextIntlClientProvider messages={messages}> */}
-                <ThemeProvider
-                    attribute="class"
-                    enableSystem
-                >
-                    <TransitionProvider>
+                <ClientOnly>
+                    {/* <NextIntlClientProvider messages={messages}> */}
+                    <ThemeProvider
+                        attribute="class"
+                        enableSystem
+                    >
                         <I18nextProvider i18n={i18n}>
-                            {/* <LanguageProvider> */}
-                                <CookiesProvider>
-                                    <GlobalVariableProvider>
-                                        <GameSwitchProvider>
-                                            <CanvasProvider>
-                                                <ClientToaster />
-                                                {animationPresent && <FancyBackground />}
-                                                {children}
-                                                <Outlet />
-                                            </CanvasProvider>
-                                        </GameSwitchProvider>
-                                    </GlobalVariableProvider>
-                                </CookiesProvider>
-                            {/* </LanguageProvider> */}
+                            <CookiesProvider>
+                                <GlobalVariableProvider>
+                                    <GameSwitchProvider>
+                                        <CanvasProvider>
+                                            <ThemeAwareLinks />
+                                            <ClientToaster />
+                                            <ClientChecker />
+                                            <div className="bg-background absolute top-0 left-0 w-screen h-screen z-[-1]" />
+                                            {animationPresent && <FancyBackground />}
+                                            <GameSwitchHover animation={true} />
+                                            {screenTooSmall ? children : <ScreenTooSmall />}
+                                        </CanvasProvider>
+                                    </GameSwitchProvider>
+                                </GlobalVariableProvider>
+                            </CookiesProvider>
                         </I18nextProvider>
-                    </TransitionProvider>
-                </ThemeProvider>
+                    </ThemeProvider>
+                </ClientOnly>
                 {/* </NextIntlClientProvider> */}
                 <ScrollRestoration />
                 <Scripts />
             </body>
         </html>
+    );
+}
+
+export default function App() {
+    return <Outlet />;
+}
+
+export function HydrateFallback() {
+    return (
+        <HydrateFallbackPage />
     );
 }
 
@@ -266,7 +353,9 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
                                     fontFamily: "Consolas, monospace"
                                 }}
                                 onClick={() => {
-                                    window.location.reload();
+                                    if (typeof window !== 'undefined') {
+                                        window.location.reload();
+                                    }
                                 }}
                             >Refresh</button>
                             <button className="my-button2"
@@ -276,7 +365,9 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
                                     fontFamily: "Consolas, monospace"
                                 }}
                                 onClick={() => {
-                                    navigator.clipboard.writeText(stack || details || "No error message");
+                                    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                                        navigator.clipboard.writeText(stack || details || "No error message");
+                                    }
                                 }}
                             >Copy the error message</button>
                         </div>

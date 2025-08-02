@@ -11,6 +11,52 @@
  */
 
 /**
+ * 资源类型:
+ * - svgIconLight: SVG图标(浅色)
+ * - svgIconDark: SVG图标(深色)
+ * - trophysGold: 金牌奖杯
+ * - trophysSilver: 银牌奖杯
+ * - trophysBronze: 铜牌奖杯
+ * - schoolLogo: 学校Logo
+ * - schoolSmallIcon: 学校小图标
+ * - fancyBackGroundIconWhite: 白色背景图标
+ * - fancyBackGroundIconBlack: 黑色背景图标
+ * - gameIconLight: 比赛图标(浅色)
+ * - gameIconDark: 比赛图标(深色)
+ */
+export enum SystemResourceType {
+  SvgIconLight = "svgIconLight",
+  SvgIconDark = "svgIconDark",
+  TrophysGold = "trophysGold",
+  TrophysSilver = "trophysSilver",
+  TrophysBronze = "trophysBronze",
+  SchoolLogo = "schoolLogo",
+  SchoolSmallIcon = "schoolSmallIcon",
+  FancyBackGroundIconWhite = "fancyBackGroundIconWhite",
+  FancyBackGroundIconBlack = "fancyBackGroundIconBlack",
+  GameIconLight = "gameIconLight",
+  GameIconDark = "gameIconDark",
+}
+
+/**
+ * 日志类别:
+ * - ADMIN: 管理员操作
+ * - USER: 用户操作
+ * - SYSTEM: 系统操作
+ * - CONTAINER: 容器操作
+ * - JUDGE: 判题操作
+ * - SECURITY: 安全相关
+ */
+export enum LogCategory {
+  ADMIN = "ADMIN",
+  USER = "USER",
+  SYSTEM = "SYSTEM",
+  CONTAINER = "CONTAINER",
+  JUDGE = "JUDGE",
+  SECURITY = "SECURITY",
+}
+
+/**
  * User role enumeration:
  * - ADMIN - Administrator
  * - USER - Regular user
@@ -75,6 +121,11 @@ export enum ChallengeContainerType {
   DYNAMIC_CONTAINER = "DYNAMIC_CONTAINER",
   STATIC_CONTAINER = "STATIC_CONTAINER",
   NO_CONTAINER = "NO_CONTAINER",
+}
+
+export enum FlagType {
+  FlagTypeDynamic = "FlagTypeDynamic",
+  FlagTypeStatic = "FlagTypeStatic",
 }
 
 export enum ChallengeCategory {
@@ -179,13 +230,15 @@ export interface AdminChallengeConfig {
   attachments?: Attachment[];
   category: ChallengeCategory;
   challenge_id?: number;
+  allow_wan?: boolean;
+  allow_dns?: boolean;
   container_config: Container[];
   /** @format date-time */
   create_time?: string;
   description: string;
   judge_config: JudgeConfig;
   name: string;
-  type_?: number;
+  flag_type?: FlagType;
 }
 
 export interface ErrorMessage {
@@ -202,12 +255,12 @@ export interface GameStage {
 }
 
 export interface AdminDetailGameChallenge {
-  challenge_id: number;
-  challenge_name: string;
+  challenge_id?: number;
+  challenge_name?: string;
   /** @format double */
-  total_score: number;
+  total_score?: number;
   /** @format double */
-  cur_score: number;
+  cur_score?: number;
   hints?: {
     content: string;
     /** @format date-time */
@@ -219,6 +272,8 @@ export interface AdminDetailGameChallenge {
   visible?: boolean;
   category?: ChallengeCategory;
   judge_config?: JudgeConfig;
+  minimal_score?: number;
+  enable_blood_reward?: boolean;
 }
 
 export interface AddGameChallengePayload {
@@ -234,19 +289,24 @@ export interface AdminFullGameInfo {
   description?: string | null;
   poster?: string | null;
   invite_code?: string | null;
+  game_icon_light?: string | null;
+  game_icon_dark?: string | null;
   /** @format date-time */
   start_time: string;
   /** @format date-time */
   end_time: string;
   practice_mode: boolean;
   team_number_limit: number;
+  team_policy: "Manual" | "Auto";
   container_number_limit: number;
   require_wp: boolean;
   /** @format date-time */
   wp_expire_time: string;
   visible: boolean;
   stages: GameStage[];
-  challenges?: AdminDetailGameChallenge[];
+  first_blood_reward?: number;
+  second_blood_reward?: number;
+  third_blood_reward?: number;
 }
 
 export interface UserGameSimpleInfo {
@@ -281,6 +341,7 @@ export interface UserSimpleGameChallenge {
   /** @format double */
   cur_score: number;
   solve_count?: number;
+  visible?: boolean;
   category?: ChallengeCategory;
 }
 
@@ -340,6 +401,7 @@ export interface UserDetailGameChallenge {
   solve_count?: number;
   category?: ChallengeCategory;
   container_type?: ChallengeContainerType;
+  visible?: boolean;
   /**
    * Possible statuses of a container:
    * - `ContainerStopped`: The container is stopped.
@@ -412,6 +474,8 @@ export interface UserFullGameInfo {
   /** @format date-time */
   wp_expire_time: string;
   visible: boolean;
+  game_icon_light?: string | null;
+  game_icon_dark?: string | null;
   stages: GameStage[];
   /**
    * Team participation status:
@@ -482,6 +546,7 @@ export interface TeamScore {
   team_avatar?: string | null;
   /** @example "" */
   team_slogan?: string;
+  team_members?: AdminSimpleTeamMemberInfo[];
   /** @example "" */
   team_description?: string;
   /** @example 1 */
@@ -679,6 +744,7 @@ export interface AdminContainerItem {
 
 export interface AdminListContainersPayload {
   game_id: number;
+  challenge_id?: number;
   /** @min 0 */
   size: number;
   offset?: number;
@@ -718,6 +784,14 @@ export interface UserProfile {
   last_login_ip: string | null;
   /** @format date-time */
   client_config_version?: string;
+}
+
+export interface UserProfileUpdatePayload {
+  phone?: string | null;
+  student_number?: string | null;
+  realname?: string | null;
+  slogan?: string | null;
+  username: string;
 }
 
 export interface TeamJoinPayload {
@@ -890,6 +964,567 @@ export interface UpdateScoreAdjustmentPayload {
   score_change: number;
   /** 修正原因 */
   reason: string;
+}
+
+export interface DeleteChallengeSolvesPayload {
+  /** 队伍ID（可选，不提供则删除所有解题记录） */
+  team_id?: number;
+}
+
+export interface SystemLogItem {
+  /**
+   * 日志ID
+   * @format int64
+   */
+  log_id: number;
+  /**
+   * 日志类别:
+   * - ADMIN: 管理员操作
+   * - USER: 用户操作
+   * - SYSTEM: 系统操作
+   * - CONTAINER: 容器操作
+   * - JUDGE: 判题操作
+   * - SECURITY: 安全相关
+   */
+  log_category: LogCategory;
+  /** 用户ID */
+  user_id?: string | null;
+  /** 用户名 */
+  username?: string | null;
+  /** 操作类型 */
+  action: string;
+  /** 资源类型 */
+  resource_type: string;
+  /** 资源ID */
+  resource_id?: string | null;
+  /** 详细信息 */
+  details?: object | null;
+  /** IP地址 */
+  ip_address?: string | null;
+  /** 用户代理 */
+  user_agent?: string | null;
+  /** 状态 */
+  status: "SUCCESS" | "FAILED" | "WARNING";
+  /** 错误信息 */
+  error_message?: string | null;
+  /**
+   * 创建时间
+   * @format date-time
+   */
+  create_time: string;
+  /**
+   * 游戏ID
+   * @format int64
+   */
+  game_id?: number | null;
+  /**
+   * 挑战ID
+   * @format int64
+   */
+  challenge_id?: number | null;
+  /**
+   * 队伍ID
+   * @format int64
+   */
+  team_id?: number | null;
+}
+
+export interface SystemLogStats {
+  /**
+   * 总日志数（最近24小时）
+   * @format int64
+   */
+  total_logs: number;
+  /**
+   * 成功日志数
+   * @format int64
+   */
+  success_logs: number;
+  /**
+   * 失败日志数
+   * @format int64
+   */
+  failed_logs: number;
+  /**
+   * 管理员操作日志数
+   * @format int64
+   */
+  admin_logs: number;
+  /**
+   * 用户操作日志数
+   * @format int64
+   */
+  user_logs: number;
+  /**
+   * 安全相关日志数
+   * @format int64
+   */
+  security_logs: number;
+}
+
+export interface AdminListSubmitsPayload {
+  /** 游戏ID */
+  game_id: number;
+  /** 每页大小 */
+  size: number;
+  /** 偏移量 */
+  offset: number;
+  /** 题目ID 列表（可选，OR 关系） */
+  challenge_ids?: number[];
+  /** 题目名称关键词列表（模糊匹配，可选，OR 关系） */
+  challenge_names?: string[];
+  /** 队伍ID 列表（可选） */
+  team_ids?: number[];
+  /** 队伍名称关键词列表（模糊匹配，可选） */
+  team_names?: string[];
+  /** 评测结果列表（可选，OR 关系） */
+  judge_statuses?: (
+    | "JudgeAC"
+    | "JudgeWA"
+    | "JudgeError"
+    | "JudgeTimeout"
+    | "JudgeQueueing"
+    | "JudgeRunning"
+  )[];
+  /**
+   * 开始时间（可选）
+   * @format date-time
+   */
+  start_time?: string;
+  /**
+   * 结束时间（可选）
+   * @format date-time
+   */
+  end_time?: string;
+}
+
+export interface AdminSubmitItem {
+  /** 判题ID */
+  judge_id: string;
+  /** 提交者用户名 */
+  username: string;
+  /** 提交者队伍名 */
+  team_name: string;
+  team_id: number;
+  challenge_id: number;
+  /** 提交的FLAG内容 */
+  flag_content: string;
+  /** 题目名称 */
+  challenge_name: string;
+  /** 判题状态 */
+  judge_status:
+    | "JudgeAC"
+    | "JudgeWA"
+    | "JudgeError"
+    | "JudgeTimeout"
+    | "JudgeQueueing"
+    | "JudgeRunning";
+  /**
+   * 判题时间
+   * @format date-time
+   */
+  judge_time: string;
+}
+
+export interface AdminListCheatsPayload {
+  /** 游戏ID */
+  game_id: number;
+  /** 每页大小 */
+  size: number;
+  /** 偏移量 */
+  offset: number;
+  /** 题目ID 列表（可选，OR 关系） */
+  challenge_ids?: number[];
+  /** 题目名称关键词列表（模糊匹配，可选，OR 关系） */
+  challenge_names?: string[];
+  /** 队伍ID 列表（可选） */
+  team_ids?: number[];
+  /** 队伍名称关键词列表（模糊匹配，可选） */
+  team_names?: string[];
+  /** 作弊类型列表（可选，OR 关系） */
+  cheat_types?: (
+    | "SubmitSomeonesFlag"
+    | "SubmitWithoutDownloadAttachments"
+    | "SubmitWithoutStartContainer"
+  )[];
+  /**
+   * 开始时间（可选）
+   * @format date-time
+   */
+  start_time?: string;
+  /**
+   * 结束时间（可选）
+   * @format date-time
+   */
+  end_time?: string;
+}
+
+export interface AdminCheatItem {
+  /** 作弊记录ID */
+  cheat_id: string;
+  /** 作弊类型 */
+  cheat_type:
+    | "SubmitSomeonesFlag"
+    | "SubmitWithoutDownloadAttachments"
+    | "SubmitWithoutStartContainer";
+  /** 作弊者用户名 */
+  username: string;
+  /** 作弊者队伍名 */
+  team_name: string;
+  /** 队伍ID */
+  team_id: number;
+  /** 题目ID */
+  challenge_id: number;
+  /** 题目名称 */
+  challenge_name: string;
+  /** 相关判题ID */
+  judge_id: string;
+  /** 相关FLAG ID */
+  flag_id?: number | null;
+  /** 额外数据 */
+  extra_data: object;
+  /**
+   * 作弊时间
+   * @format date-time
+   */
+  cheat_time: string;
+  /** 提交者IP地址 */
+  submiter_ip?: string | null;
+}
+
+/** 系统设置完整结构体 */
+export interface SystemSettings {
+  /**
+   * 系统名称
+   * @maxLength 100
+   * @example "A1CTF"
+   */
+  systemName: string;
+  /**
+   * 系统logo URL
+   * @example "/images/logo.png"
+   */
+  systemLogo?: string;
+  /**
+   * 系统标语
+   * @maxLength 200
+   * @example "A Modern CTF Platform"
+   */
+  systemSlogan?: string;
+  /**
+   * 系统简介
+   * @example "A comprehensive CTF platform for cybersecurity education"
+   */
+  systemSummary?: string;
+  /**
+   * 页面底部信息
+   * @maxLength 500
+   * @example "© 2024 A1CTF Team"
+   */
+  systemFooter?: string;
+  /**
+   * 网站图标 URL
+   * @example "/images/favicon.ico"
+   */
+  systemFavicon?: string;
+  /**
+   * ICP备案号
+   * @example "浙ICP备2023022969号"
+   */
+  systemICP?: string;
+  /**
+   * 组织名称
+   * @example "浙江师范大学"
+   */
+  systemOrganization?: string;
+  /**
+   * 组织官网链接
+   * @format uri
+   * @example "https://www.zjnu.edu.cn"
+   */
+  systemOrganizationURL?: string;
+  /**
+   * 主题颜色
+   * @example "blue"
+   */
+  themeColor: "blue" | "red" | "green" | "purple" | "orange" | "gray";
+  /**
+   * 默认是否为暗色模式
+   * @example true
+   */
+  darkModeDefault: boolean;
+  /**
+   * 是否允许用户自定义主题
+   * @example true
+   */
+  allowUserTheme: boolean;
+  /**
+   * 白色背景图标 URL
+   * @example "/images/ctf_white.png"
+   */
+  fancyBackGroundIconWhite?: string;
+  /**
+   * 黑色背景图标 URL
+   * @example "/images/ctf_black.png"
+   */
+  fancyBackGroundIconBlack?: string;
+  /**
+   * 默认背景图片 URL
+   * @example "/images/defaultbg.jpg"
+   */
+  defaultBGImage?: string;
+  /**
+   * SVG图标 URL
+   * @example "/images/A1natas.svg"
+   */
+  svgIcon?: string;
+  /**
+   * SVG图标替代文本
+   * @example "A1natas"
+   */
+  svgAltData?: string;
+  /**
+   * 金奖杯图标 URL
+   * @example "/images/trophys/gold_trophy.png"
+   */
+  trophysGold?: string;
+  /**
+   * 银奖杯图标 URL
+   * @example "/images/trophys/silver_trophy.png"
+   */
+  trophysSilver?: string;
+  /**
+   * 铜奖杯图标 URL
+   * @example "/images/trophys/copper_trophy.png"
+   */
+  trophysBronze?: string;
+  /**
+   * 学校logo URL
+   * @example "/images/zjnu_logo.png"
+   */
+  schoolLogo?: string;
+  /**
+   * 学校小图标 URL
+   * @example "/images/zjnu_small_logo.png"
+   */
+  schoolSmallIcon?: string;
+  /**
+   * 学校联合认证文本
+   * @example "ZJNU Union Authserver"
+   */
+  schoolUnionAuthText?: string;
+  /**
+   * 是否启用背景动画
+   * @example false
+   */
+  bgAnimation: boolean;
+  /**
+   * SMTP服务器地址
+   * @example "smtp.example.com"
+   */
+  smtpHost?: string;
+  /**
+   * SMTP服务器端口
+   * @min 1
+   * @max 65535
+   * @example 587
+   */
+  smtpPort: number;
+  smtpName?: string;
+  smtpPortType?: "none" | "tls" | "starttls";
+  /**
+   * SMTP用户名
+   * @example "noreply@example.com"
+   */
+  smtpUsername?: string;
+  /**
+   * SMTP密码
+   * @format password
+   * @example "password123"
+   */
+  smtpPassword?: string;
+  /**
+   * 发件人邮箱
+   * @format email
+   * @example "noreply@example.com"
+   */
+  smtpFrom?: string;
+  /**
+   * 是否启用SMTP
+   * @example false
+   */
+  smtpEnabled: boolean;
+  /**
+   * 邮件模板
+   * @example ""
+   */
+  emailTemplate?: string;
+  /**
+   * 是否启用验证码
+   * @example true
+   */
+  captchaEnabled: boolean;
+  /** 比赛模式对应的比赛ID */
+  gameActivityMode?: string;
+  /**
+   * 关于我们内容
+   * @example "A1CTF Platform"
+   */
+  aboutus?: string;
+  /**
+   * 账户激活方式
+   * @example "email"
+   */
+  accountActivationMethod: "auto" | "email" | "admin";
+  /**
+   * 是否启用用户注册
+   * @example true
+   */
+  registrationEnabled: boolean;
+  /**
+   * 默认语言
+   * @example "zh-CN"
+   */
+  defaultLanguage: string;
+  /**
+   * 时区设置
+   * @example "Asia/Shanghai"
+   */
+  timeZone: string;
+  /**
+   * 最大上传文件大小(MB)
+   * @min 1
+   * @max 1024
+   * @example 10
+   */
+  maxUploadSize: number;
+  /**
+   * 最后更新时间
+   * @format date-time
+   * @example "2024-01-01T12:00:00Z"
+   */
+  updatedTime?: string;
+}
+
+/**
+ * 系统设置部分更新对象。所有字段都是可选的，只需要提供需要更新的字段。
+ * 字段定义与 SystemSettings 相同，但都为可选字段。
+ */
+export interface SystemSettingsPartialUpdate {
+  /**
+   * 系统名称
+   * @maxLength 100
+   */
+  systemName?: string;
+  /** 系统logo URL */
+  systemLogo?: string;
+  /**
+   * 系统标语
+   * @maxLength 200
+   */
+  systemSlogan?: string;
+  /** 系统简介 */
+  systemSummary?: string;
+  /**
+   * 页面底部信息
+   * @maxLength 500
+   */
+  systemFooter?: string;
+  /** 网站图标 URL */
+  systemFavicon?: string;
+  /** ICP备案号 */
+  systemICP?: string;
+  /** 组织名称 */
+  systemOrganization?: string;
+  /**
+   * 组织官网链接
+   * @format uri
+   */
+  systemOrganizationURL?: string;
+  /** 主题颜色 */
+  themeColor?: string;
+  /** 默认是否为暗色模式 */
+  darkModeDefault?: boolean;
+  /** 是否允许用户自定义主题 */
+  allowUserTheme?: boolean;
+  /** 白色背景图标 URL */
+  fancyBackGroundIconWhite?: string;
+  /** 黑色背景图标 URL */
+  fancyBackGroundIconBlack?: string;
+  /** 默认背景图片 URL */
+  defaultBGImage?: string;
+  /** SVG图标 URL */
+  svgIcon?: string;
+  /** SVG图标替代文本 */
+  svgAltData?: string;
+  /** 金奖杯图标 URL */
+  trophysGold?: string;
+  /** 银奖杯图标 URL */
+  trophysSilver?: string;
+  /** 铜奖杯图标 URL */
+  trophysBronze?: string;
+  /** 学校logo URL */
+  schoolLogo?: string;
+  /** 学校小图标 URL */
+  schoolSmallIcon?: string;
+  /** 学校联合认证文本 */
+  schoolUnionAuthText?: string;
+  /** 是否启用背景动画 */
+  bgAnimation?: boolean;
+  /** SMTP服务器地址 */
+  smtpHost?: string;
+  /**
+   * SMTP服务器端口
+   * @min 1
+   * @max 65535
+   */
+  smtpPort?: number;
+  smtpName?: string;
+  smtpPortType?: "none" | "tls" | "starttls";
+  /** SMTP用户名 */
+  smtpUsername?: string;
+  /**
+   * SMTP密码
+   * @format password
+   */
+  smtpPassword?: string;
+  /**
+   * 发件人邮箱
+   * @format email
+   */
+  smtpFrom?: string;
+  /** 是否启用SMTP */
+  smtpEnabled?: boolean;
+  /** 邮件模板 */
+  emailTemplate?: string;
+  /** 是否启用验证码 */
+  captchaEnabled?: boolean;
+  /** 比赛模式对应的比赛ID */
+  gameActivityMode?: string;
+  /** 关于我们内容 */
+  aboutus?: string;
+  /** 账户激活方式 */
+  accountActivationMethod?: "auto" | "email" | "admin";
+  /** 是否启用用户注册 */
+  registrationEnabled?: boolean;
+  /** 默认语言 */
+  defaultLanguage?: string;
+  /** 时区设置 */
+  timeZone?: string;
+  /**
+   * 最大上传文件大小(MB)
+   * @min 1
+   * @max 1024
+   */
+  maxUploadSize?: number;
+}
+
+/** 错误响应格式 */
+export interface Error {
+  /** 错误代码 */
+  code: number;
+  /** 错误信息 */
+  message: string;
 }
 
 import type {
@@ -1117,7 +1752,6 @@ export class Api<
      * @name GetUserProfile
      * @summary Get current user profile
      * @request GET:/api/account/profile
-     * @secure
      */
     getUserProfile: (params: RequestParams = {}) =>
       this.request<
@@ -1129,7 +1763,139 @@ export class Api<
       >({
         path: `/api/account/profile`,
         method: "GET",
-        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Update current user's profile
+     *
+     * @tags user
+     * @name UpdateUserProfile
+     * @summary Update current user's profile
+     * @request PUT:/api/account/profile
+     */
+    updateUserProfile: (
+      data: UserProfileUpdatePayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+        },
+        void
+      >({
+        path: `/api/account/profile`,
+        method: "PUT",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Update user's email address
+     *
+     * @tags user
+     * @name UpdateEmailAddress
+     * @summary Update user's email address
+     * @request POST:/api/account/updateEmail
+     */
+    updateEmailAddress: (
+      data: {
+        /** @format email */
+        email: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+        },
+        void
+      >({
+        path: `/api/account/updateEmail`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Send verify email to user's email address
+     *
+     * @tags user
+     * @name SendVerifyEmail
+     * @summary Send verify email
+     * @request POST:/api/account/sendVerifyEmail
+     */
+    sendVerifyEmail: (params: RequestParams = {}) =>
+      this.request<
+        {
+          code: number;
+        },
+        void
+      >({
+        path: `/api/account/sendVerifyEmail`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Verify email code
+     *
+     * @tags user
+     * @name VerifyEmailCode
+     * @summary Verify email code
+     * @request POST:/api/verifyEmailCode
+     */
+    verifyEmailCode: (
+      data: {
+        code: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+        },
+        void
+      >({
+        path: `/api/verifyEmailCode`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Update user's password
+     *
+     * @tags user
+     * @name ChangePassword
+     * @summary Update user's password
+     * @request POST:/api/account/changePassword
+     */
+    changePassword: (
+      data: {
+        old_password: string;
+        new_password: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+        },
+        void
+      >({
+        path: `/api/account/changePassword`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),
@@ -1486,7 +2252,6 @@ export class Api<
      * @name UploadUserAvatar
      * @summary 上传用户头像
      * @request POST:/api/user/avatar/upload
-     * @secure
      */
     uploadUserAvatar: (
       data: {
@@ -1512,7 +2277,6 @@ export class Api<
         path: `/api/user/avatar/upload`,
         method: "POST",
         body: data,
-        secure: true,
         type: ContentType.FormData,
         format: "json",
         ...params,
@@ -1810,12 +2574,63 @@ export class Api<
       }),
 
     /**
+     * @description Get a gamechallenge from a game
+     *
+     * @tags admin
+     * @name GetGameChallenge
+     * @summary Get a gamechallenge from a game
+     * @request GET:/api/admin/game/{game_id}/challenge/{challenge_id}
+     */
+    getGameChallenge: (
+      gameId: number,
+      challengeId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: AdminDetailGameChallenge;
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/admin/game/${gameId}/challenge/${challengeId}`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Delete a gamechallenge from a game
+     *
+     * @tags admin
+     * @name DeleteGameChallenge
+     * @summary Delete a gamechallenge from a game
+     * @request DELETE:/api/admin/game/{game_id}/challenge/{challenge_id}
+     */
+    deleteGameChallenge: (
+      gameId: number,
+      challengeId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/admin/game/${gameId}/challenge/${challengeId}`,
+        method: "DELETE",
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * @description Add a challenge to a game
      *
      * @tags admin
      * @name AddGameChallenge
      * @summary Add a challenge to a game
-     * @request PUT:/api/admin/game/{game_id}/challenge/{challenge_id}
+     * @request POST:/api/admin/game/{game_id}/challenge/{challenge_id}
      */
     addGameChallenge: (
       gameId: number,
@@ -1830,7 +2645,35 @@ export class Api<
         void | ErrorMessage
       >({
         path: `/api/admin/game/${gameId}/challenge/${challengeId}`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Update a game challenge
+     *
+     * @tags admin
+     * @name UpdateGameChallenge
+     * @summary Update a game challenge
+     * @request PUT:/api/admin/game/{game_id}/challenge/{challenge_id}
+     */
+    updateGameChallenge: (
+      gameId: number,
+      challengeId: number,
+      data: AdminDetailGameChallenge,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/admin/game/${gameId}/challenge/${challengeId}`,
         method: "PUT",
+        body: data,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),
@@ -1941,13 +2784,45 @@ export class Api<
       }),
 
     /**
+     * @description Delete solve records for a challenge (all or specific team)
+     *
+     * @tags admin
+     * @name DeleteChallengeSolves
+     * @summary Delete challenge solve records
+     * @request POST:/api/admin/game/{game_id}/challenge/{challenge_id}/solves/delete
+     */
+    deleteChallengeSolves: (
+      gameId: number,
+      challengeId: number,
+      data: DeleteChallengeSolvesPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          message: string;
+          data: {
+            deleted_count?: number;
+            team_name?: string;
+          };
+        },
+        void
+      >({
+        path: `/api/admin/game/${gameId}/challenge/${challengeId}/solves/delete`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * @description 上传比赛海报图片并更新比赛信息，需要管理员权限
      *
      * @tags admin
      * @name UploadGamePoster
      * @summary 上传比赛海报
      * @request POST:/api/admin/game/{game_id}/poster/upload
-     * @secure
      */
     uploadGamePoster: (
       gameId: number,
@@ -1974,7 +2849,6 @@ export class Api<
         path: `/api/admin/game/${gameId}/poster/upload`,
         method: "POST",
         body: data,
-        secure: true,
         type: ContentType.FormData,
         format: "json",
         ...params,
@@ -2538,6 +3412,103 @@ export class Api<
       }),
 
     /**
+     * @description 管理员获取系统操作日志，支持分页和筛选
+     *
+     * @tags admin
+     * @name AdminGetSystemLogs
+     * @summary 获取系统日志
+     * @request GET:/api/admin/system/logs
+     */
+    adminGetSystemLogs: (
+      query?: {
+        /**
+         * 偏移量
+         * @default 0
+         */
+        offset?: number;
+        /**
+         * 每页大小
+         * @max 100
+         * @default 20
+         */
+        size?: number;
+        /** 日志类别 */
+        category?: LogCategory;
+        /** 用户ID */
+        user_id?: string;
+        /** 操作类型 */
+        action?: string;
+        /** 资源类型 */
+        resource_type?: string;
+        /** 状态 */
+        status?: "SUCCESS" | "FAILED" | "WARNING";
+        /** IP地址 */
+        ip_address?: string;
+        /** 游戏ID */
+        game_id?: number;
+        /** 关键词搜索 */
+        keyword?: string;
+        /**
+         * 开始时间
+         * @format date-time
+         */
+        start_time?: string;
+        /**
+         * 结束时间
+         * @format date-time
+         */
+        end_time?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          data: {
+            logs: SystemLogItem[];
+            /** 总记录数 */
+            total: number;
+            pagination: {
+              offset: number;
+              size: number;
+              total: number;
+            };
+          };
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/admin/system/logs`,
+        method: "GET",
+        query: query,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 管理员获取系统日志统计信息（最近24小时）
+     *
+     * @tags admin
+     * @name AdminGetSystemLogStats
+     * @summary 获取系统日志统计
+     * @request GET:/api/admin/system/logs/stats
+     */
+    adminGetSystemLogStats: (params: RequestParams = {}) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          data: SystemLogStats;
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/admin/system/logs/stats`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * No description
      *
      * @tags admin
@@ -2563,6 +3534,64 @@ export class Api<
         format: "json",
         ...params,
       }),
+
+    /**
+     * @description 获取指定比赛的所有提交记录（包含正确和错误），支持分页
+     *
+     * @tags admin
+     * @name AdminListGameSubmits
+     * @summary 获取比赛提交记录列表
+     * @request POST:/api/admin/game/{game_id}/submits
+     */
+    adminListGameSubmits: (
+      gameId: number,
+      data: AdminListSubmitsPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: AdminSubmitItem[];
+          total: number;
+        },
+        void
+      >({
+        path: `/api/admin/game/${gameId}/submits`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 获取指定比赛的所有作弊记录，支持分页
+     *
+     * @tags admin
+     * @name AdminListGameCheats
+     * @summary 获取比赛作弊记录列表
+     * @request POST:/api/admin/game/{game_id}/cheats
+     */
+    adminListGameCheats: (
+      gameId: number,
+      data: AdminListCheatsPayload,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+          data: AdminCheatItem[];
+          total: number;
+        },
+        void
+      >({
+        path: `/api/admin/game/${gameId}/cheats`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
   };
   file = {
     /**
@@ -2572,7 +3601,6 @@ export class Api<
      * @name UploadFile
      * @summary 上传文件
      * @request POST:/api/file/upload
-     * @secure
      */
     uploadFile: (
       data: {
@@ -2599,7 +3627,6 @@ export class Api<
         path: `/api/file/upload`,
         method: "POST",
         body: data,
-        secure: true,
         type: ContentType.FormData,
         format: "json",
         ...params,
@@ -2612,13 +3639,150 @@ export class Api<
      * @name DownloadFile
      * @summary 下载文件
      * @request GET:/api/file/download/{file_id}
-     * @secure
      */
     downloadFile: (fileId: string, params: RequestParams = {}) =>
       this.request<File, ErrorMessage>({
         path: `/api/file/download/${fileId}`,
         method: "GET",
-        secure: true,
+        ...params,
+      }),
+  };
+  system = {
+    /**
+     * @description Send a test mail to a email address
+     *
+     * @tags system
+     * @name SendSmtpTestMail
+     * @summary Send a test mail to a email address
+     * @request POST:/api/admin/system/test-smtp
+     */
+    sendSmtpTestMail: (
+      data: {
+        /** 接收邮件的邮箱地址 */
+        to: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/admin/system/test-smtp`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 上传系统文件并存储到服务器，返回文件ID
+     *
+     * @tags system
+     * @name UploadSystemFile
+     * @summary 上传系统文件
+     * @request POST:/api/admin/system/upload
+     */
+    uploadSystemFile: (
+      data: {
+        /**
+         * 要上传的文件
+         * @format binary
+         */
+        file: File;
+        /**
+         * 资源类型:
+         * - svgIconLight: SVG图标(浅色)
+         * - svgIconDark: SVG图标(深色)
+         * - trophysGold: 金牌奖杯
+         * - trophysSilver: 银牌奖杯
+         * - trophysBronze: 铜牌奖杯
+         * - schoolLogo: 学校Logo
+         * - schoolSmallIcon: 学校小图标
+         * - fancyBackGroundIconWhite: 白色背景图标
+         * - fancyBackGroundIconBlack: 黑色背景图标
+         * - gameIconLight: 比赛图标(浅色)
+         * - gameIconDark: 比赛图标(深色)
+         */
+        resource_type: SystemResourceType;
+        data?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code: number;
+          data: {
+            /** 文件URL */
+            file_id?: string;
+          };
+        },
+        ErrorMessage | void
+      >({
+        path: `/api/admin/system/upload`,
+        method: "POST",
+        body: data,
+        type: ContentType.FormData,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description 获取当前系统的所有配置设置
+     *
+     * @tags system
+     * @name GetSystemSettings
+     * @summary 获取系统设置
+     * @request GET:/api/admin/system/settings
+     */
+    getSystemSettings: (params: RequestParams = {}) =>
+      this.request<
+        {
+          /** @example 200 */
+          code?: number;
+          /** 系统设置完整结构体 */
+          data?: SystemSettings;
+        },
+        Error
+      >({
+        path: `/api/admin/system/settings`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags system
+     * @name UpdateSystemSettings
+     * @summary 更新系统设置
+     * @request POST:/api/admin/system/settings
+     */
+    updateSystemSettings: (
+      data: SystemSettingsPartialUpdate,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          /** @example 200 */
+          code?: number;
+          /** @example "System settings updated" */
+          message?: string;
+          /** 系统设置完整结构体 */
+          data?: SystemSettings;
+        },
+        Error
+      >({
+        path: `/api/admin/system/settings`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
         ...params,
       }),
   };
@@ -2629,10 +3793,10 @@ export class Api<
      * @tags team
      * @name UploadTeamAvatar
      * @summary 上传团队头像
-     * @request POST:/api/team/avatar/upload
-     * @secure
+     * @request POST:/api/game/{game_id}/team/avatar/upload
      */
     uploadTeamAvatar: (
+      gameId: number,
       data: {
         /**
          * 要上传的团队头像图片文件，支持jpg、png、gif等常见图片格式
@@ -2655,10 +3819,9 @@ export class Api<
         },
         ErrorMessage | void
       >({
-        path: `/api/team/avatar/upload`,
+        path: `/api/game/${gameId}/team/avatar/upload`,
         method: "POST",
         body: data,
-        secure: true,
         type: ContentType.FormData,
         format: "json",
         ...params,
@@ -2670,10 +3833,13 @@ export class Api<
      * @tags team
      * @name TeamAccept
      * @summary 申请加入战队
-     * @request POST:/api/team/join
-     * @secure
+     * @request POST:/api/game/{game_id}/team/join
      */
-    teamAccept: (data: TeamJoinPayload, params: RequestParams = {}) =>
+    teamAccept: (
+      gameId: number,
+      data: TeamJoinPayload,
+      params: RequestParams = {},
+    ) =>
       this.request<
         {
           /** @example 200 */
@@ -2683,10 +3849,9 @@ export class Api<
         },
         ErrorMessage | void
       >({
-        path: `/api/team/join`,
+        path: `/api/game/${gameId}/team/join`,
         method: "POST",
         body: data,
-        secure: true,
         type: ContentType.Json,
         format: "json",
         ...params,
@@ -2698,10 +3863,13 @@ export class Api<
      * @tags team
      * @name GetTeamJoinRequests
      * @summary 获取战队加入申请列表
-     * @request GET:/api/team/{team_id}/requests
-     * @secure
+     * @request GET:/api/game/{game_id}/team/{team_id}/requests
      */
-    getTeamJoinRequests: (teamId: number, params: RequestParams = {}) =>
+    getTeamJoinRequests: (
+      teamId: number,
+      gameId: number,
+      params: RequestParams = {},
+    ) =>
       this.request<
         {
           /** @example 200 */
@@ -2710,9 +3878,8 @@ export class Api<
         },
         ErrorMessage | void
       >({
-        path: `/api/team/${teamId}/requests`,
+        path: `/api/game/${gameId}/team/${teamId}/requests`,
         method: "GET",
-        secure: true,
         format: "json",
         ...params,
       }),
@@ -2723,11 +3890,11 @@ export class Api<
      * @tags team
      * @name HandleTeamJoinRequest
      * @summary 处理加入申请
-     * @request POST:/api/team/request/{request_id}/handle
-     * @secure
+     * @request POST:/api/game/{game_id}/team/request/{request_id}/handle
      */
     handleTeamJoinRequest: (
       requestId: number,
+      gameId: number,
       data: HandleJoinRequestPayload,
       params: RequestParams = {},
     ) =>
@@ -2740,10 +3907,9 @@ export class Api<
         },
         ErrorMessage | void
       >({
-        path: `/api/team/request/${requestId}/handle`,
+        path: `/api/game/${gameId}/team/request/${requestId}/handle`,
         method: "POST",
         body: data,
-        secure: true,
         type: ContentType.Json,
         format: "json",
         ...params,
@@ -2755,11 +3921,11 @@ export class Api<
      * @tags team
      * @name TransferTeamCaptain
      * @summary 转移队长
-     * @request POST:/api/team/{team_id}/transfer-captain
-     * @secure
+     * @request POST:/api/game/{game_id}/team/{team_id}/transfer-captain
      */
     transferTeamCaptain: (
       teamId: number,
+      gameId: number,
       data: TransferCaptainPayload,
       params: RequestParams = {},
     ) =>
@@ -2772,10 +3938,9 @@ export class Api<
         },
         ErrorMessage | void
       >({
-        path: `/api/team/${teamId}/transfer-captain`,
+        path: `/api/game/${gameId}/team/${teamId}/transfer-captain`,
         method: "POST",
         body: data,
-        secure: true,
         type: ContentType.Json,
         format: "json",
         ...params,
@@ -2787,12 +3952,12 @@ export class Api<
      * @tags team
      * @name RemoveTeamMember
      * @summary 踢出队员
-     * @request DELETE:/api/team/{team_id}/member/{user_id}
-     * @secure
+     * @request DELETE:/api/game/{game_id}/team/{team_id}/member/{user_id}
      */
     removeTeamMember: (
       teamId: number,
       userId: string,
+      gameId: number,
       params: RequestParams = {},
     ) =>
       this.request<
@@ -2804,9 +3969,8 @@ export class Api<
         },
         ErrorMessage | void
       >({
-        path: `/api/team/${teamId}/member/${userId}`,
+        path: `/api/game/${gameId}/team/${teamId}/member/${userId}`,
         method: "DELETE",
-        secure: true,
         format: "json",
         ...params,
       }),
@@ -2817,10 +3981,9 @@ export class Api<
      * @tags team
      * @name DeleteTeam
      * @summary 解散战队
-     * @request DELETE:/api/team/{team_id}
-     * @secure
+     * @request DELETE:/api/game/{game_id}/team/{team_id}
      */
-    deleteTeam: (teamId: number, params: RequestParams = {}) =>
+    deleteTeam: (teamId: number, gameId: number, params: RequestParams = {}) =>
       this.request<
         {
           /** @example 200 */
@@ -2830,9 +3993,8 @@ export class Api<
         },
         ErrorMessage | void
       >({
-        path: `/api/team/${teamId}`,
+        path: `/api/game/${gameId}/team/${teamId}`,
         method: "DELETE",
-        secure: true,
         format: "json",
         ...params,
       }),
@@ -2843,11 +4005,11 @@ export class Api<
      * @tags team
      * @name UpdateTeamInfo
      * @summary 更新战队信息
-     * @request PUT:/api/team/{team_id}
-     * @secure
+     * @request PUT:/api/game/{game_id}/team/{team_id}
      */
     updateTeamInfo: (
       teamId: number,
+      gameId: number,
       data: UpdateTeamInfoPayload,
       params: RequestParams = {},
     ) =>
@@ -2860,10 +4022,9 @@ export class Api<
         },
         ErrorMessage | void
       >({
-        path: `/api/team/${teamId}`,
+        path: `/api/game/${gameId}/team/${teamId}`,
         method: "PUT",
         body: data,
-        secure: true,
         type: ContentType.Json,
         format: "json",
         ...params,

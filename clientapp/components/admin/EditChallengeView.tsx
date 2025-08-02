@@ -42,10 +42,13 @@ import { MacScrollbar } from "mac-scrollbar";
 import { AdminChallengeConfig } from "utils/A1API";
 import { api, ErrorMessage } from "utils/ApiHelper";
 import dayjs from "dayjs";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { AxiosError } from "axios";
 import { useNavigate } from "react-router";
 import { UploadFileDialog } from "components/dialogs/UploadFileDialog";
+import { Switch } from "components/ui/switch";
+import { useTheme } from "next-themes";
+import ThemedEditor from "components/modules/ThemedEditor";
 
 interface ContainerFormProps {
     control: any;
@@ -406,7 +409,7 @@ function AttachmentForm({ control, index, form, removeAttachment, onFormSubmit }
                             form.setValue(`attachments.${index}.attach_hash`, fileId);
                             form.setValue(`attachments.${index}.attach_name`, fileName);
                             toast.success(`文件 "${fileName}" 上传成功`);
-                            
+
                             // 自动保存表单
                             try {
                                 await onFormSubmit();
@@ -427,7 +430,7 @@ function AttachmentForm({ control, index, form, removeAttachment, onFormSubmit }
     );
 }
 
-export function EditChallengeView({ challenge_info } : { challenge_info: AdminChallengeConfig }) {
+export function EditChallengeView({ challenge_info }: { challenge_info: AdminChallengeConfig }) {
 
     const categories: { [key: string]: any } = {
         "MISC": <Radar size={21} />,
@@ -459,6 +462,9 @@ export function EditChallengeView({ challenge_info } : { challenge_info: AdminCh
             judge_script: z.string().optional(),
             flag_template: z.string().optional(),
         }),
+        allow_wan: z.boolean(),
+        allow_dns: z.boolean(),
+        flag_type: z.enum(["FlagTypeDynamic", "FlagTypeStatic"]),
         // 新增 container_config 部分
         container_config: z.array(
             z.object({
@@ -509,7 +515,7 @@ export function EditChallengeView({ challenge_info } : { challenge_info: AdminCh
             const [name, value] = item.split("=")
             env.push({ name, value })
         })
-        
+
         return env
     }
 
@@ -520,11 +526,14 @@ export function EditChallengeView({ challenge_info } : { challenge_info: AdminCh
             description: challenge_info.description,
             category: challenge_info.category,
             challenge_id: 0,
+            allow_wan: challenge_info.allow_wan,
+            allow_dns: challenge_info.allow_dns,
             judge_config: {
                 judge_type: challenge_info.judge_config.judge_type,
                 judge_script: challenge_info.judge_config.judge_script || "",
                 flag_template: challenge_info.judge_config.flag_template
             },
+            flag_type: challenge_info.flag_type,
             container_config: challenge_info.container_config.map((e) => ({
                 name: e.name,
                 image: e.image,
@@ -576,6 +585,8 @@ export function EditChallengeView({ challenge_info } : { challenge_info: AdminCh
             attachments: values.attachments,
             category: values.category.toUpperCase(),
             challenge_id: challenge_info.challenge_id,
+            allow_wan: values.allow_wan,
+            allow_dns: values.allow_dns,
             container_config: values.container_config.map((e) => ({
                 name: e.name,
                 image: e.image,
@@ -590,21 +601,12 @@ export function EditChallengeView({ challenge_info } : { challenge_info: AdminCh
             description: values.description,
             judge_config: values.judge_config,
             name: values.name,
-            type_: challenge_info.type_,
+            flag_type: values.flag_type
         };
-        
-        try {
-            await api.admin.updateChallenge(challenge_info.challenge_id!, finalData as AdminChallengeConfig);
+
+        api.admin.updateChallenge(challenge_info.challenge_id!, finalData as AdminChallengeConfig).then((res) => {
             toast.success("更新成功");
-        } catch (error: AxiosError | any) {
-            if (error.response?.status) {
-                const errorMessage: ErrorMessage = error.response.data as ErrorMessage;
-                toast.error(errorMessage.message);
-            } else {
-                toast.error("Unknow Error");
-            }
-            throw error; // 重新抛出错误以便上层处理
-        }
+        })
     }
 
     const router = useNavigate()
@@ -614,10 +616,14 @@ export function EditChallengeView({ challenge_info } : { challenge_info: AdminCh
         // form.setValue("category", "MISC")
     }, [])
 
+    const { theme } = useTheme()
+
     return (
         <div className="absolute w-screen h-screen bg-background items-center justify-center flex select-none overflow-x-hidden overflow-hidden">
             <Form {...form}>
-                <MacScrollbar className="h-full w-full flex flex-col items-center">
+                <MacScrollbar className="h-full w-full flex flex-col items-center"
+                    skin={theme == "light" ? "light" : "dark"}
+                >
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-20 pt-20 w-[80%] flex flex-col">
                         <div className="flex">
                             <Button type="button" variant={"default"} onClick={() => {
@@ -627,7 +633,7 @@ export function EditChallengeView({ challenge_info } : { challenge_info: AdminCh
                                 Back to challenges
                             </Button>
                         </div>
-                        <span className="text-3xl font-bold">Edit - { challenge_info.name }</span>
+                        <span className="text-3xl font-bold">Edit - {challenge_info.name}</span>
                         <span className="text-lg font-semibold">基本信息</span>
                         <div className="flex gap-10 items-center">
                             <div className="w-1/3">
@@ -744,7 +750,12 @@ export function EditChallengeView({ challenge_info } : { challenge_info: AdminCh
                                         <FormMessage className="text-[14px]" />
                                     </div>
                                     <FormControl>
-                                        <Textarea {...field} className="h-[300px]" />
+                                        <ThemedEditor
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            language="markdown"
+                                            className='h-[500px]'
+                                        />
                                     </FormControl>
                                     <FormDescription>
                                         题目简介
@@ -785,29 +796,113 @@ export function EditChallengeView({ challenge_info } : { challenge_info: AdminCh
                                 )}
                             />
                         ) : (
+                            <>
+                                <FormField
+                                    control={form.control}
+                                    name="judge_config.flag_template"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <div className="flex items-center h-[20px]">
+                                                <FormLabel>Flag</FormLabel>
+                                                <div className="flex-1" />
+                                                <FormMessage className="text-[14px]" />
+                                            </div>
+                                            <FormControl>
+                                                <Input {...field} />
+                                            </FormControl>
+                                            <div className="flex flex-col text-[12px] text-foreground/60">
+                                                <span>Flag支持模板变量</span>
+                                                <span>[team_hash] 部分会被替换成队伍唯一标识符</span>
+                                                <span>[team_name] 部分会被替换成队伍名称</span>
+                                                <span>[game_id] 部分会被替换成比赛ID</span>
+                                                <span>[uuid] 部分会被替换成随机UUID</span>
+                                                <span>[random_string_??] 部分会被替换成随机字符串, 其中??表示字符串长度</span>
+                                                <span>如果你在题目设置中选择了动态Flag, 将会启用Leet进行反作弊</span>
+                                                <span>模板变量部分不会被Leet替换</span>
+                                            </div>
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="flag_type"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <div className="flex items-center h-[20px]">
+                                                <FormLabel>Flag类型</FormLabel>
+                                                <div className="flex-1" />
+                                                <FormMessage className="text-[14px]" />
+                                            </div>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="选择一个Flag类型" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent className="w-full flex">
+                                                    <SelectItem key="FlagTypeDynamic" value="FlagTypeDynamic">
+                                                        <div className="w-full flex gap-2 items-center h-[30px]">
+                                                            <span className="text-[14px] font-bold">动态Flag (强制启用Leet)</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                    <SelectItem key="FlagTypeStatic" value="FlagTypeStatic">
+                                                        <div className="w-full flex gap-2 items-center h-[30px]">
+                                                            <span className="text-[14px] font-bold">静态Flag (无反作弊)</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormDescription>
+                                                请务必正确选择 Flag 类型, 在动态 Flag 模式下平台回使用Leet为每只队伍生成不同但是看起来相似的 Flag, 请你不要使用过短的 Flag
+                                            </FormDescription>
+                                        </FormItem>
+                                    )}
+                                />
+                            </>
+                        )}
+
+                        <div className="grid grid-cols-3 gap-4 mt-4">
                             <FormField
                                 control={form.control}
-                                name="judge_config.flag_template"
+                                name="allow_wan"
                                 render={({ field }) => (
-                                    <FormItem>
-                                        <div className="flex items-center h-[20px]">
-                                            <FormLabel>Flag</FormLabel>
-                                            <div className="flex-1" />
-                                            <FormMessage className="text-[14px]" />
+                                    <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/50 p-4 shadow-sm bg-background/30">
+                                        <div className="space-y-0.5">
+                                            <FormLabel>允许外网</FormLabel>
+                                            <FormDescription>
+                                                如果关闭, 则容器无法访问外部网络
+                                            </FormDescription>
                                         </div>
                                         <FormControl>
-                                            <Input {...field} />
+                                            <Switch
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
                                         </FormControl>
-                                        <div className="flex flex-col text-[12px] text-foreground/60">
-                                            <span>Flag支持模板变量</span>
-                                            <span>[TEAMHASH] 部分会被替换成队伍唯一标识符</span>
-                                            <span>[UUID] 部分会被替换成随机UUID</span>
-                                            <span>在Flag头加上[LEET] 会把花括号内的内容用LEET替换字符</span>
-                                        </div>
                                     </FormItem>
                                 )}
                             />
-                        )}
+                            <FormField
+                                control={form.control}
+                                name="allow_dns"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/50 p-4 shadow-sm bg-background/30">
+                                        <div className="space-y-0.5">
+                                            <FormLabel>DNS出网</FormLabel>
+                                            <FormDescription>
+                                                只有不出网时该选项才生效
+                                            </FormDescription>
+                                        </div>
+                                        <FormControl>
+                                            <Switch
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
 
                         {/* 动态容器列表 */}
                         <div className="mt-6">

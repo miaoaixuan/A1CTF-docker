@@ -1,8 +1,8 @@
 import dayjs from "dayjs";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const TimerDisplay = (
-    { target_time, className, onFinishCallback } : { target_time: dayjs.Dayjs | number | string | null, className: string, onFinishCallback: () => void }
+    { targetTime: target_time, className, onFinishCallback } : { targetTime: dayjs.Dayjs | number | string | null, className: string, onFinishCallback: () => void }
 ) => {
     const [timeLeft, setTimeLeft] = useState("0s");
 
@@ -34,7 +34,7 @@ const TimerDisplay = (
             }
             setTimeLeft(formatDuration(leftTime))
         }
-        const interval = setInterval(updateFunction, 1000)
+        const interval = setInterval(updateFunction, 500)
         
         updateFunction()
 
@@ -44,7 +44,9 @@ const TimerDisplay = (
     }, [target_time])
 
     return (
-        <span className={className}>{timeLeft}</span>
+        <>
+            <span className={className}>{timeLeft}</span>
+        </>
     )
 }
 

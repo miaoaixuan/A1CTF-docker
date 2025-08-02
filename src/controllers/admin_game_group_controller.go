@@ -3,12 +3,14 @@ package controllers
 import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
+	i18ntool "a1ctf/src/utils/i18n_tool"
 	"a1ctf/src/webmodels"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"gorm.io/gorm"
 )
 
@@ -19,7 +21,7 @@ func AdminGetGameGroups(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid game ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidGameID"}),
 		})
 		return
 	}
@@ -28,7 +30,7 @@ func AdminGetGameGroups(c *gin.Context) {
 	if err := dbtool.DB().Where("game_id = ?", gameID).Order("display_order ASC, created_at ASC").Find(&groups).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load game groups",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGameGroups"}),
 		})
 		return
 	}
@@ -46,7 +48,7 @@ func AdminCreateGameGroup(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid game ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidGameID"}),
 		})
 		return
 	}
@@ -55,7 +57,7 @@ func AdminCreateGameGroup(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid request payload",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -65,7 +67,7 @@ func AdminCreateGameGroup(c *gin.Context) {
 	if err := dbtool.DB().Where("game_id = ? AND group_name = ?", gameID, payload.GroupName).First(&existingGroup).Error; err == nil {
 		c.JSON(http.StatusConflict, webmodels.ErrorMessage{
 			Code:    409,
-			Message: "Group name already exists",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "GroupNameAlreadyExists"}),
 		})
 		return
 	}
@@ -86,7 +88,7 @@ func AdminCreateGameGroup(c *gin.Context) {
 	if err := dbtool.DB().Create(&newGroup).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to create group",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCreateGroup"}),
 		})
 		return
 	}
@@ -104,7 +106,7 @@ func AdminUpdateGameGroup(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid game ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidGameID"}),
 		})
 		return
 	}
@@ -114,7 +116,7 @@ func AdminUpdateGameGroup(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid group ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidGroupID"}),
 		})
 		return
 	}
@@ -123,7 +125,7 @@ func AdminUpdateGameGroup(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid request payload",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -134,12 +136,12 @@ func AdminUpdateGameGroup(c *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 				Code:    404,
-				Message: "Group not found",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "GroupNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
-				Message: "Failed to load group",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGroup"}),
 			})
 		}
 		return
@@ -150,7 +152,7 @@ func AdminUpdateGameGroup(c *gin.Context) {
 	if err := dbtool.DB().Where("game_id = ? AND group_name = ? AND group_id != ?", gameID, payload.GroupName, groupID).First(&existingGroup).Error; err == nil {
 		c.JSON(http.StatusConflict, webmodels.ErrorMessage{
 			Code:    409,
-			Message: "Group name already exists",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "GroupNameAlreadyExists"}),
 		})
 		return
 	}
@@ -163,14 +165,14 @@ func AdminUpdateGameGroup(c *gin.Context) {
 	}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to update group",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToUpdateGroup"}),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"message": "Group updated successfully",
+		"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "GroupUpdatedSuccessfully"}),
 	})
 }
 
@@ -181,7 +183,7 @@ func AdminDeleteGameGroup(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid game ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidGameID"}),
 		})
 		return
 	}
@@ -191,7 +193,7 @@ func AdminDeleteGameGroup(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid group ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidGroupID"}),
 		})
 		return
 	}
@@ -202,12 +204,12 @@ func AdminDeleteGameGroup(c *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 				Code:    404,
-				Message: "Group not found",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "GroupNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
-				Message: "Failed to load group",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGroup"}),
 			})
 		}
 		return
@@ -218,7 +220,7 @@ func AdminDeleteGameGroup(c *gin.Context) {
 	if err := dbtool.DB().Model(&models.Team{}).Where("group_id = ?", groupID).Count(&teamCount).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to check teams in group",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCheckTeamsInGroup"}),
 		})
 		return
 	}
@@ -226,7 +228,7 @@ func AdminDeleteGameGroup(c *gin.Context) {
 	if teamCount > 0 {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Cannot delete group with teams in it",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "CannotDeleteGroupWithTeams"}),
 		})
 		return
 	}
@@ -235,13 +237,13 @@ func AdminDeleteGameGroup(c *gin.Context) {
 	if err := dbtool.DB().Delete(&group).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to delete group",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToDeleteGroup"}),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"message": "Group deleted successfully",
+		"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "GroupDeletedSuccessfully"}),
 	})
 }

@@ -39,7 +39,10 @@ type RegisterPayload struct {
 
 type AdminUpdateGamePayload struct {
 	models.Game
-	Challenges []models.GameChallenge `json:"challenges"`
+}
+
+type AdminUpdateGameChallengePayload struct {
+	models.GameChallenge
 }
 
 type AdminListGamePayload struct {
@@ -92,10 +95,11 @@ type AdminUserOperationPayload struct {
 
 // 容器列表请求参数
 type AdminListContainersPayload struct {
-	GameID int    `json:"game_id"`
-	Size   int    `json:"size" binding:"min=0"`
-	Offset int    `json:"offset"`
-	Search string `json:"search"`
+	GameID      int    `json:"game_id"`
+	Size        int    `json:"size" binding:"min=0"`
+	Offset      int    `json:"offset"`
+	Search      string `json:"search"`
+	ChallengeID int    `json:"challenge_id"`
 }
 
 // 容器操作请求参数
@@ -179,4 +183,42 @@ type UpdateScoreAdjustmentPayload struct {
 	AdjustmentType string  `json:"adjustment_type" binding:"required,oneof=cheat reward other"`
 	ScoreChange    float64 `json:"score_change" binding:"required"`
 	Reason         string  `json:"reason" binding:"required"`
+}
+
+type SystemResourceType string
+
+const (
+	SystemIconLight          SystemResourceType = "svgIconLight"
+	SystemIconDark           SystemResourceType = "svgIconDark"
+	TrophysGold              SystemResourceType = "trophysGold"
+	TrophysSilver            SystemResourceType = "trophysSilver"
+	TrophysBronze            SystemResourceType = "trophysBronze"
+	SchoolLogo               SystemResourceType = "schoolLogo"
+	SchoolSmallIcon          SystemResourceType = "schoolSmallIcon"
+	FancyBackGroundIconWhite SystemResourceType = "fancyBackGroundIconWhite"
+	FancyBackGroundIconBlack SystemResourceType = "fancyBackGroundIconBlack"
+	GameIconLight            SystemResourceType = "gameIconLight"
+	GameIconDark             SystemResourceType = "gameIconDark"
+)
+
+// 用户个人资料更新
+type UpdateUserProfilePayload struct {
+	RealName  *string `json:"real_name"`
+	StudentID *string `json:"student_id"`
+	Phone     *string `json:"phone"`
+	Slogan    *string `json:"slogan"`
+	UserName  *string `json:"username"`
+}
+
+type UpdateUserEmailPayload struct {
+	NewEmail string `json:"email"`
+}
+
+type EmailVerifyPayload struct {
+	Code string `json:"code"`
+}
+
+type ChangePasswordPayload struct {
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
 }

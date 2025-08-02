@@ -2,11 +2,14 @@ package controllers
 
 import (
 	"a1ctf/src/db/models"
+	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
+	i18ntool "a1ctf/src/utils/i18n_tool"
 	"a1ctf/src/webmodels"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"gorm.io/gorm"
 )
 
@@ -14,7 +17,10 @@ func AdminListTeams(c *gin.Context) {
 
 	var payload webmodels.AdminListTeamsPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+			Code:    400,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
+		})
 		return
 	}
 
@@ -28,7 +34,10 @@ func AdminListTeams(c *gin.Context) {
 
 	var teams []models.Team
 	if err := query.Offset(payload.Offset).Limit(payload.Size).Find(&teams).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch teams"})
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToFetchTeams"}),
+		})
 		return
 	}
 
@@ -40,13 +49,19 @@ func AdminListTeams(c *gin.Context) {
 		countQuery = countQuery.Where("team_name LIKE ? OR team_slogan LIKE ?", searchPattern, searchPattern)
 	}
 	if err := countQuery.Count(&count).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count teams"})
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCountTeams"}),
+		})
 		return
 	}
 
 	var users []models.User
 	if err := dbtool.DB().Find(&users).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToFetchUsers"}),
+		})
 		return
 	}
 
@@ -89,161 +104,195 @@ func AdminListTeams(c *gin.Context) {
 	})
 }
 
-// AdminApproveTeam 批准队伍（设置状态为Approved）
+// AdminApproveTeam 批准队伍
 func AdminApproveTeam(c *gin.Context) {
 	var payload webmodels.AdminTeamOperationPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "无效的请求参数",
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+			Code:    400,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
 
-	// 首先查询队伍当前状态
+	// 查找队伍
 	var team models.Team
-	if err := dbtool.DB().First(&team, payload.TeamID).Error; err != nil {
+	if err := dbtool.DB().Where("team_id = ?", payload.TeamID).First(&team).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{
-				"code":    404,
-				"message": "未找到队伍",
+			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
+				Code:    404,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamNotFound"}),
 			})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    500,
-				"message": "查询队伍失败",
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+				Code:    500,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "DatabaseError"}),
 			})
 		}
 		return
 	}
 
-	// 只有未审核状态的队伍才能批准
-	if team.TeamStatus != models.ParticipatePending {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "只有未审核的队伍才能批准",
-		})
-		return
-	}
-
 	// 更新队伍状态为已批准
-	result := dbtool.DB().Model(&models.Team{}).
-		Where("team_id = ?", payload.TeamID).
-		Update("team_status", models.ParticipateApproved)
+	oldStatus := team.TeamStatus
+	if err := dbtool.DB().Model(&team).Update("team_status", models.ParticipateApproved).Error; err != nil {
+		// 记录批准队伍失败日志
+		tasks.LogAdminOperationWithError(c, models.ActionApprove, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+			"team_id":    team.TeamID,
+			"team_name":  team.TeamName,
+			"game_id":    team.GameID,
+			"old_status": oldStatus,
+		}, err)
 
-	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "更新队伍状态失败",
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToApproveTeam"}),
 		})
 		return
 	}
 
-	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"code":    404,
-			"message": "未找到队伍",
-		})
-		return
-	}
+	// 记录批准队伍成功日志
+	tasks.LogAdminOperation(c, models.ActionApprove, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+		"team_id":    team.TeamID,
+		"team_name":  team.TeamName,
+		"game_id":    team.GameID,
+		"old_status": oldStatus,
+		"new_status": models.ParticipateApproved,
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"message": "队伍已批准",
+		"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamApproved"}),
 	})
 }
 
-// AdminBanTeam 锁定队伍（设置状态为Banned）
+// AdminBanTeam 禁赛队伍
 func AdminBanTeam(c *gin.Context) {
 	var payload webmodels.AdminTeamOperationPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "无效的请求参数",
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+			Code:    400,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
 
-	// 更新队伍状态为已禁赛
-	result := dbtool.DB().Model(&models.Team{}).
-		Where("team_id = ?", payload.TeamID).
-		Update("team_status", models.ParticipateBanned)
-
-	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "锁定队伍失败",
-		})
-		return
-	}
-
-	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"code":    404,
-			"message": "未找到队伍",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "队伍已锁定",
-	})
-}
-
-// AdminUnbanTeam 解锁队伍（将Banned状态恢复为Approved）
-func AdminUnbanTeam(c *gin.Context) {
-	var payload webmodels.AdminTeamOperationPayload
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "无效的请求参数",
-		})
-		return
-	}
-
-	// 首先查询队伍当前状态
+	// 查找队伍
 	var team models.Team
-	if err := dbtool.DB().First(&team, payload.TeamID).Error; err != nil {
+	if err := dbtool.DB().Where("team_id = ?", payload.TeamID).First(&team).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{
-				"code":    404,
-				"message": "未找到队伍",
+			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
+				Code:    404,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamNotFound"}),
 			})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    500,
-				"message": "查询队伍失败",
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+				Code:    500,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "DatabaseError"}),
 			})
 		}
 		return
 	}
 
-	// 只有被锁定的队伍才能解锁
+	// 更新队伍状态为禁赛
+	oldStatus := team.TeamStatus
+	if err := dbtool.DB().Model(&team).Update("team_status", models.ParticipateBanned).Error; err != nil {
+		// 记录禁赛队伍失败日志
+		tasks.LogAdminOperationWithError(c, models.ActionBan, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+			"team_id":    team.TeamID,
+			"team_name":  team.TeamName,
+			"game_id":    team.GameID,
+			"old_status": oldStatus,
+		}, err)
+
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToBanTeam"}),
+		})
+		return
+	}
+
+	// 记录禁赛队伍成功日志
+	tasks.LogAdminOperation(c, models.ActionBan, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+		"team_id":    team.TeamID,
+		"team_name":  team.TeamName,
+		"game_id":    team.GameID,
+		"old_status": oldStatus,
+		"new_status": models.ParticipateBanned,
+	})
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamBanned"}),
+	})
+}
+
+// AdminUnbanTeam 解禁队伍
+func AdminUnbanTeam(c *gin.Context) {
+	var payload webmodels.AdminTeamOperationPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+			Code:    400,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
+		})
+		return
+	}
+
+	// 查找队伍
+	var team models.Team
+	if err := dbtool.DB().Where("team_id = ?", payload.TeamID).First(&team).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
+				Code:    404,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamNotFound"}),
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+				Code:    500,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "DatabaseError"}),
+			})
+		}
+		return
+	}
+
+	// 检查当前状态
 	if team.TeamStatus != models.ParticipateBanned {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "只有被锁定的队伍才能解锁",
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+			Code:    400,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamIsNotBanned"}),
 		})
 		return
 	}
 
 	// 更新队伍状态为已批准
-	result := dbtool.DB().Model(&models.Team{}).
-		Where("team_id = ?", payload.TeamID).
-		Update("team_status", models.ParticipateApproved)
+	oldStatus := team.TeamStatus
+	if err := dbtool.DB().Model(&team).Update("team_status", models.ParticipateApproved).Error; err != nil {
+		// 记录解禁队伍失败日志
+		tasks.LogAdminOperationWithError(c, models.ActionUnban, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+			"team_id":    team.TeamID,
+			"team_name":  team.TeamName,
+			"game_id":    team.GameID,
+			"old_status": oldStatus,
+		}, err)
 
-	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "解锁队伍失败",
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToUnbanTeam"}),
 		})
 		return
 	}
 
+	// 记录解禁队伍成功日志
+	tasks.LogAdminOperation(c, models.ActionUnban, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+		"team_id":    team.TeamID,
+		"team_name":  team.TeamName,
+		"game_id":    team.GameID,
+		"old_status": oldStatus,
+		"new_status": models.ParticipateApproved,
+	})
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"message": "队伍已解锁",
+		"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamUnbanned"}),
 	})
 }
 
@@ -251,14 +300,31 @@ func AdminUnbanTeam(c *gin.Context) {
 func AdminDeleteTeam(c *gin.Context) {
 	var payload webmodels.AdminTeamOperationPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "无效的请求参数",
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+			Code:    400,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
 
-	// 开始事务
+	// 查找队伍
+	var team models.Team
+	if err := dbtool.DB().Where("team_id = ?", payload.TeamID).First(&team).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
+				Code:    404,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamNotFound"}),
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+				Code:    500,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "DatabaseError"}),
+			})
+		}
+		return
+	}
+
+	// 开始事务删除相关数据
 	tx := dbtool.DB().Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -266,45 +332,55 @@ func AdminDeleteTeam(c *gin.Context) {
 		}
 	}()
 
-	// 先检查队伍是否存在
-	var team models.Team
-	if err := tx.First(&team, payload.TeamID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{
-				"code":    404,
-				"message": "未找到队伍",
-			})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    500,
-				"message": "查询队伍失败",
-			})
-		}
+	// 删除队伍相关的加入申请
+	if err := tx.Where("team_id = ?", payload.TeamID).Delete(&models.TeamJoinRequest{}).Error; err != nil {
 		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToDeleteTeamJoinRequests"}),
+		})
 		return
 	}
 
 	// 删除队伍
 	if err := tx.Delete(&team).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "删除队伍失败",
+
+		// 记录删除队伍失败日志
+		tasks.LogAdminOperationWithError(c, models.ActionDelete, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+			"team_id":     team.TeamID,
+			"team_name":   team.TeamName,
+			"game_id":     team.GameID,
+			"team_status": team.TeamStatus,
+		}, err)
+
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToDeleteTeam"}),
 		})
 		return
 	}
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "提交事务失败",
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TransactionFailed"}),
 		})
 		return
 	}
 
+	// 记录删除队伍成功日志
+	tasks.LogAdminOperation(c, models.ActionDelete, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+		"team_id":      team.TeamID,
+		"team_name":    team.TeamName,
+		"game_id":      team.GameID,
+		"team_status":  team.TeamStatus,
+		"member_count": len(team.TeamMembers),
+	})
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"message": "队伍已删除",
+		"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamDeleted"}),
 	})
 }

@@ -8,11 +8,12 @@ import { Badge } from 'components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/ui/card';
 import { MacScrollbar } from 'mac-scrollbar';
 import { useTheme } from 'next-themes';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify/unstyled';
 import { api } from 'utils/ApiHelper';
 import { AdminNoticeItem } from 'utils/A1API';
 import { PlusCircle, Trash2, MessageSquare, Calendar, AlertCircle, Eye, MoreHorizontal } from 'lucide-react';
 import dayjs from 'dayjs';
+import ThemedEditor from 'components/modules/ThemedEditor';
 
 interface GameNoticeManagerProps {
     gameId: number;
@@ -39,19 +40,16 @@ export function GameNoticeManager({ gameId }: GameNoticeManagerProps) {
     // 加载公告列表
     const loadNotices = async () => {
         setLoading(true);
-        try {
-            const response = await api.admin.adminListGameNotices(gameId, {
-                game_id: gameId,
-                size: 50,
-                offset: 0
-            });
+
+        api.admin.adminListGameNotices(gameId, {
+            game_id: gameId,
+            size: 50,
+            offset: 0
+        }).then((response) => {
             setNotices(response.data.data);
-        } catch (error) {
-            toast.error('加载公告列表失败');
-            console.error('Failed to load notices:', error);
-        } finally {
+        }).finally(() => {
             setLoading(false);
-        }
+        })
     };
 
     // 创建公告
@@ -61,33 +59,25 @@ export function GameNoticeManager({ gameId }: GameNoticeManagerProps) {
             return;
         }
 
-        try {
-            await api.admin.adminCreateGameNotice(gameId, {
-                title: createForm.title,
-                content: createForm.content
-            });
+        api.admin.adminCreateGameNotice(gameId, {
+            title: createForm.title,
+            content: createForm.content
+        }).then((res) => {
             toast.success('公告创建成功');
             setCreateForm({ title: '', content: '' });
             setIsCreateDialogOpen(false);
             loadNotices();
-        } catch (error) {
-            toast.error('创建公告失败');
-            console.error('Failed to create notice:', error);
-        }
+        })
     };
 
     // 删除公告
     const handleDeleteNotice = async (noticeId: number) => {
-        try {
-            await api.admin.adminDeleteGameNotice({
-                notice_id: noticeId
-            });
+        api.admin.adminDeleteGameNotice({
+            notice_id: noticeId
+        }).then((res) => {
             toast.success('公告删除成功');
             loadNotices();
-        } catch (error) {
-            toast.error('删除公告失败');
-            console.error('Failed to delete notice:', error);
-        }
+        })
     };
 
     // 查看公告详情
@@ -110,7 +100,7 @@ export function GameNoticeManager({ gameId }: GameNoticeManagerProps) {
                         共 {notices.length} 条公告
                     </span>
                 </div>
-                
+
                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                     <DialogTrigger asChild>
                         <Button size="sm">
@@ -118,7 +108,7 @@ export function GameNoticeManager({ gameId }: GameNoticeManagerProps) {
                             创建公告
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[700px]">
+                    <DialogContent className="sm:max-w-[60%]">
                         <DialogHeader>
                             <DialogTitle>创建新公告</DialogTitle>
                             <DialogDescription>
@@ -137,17 +127,11 @@ export function GameNoticeManager({ gameId }: GameNoticeManagerProps) {
                             </div>
                             <div>
                                 <label className="text-sm font-medium mb-2 block">公告内容</label>
-                                <Textarea
+                                <ThemedEditor
                                     value={createForm.content}
-                                    onChange={(e) => setCreateForm(prev => ({ ...prev, content: e.target.value }))}
-                                    placeholder="请输入公告内容，支持 Markdown 格式"
-                                    className="h-48 bg-background/50 resize-none break-words min-w-0 max-w-full"
-                                    style={{
-                                        wordWrap: 'break-word', 
-                                        overflowWrap: 'break-word',
-                                        whiteSpace: 'pre-wrap',
-                                        boxSizing: 'border-box'
-                                    }}
+                                    onChange={(value) => setCreateForm(prev => ({ ...prev, content: value ?? "" }))}
+                                    language="markdown"
+                                    className='h-[500px]'
                                 />
                             </div>
                             <div className="flex justify-end gap-2">
@@ -226,7 +210,7 @@ export function GameNoticeManager({ gameId }: GameNoticeManagerProps) {
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
                                                             <AlertDialogCancel>取消</AlertDialogCancel>
-                                                            <AlertDialogAction 
+                                                            <AlertDialogAction
                                                                 onClick={() => handleDeleteNotice(notice.notice_id)}
                                                                 className="bg-destructive hover:bg-destructive/90"
                                                             >

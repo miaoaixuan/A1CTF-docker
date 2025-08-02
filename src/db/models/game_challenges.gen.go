@@ -46,6 +46,7 @@ type GameChallenge struct {
 	BelongStage  *string      `gorm:"column:belong_stage" json:"belong_stage"`
 	Visible      bool         `gorm:"column:visible" json:"visible"`
 
+	BloodRewardEnabled bool `gorm:"column:enable_blood_reward" json:"enable_blood_reward"`
 	// Challenge Challenge `gorm:"foreignKey:challenge_id;references:challenges.challenge_id"`
 }
 

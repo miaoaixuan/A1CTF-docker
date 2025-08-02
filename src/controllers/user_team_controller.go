@@ -2,8 +2,10 @@ package controllers
 
 import (
 	"a1ctf/src/db/models"
+	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
+	i18ntool "a1ctf/src/utils/i18n_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/webmodels"
 	"fmt"
@@ -15,6 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"gorm.io/gorm"
 )
 
@@ -26,7 +29,7 @@ func UserCreateGameTeam(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid request payload",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -36,13 +39,13 @@ func UserCreateGameTeam(c *gin.Context) {
 	if err := dbtool.DB().Where("game_id = ? AND team_name = ?", game.GameID, payload.Name).First(&existingTeam).Error; err == nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Team name already exists",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamNameAlreadyExists"}),
 		})
 		return
 	} else if err != gorm.ErrRecordNotFound {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to check team name",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCheckTeamName"}),
 		})
 		return
 	}
@@ -54,12 +57,12 @@ func UserCreateGameTeam(c *gin.Context) {
 			if err == gorm.ErrRecordNotFound {
 				c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 					Code:    400,
-					Message: "Invalid group ID",
+					Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidGroupID"}),
 				})
 			} else {
 				c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 					Code:    500,
-					Message: "Failed to validate group",
+					Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToValidateGroup"}),
 				})
 			}
 			return
@@ -82,15 +85,36 @@ func UserCreateGameTeam(c *gin.Context) {
 		InviteCode:      &inviteCode,
 		TeamStatus:      models.ParticipatePending,
 		GroupID:         payload.GroupID,
+		TeamType:        models.TeamTypePlayer,
+	}
+
+	// 自动审核
+	if game.TeamPolicy == models.TeamPolicyAuto {
+		newTeam.TeamStatus = models.ParticipateApproved
 	}
 
 	if err := dbtool.DB().Create(&newTeam).Error; err != nil {
+		// 记录创建队伍失败日志
+		tasks.LogUserOperationWithError(c, models.ActionCreate, models.ResourceTypeTeam, nil, map[string]interface{}{
+			"game_id":   game.GameID,
+			"team_name": payload.Name,
+			"group_id":  payload.GroupID,
+		}, err)
+
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    501,
-			Message: "System error",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
 		return
 	}
+
+	tasks.LogUserOperation(c, models.ActionCreate, models.ResourceTypeTeam, nil, map[string]interface{}{
+		"game_id":     game.GameID,
+		"team_name":   payload.Name,
+		"team_id":     newTeam.TeamID,
+		"group_id":    payload.GroupID,
+		"invite_code": inviteCode,
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
@@ -110,7 +134,7 @@ func TeamJoinRequest(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid request payload",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -121,12 +145,12 @@ func TeamJoinRequest(c *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 				Code:    404,
-				Message: "Invalid invite code",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidInviteCode"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
-				Message: "System error",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 			})
 		}
 		return
@@ -137,7 +161,7 @@ func TeamJoinRequest(c *gin.Context) {
 		if memberID == userID {
 			c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 				Code:    400,
-				Message: "You are already a member of this team",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "YouAreAlreadyMemberOfTeam"}),
 			})
 			return
 		}
@@ -148,7 +172,7 @@ func TeamJoinRequest(c *gin.Context) {
 	if err := dbtool.DB().Where("team_id = ? AND user_id = ? AND status = ?", team.TeamID, userID, models.JoinRequestPending).First(&existingRequest).Error; err == nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "You already have a pending request for this team",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "YouAlreadyHavePendingRequest"}),
 		})
 		return
 	}
@@ -163,16 +187,32 @@ func TeamJoinRequest(c *gin.Context) {
 	}
 
 	if err := dbtool.DB().Create(&newRequest).Error; err != nil {
+		// 记录加入队伍申请失败日志
+		tasks.LogUserOperationWithError(c, models.ActionJoinTeam, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+			"team_id":     team.TeamID,
+			"team_name":   team.TeamName,
+			"game_id":     team.GameID,
+			"invite_code": payload.InviteCode,
+		}, err)
+
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "System error",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
 		return
 	}
 
+	tasks.LogUserOperation(c, models.ActionJoinTeam, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+		"team_id":     team.TeamID,
+		"team_name":   team.TeamName,
+		"game_id":     team.GameID,
+		"request_id":  newRequest.RequestID,
+		"invite_code": payload.InviteCode,
+	})
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"message": "申请已提交，等待队长审核",
+		"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ApplicationSubmitted"}),
 	})
 }
 
@@ -186,7 +226,7 @@ func GetTeamJoinRequests(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid team ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidTeamID"}),
 		})
 		return
 	}
@@ -197,12 +237,12 @@ func GetTeamJoinRequests(c *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 				Code:    404,
-				Message: "Team not found",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
-				Message: "System error",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 			})
 		}
 		return
@@ -212,7 +252,7 @@ func GetTeamJoinRequests(c *gin.Context) {
 	if len(team.TeamMembers) == 0 || team.TeamMembers[0] != userID {
 		c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
 			Code:    403,
-			Message: "Only team captain can view join requests",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "OnlyTeamCaptainCanViewRequests"}),
 		})
 		return
 	}
@@ -222,7 +262,7 @@ func GetTeamJoinRequests(c *gin.Context) {
 	if err := dbtool.DB().Where("team_id = ? AND status = ?", teamID, models.JoinRequestPending).Preload("User").Order("create_time ASC").Find(&requests).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load join requests",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadJoinRequests"}),
 		})
 		return
 	}
@@ -249,15 +289,15 @@ func GetTeamJoinRequests(c *gin.Context) {
 
 // HandleTeamJoinRequest 处理加入申请
 func HandleTeamJoinRequest(c *gin.Context) {
-	claims := jwt.ExtractClaims(c)
-	userID := claims["UserID"].(string)
+	user := c.MustGet("user").(models.User)
+	userID := user.UserID
 
 	requestIDStr := c.Param("request_id")
 	requestID, err := strconv.ParseInt(requestIDStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid request ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestID"}),
 		})
 		return
 	}
@@ -277,111 +317,130 @@ func HandleTeamJoinRequest(c *gin.Context) {
 	if payload.Action != "approve" && payload.Action != "reject" {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid action, must be 'approve' or 'reject'",
+			Message: "Invalid action",
 		})
 		return
 	}
 
-	// 获取申请信息
-	var request models.TeamJoinRequest
-	if err := dbtool.DB().Preload("Team").Where("request_id = ?", requestID).First(&request).Error; err != nil {
+	// 查询申请记录
+	var joinRequest models.TeamJoinRequest
+	if err := dbtool.DB().Where("request_id = ?", requestID).First(&joinRequest).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 				Code:    404,
-				Message: "Request not found",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "RequestNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
-				Message: "System error",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 			})
 		}
-		return
-	}
-
-	// 检查是否是队长
-	if len(request.Team.TeamMembers) == 0 || request.Team.TeamMembers[0] != userID {
-		c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
-			Code:    403,
-			Message: "Only team captain can handle join requests",
-		})
 		return
 	}
 
 	// 检查申请状态
-	if request.Status != models.JoinRequestPending {
+	if joinRequest.Status != models.JoinRequestPending {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Request has already been handled",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "RequestAlreadyProcessed"}),
 		})
 		return
 	}
 
-	now := time.Now().UTC()
-	handledBy := userID
-
-	if payload.Action == "approve" {
-		// 批准申请，将用户加入战队
-		updatedMembers := append(request.Team.TeamMembers, request.UserID)
-
-		// 更新战队成员列表
-		if err := dbtool.DB().Model(&request.Team).Update("team_members", pq.StringArray(updatedMembers)).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-				Code:    500,
-				Message: "Failed to add member to team",
-			})
-			return
-		}
-
-		// 更新申请状态
-		if err := dbtool.DB().Model(&request).Updates(map[string]interface{}{
-			"status":      models.JoinRequestApproved,
-			"handle_time": &now,
-			"handled_by":  &handledBy,
-		}).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-				Code:    500,
-				Message: "Failed to update request status",
-			})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"code":    200,
-			"message": "申请已批准，用户已加入战队",
+	// 查询队伍信息并验证权限
+	var team models.Team
+	if err := dbtool.DB().Where("team_id = ?", joinRequest.TeamID).First(&team).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
-	} else {
-		// 拒绝申请
-		if err := dbtool.DB().Model(&request).Updates(map[string]interface{}{
-			"status":      models.JoinRequestRejected,
-			"handle_time": &now,
-			"handled_by":  &handledBy,
-		}).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-				Code:    500,
-				Message: "Failed to update request status",
-			})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"code":    200,
-			"message": "申请已拒绝",
-		})
+		return
 	}
+
+	// 检查是否是队长（第一个成员）
+	if len(team.TeamMembers) == 0 || team.TeamMembers[0] != userID {
+		c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
+			Code:    403,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "OnlyTeamCaptainCanHandleRequests"}),
+		})
+		return
+	}
+
+	// 开始事务
+	tx := dbtool.DB().Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	var newStatus models.JoinRequestStatus
+	var actionStr string
+	if payload.Action == "approve" {
+		newStatus = models.JoinRequestApproved
+		actionStr = models.ActionApprove
+
+		// 将用户添加到队伍中
+		updatedMembers := append(team.TeamMembers, joinRequest.UserID)
+		if err := tx.Model(&team).Update("team_members", pq.StringArray(updatedMembers)).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+				Code:    500,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToAddMemberToTeam"}),
+			})
+			return
+		}
+	} else {
+		newStatus = models.JoinRequestRejected
+		actionStr = models.ActionReject
+	}
+
+	// 更新申请状态
+	if err := tx.Model(&joinRequest).Update("status", newStatus).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToUpdateRequestStatus"}),
+		})
+		return
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TransactionFailed"}),
+		})
+		return
+	}
+
+	tasks.LogUserOperation(c, actionStr, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+		"team_id":      team.TeamID,
+		"team_name":    team.TeamName,
+		"request_id":   requestID,
+		"applicant_id": joinRequest.UserID,
+		"action":       payload.Action,
+		"game_id":      team.GameID,
+	})
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "RequestProcessed"}),
+	})
 }
 
 // TransferTeamCaptain 转移队长
 func TransferTeamCaptain(c *gin.Context) {
-	claims := jwt.ExtractClaims(c)
-	userID := claims["UserID"].(string)
+	user := c.MustGet("user").(models.User)
+	currentCaptainID := user.UserID
 
 	teamIDStr := c.Param("team_id")
 	teamID, err := strconv.ParseInt(teamIDStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid team ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidTeamID"}),
 		})
 		return
 	}
@@ -393,39 +452,39 @@ func TransferTeamCaptain(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid request payload",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
 
-	// 获取战队信息
+	// 查询队伍
 	var team models.Team
 	if err := dbtool.DB().Where("team_id = ?", teamID).First(&team).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 				Code:    404,
-				Message: "Team not found",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
-				Message: "System error",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 			})
 		}
 		return
 	}
 
-	// 检查是否是队长
-	if len(team.TeamMembers) == 0 || team.TeamMembers[0] != userID {
+	// 检查权限（必须是当前队长）
+	if len(team.TeamMembers) == 0 || team.TeamMembers[0] != currentCaptainID {
 		c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
 			Code:    403,
-			Message: "Only team captain can transfer leadership",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "OnlyTeamCaptainCanTransferCaptaincy"}),
 		})
 		return
 	}
 
-	// 检查新队长是否在战队中
-	var newCaptainIndex = -1
+	// 检查新队长是否在队伍中
+	newCaptainIndex := -1
 	for i, memberID := range team.TeamMembers {
 		if memberID == payload.NewCaptainID {
 			newCaptainIndex = i
@@ -436,224 +495,271 @@ func TransferTeamCaptain(c *gin.Context) {
 	if newCaptainIndex == -1 {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "New captain is not a member of this team",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "NewCaptainNotTeamMember"}),
 		})
 		return
 	}
 
-	// 调整成员顺序，将新队长移到第一位
-	newMembers := make(pq.StringArray, len(team.TeamMembers))
+	// 重新排序成员列表，将新队长移到第一位
+	newMembers := make([]string, len(team.TeamMembers))
 	newMembers[0] = payload.NewCaptainID
-
-	j := 1
-	for i, memberID := range team.TeamMembers {
-		if i != newCaptainIndex {
-			newMembers[j] = memberID
-			j++
+	idx := 1
+	for _, memberID := range team.TeamMembers {
+		if memberID != payload.NewCaptainID {
+			newMembers[idx] = memberID
+			idx++
 		}
 	}
 
-	// 更新战队成员列表
-	if err := dbtool.DB().Model(&team).Update("team_members", newMembers).Error; err != nil {
+	// 更新队伍成员列表
+	if err := dbtool.DB().Model(&team).Update("team_members", pq.StringArray(newMembers)).Error; err != nil {
+		// 记录转移队长失败日志
+		tasks.LogUserOperationWithError(c, models.ActionTransfer, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+			"team_id":        team.TeamID,
+			"team_name":      team.TeamName,
+			"old_captain_id": currentCaptainID,
+			"new_captain_id": payload.NewCaptainID,
+			"game_id":        team.GameID,
+		}, err)
+
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to transfer team leadership",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToTransferCaptaincy"}),
 		})
 		return
 	}
 
+	tasks.LogUserOperation(c, models.ActionTransfer, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+		"team_id":        team.TeamID,
+		"team_name":      team.TeamName,
+		"user_id":        user.UserID,
+		"old_captain_id": currentCaptainID,
+		"new_captain_id": payload.NewCaptainID,
+		"game_id":        team.GameID,
+	})
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"message": "队长已转移",
+		"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "CaptainTransferred"}),
 	})
 }
 
 // RemoveTeamMember 踢出队员
 func RemoveTeamMember(c *gin.Context) {
-	claims := jwt.ExtractClaims(c)
-	userID := claims["UserID"].(string)
+	user := c.MustGet("user").(models.User)
+	captainID := user.UserID
 
 	teamIDStr := c.Param("team_id")
 	teamID, err := strconv.ParseInt(teamIDStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid team ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidTeamID"}),
 		})
 		return
 	}
 
 	targetUserID := c.Param("user_id")
 
-	// 获取战队信息
+	// 查询队伍
 	var team models.Team
 	if err := dbtool.DB().Where("team_id = ?", teamID).First(&team).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 				Code:    404,
-				Message: "Team not found",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
-				Message: "System error",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 			})
 		}
 		return
 	}
 
-	// 检查是否是队长
-	if len(team.TeamMembers) == 0 || team.TeamMembers[0] != userID {
+	// 检查权限（必须是队长）
+	if len(team.TeamMembers) == 0 || team.TeamMembers[0] != captainID {
 		c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
 			Code:    403,
-			Message: "Only team captain can remove members",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "OnlyTeamCaptainCanRemoveMembers"}),
 		})
 		return
 	}
 
-	// 不能踢出自己
-	if userID == targetUserID {
+	// 不能踢出自己（队长）
+	if targetUserID == captainID {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Cannot remove yourself",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "CaptainCannotRemoveThemselves"}),
 		})
 		return
 	}
 
-	// 检查目标用户是否在战队中
-	var targetUserIndex = -1
+	// 检查目标用户是否在队伍中
+	targetIndex := -1
 	for i, memberID := range team.TeamMembers {
 		if memberID == targetUserID {
-			targetUserIndex = i
+			targetIndex = i
 			break
 		}
 	}
 
-	if targetUserIndex == -1 {
+	if targetIndex == -1 {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "User is not a member of this team",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "UserIsNotMemberOfTeam"}),
 		})
 		return
 	}
 
-	// 检查目标用户是否为队伍解出过题目
-	var solveCount int64
-	if err := dbtool.DB().Model(&models.Solve{}).Where("team_id = ? AND solver_id = ?", teamID, targetUserID).Count(&solveCount).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-			Code:    500,
-			Message: "Failed to check solve records",
-		})
-		return
-	}
-
-	if solveCount > 0 {
-		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
-			Code:    400,
-			Message: "无法移除已为战队解出题目的队员",
-		})
-		return
-	}
-
-	// 从成员列表中移除用户
-	newMembers := make(pq.StringArray, 0, len(team.TeamMembers)-1)
-	for i, memberID := range team.TeamMembers {
-		if i != targetUserIndex {
+	// 从成员列表中移除目标用户
+	newMembers := make([]string, 0, len(team.TeamMembers)-1)
+	for _, memberID := range team.TeamMembers {
+		if memberID != targetUserID {
 			newMembers = append(newMembers, memberID)
 		}
 	}
 
-	// 更新战队成员列表
-	if err := dbtool.DB().Model(&team).Update("team_members", newMembers).Error; err != nil {
+	// 更新队伍成员列表
+	if err := dbtool.DB().Model(&team).Update("team_members", pq.StringArray(newMembers)).Error; err != nil {
+		tasks.LogUserOperationWithError(c, "REMOVE_MEMBER", models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+			"team_id":         team.TeamID,
+			"team_name":       team.TeamName,
+			"removed_user_id": targetUserID,
+			"game_id":         team.GameID,
+		}, err)
+
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to remove team member",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToRemoveMember"}),
 		})
 		return
 	}
 
+	tasks.LogUserOperation(c, "REMOVE_MEMBER", models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+		"team_id":         team.TeamID,
+		"team_name":       team.TeamName,
+		"removed_user_id": targetUserID,
+		"game_id":         team.GameID,
+	})
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"message": "队员已移除",
+		"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "MemberRemoved"}),
 	})
 }
 
 // DeleteTeam 解散战队
 func DeleteTeam(c *gin.Context) {
-	claims := jwt.ExtractClaims(c)
-	userID := claims["UserID"].(string)
+	user := c.MustGet("user").(models.User)
+	captainID := user.UserID
 
 	teamIDStr := c.Param("team_id")
 	teamID, err := strconv.ParseInt(teamIDStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid team ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidTeamID"}),
 		})
 		return
 	}
 
-	// 获取战队信息
+	// 查询队伍
 	var team models.Team
 	if err := dbtool.DB().Where("team_id = ?", teamID).First(&team).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 				Code:    404,
-				Message: "Team not found",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
-				Message: "System error",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 			})
 		}
 		return
 	}
 
-	// 检查是否是队长
-	if len(team.TeamMembers) == 0 || team.TeamMembers[0] != userID {
+	// 检查权限（必须是队长）
+	if len(team.TeamMembers) == 0 || team.TeamMembers[0] != captainID {
 		c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
 			Code:    403,
-			Message: "Only team captain can delete the team",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "OnlyTeamCaptainCanDeleteTeam"}),
 		})
 		return
 	}
 
-	// 检查战队是否有得分
-	if team.TeamScore > 0 {
-		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
-			Code:    400,
-			Message: "无法解散有得分的战队",
-		})
-		return
-	}
+	// 开始事务删除相关数据
+	tx := dbtool.DB().Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
 
-	// 删除战队（级联删除会处理相关记录）
-	if err := dbtool.DB().Delete(&team).Error; err != nil {
+	// 删除队伍相关的加入申请
+	if err := tx.Where("team_id = ?", teamID).Delete(&models.TeamJoinRequest{}).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to delete team",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToDeleteTeamJoinRequests"}),
 		})
 		return
 	}
+
+	// 删除队伍
+	if err := tx.Delete(&team).Error; err != nil {
+		tx.Rollback()
+
+		// 记录删除队伍失败日志
+		tasks.LogUserOperationWithError(c, models.ActionDelete, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+			"team_id":   team.TeamID,
+			"team_name": team.TeamName,
+			"game_id":   team.GameID,
+		}, err)
+
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToDeleteTeam"}),
+		})
+		return
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TransactionFailed"}),
+		})
+		return
+	}
+
+	tasks.LogUserOperation(c, models.ActionDelete, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+		"team_id":      team.TeamID,
+		"team_name":    team.TeamName,
+		"game_id":      team.GameID,
+		"member_count": len(team.TeamMembers),
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"message": "战队已解散",
+		"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamDeleted"}),
 	})
 }
 
 // UpdateTeamInfo 更新战队信息
 func UpdateTeamInfo(c *gin.Context) {
-	claims := jwt.ExtractClaims(c)
-	userID := claims["UserID"].(string)
+	user := c.MustGet("user").(models.User)
+	userID := user.UserID
 
 	teamIDStr := c.Param("team_id")
 	teamID, err := strconv.ParseInt(teamIDStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid team ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidTeamID"}),
 		})
 		return
 	}
@@ -665,49 +771,71 @@ func UpdateTeamInfo(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid request payload",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
 
-	// 获取战队信息
+	// 查询队伍
 	var team models.Team
 	if err := dbtool.DB().Where("team_id = ?", teamID).First(&team).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 				Code:    404,
-				Message: "Team not found",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
-				Message: "System error",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 			})
 		}
 		return
 	}
 
-	// 检查是否是队长
+	// 检查权限（必须是队长）
 	if len(team.TeamMembers) == 0 || team.TeamMembers[0] != userID {
 		c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
 			Code:    403,
-			Message: "Only team captain can update team info",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "OnlyTeamCaptainCanUpdateTeamInfo"}),
 		})
 		return
 	}
 
-	// 更新战队口号
+	// 保存旧值用于日志
+	oldSlogan := ""
+	if team.TeamSlogan != nil {
+		oldSlogan = *team.TeamSlogan
+	}
+
+	// 更新队伍信息
 	if err := dbtool.DB().Model(&team).Update("team_slogan", payload.TeamSlogan).Error; err != nil {
+		tasks.LogUserOperationWithError(c, models.ActionUpdate, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+			"team_id":    team.TeamID,
+			"team_name":  team.TeamName,
+			"old_slogan": oldSlogan,
+			"new_slogan": payload.TeamSlogan,
+			"game_id":    team.GameID,
+		}, err)
+
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to update team info",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToUpdateTeamInfo"}),
 		})
 		return
 	}
+
+	tasks.LogUserOperation(c, models.ActionUpdate, models.ResourceTypeTeam, &team.TeamName, map[string]interface{}{
+		"team_id":    team.TeamID,
+		"team_name":  team.TeamName,
+		"old_slogan": oldSlogan,
+		"new_slogan": payload.TeamSlogan,
+		"game_id":    team.GameID,
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"message": "战队信息已更新",
+		"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamInfoUpdated"}),
 	})
 }
 
@@ -718,7 +846,7 @@ func UserGetGameGroups(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid game ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidGameID"}),
 		})
 		return
 	}
@@ -727,8 +855,9 @@ func UserGetGameGroups(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load game groups",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGameGroups"}),
 		})
+		return
 	}
 
 	groups := make([]webmodels.GameGroupSimple, 0, len(groupMap))

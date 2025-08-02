@@ -82,6 +82,8 @@ type Container struct {
 	FlagID               int64                `gorm:"column:flag_id;not null" json:"flag_id"`
 	ChallengeID          int64                `gorm:"column:challenge_id;not null" json:"challenge_id"`
 	InGameID             int64                `gorm:"column:ingame_id;not null" json:"ingame_id"`
+	GameChallenge        GameChallenge        `gorm:"foreignKey:InGameID;references:ingame_id" json:"-"`
+	Challenge            Challenge            `gorm:"foreignKey:ChallengeID;references:challenge_id" json:"-"`
 	StartTime            time.Time            `gorm:"column:start_time;not null" json:"start_time"`
 	ExpireTime           time.Time            `gorm:"column:expire_time;not null" json:"expire_time"`
 	ContainerExposeInfos ContainerExposeInfos `gorm:"column:expose_ports;not null" json:"expose_ports"`
@@ -90,6 +92,7 @@ type Container struct {
 	ContainerConfig      k8stool.A1Containers `gorm:"column:container_config" json:"container_config"`
 	ChallengeName        string               `gorm:"column:challenge_name;not null" json:"challenge_name"`
 	TeamHash             string               `gorm:"column:team_hash;not null" json:"team_hash"`
+	SubmiterIP           *string              `gorm:"column:submiter_ip" json:"submiter_ip"`
 }
 
 // TableName Container's table name

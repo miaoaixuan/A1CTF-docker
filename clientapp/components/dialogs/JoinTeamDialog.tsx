@@ -27,7 +27,7 @@ import { z } from "zod"
 import { useEffect, useState } from "react";
 import { Textarea } from "../ui/textarea";
 import { AxiosError } from "axios";
-import { toast } from "sonner";
+import { toast } from 'react-toastify/unstyled';
 import { useTranslation } from "react-i18next";
 import { api } from "utils/ApiHelper"
 
@@ -36,7 +36,7 @@ interface ErrorMessage {
     title: string;
 }
 
-export const JoinTeamDialog: React.FC<{ callback: () => void, children: React.ReactNode }> = ({ callback: updateTeam, children }) => {
+export const JoinTeamDialog: React.FC<{ callback: () => void, game_id: number, children: React.ReactNode }> = ({ game_id, callback: updateTeam, children }) => {
 
     const { t } = useTranslation("teams")
 
@@ -60,19 +60,12 @@ export const JoinTeamDialog: React.FC<{ callback: () => void, children: React.Re
     function onSubmit(values: z.infer<typeof formSchema>) {
         setSubmitDisabled(true)
 
-        api.team.teamAccept({
+        api.team.teamAccept(game_id, {
             invite_code: values.inviteCode
         }).then(() => {
             toast.success(t("join_team_success"))
             updateTeam()
             setIsOpen(false)
-        }).catch((error: AxiosError) => {
-            if (error.response?.status) {
-                const errorMessage: any = error.response.data
-                toast.error(errorMessage.message || t("unknow_error"))
-            } else {
-                toast.error(t("unknow_error"))
-            }
         }).finally(() => {
             setSubmitDisabled(false)
         })

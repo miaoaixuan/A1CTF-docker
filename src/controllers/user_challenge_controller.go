@@ -2,7 +2,9 @@ package controllers
 
 import (
 	"a1ctf/src/db/models"
+	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
+	i18ntool "a1ctf/src/utils/i18n_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/webmodels"
 	"net/http"
@@ -11,67 +13,77 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func UserGetGameChallenges(c *gin.Context) {
-	game := c.MustGet("game").(models.Game)
+	user := c.MustGet("user").(models.User)
 
-	simpleGameChallenges, err := ristretto_tool.CachedGameSimpleChallenges(game.GameID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-			Code:    500,
-			Message: "Failed to load game challenges",
-		})
+	// 管理员前台需要返回所有题目
+	if user.Role == models.UserRoleAdmin {
+		AdminGetSimpleGameChallenges(c)
 		return
-	}
+	} else {
+		game := c.MustGet("game").(models.Game)
+		team := c.MustGet("team").(models.Team)
 
-	var team = c.MustGet("team").(models.Team)
+		simpleGameChallenges, err := ristretto_tool.CachedGameSimpleChallenges(game.GameID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+				Code:    500,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGameChallenges"}),
+			})
+			return
+		}
 
-	// Cache all solves to redis
+		// Cache all solves to redis
 
-	solveMap, err := ristretto_tool.CachedSolvedChallengesForGame(game.GameID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-			Code:    500,
-			Message: "Failed to load solves",
+		solveMap, err := ristretto_tool.CachedSolvedChallengesForGame(game.GameID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+				Code:    500,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadSolves"}),
+			})
+			return
+		}
+
+		solves, ok := solveMap[team.TeamID]
+		if !ok {
+			solves = make([]models.Solve, 0)
+		}
+
+		var solved_challenges []webmodels.UserSimpleGameSolvedChallenge = make([]webmodels.UserSimpleGameSolvedChallenge, 0, len(solves))
+
+		for _, solve := range solves {
+			solved_challenges = append(solved_challenges, webmodels.UserSimpleGameSolvedChallenge{
+				ChallengeID:   solve.ChallengeID,
+				ChallengeName: solve.Challenge.Name,
+				SolveTime:     solve.SolveTime,
+				Rank:          solve.Rank,
+			})
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"code": 200,
+			"data": gin.H{
+				"challenges":        simpleGameChallenges,
+				"solved_challenges": solved_challenges,
+			},
 		})
 	}
-
-	solves, ok := solveMap[team.TeamID]
-	if !ok {
-		solves = make([]models.Solve, 0)
-	}
-
-	var solved_challenges []webmodels.UserSimpleGameSolvedChallenge = make([]webmodels.UserSimpleGameSolvedChallenge, 0, len(solves))
-
-	for _, solve := range solves {
-		solved_challenges = append(solved_challenges, webmodels.UserSimpleGameSolvedChallenge{
-			ChallengeID:   solve.ChallengeID,
-			ChallengeName: solve.Challenge.Name,
-			SolveTime:     solve.SolveTime,
-			Rank:          solve.Rank,
-		})
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code": 200,
-		"data": gin.H{
-			"challenges":        simpleGameChallenges,
-			"solved_challenges": solved_challenges,
-		},
-	})
 }
 
 func UserGetGameChallenge(c *gin.Context) {
 	game := c.MustGet("game").(models.Game)
 	team := c.MustGet("team").(models.Team)
+	user := c.MustGet("user").(models.User)
 
 	challengeIDStr := c.Param("challenge_id")
 	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid challenge ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
 		})
 		c.Abort()
 		return
@@ -82,15 +94,16 @@ func UserGetGameChallenge(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to check challenge visibility",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCheckChallengeVisibility"}),
 		})
 		return
 	}
 
-	if !isVisible {
+	// 管理员可以查看到所有题目
+	if !isVisible && user.Role == models.UserRoleUser {
 		c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 			Code:    404,
-			Message: "Challenge not found or not visible",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeNotFound"}),
 		})
 		return
 	}
@@ -100,20 +113,26 @@ func UserGetGameChallenge(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load challenge details",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadChallengeDetails"}),
 		})
 		return
 	}
 
-	// 5. Flag 处理 - 使用缓存优化高并发查询性能，防止重复创建
-	// 这里我们预创建 flag 以确保存在，但在 UserGetGameChallenge 接口中不需要返回具体内容
-	_, err = ristretto_tool.CachedTeamFlag(game.GameID, team.TeamID, *gameChallenge.Challenge.ChallengeID, *gameChallenge.JudgeConfig.FlagTemplate)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-			Code:    500,
-			Message: "Failed to get team flag",
-		})
-		return
+	// 5. Flag 处理，对于没有 flag 的队伍，需要添加到 flag 创建队列里，先判断是否是动态 Flag
+	if gameChallenge.Challenge.FlagType == models.FlagTypeDynamic {
+		allFlags, err := ristretto_tool.CachedAllTeamFlags(game.GameID, challengeID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+				Code:    500,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
+			})
+			return
+		}
+
+		if _, exists := allFlags[team.TeamID]; !exists {
+			// 缓存不存在，添加到任务队列
+			_ = tasks.NewTeamFlagCreateTask(*gameChallenge.JudgeConfig.FlagTemplate, team.TeamID, game.GameID, challengeID, team.TeamHash, team.TeamName, gameChallenge.Challenge.FlagType)
+		}
 	}
 
 	// 3. 使用缓存获取附件信息
@@ -121,7 +140,7 @@ func UserGetGameChallenge(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load challenge attachments",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadChallengeAttachments"}),
 		})
 		return
 	}
@@ -131,7 +150,7 @@ func UserGetGameChallenge(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load challenge hints",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadChallengeHints"}),
 		})
 		return
 	}
@@ -150,6 +169,7 @@ func UserGetGameChallenge(c *gin.Context) {
 		ContainerType:       gameChallenge.Challenge.ContainerType,
 		ContainerStatus:     models.NoContainer,
 		ContainerExpireTime: nil,
+		Visible:             gameChallenge.Visible,
 	}
 
 	// 6. 容器状态处理 - 使用短时缓存（200ms）平衡性能和实时性
@@ -157,7 +177,7 @@ func UserGetGameChallenge(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load containers",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadContainers"}),
 		})
 		return
 	}
@@ -165,7 +185,7 @@ func UserGetGameChallenge(c *gin.Context) {
 	if len(containers) > 1 {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load containers",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadContainers"}),
 		})
 		return
 	}
@@ -218,12 +238,13 @@ func UserGetGameChallenge(c *gin.Context) {
 func UserGameChallengeSubmitFlag(c *gin.Context) {
 	game := c.MustGet("game").(models.Game)
 	team := c.MustGet("team").(models.Team)
+	user := c.MustGet("user").(models.User)
 
 	var payload webmodels.UserSubmitFlagPayload = webmodels.UserSubmitFlagPayload{}
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid request payload",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -233,7 +254,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid challenge ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
 		})
 		c.Abort()
 		return
@@ -244,7 +265,25 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load challenge details",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadChallengeDetails"}),
+		})
+		return
+	}
+
+	// 判断题目是否可见，管理员不检查
+	isVisible, err := ristretto_tool.CachedGameChallengeVisibility(game.GameID, challengeID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCheckChallengeVisibility"}),
+		})
+		return
+	}
+
+	if user.Role != models.UserRoleAdmin && !isVisible {
+		c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
+			Code:    403,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeNotFound"}),
 		})
 		return
 	}
@@ -254,7 +293,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to check solve status",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCheckSolveStatus"}),
 		})
 		return
 	}
@@ -262,20 +301,12 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	if hasSolved {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "You have already solved this challenge",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "YouHaveAlreadySolvedThisChallenge"}),
 		})
 		return
 	}
 
-	// 3. 使用缓存获取 teamFlag，提升性能
-	teamFlag, err := ristretto_tool.CachedTeamFlag(game.GameID, team.TeamID, challengeID, *gameChallenge.JudgeConfig.FlagTemplate)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-			Code:    500,
-			Message: "Failed to get team flag",
-		})
-		return
-	}
+	clientIP := c.ClientIP()
 
 	// 插入 Judge 队列
 	newJudge := models.Judge{
@@ -283,22 +314,71 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 		GameID:       game.GameID,
 		ChallengeID:  *gameChallenge.Challenge.ChallengeID,
 		TeamID:       team.TeamID,
-		FlagID:       teamFlag.FlagID,
 		JudgeType:    gameChallenge.JudgeConfig.JudgeType,
 		JudgeStatus:  models.JudgeQueueing,
 		SubmiterID:   c.MustGet("user_id").(string),
 		JudgeID:      uuid.NewString(),
 		JudgeTime:    time.Now().UTC(),
 		JudgeContent: payload.FlagContent,
+		SubmiterIP:   &clientIP,
+	}
+
+	// 判断是否是动态 Flag，如果是就从 teamFlag 的 map 缓存中拿 flag
+	if gameChallenge.Challenge.FlagType == models.FlagTypeDynamic {
+		teamFlagMap, err := ristretto_tool.CachedAllTeamFlags(game.GameID, challengeID)
+		teamFlag, exsist := teamFlagMap[team.TeamID]
+		if !exsist || err != nil {
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+				Code:    500,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToGetTeamFlag"}),
+			})
+			return
+		}
+		newJudge.FlagID = &teamFlag.FlagID
+	} else {
+		newJudge.FlagID = nil
 	}
 
 	if err := dbtool.DB().Create(&newJudge).Error; err != nil {
+		// 记录失败日志
+		tasks.LogUserOperationWithError(c, models.ActionSubmitFlag, models.ResourceTypeChallenge, &challengeIDStr, map[string]interface{}{
+			"game_id":        game.GameID,
+			"team_id":        team.TeamID,
+			"user_id":        user.UserID,
+			"challenge_name": gameChallenge.Challenge.Name,
+			"flag_content":   payload.FlagContent,
+		}, err)
+
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "System error",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
 		return
 	}
+
+	// 启动一个检查作弊任务
+
+	tasks.NewFlagAntiCheatTask(newJudge)
+
+	tasks.LogUserOperation(c, models.ActionSubmitFlag, models.ResourceTypeChallenge, &challengeIDStr, map[string]interface{}{
+		"game_id":        game.GameID,
+		"team_id":        team.TeamID,
+		"user_id":        user.UserID,
+		"challenge_name": gameChallenge.Challenge.Name,
+		"judge_id":       newJudge.JudgeID,
+		"flag_content":   payload.FlagContent, // 只记录前50个字符
+	})
+
+	// dbtool.DB().Model(&models.Judge{}).Preload("TeamFlag").Where("judge_id = ?", newJudge.JudgeID).First(&newJudge)
+
+	// err = tasks.NewJudgeFlagTask(newJudge)
+	// if err != nil {
+	// 	c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+	// 		Code:    400,
+	// 		Message: "You have a judge in queue, please wait for a moment",
+	// 	})
+	// 	return
+	// }
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
@@ -317,7 +397,7 @@ func UserGameGetJudgeResult(c *gin.Context) {
 	if _, err := uuid.Parse(judgeIDStr); err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
-			Message: "Invalid judge ID",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidJudgeID"}),
 		})
 		c.Abort()
 		return
@@ -329,12 +409,12 @@ func UserGameGetJudgeResult(c *gin.Context) {
 		if err.Error() == "judge not found" {
 			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
 				Code:    404,
-				Message: "Judge not found",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "JudgeNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
-				Message: "Failed to load judge",
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadJudge"}),
 			})
 		}
 		return

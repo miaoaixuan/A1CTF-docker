@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"a1ctf/src/db/models"
+	i18ntool "a1ctf/src/utils/i18n_tool"
 	jwtauth "a1ctf/src/modules/jwt_auth"
 	dbtool "a1ctf/src/utils/db_tool"
 	"a1ctf/src/utils/ristretto_tool"
@@ -10,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func UserListGames(c *gin.Context) {
@@ -20,7 +22,7 @@ func UserListGames(c *gin.Context) {
 	if err := query.Find(&games).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load games",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGames"}),
 		})
 		return
 	}
@@ -70,7 +72,7 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "failed to load team data",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadTeamData"}),
 		})
 		return
 	}
@@ -97,6 +99,8 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 		"name":                   game.Name,
 		"summary":                game.Summary,
 		"description":            game.Description,
+		"game_icon_light":        game.GameIconLight,
+		"game_icon_dark":         game.GameIconDark,
 		"poster":                 game.Poster,
 		"start_time":             game.StartTime,
 		"end_time":               game.EndTime,
@@ -120,7 +124,7 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 					Code:    500,
-					Message: "Failed to load team members",
+					Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadTeamMembers"}),
 				})
 			}
 
@@ -169,7 +173,7 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 					Code:    500,
-					Message: err.Error(),
+					Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 				})
 				return
 			}
@@ -208,7 +212,7 @@ func UserGetGameNotices(c *gin.Context) {
 	if err := dbtool.DB().Where("game_id = ?", game.GameID).Find(&notices).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "Failed to load notices",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadNotices"}),
 		})
 		return
 	}
@@ -267,7 +271,7 @@ func UserGameGetScoreBoard(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "failed to load team data",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadTeamData"}),
 		})
 		return
 	}
@@ -286,7 +290,7 @@ func UserGameGetScoreBoard(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "failed to load game challenges",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGameChallengesBoard"}),
 		})
 		return
 	}
@@ -296,7 +300,7 @@ func UserGameGetScoreBoard(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "failed to load game scoreboard",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGameScoreboard"}),
 		})
 		return
 	}
@@ -306,7 +310,7 @@ func UserGameGetScoreBoard(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "failed to load game groups",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGameGroups"}),
 		})
 		return
 	}
@@ -327,7 +331,7 @@ func UserGameGetScoreBoard(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
-			Message: "failed to load filtered scoreboard",
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadFilteredScoreboard"}),
 		})
 		return
 	}
@@ -367,16 +371,34 @@ func UserGameGetScoreBoard(c *gin.Context) {
 
 	if totalCachedTeamsCount > 0 && curStartIdx < totalCachedTeamsCount {
 		pageTeamScores = filteredData.FilteredTeamRankings[curStartIdx:curEndIdx]
-		pageTimeLines = filteredData.FilteredTimeLines[curStartIdx:curEndIdx]
+		pageTimeLines = filteredData.FilteredTimeLines[curStartIdx:min(curEndIdx, int64(len(filteredData.FilteredTimeLines)))]
+
+		// 补全 timelines 不足 teamscores 的部分, 出现这种情况的原因是因为积分榜只有在队伍有得分的情况下才会生成一条记录
+		if len(pageTimeLines) < len(pageTeamScores) {
+			pageTimeLines = append(pageTimeLines, webmodels.TimeLineItem{
+				TeamID:   pageTeamScores[len(pageTimeLines)].TeamID,
+				TeamName: pageTeamScores[len(pageTimeLines)].TeamName,
+				Scores:   make([]webmodels.TimeLineScoreItem, 0),
+			})
+		}
 	} else {
 		pageTeamScores = make([]webmodels.TeamScoreItem, 0)
 		pageTimeLines = make([]webmodels.TimeLineItem, 0)
 	}
 
+	// 过滤一遍 Top10，过滤掉没得分的
+	filteredTop10TimeLines := make([]webmodels.TimeLineItem, 0)
+
+	for _, top10TimeLine := range scoreBoard.Top10TimeLines {
+		if len(top10TimeLine.Scores) > 0 {
+			filteredTop10TimeLines = append(filteredTop10TimeLines, top10TimeLine)
+		}
+	}
+
 	result := webmodels.GameScoreboardData{
 		GameID:               game.GameID,
 		Name:                 game.Name,
-		Top10TimeLines:       scoreBoard.Top10TimeLines,
+		Top10TimeLines:       filteredTop10TimeLines,
 		TeamScores:           pageTeamScores,
 		TeamTimeLines:        pageTimeLines,
 		SimpleGameChallenges: simpleGameChallenges,

@@ -2,12 +2,15 @@ package controllers
 
 import (
 	"a1ctf/src/db/models"
+	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
+	i18ntool "a1ctf/src/utils/i18n_tool"
 	"a1ctf/src/webmodels"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"gorm.io/gorm"
 )
 
@@ -15,7 +18,7 @@ func AdminListUsers(c *gin.Context) {
 
 	var payload webmodels.AdminListUsersPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"})})
 		return
 	}
 
@@ -30,7 +33,7 @@ func AdminListUsers(c *gin.Context) {
 
 	var users []models.User
 	if err := query.Offset(payload.Offset).Limit(payload.Size).Find(&users).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToFetchUsers"})})
 		return
 	}
 
@@ -42,7 +45,7 @@ func AdminListUsers(c *gin.Context) {
 			searchPattern, searchPattern, searchPattern, searchPattern)
 	}
 	if err := countQuery.Count(&count).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count users"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCountUsers"})})
 		return
 	}
 
@@ -79,7 +82,7 @@ func AdminUpdateUser(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "无效的请求参数",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestParameters"}),
 		})
 		return
 	}
@@ -90,12 +93,12 @@ func AdminUpdateUser(c *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
 				"code":    404,
-				"message": "未找到用户",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "UserNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":    500,
-				"message": "查询用户失败",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToQueryUser"}),
 			})
 		}
 		return
@@ -112,16 +115,26 @@ func AdminUpdateUser(c *gin.Context) {
 	user.Role = payload.Role
 
 	if err := dbtool.DB().Save(&user).Error; err != nil {
+		// 记录失败日志
+		tasks.LogAdminOperationWithError(c, models.ActionUpdate, models.ResourceTypeUser, &payload.UserID, payload, err)
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "更新用户信息失败",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToUpdateUserInfo"}),
 		})
 		return
 	}
 
+	// 记录成功日志
+	tasks.LogAdminOperation(c, models.ActionUpdate, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
+		"updated_fields": []string{"username", "realname", "student_number", "phone", "slogan", "email", "avatar", "role"},
+		"old_username":   user.Username,
+		"new_username":   payload.UserName,
+	})
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"message": "用户信息已更新",
+		"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "UserInfoUpdated"}),
 	})
 }
 
@@ -131,7 +144,7 @@ func AdminResetUserPassword(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "无效的请求参数",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestParameters"}),
 		})
 		return
 	}
@@ -142,12 +155,12 @@ func AdminResetUserPassword(c *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
 				"code":    404,
-				"message": "未找到用户",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "UserNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":    500,
-				"message": "查询用户失败",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToQueryUser"}),
 			})
 		}
 		return
@@ -165,16 +178,27 @@ func AdminResetUserPassword(c *gin.Context) {
 	user.JWTVersion = general.RandomPassword(16)
 
 	if err := dbtool.DB().Save(&user).Error; err != nil {
+		// 记录失败日志
+		tasks.LogAdminOperationWithError(c, models.ActionResetPassword, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
+			"target_user": user.Username,
+		}, err)
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "重置密码失败",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToResetPassword"}),
 		})
 		return
 	}
 
+	// 记录成功日志
+	tasks.LogAdminOperation(c, models.ActionResetPassword, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
+		"target_user": user.Username,
+		"action":      "password_reset_success",
+	})
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":         200,
-		"message":      "密码已重置",
+		"message":      i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "PasswordReset"}),
 		"new_password": newPassword,
 	})
 }
@@ -185,7 +209,7 @@ func AdminDeleteUser(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "无效的请求参数",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestParameters"}),
 		})
 		return
 	}
@@ -204,12 +228,12 @@ func AdminDeleteUser(c *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
 				"code":    404,
-				"message": "未找到用户",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "UserNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":    500,
-				"message": "查询用户失败",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToQueryUser"}),
 			})
 		}
 		tx.Rollback()
@@ -219,24 +243,42 @@ func AdminDeleteUser(c *gin.Context) {
 	// 删除用户
 	if err := tx.Delete(&user).Error; err != nil {
 		tx.Rollback()
+
+		// 记录失败日志
+		tasks.LogAdminOperationWithError(c, models.ActionDelete, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
+			"target_user": user.Username,
+		}, err)
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "删除用户失败",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToDeleteUser"}),
 		})
 		return
 	}
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
+		// 记录失败日志
+		tasks.LogAdminOperationWithError(c, models.ActionDelete, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
+			"target_user": user.Username,
+			"error_type":  "commit_transaction_failed",
+		}, err)
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "提交事务失败",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCommitTransaction"}),
 		})
 		return
 	}
 
+	// 记录成功日志
+	tasks.LogAdminOperation(c, models.ActionDelete, models.ResourceTypeUser, &payload.UserID, map[string]interface{}{
+		"deleted_user": user.Username,
+		"action":       "user_delete_success",
+	})
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"message": "用户已删除",
+		"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "UserDeleted"}),
 	})
 }

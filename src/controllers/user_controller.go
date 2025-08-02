@@ -1,19 +1,24 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 	"time"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"a1ctf/src/db/models"
 	clientconfig "a1ctf/src/modules/client_config"
+	emailjwt "a1ctf/src/modules/jwt_email"
+	proofofwork "a1ctf/src/modules/proof_of_work"
+	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
+	i18ntool "a1ctf/src/utils/i18n_tool"
 	"a1ctf/src/utils/ristretto_tool"
-	"a1ctf/src/utils/turnstile"
 	"a1ctf/src/webmodels"
 )
 
@@ -27,7 +32,7 @@ func GetProfile(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "System error",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
 		return
 	}
@@ -36,7 +41,7 @@ func GetProfile(c *gin.Context) {
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":    404,
-			"message": "User not found",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "UserNotFound"}),
 		})
 		return
 	}
@@ -67,26 +72,18 @@ func Register(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid request payload",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
 
-	if clientconfig.ClientConfig.TurnstileEnabled {
-		turnstile := turnstile.New(clientconfig.ClientConfig.TurnstileSecretKey)
-		response, err := turnstile.Verify(payload.Captcha, c.ClientIP())
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"code":    400,
-				"message": "Invalid request payload",
-			})
-			return
-		}
+	if clientconfig.ClientConfig.CaptchaEnabled {
+		valid := proofofwork.CapInstance.ValidateToken(c.Request.Context(), payload.Captcha)
 
-		if !response.Success {
+		if !valid {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"code":    400,
-				"message": "Invalid request payload",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 			})
 			return
 		}
@@ -96,15 +93,29 @@ func Register(c *gin.Context) {
 	if err := dbtool.DB().Where("username = ? OR email = ?", payload.Username, payload.Email).Find(&existingUsers).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "System error",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
 		return
 	}
 
 	if len(existingUsers) > 0 {
-		c.JSON(http.StatusNotAcceptable, gin.H{
-			"code":    500,
-			"message": "Username or email has registered",
+		// 记录注册失败日志（用户名或邮箱已存在）
+		tasks.LogFromGinContext(c, tasks.LogEntry{
+			Category:     models.LogCategorySecurity,
+			Action:       "REGISTER_FAILED",
+			ResourceType: models.ResourceTypeUser,
+			ResourceID:   &payload.Username,
+			Details: map[string]interface{}{
+				"username": payload.Username,
+				"email":    payload.Email,
+				"reason":   "username_or_email_exists",
+			},
+			Status: models.LogStatusFailed,
+		})
+
+		c.JSON(http.StatusConflict, gin.H{
+			"code":    409,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "UsernameOrEmailExists"}),
 		})
 		return
 	}
@@ -117,7 +128,7 @@ func Register(c *gin.Context) {
 		Username:      payload.Username,
 		Password:      saltedPassword,
 		Salt:          newSalt,
-		Role:          models.UserRoleAdmin,
+		Role:          models.UserRoleUser,
 		CurToken:      nil,
 		Phone:         nil,
 		StudentNumber: nil,
@@ -132,12 +143,46 @@ func Register(c *gin.Context) {
 	}
 
 	if err := dbtool.DB().Create(&newUser).Error; err != nil {
+		// 记录注册失败日志
+		errMsg := err.Error()
+		tasks.LogFromGinContext(c, tasks.LogEntry{
+			Category:     models.LogCategorySecurity,
+			Action:       "REGISTER_FAILED",
+			ResourceType: models.ResourceTypeUser,
+			ResourceID:   &newUser.UserID,
+			Details: map[string]interface{}{
+				"username": payload.Username,
+				"email":    payload.Email,
+				"reason":   "database_error",
+			},
+			Status:       models.LogStatusFailed,
+			ErrorMessage: &errMsg,
+		})
+
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    501,
-			"message": "System error",
+			"code":    500,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
 		return
 	}
+
+	// 发送账号验证邮件
+	if clientconfig.ClientConfig.AccountActivationMethod == "email" {
+		tasks.NewEmailVerificationTask(newUser)
+	}
+
+	// 记录注册成功日志
+	tasks.LogFromGinContext(c, tasks.LogEntry{
+		Category:     models.LogCategoryUser,
+		Action:       "REGISTER",
+		ResourceType: models.ResourceTypeUser,
+		ResourceID:   &newUser.UserID,
+		Details: map[string]interface{}{
+			"username": payload.Username,
+			"email":    payload.Email,
+		},
+		Status: models.LogStatusSuccess,
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
@@ -174,14 +219,16 @@ func GetClientConfig(c *gin.Context) {
 		"darkModeDefault":  ClientConfig.DarkModeDefault,
 		"allowUserTheme":   ClientConfig.AllowUserTheme,
 		"defaultLanguage":  ClientConfig.DefaultLanguage,
-		"turnstileEnabled": ClientConfig.TurnstileEnabled,
-		"turnstileSiteKey": ClientConfig.TurnstileSiteKey,
+		"captchaEnabled":   ClientConfig.CaptchaEnabled,
+		"AboutUS":          ClientConfig.AboutUS,
+		"gameActivityMode": ClientConfig.GameActivityMode,
 
 		// 品牌资源
 		"FancyBackGroundIconWhite": ClientConfig.FancyBackGroundIconWhite,
 		"FancyBackGroundIconBlack": ClientConfig.FancyBackGroundIconBlack,
 		"DefaultBGImage":           ClientConfig.DefaultBGImage,
-		"SVGIcon":                  ClientConfig.SVGIcon,
+		"SVGIconLight":             ClientConfig.SVGIconLight,
+		"SVGIconDark":              ClientConfig.SVGIconDark,
 		"SVGAltData":               ClientConfig.SVGAltData,
 		"TrophysGold":              ClientConfig.TrophysGold,
 		"TrophysSilver":            ClientConfig.TrophysSilver,
@@ -191,11 +238,184 @@ func GetClientConfig(c *gin.Context) {
 		"SchoolUnionAuthText":      ClientConfig.SchoolUnionAuthText,
 		"BGAnimation":              ClientConfig.BGAnimation,
 
+		"fancyBackGroundIconWidth":  ClientConfig.FancyBackGroundIconWidth,
+		"fancyBackGroundIconHeight": ClientConfig.FancyBackGroundIconHeight,
+
 		"updateVersion": ClientConfig.UpdatedTime,
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
 		"data": clientConfig,
+	})
+}
+
+func UpdateUserProfile(c *gin.Context) {
+	var payload webmodels.UpdateUserProfilePayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
+		})
+		return
+	}
+
+	user := c.MustGet("user").(models.User)
+
+	if err := dbtool.DB().Model(&user).Updates(models.User{
+		Realname:      payload.RealName,
+		StudentNumber: payload.StudentID,
+		Phone:         payload.Phone,
+		Slogan:        payload.Slogan,
+		Username:      *payload.UserName,
+	}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+	})
+}
+
+func UpdateUserEmail(c *gin.Context) {
+	var payload webmodels.UpdateUserEmailPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
+		})
+		return
+	}
+
+	user := c.MustGet("user").(models.User)
+
+	if *user.Email == payload.NewEmail {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "NewEmailSameAsOld"}),
+		})
+		return
+	}
+
+	if err := dbtool.DB().Model(&user).Select("email", "email_verified").Updates(models.User{
+		Email:         &payload.NewEmail,
+		EmailVerified: false,
+	}).Error; err != nil {
+		log.Printf("UpdateUserEmail error: %v", err)
+		if dbtool.IsDuplicateKeyError(err) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    400,
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "EmailCannotBeUsed"}),
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+	})
+}
+
+func SendVerifyEmail(c *gin.Context) {
+	user := c.MustGet("user").(models.User)
+
+	if user.EmailVerified {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "EmailAlreadyVerified"}),
+		})
+		return
+	}
+
+	tasks.NewEmailVerificationTask(user)
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+	})
+}
+
+func VerifyEmailCode(c *gin.Context) {
+	var payload webmodels.EmailVerifyPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
+		})
+		return
+	}
+
+	claims, err := emailjwt.GetEmailVerificationClaims(payload.Code)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
+		})
+		return
+	}
+
+	userID := claims.UserID
+
+	if err := dbtool.DB().Model(&models.User{}).Where("user_id = ?", userID).Updates(
+		models.User{
+			EmailVerified: true,
+		}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+	})
+}
+
+func UserChangePassword(c *gin.Context) {
+	var payload webmodels.ChangePasswordPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
+		})
+		return
+	}
+
+	user := c.MustGet("user").(models.User)
+
+	if user.Password != general.SaltPassword(payload.OldPassword, user.Salt) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "OldPasswordIncorrect"}),
+		})
+		return
+	}
+
+	newSalt := general.GenerateSalt()
+	saltedPassword := general.SaltPassword(payload.NewPassword, newSalt)
+
+	if err := dbtool.DB().Model(&user).Updates(models.User{
+		Password:   saltedPassword,
+		Salt:       newSalt,
+		JWTVersion: general.RandomPassword(16),
+	}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
 	})
 }

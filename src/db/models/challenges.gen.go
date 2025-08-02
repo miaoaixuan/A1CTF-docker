@@ -129,6 +129,25 @@ func (e *ChallengeContainerType) Scan(value interface{}) error {
 	return sonic.Unmarshal(b, e)
 }
 
+type FlagType string
+
+const (
+	FlagTypeDynamic FlagType = "FlagTypeDynamic"
+	FlagTypeStatic  FlagType = "FlagTypeStatic"
+)
+
+func (e FlagType) Value() (driver.Value, error) {
+	return sonic.Marshal(e)
+}
+
+func (e *FlagType) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+	return sonic.Unmarshal(b, e)
+}
+
 // Challenge mapped from table <challenges>
 type Challenge struct {
 	ChallengeID     *int64                 `gorm:"column:challenge_id;primaryKey;autoIncrement:true" json:"challenge_id"`
@@ -140,6 +159,9 @@ type Challenge struct {
 	ContainerConfig *k8stool.A1Containers  `gorm:"column:container_config" json:"container_config"`
 	CreateTime      time.Time              `gorm:"column:create_time;not null" json:"create_time"`
 	JudgeConfig     *JudgeConfig           `gorm:"column:judge_config" json:"judge_config"`
+	AllowWAN        bool                   `gorm:"column:allow_wan;not null" json:"allow_wan"`
+	AllowDNS        bool                   `gorm:"column:allow_dns;not null" json:"allow_dns"`
+	FlagType        FlagType               `gorm:"column:flag_type" json:"flag_type"`
 }
 
 // TableName Challenge's table name

@@ -3,12 +3,14 @@ package controllers
 import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
+	i18ntool "a1ctf/src/utils/i18n_tool"
 	"a1ctf/src/webmodels"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"gorm.io/gorm"
 )
 
@@ -18,7 +20,7 @@ func AdminListContainers(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "无效的请求参数",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -30,11 +32,17 @@ func AdminListContainers(c *gin.Context) {
 		query = query.Where("game_id = ? AND container_status NOT IN ?", payload.GameID, []models.ContainerStatus{models.ContainerStopped})
 	}
 
+	if payload.ChallengeID > 0 {
+		query = query.Where("challenge_id = ?", payload.ChallengeID)
+	}
+
 	// 如果有搜索关键词，添加搜索条件
 	// if payload.Search != "" {
 	// 	searchPattern := "%" + payload.Search + "%"
 	// 	query = query.Where("challenge_name LIKE ?", searchPattern)
 	// }
+
+	query = query.Order("team_id ASC")
 
 	// 分页查询容器列表
 	var total int64
@@ -44,7 +52,7 @@ func AdminListContainers(c *gin.Context) {
 	if err := query.Offset(payload.Offset).Limit(payload.Size).Find(&containers).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "获取容器列表失败",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadContainers"}),
 		})
 		return
 	}
@@ -61,7 +69,7 @@ func AdminListContainers(c *gin.Context) {
 	if err := dbtool.DB().Where("team_id IN ?", teamIDs).Find(&teams).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "获取团队信息失败",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadTeams"}),
 		})
 		return
 	}
@@ -70,7 +78,7 @@ func AdminListContainers(c *gin.Context) {
 	if err := dbtool.DB().Where("game_id IN ?", gameIDs).Find(&games).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "获取游戏信息失败",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGames"}),
 		})
 		return
 	}
@@ -132,7 +140,7 @@ func AdminListContainers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":  200,
 		"data":  containerItems,
-		"total": int64(len(containerItems)), // 返回过滤后的总数
+		"total": total, // 返回过滤后的总数
 	})
 }
 
@@ -142,7 +150,7 @@ func AdminDeleteContainer(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "无效的请求参数",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -161,12 +169,12 @@ func AdminDeleteContainer(c *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
 				"code":    404,
-				"message": "容器不存在",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ContainerNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":    500,
-				"message": "查询容器失败",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToQueryContainer"}),
 			})
 		}
 		tx.Rollback()
@@ -177,7 +185,7 @@ func AdminDeleteContainer(c *gin.Context) {
 	if err := tx.Model(&container).Update("container_status", models.ContainerStopping).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "删除容器失败",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToDeleteContainer"}),
 		})
 		tx.Rollback()
 		return
@@ -187,7 +195,7 @@ func AdminDeleteContainer(c *gin.Context) {
 	if err := tx.Commit().Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "提交事务失败",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCommitTransaction"}),
 		})
 		return
 	}
@@ -197,7 +205,7 @@ func AdminDeleteContainer(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"message": "容器已删除",
+		"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ContainerDeleted"}),
 	})
 }
 
@@ -207,7 +215,7 @@ func AdminExtendContainer(c *gin.Context) {
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "无效的请求参数",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
 		return
 	}
@@ -218,12 +226,12 @@ func AdminExtendContainer(c *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
 				"code":    404,
-				"message": "容器不存在",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ContainerNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":    500,
-				"message": "查询容器失败",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToQueryContainer"}),
 			})
 		}
 		return
@@ -236,14 +244,14 @@ func AdminExtendContainer(c *gin.Context) {
 	if err := dbtool.DB().Model(&container).Update("expire_time", newExpireTime).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "更新容器过期时间失败",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToUpdateContainerExpireTime"}),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":            200,
-		"message":         "容器生命周期已延长",
+		"message":         i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ContainerLifetimeExtended"}),
 		"new_expire_time": newExpireTime,
 	})
 }
@@ -254,7 +262,7 @@ func AdminGetContainerFlag(c *gin.Context) {
 	if containerID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "容器ID不能为空",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ContainerIDRequired"}),
 		})
 		return
 	}
@@ -265,12 +273,12 @@ func AdminGetContainerFlag(c *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
 				"code":    404,
-				"message": "容器不存在",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ContainerNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":    500,
-				"message": "查询容器失败",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToQueryContainer"}),
 			})
 		}
 		return
@@ -282,12 +290,12 @@ func AdminGetContainerFlag(c *gin.Context) {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
 				"code":    404,
-				"message": "Flag不存在",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FlagNotFound"}),
 			})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":    500,
-				"message": "查询Flag失败",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToQueryFlag"}),
 			})
 		}
 		return

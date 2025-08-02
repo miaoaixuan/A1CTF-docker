@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"a1ctf/src/controllers"
@@ -11,17 +16,23 @@ import (
 	"a1ctf/src/jobs"
 	clientconfig "a1ctf/src/modules/client_config"
 	jwtauth "a1ctf/src/modules/jwt_auth"
+	emailjwt "a1ctf/src/modules/jwt_email"
 	"a1ctf/src/modules/monitoring"
+	proofofwork "a1ctf/src/modules/proof_of_work"
+	"a1ctf/src/tasks"
 	"a1ctf/src/utils"
 	dbtool "a1ctf/src/utils/db_tool"
+	i18ntool "a1ctf/src/utils/i18n_tool"
 	k8stool "a1ctf/src/utils/k8s_tool"
 	"a1ctf/src/utils/ristretto_tool"
+	"a1ctf/src/utils/zaphelper"
 
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
+	"golang.org/x/time/rate"
 
 	cache "github.com/chenyahui/gin-cache"
 	"github.com/chenyahui/gin-cache/persist"
@@ -51,10 +62,10 @@ func StartLoopEvent() {
 
 	s.NewJob(
 		gocron.DurationJob(
-			viper.GetDuration("job-intervals.container-operations"),
+			viper.GetDuration("job-intervals.container-updating"),
 		),
 		gocron.NewTask(
-			jobs.ContainerOperationsJob,
+			jobs.UpdateLivingContainers,
 		),
 		gocron.WithSingletonMode(gocron.LimitModeWait),
 	)
@@ -69,17 +80,62 @@ func StartLoopEvent() {
 		gocron.WithSingletonMode(gocron.LimitModeWait),
 	)
 
+	s.NewJob(
+		gocron.DurationJob(
+			viper.GetDuration("job-intervals.update-game-scoreboard-cache"),
+		),
+		gocron.NewTask(
+			jobs.UpdateGameScoreBoardCache,
+		),
+		gocron.WithSingletonMode(gocron.LimitModeWait),
+	)
+
+	s.NewJob(
+		gocron.DurationJob(
+			viper.GetDuration("job-intervals.compress-and-delete-old-logs"),
+		),
+		gocron.NewTask(
+			zaphelper.CompressAndDeleteOldLogs,
+		),
+		gocron.WithSingletonMode(gocron.LimitModeWait),
+	)
+
 	s.Start()
 }
 
-func main() {
+func RateLimiter(rateLimit int, rateInterval time.Duration) gin.HandlerFunc {
+	limiter := rate.NewLimiter(rate.Every(rateInterval), rateLimit)
 
+	return func(c *gin.Context) {
+		if !limiter.Allow() {
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"message": "Too many requests, please try again later",
+			})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
+func main() {
 	// 加载配置文件
 	utils.LoadConfig()
+
+	// 初始化 Zap
+	zaphelper.InitZap()
+	defer zaphelper.CloseZap()
+
+	// 初始化多语言文件
+	i18ntool.LoadLanguageFiles()
+
 	k8stool.InitNodeAddressMap()
 
 	// 初始化数据库连接
 	dbtool.Init()
+
+	// 初始化 Proof-of-work backend
+	proofofwork.InitCap()
 
 	// 初始化缓存池
 	ristretto_tool.LoadCacheTime()
@@ -100,9 +156,12 @@ func main() {
 		defer systemMonitor.Stop()
 	}
 
+	tasks.InitTaskQueue()
+
 	memoryStore := persist.NewMemoryStore(1 * time.Minute)
 
 	// 关闭日志输出
+	gin.DefaultWriter = io.Discard
 	r := gin.New()
 	// r := gin.Default()
 
@@ -116,7 +175,7 @@ func main() {
 		}
 		r.SetTrustedProxies(viper.GetStringSlice("system.trusted-proxies"))
 	} else {
-		log.Printf("No trusted proxies set, using default. If you are using a reverse proxy, please set the trusted proxies in the config file.")
+		zaphelper.Sugar.Warn("No trusted proxies set, using default. If you are using a reverse proxy, please set the trusted proxies in the config file.")
 	}
 
 	pprof.Register(r)
@@ -130,13 +189,11 @@ func main() {
 	http.Handle("/metrics", promhttp.Handler())
 	go http.ListenAndServe(fmt.Sprintf("%s:%s", viper.GetString("system.prometheus-host"), viper.GetString("system.prometheus-port")), nil)
 
-	// // 启动 Gzip 压缩
-	// if viper.GetBool("system.gin-gzip-enabled") {
-	// 	r.Use(gzip.Gzip(gzip.DefaultCompression))
-	// }
-
 	// JWT 鉴权中间件
 	authMiddleware := jwtauth.InitJwtMiddleWare()
+
+	// 初始化 email jwt
+	emailjwt.InitRSAKeys()
 
 	// 公共接口
 	public := r.Group("/api")
@@ -145,16 +202,23 @@ func main() {
 		public.POST("/auth/register", controllers.Register)
 
 		public.GET("/game/list", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.UserListGames)
-		public.GET("/game/:game_id/scoreboard", controllers.GameStatusMiddleware(true, false), controllers.UserGameGetScoreBoard)
+		public.GET("/game/:game_id/scoreboard", controllers.GameStatusMiddleware(true, false, true), controllers.UserGameGetScoreBoard)
 
-		public.GET("/game/:game_id", controllers.GameStatusMiddleware(true, false), controllers.UserGetGameDetailWithTeamInfo)
+		public.GET("/game/:game_id", controllers.GameStatusMiddleware(true, false, false), controllers.UserGetGameDetailWithTeamInfo)
 
 		fileGroup := public.Group("/file")
 		{
 			fileGroup.GET("/download/:file_id", controllers.DownloadFile)
 		}
 
-		public.GET("/client-config", controllers.GetClientConfig)
+		public.GET("/client-config", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GetClientConfig)
+
+		public.POST("/cap/challenge", controllers.CapCreateChallenge)
+		public.POST("/cap/redeem", controllers.CapRedeemChallenge)
+		public.POST("/cap/validate", controllers.CapValidateToken)
+
+		// 邮箱验证接口
+		public.POST("/verifyEmailCode", controllers.VerifyEmailCode)
 	}
 
 	// 鉴权接口
@@ -166,37 +230,52 @@ func main() {
 			fileGroup.POST("/upload", controllers.UploadFile)
 		}
 
-		// 添加账户相关接口
+		// 获取用户资料和更新用户资料的接口
 		accountGroup := auth.Group("/account")
 		{
 			accountGroup.GET("/profile", controllers.GetProfile)
+			accountGroup.PUT("/profile", controllers.UpdateUserProfile)
+
+			accountGroup.POST("/updateEmail", controllers.UpdateUserEmail)
+			accountGroup.POST("/sendVerifyEmail", controllers.SendVerifyEmail)
+			accountGroup.POST("/changePassword", controllers.UserChangePassword)
 		}
 
 		// 用户头像上传接口
 		userAvatarGroup := auth.Group("/user")
+		userAvatarGroup.Use(controllers.EmailVerifiedMiddleware())
 		{
 			userAvatarGroup.POST("/avatar/upload", controllers.UploadUserAvatar)
 		}
 
-		// 团队头像上传接口
-		teamAvatarGroup := auth.Group("/team")
+		// 团队相关管理接口
+		teamManagePublicGroup := auth.Group("/game/:game_id/team")
+		teamManagePublicGroup.Use(controllers.GameStatusMiddleware(false, false, false))
+		// 专门给 Join 预留的，无需 TeamStatus 验证
 		{
-			teamAvatarGroup.POST("/avatar/upload", controllers.UploadTeamAvatar)
+			teamManagePublicGroup.POST("/join", controllers.TeamJoinRequest)
 		}
 
-		// 团队管理接口
-		teamManageGroup := auth.Group("/team")
+		// 这里需要验证比赛状态
+		teamManageGroup := auth.Group("/game/:game_id/team")
+		teamManageGroup.Use(controllers.GameStatusMiddleware(false, false, false))
+		teamManageGroup.Use(controllers.TeamStatusMiddleware())
+		teamManageGroup.Use(controllers.EmailVerifiedMiddleware())
 		{
-			teamManageGroup.POST("/join", controllers.TeamJoinRequest)
+			// 比赛开始后加入队伍之类的还是允许的
 			teamManageGroup.GET("/:team_id/requests", controllers.GetTeamJoinRequests)
 			teamManageGroup.POST("/request/:request_id/handle", controllers.HandleTeamJoinRequest)
-			teamManageGroup.POST("/:team_id/transfer-captain", controllers.TransferTeamCaptain)
-			teamManageGroup.DELETE("/:team_id/member/:user_id", controllers.RemoveTeamMember)
-			teamManageGroup.DELETE("/:team_id", controllers.DeleteTeam)
 			teamManageGroup.PUT("/:team_id", controllers.UpdateTeamInfo)
+			teamManageGroup.POST("/avatar/upload", controllers.UploadTeamAvatar)
+
+			// 比赛开始后不允许移交队长，删除队员，解散队伍
+			teamManageGroup.POST("/:team_id/transfer-captain", controllers.OperationNotAllowedAfterGameStartMiddleWare(), controllers.TransferTeamCaptain)
+			teamManageGroup.DELETE("/:team_id/member/:user_id", controllers.OperationNotAllowedAfterGameStartMiddleWare(), controllers.RemoveTeamMember)
+			teamManageGroup.DELETE("/:team_id", controllers.OperationNotAllowedAfterGameStartMiddleWare(), controllers.DeleteTeam)
 		}
 
 		challengeGroup := auth.Group("/admin/challenge")
+		challengeGroup.Use(controllers.EmailVerifiedMiddleware())
 		{
 			challengeGroup.POST("/list", controllers.AdminListChallenges)
 
@@ -208,6 +287,7 @@ func main() {
 			challengeGroup.POST("/search", controllers.AdminSearchChallenges)
 		}
 
+		// 管理员用户管理接口
 		userGroup := auth.Group("/admin/user")
 		{
 			userGroup.POST("/list", controllers.AdminListUsers)
@@ -216,6 +296,7 @@ func main() {
 			userGroup.POST("/delete", controllers.AdminDeleteUser)
 		}
 
+		// 管理员队伍管理接口
 		teamGroup := auth.Group("/admin/team")
 		{
 			teamGroup.POST("/list", controllers.AdminListTeams)
@@ -225,13 +306,23 @@ func main() {
 			teamGroup.POST("/delete", controllers.AdminDeleteTeam)
 		}
 
+		// 管理员游戏管理接口
 		gameGroup := auth.Group("/admin/game")
 		{
 			gameGroup.POST("/list", controllers.AdminListGames)
 			gameGroup.POST("/create", controllers.AdminCreateGame)
-			gameGroup.GET("/:game_id", controllers.AdminGetGame)
-			gameGroup.PUT("/:game_id/challenge/:challenge_id", controllers.AdminAddGameChallenge)
-			gameGroup.PUT("/:game_id", controllers.AdminUpdateGame)
+
+			gameGroup.GET("/:game_id", controllers.PathParmsMiddlewareBuilder("G"), controllers.AdminGetGame)
+			gameGroup.PUT("/:game_id", controllers.PathParmsMiddlewareBuilder("G"), controllers.AdminUpdateGame)
+
+			// gamechallenges 操作接口
+			gameGroup.GET("/:game_id/challenge/:challenge_id", controllers.PathParmsMiddlewareBuilder("GC[Challenge]"), controllers.AdminGetGameChallenge)
+			gameGroup.PUT("/:game_id/challenge/:challenge_id", controllers.PathParmsMiddlewareBuilder("G|GC"), controllers.AdminUpdateGameChallenge)
+			gameGroup.POST("/:game_id/challenge/:challenge_id", controllers.PathParmsMiddlewareBuilder("g|C"), controllers.AdminAddGameChallenge)
+			gameGroup.DELETE("/:game_id/challenge/:challenge_id", controllers.PathParmsMiddlewareBuilder("g|c"), controllers.AdminDeleteGameChallenge)
+
+			gameGroup.POST("/:game_id/submits", controllers.AdminGetSubmits)
+			gameGroup.POST("/:game_id/cheats", controllers.AdminGetCheats)
 
 			// 比赛海报上传路由
 			gameGroup.POST("/:game_id/poster/upload", controllers.AdminUploadGamePoster)
@@ -252,36 +343,42 @@ func main() {
 			gameGroup.POST("/:game_id/score-adjustments", controllers.AdminCreateScoreAdjustment)
 			gameGroup.PUT("/:game_id/score-adjustments/:adjustment_id", controllers.AdminUpdateScoreAdjustment)
 			gameGroup.DELETE("/:game_id/score-adjustments/:adjustment_id", controllers.AdminDeleteScoreAdjustment)
+
+			// 题目解题记录管理路由
+			gameGroup.POST("/:game_id/challenge/:challenge_id/solves/delete", controllers.AdminDeleteChallengeSolves)
 		}
 
-		// 用户相关接口
+		// 用户比赛访问相关接口
 		userGameGroup := auth.Group("/game")
+		userGameGroup.Use(controllers.EmailVerifiedMiddleware())
 		{
-			userGameGroup.GET("/:game_id/challenges", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenges)
+			// 获取比赛的题目列表
+			userGameGroup.GET("/:game_id/challenges", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenges)
 
 			// 查询比赛中的某道题
-			userGameGroup.GET("/:game_id/challenge/:challenge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenge)
+			userGameGroup.GET("/:game_id/challenge/:challenge_id", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenge)
 
 			// 比赛通知接口
-			userGameGroup.GET("/:game_id/notices", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameNotices)
+			userGameGroup.GET("/:game_id/notices", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameNotices)
 
 			// 用户获取分组列表（公开接口，用于创建团队时选择分组）
-			userGameGroup.GET("/:game_id/groups", controllers.GameStatusMiddleware(true, false), controllers.UserGetGameGroups)
+			userGameGroup.GET("/:game_id/groups", controllers.GameStatusMiddleware(true, false, false), controllers.UserGetGameGroups)
 
 			// 创建比赛队伍
-			userGameGroup.POST("/:game_id/createTeam", controllers.GameStatusMiddleware(false, true), controllers.UserCreateGameTeam)
+			userGameGroup.POST("/:game_id/createTeam", controllers.GameStatusMiddleware(false, true, false), controllers.UserCreateGameTeam)
 
 			// 题目容器
-			userGameGroup.POST("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserCreateGameContainer)
-			userGameGroup.DELETE("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserCloseGameContainer)
-			userGameGroup.PATCH("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserExtendGameContainer)
-			userGameGroup.GET("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallengeContainerInfo)
+			userGameGroup.POST("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserCreateGameContainer)
+			userGameGroup.DELETE("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserCloseGameContainer)
+			userGameGroup.PATCH("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserExtendGameContainer)
+			userGameGroup.GET("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallengeContainerInfo)
 
 			// 提交 Flag
-			userGameGroup.POST("/:game_id/flag/:challenge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGameChallengeSubmitFlag)
-			userGameGroup.GET("/:game_id/flag/:judge_id", controllers.GameStatusMiddleware(false, true), controllers.TeamStatusMiddleware(), controllers.UserGameGetJudgeResult)
+			userGameGroup.POST("/:game_id/flag/:challenge_id", RateLimiter(100, 1*time.Second), controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserGameChallengeSubmitFlag)
+			userGameGroup.GET("/:game_id/flag/:judge_id", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserGameGetJudgeResult)
 		}
 
+		// 实时通知服务
 		auth.GET("/hub", func(c *gin.Context) {
 			// 在升级为WebSocket前获取查询参数
 			gameID := c.Query("game")
@@ -311,24 +408,79 @@ func main() {
 			systemGroup.POST("/settings", controllers.UpdateSystemSettings)
 			systemGroup.POST("/upload", controllers.UploadSystemFile)
 			systemGroup.POST("/test-smtp", controllers.TestSMTPSettings)
+
+			systemGroup.GET("/logs", controllers.GetSystemLogs)
+			systemGroup.GET("/logs/stats", controllers.GetSystemLogStats)
 		}
 	}
 
 	// 未知接口
 	// r.NoRoute(authMiddleware.MiddlewareFunc(), handleNoRoute())
 
+	// r.Static("/assets", "./clientapp/assets")
+	// r.Static("/favicon.ico", "./clientapp/favicon.ico")
+	// r.Static("/images", "./clientapp/images")
+	// r.Static("/locales", "./clientapp/locales")
+	// r.NoRoute(func(c *gin.Context) {
+	// 	c.File("./clientapp/index.html")
+	// })
+
 	r.Static("/assets", "./clientapp/build/client/assets")
-	r.Static("/favicon.ico", "./clientapp/build/client/favicon.ico")
+
+	r.StaticFile("/css/github-markdown-dark.css", "./clientapp/build/client/css/github-markdown-dark.css")
+	r.StaticFile("/css/github-markdown-light.css", "./clientapp/build/client/css/github-markdown-light.css")
+
+	r.StaticFile("/favicon.ico", viper.GetString("system.favicon"))
+
 	r.Static("/images", "./clientapp/build/client/images")
 	r.Static("/locales", "./clientapp/build/client/locales")
 	r.NoRoute(func(c *gin.Context) {
+		if clientconfig.ClientConfig.GameActivityMode != "" {
+			if c.Request.RequestURI == "/" || c.Request.RequestURI == "/games" || c.Request.RequestURI == "/games/" {
+				c.Redirect(http.StatusFound, fmt.Sprintf("/games/%s/info", clientconfig.ClientConfig.GameActivityMode))
+				return
+			}
+		}
 		c.File("./clientapp/build/client/index.html")
 	})
 
 	// 任务线程
 	StartLoopEvent()
 
-	log.Fatal(r.Run(fmt.Sprintf("%s:%s", viper.GetString("system.gin-host"), viper.GetString("system.gin-port"))))
+	// 创建HTTP服务器
+	srv := &http.Server{
+		Addr:    fmt.Sprintf("%s:%s", viper.GetString("system.gin-host"), viper.GetString("system.gin-port")),
+		Handler: r,
+	}
 
-	// k8stool.TestCreate()
+	// 在独立的goroutine中启动服务器
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Failed to start server: %v", err)
+		}
+	}()
+
+	zaphelper.Sugar.Infof("Server started on %s", srv.Addr)
+
+	// 等待中断信号以优雅地关闭服务器
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	zaphelper.Logger.Info("Shutting down server...")
+
+	tasks.CloseTaskQueue()
+
+	// 设置关闭超时时间
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// 关闭缓存
+	ristretto_tool.CloseCachePool()
+
+	// 关闭HTTP服务器
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server forced to shutdown:", err)
+	}
+
+	zaphelper.Logger.Info("Server exiting")
 }

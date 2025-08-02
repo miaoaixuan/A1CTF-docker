@@ -30,7 +30,8 @@ type SystemSettings struct {
 	FancyBackGroundIconWhite string `json:"fancyBackGroundIconWhite"`
 	FancyBackGroundIconBlack string `json:"fancyBackGroundIconBlack"`
 	DefaultBGImage           string `json:"defaultBGImage"`
-	SVGIcon                  string `json:"svgIcon"`
+	SVGIconLight             string `json:"svgIconLight"`
+	SVGIconDark              string `json:"svgIconDark"`
 	SVGAltData               string `json:"svgAltData"`
 	TrophysGold              string `json:"trophysGold"`
 	TrophysSilver            string `json:"trophysSilver"`
@@ -40,18 +41,27 @@ type SystemSettings struct {
 	SchoolUnionAuthText      string `json:"schoolUnionAuthText"`
 	BGAnimation              bool   `json:"bgAnimation"`
 
-	// SMTP设置
-	SmtpHost     string `json:"smtpHost"`
-	SmtpPort     int    `json:"smtpPort"`
-	SmtpUsername string `json:"smtpUsername"`
-	SmtpPassword string `json:"smtpPassword"`
-	SmtpFrom     string `json:"smtpFrom"`
-	SmtpEnabled  bool   `json:"smtpEnabled"`
+	FancyBackGroundIconWidth  float64 `json:"fancyBackGroundIconWidth"`
+	FancyBackGroundIconHeight float64 `json:"fancyBackGroundIconHeight"`
 
-	// Cloudflare Turnstile设置
-	TurnstileSiteKey   string `json:"turnstileSiteKey"`
-	TurnstileSecretKey string `json:"turnstileSecretKey"`
-	TurnstileEnabled   bool   `json:"turnstileEnabled"`
+	// SMTP设置
+	SmtpHost      string `json:"smtpHost"`
+	SmtpPort      int    `json:"smtpPort"`
+	SmtpUsername  string `json:"smtpUsername"`
+	SmtpPassword  string `json:"smtpPassword"`
+	SmtpName      string `json:"smtpName"`
+	SmtpPortType  string `json:"smtpPortType"`
+	SmtpFrom      string `json:"smtpFrom"`
+	SmtpEnabled   bool   `json:"smtpEnabled"`
+	EmailTemplate string `json:"emailTemplate"`
+
+	// Proof-of-work 验证码设置
+	CaptchaEnabled bool `json:"captchaEnabled"`
+
+	// 比赛模式
+	GameActivityMode string `json:"gameActivityMode"`
+
+	AboutUS string `json:"aboutus"`
 
 	// 账户激活策略
 	AccountActivationMethod string `json:"accountActivationMethod"`
@@ -82,23 +92,33 @@ var DefaultSettings = SystemSettings{
 	FancyBackGroundIconWhite: "/images/ctf_white.png",
 	FancyBackGroundIconBlack: "/images/ctf_black.png",
 	DefaultBGImage:           "/images/defaultbg.jpg",
-	SVGIcon:                  "/images/A1natas.svg",
-	SVGAltData:               "A1natas",
-	TrophysGold:              "/images/trophys/gold_trophy.png",
-	TrophysSilver:            "/images/trophys/silver_trophy.png",
-	TrophysBronze:            "/images/trophys/copper_trophy.png",
-	SchoolLogo:               "/images/zjnu_logo.png",
-	SchoolSmallIcon:          "/images/zjnu_small_logo.png",
-	SchoolUnionAuthText:      "ZJNU Union Authserver",
-	BGAnimation:              false,
+	SVGIconLight:             "/images/A1natas.svg",
+	SVGIconDark:              "/images/A1natas_white.svg",
 
-	SmtpPort:                587,
+	FancyBackGroundIconWidth:  241.2,
+	FancyBackGroundIconHeight: 122.39,
+
+	SVGAltData:          "A1natas",
+	TrophysGold:         "/images/trophys/gold_trophy.png",
+	TrophysSilver:       "/images/trophys/silver_trophy.png",
+	TrophysBronze:       "/images/trophys/copper_trophy.png",
+	SchoolLogo:          "/images/zjnu_logo.png",
+	SchoolSmallIcon:     "/images/zjnu_small_logo.png",
+	SchoolUnionAuthText: "ZJNU Union Authserver",
+	EmailTemplate:       "",
+	BGAnimation:         false,
+
+	CaptchaEnabled: true,
+	AboutUS:        "A1CTF Platform",
+
+	SmtpPort:                25,
+	SmtpPortType:            "none",
 	DefaultLanguage:         "zh-CN",
 	TimeZone:                "Asia/Shanghai",
 	MaxUploadSize:           10,
 	AccountActivationMethod: "email",
 	RegistrationEnabled:     true,
-	UpdatedTime:             time.Now(),
+	UpdatedTime:             time.Now().UTC(),
 }
 
 var ClientConfig SystemSettings

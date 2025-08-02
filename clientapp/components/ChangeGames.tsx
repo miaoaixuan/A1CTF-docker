@@ -78,7 +78,7 @@ export function ChangeGames() {
     const { theme } = useTheme()
 
     const [shouldAnime, setShouldAnime] = useState(false)
-    const router = useNavigate();
+    const navigate = useNavigate();
 
     // 观察器
     const observeItem = (el: HTMLElement, id: string) => {
@@ -195,7 +195,7 @@ export function ChangeGames() {
 
             // 动画时间
             setTimeout(() => {
-                router(`/games/${curGame.game_id}`);
+                navigate(`/games/${curGame.game_id}/info`);
             }, 1800)
         })
     }
@@ -216,7 +216,6 @@ export function ChangeGames() {
 
     return (
         <>
-            <GameSwitchHover animation={true} />
             {/* <LoadingPage visible={loadingPageVisible} screen={false} absolute={true} /> */}
             <div className="w-full h-full relative">
 
@@ -261,22 +260,21 @@ export function ChangeGames() {
                                                 <LayoutList />
                                             </Button>
                                         </SheetTrigger>
-                                        <span className="select-none">{ t("game_maybe_click") }</span>
                                     </div>
-                                    <SheetContent side="left">
-                                        <SheetTitle className="hidden" />
+                                    <SheetContent side="left" className="py-10 px-5">
+                                        {/* <SheetTitle className="hidden" /> */}
                                         <div className="flex gap-1 items-center mb-[10px] pl-[20px] pr-[20px] select-none">
                                             <Swords size={32} className="transition-colors duration-300" />
                                             <span className="text-2xl transition-colors duration-300">{ t("game_list") }</span>
                                         </div>
                                         <MacScrollbar
-                                            className="p-4 select-none"
+                                            className="select-none"
                                             skin={theme == "light" ? "light" : "dark"}
                                         >
-                                            <div className="flex flex-col pl-[15px] pr-[15px] w-full">
+                                            <div className="flex flex-col w-full px-5 pb-10">
                                                 {loaded && curGames.map((game, index) => (
                                                     <div
-                                                        className={`flex gap-2 hover:scale-110 hover:bg-foreground/5 rounded-lg pl-[15px] pr-[15px] items-center justify-center transition-[transform,background] duration-300 h-[50px] ${index == curIndex ? "text-cyan-500" : ""}`} key={`title-${index}`}
+                                                        className={`flex gap-2 hover:scale-110 hover:bg-foreground/5 rounded-lg pl-[15px] pr-[15px] items-center justify-center transition-all duration-300 h-[50px] ${index == curIndex ? "text-cyan-500" : ""}`} key={`title-${index}`}
                                                         onClick={() => {
                                                             setOnTransition(true)
                                                             setCurIndex(index)

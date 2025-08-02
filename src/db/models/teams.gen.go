@@ -35,6 +35,25 @@ func (e *ParticipationStatus) Scan(value interface{}) error {
 	return sonic.Unmarshal(b, e)
 }
 
+type TeamType string
+
+const (
+	TeamTypePlayer TeamType = "Player"
+	TeamTypeAdmin  TeamType = "Admin"
+)
+
+func (e TeamType) Value() (driver.Value, error) {
+	return sonic.Marshal(e)
+}
+
+func (e *TeamType) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+	return sonic.Unmarshal(b, e)
+}
+
 // Team 团队模型
 type Team struct {
 	TeamID          int64               `gorm:"column:team_id;primaryKey;autoIncrement" json:"team_id"`
@@ -49,6 +68,7 @@ type Team struct {
 	InviteCode      *string             `gorm:"column:invite_code" json:"invite_code"`
 	TeamStatus      ParticipationStatus `gorm:"column:team_status;not null" json:"team_status"`
 	GroupID         *int64              `gorm:"column:group_id" json:"group_id"`
+	TeamType        TeamType            `gorm:"column:team_type;not null" json:"team_type"`
 
 	// 关联
 	Group *GameGroup `gorm:"foreignKey:GroupID;references:group_id" json:"group,omitempty"`

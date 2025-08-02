@@ -30,8 +30,6 @@ paths:
       operationId: getUserProfile
       summary: Get current user profile
       description: Get current user profile information
-      security:
-        - cookieAuth: []
       responses:
         '200':
           description: OK
@@ -47,6 +45,154 @@ paths:
                 required:
                   - code
                   - data
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server Error
+    put:
+      tags: [user]
+      operationId: updateUserProfile
+      summary: Update current user's profile
+      description: Update current user's profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdatePayload'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                required:
+                  - code
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server Error
+  /api/account/updateEmail:
+    post:
+      tags: [user]
+      operationId: updateEmailAddress
+      summary: Update user's email address
+      description: Update user's email address
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required:
+                - email
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                required:
+                  - code
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server Error
+  /api/account/sendVerifyEmail:
+    post:
+      tags: [user]
+      operationId: sendVerifyEmail
+      summary: Send verify email
+      description: Send verify email to user's email address
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                required:
+                  - code
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server Error
+  /api/verifyEmailCode:
+    post:
+      tags: [user]
+      operationId: verifyEmailCode
+      summary: Verify email code
+      description: Verify email code
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+              required:
+                - code
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                required:
+                  - code
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server Error
+  /api/account/changePassword:
+    post:
+      tags: [user]
+      operationId: changePassword
+      summary: Update user's password
+      description: Update user's password
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                old_password:
+                  type: string
+                new_password:
+                  type: string
+              required:
+                - old_password
+                - new_password
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                required:
+                  - code
         '401':
           description: Unauthorized
         '500':
@@ -453,7 +599,86 @@ paths:
           schema:
             type: integer
   /api/admin/game/{game_id}/challenge/{challenge_id}:
-    put:
+    get:
+      tags: [admin]
+      operationId: getGameChallenge
+      summary: Get a gamechallenge from a game
+      description: Get a gamechallenge from a game
+      responses:
+        '200':
+          description: AdminDetailGameChallenge add successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    $ref: '#/components/schemas/AdminDetailGameChallenge'
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to add
+          schema:
+            type: integer
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge to add
+          schema:
+            type: integer
+    delete:
+      tags: [admin]
+      operationId: deleteGameChallenge
+      summary: Delete a gamechallenge from a game
+      description: Delete a gamechallenge from a game
+      responses:
+        '200':
+          description: AdminDetailGameChallenge add successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                required:
+                  - code
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to add
+          schema:
+            type: integer
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge to add
+          schema:
+            type: integer
+    post:
       tags: [admin]
       operationId: addGameChallenge
       summary: Add a challenge to a game
@@ -494,6 +719,50 @@ paths:
           description: The ID of the challenge to add
           schema:
             type: integer
+    put:
+      tags: [admin]
+      operationId: updateGameChallenge
+      summary: Update a game challenge
+      description: Update a game challenge
+      responses:
+        '200':
+          description: AdminDetailGameChallenge add successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                required:
+                  - code
+                  - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to add
+          schema:
+            type: integer
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge to add
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminDetailGameChallenge'
   /api/admin/game/{game_id}/score-adjustments:
     get:
       tags: [admin]
@@ -644,14 +913,65 @@ paths:
           description: Bad request
         '500':
           description: Server error
+  /api/admin/game/{game_id}/challenge/{challenge_id}/solves/delete:
+    post:
+      tags: [admin]
+      operationId: deleteChallengeSolves
+      summary: Delete challenge solve records
+      description: Delete solve records for a challenge (all or specific team)
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game
+          schema:
+            type: integer
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteChallengeSolvesPayload'
+      responses:
+        '200':
+          description: Solve records deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      deleted_count:
+                        type: integer
+                      team_name:
+                        type: string
+                required:
+                  - code
+                  - message
+                  - data
+        '400':
+          description: Bad request
+        '404':
+          description: Not found
+        '500':
+          description: Server error
   /api/admin/game/{game_id}/poster/upload:
     post:
       tags: [admin]
       operationId: uploadGamePoster
       summary: 上传比赛海报
       description: 上传比赛海报图片并更新比赛信息，需要管理员权限
-      security:
-        - cookieAuth: []
       parameters:
         - name: game_id
           in: path
@@ -1884,8 +2204,6 @@ paths:
       operationId: uploadFile
       summary: 上传文件
       description: 上传文件并存储到服务器，返回文件ID
-      security:
-        - cookieAuth: []
       responses:
         '200':
           description: 文件上传成功
@@ -1931,14 +2249,115 @@ paths:
               required:
                 - file
         required: true
+  /api/admin/system/test-smtp:
+    post:
+      tags: [system]
+      operationId: sendSmtpTestMail
+      summary: Send a test mail to a email address
+      description: Send a test mail to a email address
+      responses:
+        '200':
+          description: 文件上传成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                required:
+                  - code
+                  - data
+        '400':
+          description: 请求错误，未上传文件或格式不正确
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '401':
+          description: 未授权，用户未登录
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                to:
+                  type: string
+                  description: 接收邮件的邮箱地址
+              required:
+                - to
+  /api/admin/system/upload:
+    post:
+      tags: [system]
+      operationId: uploadSystemFile
+      summary: 上传系统文件
+      description: 上传系统文件并存储到服务器，返回文件ID
+      responses:
+        '200':
+          description: 文件上传成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      file_id:
+                        type: string
+                        description: 文件URL
+                required:
+                  - code
+                  - data
+        '400':
+          description: 请求错误，未上传文件或格式不正确
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '401':
+          description: 未授权，用户未登录
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 要上传的文件
+                resource_type:
+                  $ref: '#/components/schemas/SystemResourceType'
+                data:
+                  type: string
+              required:
+                - file
+                - resource_type
+        required: true
   /api/file/download/{file_id}:
     get:
       tags: [file]
       operationId: downloadFile
       summary: 下载文件
       description: 根据文件ID下载之前上传的文件
-      security:
-        - cookieAuth: []
       parameters:
         - name: file_id
           in: path
@@ -1979,8 +2398,6 @@ paths:
       operationId: uploadUserAvatar
       summary: 上传用户头像
       description: 上传用户头像图片并更新用户资料
-      security:
-        - cookieAuth: []
       responses:
         '200':
           description: 头像上传成功
@@ -2035,14 +2452,19 @@ paths:
               required:
                 - avatar
         required: true
-  /api/team/avatar/upload:
+  /api/game/{game_id}/team/avatar/upload:
     post:
       tags: [team]
       operationId: uploadTeamAvatar
       summary: 上传团队头像
       description: 上传团队头像图片并更新团队资料，需要团队成员权限
-      security:
-        - cookieAuth: []
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
       responses:
         '200':
           description: 团队头像上传成功
@@ -2113,14 +2535,19 @@ paths:
                 - avatar
                 - team_id
         required: true
-  /api/team/join:
+  /api/game/{game_id}/team/join:
     post:
       tags: [team]
       operationId: teamAccept
       summary: 申请加入战队
       description: 使用邀请码申请加入战队
-      security:
-        - cookieAuth: []
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
       responses:
         '200':
           description: 申请提交成功
@@ -2164,14 +2591,12 @@ paths:
             schema:
               $ref: '#/components/schemas/TeamJoinPayload'
         required: true
-  /api/team/{team_id}/requests:
+  /api/game/{game_id}/team/{team_id}/requests:
     get:
       tags: [team]
       operationId: getTeamJoinRequests
       summary: 获取战队加入申请列表
       description: 队长获取战队的加入申请列表
-      security:
-        - cookieAuth: []
       parameters:
         - name: team_id
           in: path
@@ -2180,6 +2605,12 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
       responses:
         '200':
           description: 成功获取申请列表
@@ -2218,14 +2649,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorMessage'
-  /api/team/request/{request_id}/handle:
+  /api/game/{game_id}/team/request/{request_id}/handle:
     post:
       tags: [team]
       operationId: handleTeamJoinRequest
       summary: 处理加入申请
       description: 队长批准或拒绝加入申请
-      security:
-        - cookieAuth: []
       parameters:
         - name: request_id
           in: path
@@ -2234,6 +2663,12 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
       responses:
         '200':
           description: 申请处理成功
@@ -2283,14 +2718,12 @@ paths:
             schema:
               $ref: '#/components/schemas/HandleJoinRequestPayload'
         required: true
-  /api/team/{team_id}/transfer-captain:
+  /api/game/{game_id}/team/{team_id}/transfer-captain:
     post:
       tags: [team]
       operationId: transferTeamCaptain
       summary: 转移队长
       description: 队长将队长权限转移给其他成员
-      security:
-        - cookieAuth: []
       parameters:
         - name: team_id
           in: path
@@ -2299,6 +2732,12 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
       responses:
         '200':
           description: 队长转移成功
@@ -2348,14 +2787,12 @@ paths:
             schema:
               $ref: '#/components/schemas/TransferCaptainPayload'
         required: true
-  /api/team/{team_id}/member/{user_id}:
+  /api/game/{game_id}/team/{team_id}/member/{user_id}:
     delete:
       tags: [team]
       operationId: removeTeamMember
       summary: 踢出队员
       description: 队长踢出战队成员
-      security:
-        - cookieAuth: []
       parameters:
         - name: team_id
           in: path
@@ -2370,6 +2807,12 @@ paths:
           description: 用户ID
           schema:
             type: string
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
       responses:
         '200':
           description: 队员已移除
@@ -2413,14 +2856,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorMessage'
-  /api/team/{team_id}:
+  /api/game/{game_id}/team/{team_id}:
     delete:
       tags: [team]
       operationId: deleteTeam
       summary: 解散战队
       description: 队长解散战队
-      security:
-        - cookieAuth: []
       parameters:
         - name: team_id
           in: path
@@ -2429,6 +2870,12 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
       responses:
         '200':
           description: 战队已解散
@@ -2477,8 +2924,6 @@ paths:
       operationId: updateTeamInfo
       summary: 更新战队信息
       description: 队长更新战队信息（只能修改口号）
-      security:
-        - cookieAuth: []
       parameters:
         - name: team_id
           in: path
@@ -2487,6 +2932,12 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
       responses:
         '200':
           description: 战队信息已更新
@@ -2769,6 +3220,188 @@ paths:
           description: 请求参数错误
         '500':
           description: 服务器内部错误
+  /api/admin/system/logs:
+    get:
+      tags: [admin]
+      operationId: adminGetSystemLogs
+      summary: 获取系统日志
+      description: 管理员获取系统操作日志，支持分页和筛选
+      parameters:
+        - name: offset
+          in: query
+          required: false
+          description: 偏移量
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          required: false
+          description: 每页大小
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: category
+          in: query
+          required: false
+          description: 日志类别
+          schema:
+            $ref: '#/components/schemas/LogCategory'
+        - name: user_id
+          in: query
+          required: false
+          description: 用户ID
+          schema:
+            type: string
+        - name: action
+          in: query
+          required: false
+          description: 操作类型
+          schema:
+            type: string
+        - name: resource_type
+          in: query
+          required: false
+          description: 资源类型
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          description: 状态
+          schema:
+            type: string
+            enum: [SUCCESS, FAILED, WARNING]
+        - name: ip_address
+          in: query
+          required: false
+          description: IP地址
+          schema:
+            type: string
+        - name: game_id
+          in: query
+          required: false
+          description: 游戏ID
+          schema:
+            type: integer
+        - name: keyword
+          in: query
+          required: false
+          description: 关键词搜索
+          schema:
+            type: string
+        - name: start_time
+          in: query
+          required: false
+          description: 开始时间
+          schema:
+            type: string
+            format: date-time
+        - name: end_time
+          in: query
+          required: false
+          description: 结束时间
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: 成功获取系统日志
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      logs:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SystemLogItem'
+                      total:
+                        type: integer
+                        description: 总记录数
+                      pagination:
+                        type: object
+                        properties:
+                          offset:
+                            type: integer
+                          size:
+                            type: integer
+                          total:
+                            type: integer
+                        required:
+                          - offset
+                          - size
+                          - total
+                    required:
+                      - logs
+                      - total
+                      - pagination
+                required:
+                  - code
+                  - data
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '401':
+          description: 未授权，用户未登录
+        '403':
+          description: 权限不足，非管理员
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+  /api/admin/system/logs/stats:
+    get:
+      tags: [admin]
+      operationId: adminGetSystemLogStats
+      summary: 获取系统日志统计
+      description: 管理员获取系统日志统计信息（最近24小时）
+      responses:
+        '200':
+          description: 成功获取系统日志统计
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    $ref: '#/components/schemas/SystemLogStats'
+                required:
+                  - code
+                  - data
+        '401':
+          description: 未授权，用户未登录
+        '403':
+          description: 权限不足，非管理员
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
   /api/admin/game/notices:
     delete:
       tags: [admin]
@@ -2801,6 +3434,152 @@ paths:
           description: 公告不存在
         '500':
           description: 服务器内部错误
+  /api/admin/game/{game_id}/submits:
+    post:
+      tags: [admin]
+      operationId: adminListGameSubmits
+      summary: 获取比赛提交记录列表
+      description: 获取指定比赛的所有提交记录（包含正确和错误），支持分页
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminListSubmitsPayload'
+        required: true
+      responses:
+        '200':
+          description: 成功获取提交记录列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminSubmitItem'
+                  total:
+                    type: integer
+                required:
+                  - code
+                  - data
+                  - total
+        '400':
+          description: 请求参数错误
+        '500':
+          description: 服务器内部错误
+  /api/admin/game/{game_id}/cheats:
+    post:
+      tags: [admin]
+      operationId: adminListGameCheats
+      summary: 获取比赛作弊记录列表
+      description: 获取指定比赛的所有作弊记录，支持分页
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: 比赛ID
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminListCheatsPayload'
+        required: true
+      responses:
+        '200':
+          description: 成功获取作弊记录列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminCheatItem'
+                  total:
+                    type: integer
+                required:
+                  - code
+                  - data
+                  - total
+        '400':
+          description: 请求参数错误
+        '500':
+          description: 服务器内部错误
+  /api/admin/system/settings:
+    get:
+      tags: [system]
+      operationId: getSystemSettings
+      summary: 获取系统设置
+      description: 获取当前系统的所有配置设置
+      responses:
+        '200':
+          description: 成功获取系统设置
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    $ref: '#/components/schemas/SystemSettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags: [system]
+      operationId: updateSystemSettings
+      summary: 更新系统设置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SystemSettingsPartialUpdate'
+      responses:
+        '200':
+          description: 系统设置更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "System settings updated"
+                  data:
+                    $ref: '#/components/schemas/SystemSettings'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 components:
   securitySchemes:
     cookieAuth:
@@ -2939,6 +3718,11 @@ components:
         - AI
         - PENTENT
         - OSINT
+    FlagType:
+      type: string
+      enum:
+        - FlagTypeDynamic
+        - FlagTypeStatic
     EnvironmentItem:
       type: object
       properties:
@@ -2980,6 +3764,10 @@ components:
           $ref: '#/components/schemas/ChallengeCategory'
         challenge_id:
           type: integer
+        allow_wan:
+          type: boolean
+        allow_dns:
+          type: boolean
         container_config:
           type: array
           items:
@@ -2993,8 +3781,8 @@ components:
           $ref: '#/components/schemas/JudgeConfig'
         name:
           type: string
-        type_:
-          type: integer
+        flag_type:
+          $ref: '#/components/schemas/FlagType'
       required:
         - name
         - description
@@ -3065,11 +3853,10 @@ components:
           $ref: '#/components/schemas/ChallengeCategory'
         judge_config:
           $ref: '#/components/schemas/JudgeConfig'
-      required:
-        - challenge_id
-        - challenge_name
-        - total_score
-        - cur_score
+        minimal_score:
+          type: number
+        enable_blood_reward:
+          type: boolean
     AddGameChallengePayload:
       type: object
       properties:
@@ -3100,6 +3887,12 @@ components:
         invite_code:
           type: string
           nullable: true
+        game_icon_light:
+          type: string
+          nullable: true
+        game_icon_dark:
+          type: string
+          nullable: true
         start_time:
           type: string
           format: date-time
@@ -3110,6 +3903,9 @@ components:
           type: boolean
         team_number_limit:
           type: integer
+        team_policy:
+          type: string
+          enum: ["Manual", "Auto"]
         container_number_limit:
           type: integer
         require_wp:
@@ -3123,10 +3919,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GameStage'
-        challenges:
-          type: array
-          items:
-            $ref: '#/components/schemas/AdminDetailGameChallenge'
+        first_blood_reward:
+          type: number
+        second_blood_reward:
+          type: number
+        third_blood_reward:
+          type: number
       required:
         - game_id
         - name
@@ -3138,6 +3936,7 @@ components:
         - require_wp
         - wp_expire_time
         - stages
+        - team_policy
         - visible
     UserGameSimpleInfo:
       type: object
@@ -3207,6 +4006,8 @@ components:
           format: double
         solve_count:
           type: number
+        visible:
+          type: boolean
         category:
           $ref: '#/components/schemas/ChallengeCategory'
       required:
@@ -3306,6 +4107,8 @@ components:
           $ref: '#/components/schemas/ChallengeCategory'
         container_type:
           $ref: '#/components/schemas/ChallengeContainerType'
+        visible:
+          type: boolean
         container_status:
           $ref: '#/components/schemas/ContainerStatus'
         container_expiretime:
@@ -3445,6 +4248,12 @@ components:
           format: date-time
         visible:
           type: boolean
+        game_icon_light:
+          type: string
+          nullable: true
+        game_icon_dark:
+          type: string
+          nullable: true
         stages:
           type: array
           items:
@@ -3615,6 +4424,10 @@ components:
         team_slogan:
           type: string
           example: ""
+        team_members:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminSimpleTeamMemberInfo'
         team_description:
           type: string
           example: ""
@@ -3956,6 +4769,8 @@ components:
       properties:
         game_id:
           type: integer
+        challenge_id:
+          type: integer
         size:
           type: integer
           minimum: 0
@@ -4030,6 +4845,25 @@ components:
         - register_time
         - last_login_time
         - last_login_ip
+    UserProfileUpdatePayload:
+      type: object
+      properties:
+        phone:
+          type: string
+          nullable: true
+        student_number:
+          type: string
+          nullable: true
+        realname:
+          type: string
+          nullable: true
+        slogan:
+          type: string
+          nullable: true
+        username:
+          type: string
+      required:
+        - username
     TeamJoinPayload:
       type: object
       properties:
@@ -4329,3 +5163,785 @@ components:
         - adjustment_type
         - score_change
         - reason
+    DeleteChallengeSolvesPayload:
+      type: object
+      properties:
+        team_id:
+          type: integer
+          description: 队伍ID（可选，不提供则删除所有解题记录）
+      required: []
+    LogCategory:
+      type: string
+      enum:
+        - ADMIN
+        - USER
+        - SYSTEM
+        - CONTAINER
+        - JUDGE
+        - SECURITY
+      description: |
+        日志类别:
+        - ADMIN: 管理员操作
+        - USER: 用户操作
+        - SYSTEM: 系统操作
+        - CONTAINER: 容器操作
+        - JUDGE: 判题操作
+        - SECURITY: 安全相关
+    SystemResourceType:
+      type: string
+      enum:
+        - svgIconLight
+        - svgIconDark
+        - trophysGold
+        - trophysSilver
+        - trophysBronze
+        - schoolLogo
+        - schoolSmallIcon
+        - fancyBackGroundIconWhite
+        - fancyBackGroundIconBlack
+        - gameIconLight
+        - gameIconDark
+      description: |
+        资源类型:
+        - svgIconLight: SVG图标(浅色)
+        - svgIconDark: SVG图标(深色)
+        - trophysGold: 金牌奖杯
+        - trophysSilver: 银牌奖杯
+        - trophysBronze: 铜牌奖杯
+        - schoolLogo: 学校Logo
+        - schoolSmallIcon: 学校小图标
+        - fancyBackGroundIconWhite: 白色背景图标
+        - fancyBackGroundIconBlack: 黑色背景图标
+        - gameIconLight: 比赛图标(浅色)
+        - gameIconDark: 比赛图标(深色)
+    SystemLogItem:
+      type: object
+      properties:
+        log_id:
+          type: integer
+          format: int64
+          description: 日志ID
+        log_category:
+          $ref: '#/components/schemas/LogCategory'
+        user_id:
+          type: string
+          nullable: true
+          description: 用户ID
+        username:
+          type: string
+          nullable: true
+          description: 用户名
+        action:
+          type: string
+          description: 操作类型
+        resource_type:
+          type: string
+          description: 资源类型
+        resource_id:
+          type: string
+          nullable: true
+          description: 资源ID
+        details:
+          type: object
+          nullable: true
+          description: 详细信息
+        ip_address:
+          type: string
+          nullable: true
+          description: IP地址
+        user_agent:
+          type: string
+          nullable: true
+          description: 用户代理
+        status:
+          type: string
+          enum: [SUCCESS, FAILED, WARNING]
+          description: 状态
+        error_message:
+          type: string
+          nullable: true
+          description: 错误信息
+        create_time:
+          type: string
+          format: date-time
+          description: 创建时间
+        game_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: 游戏ID
+        challenge_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: 挑战ID
+        team_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: 队伍ID
+      required:
+        - log_id
+        - log_category
+        - action
+        - resource_type
+        - status
+        - create_time
+    SystemLogStats:
+      type: object
+      properties:
+        total_logs:
+          type: integer
+          format: int64
+          description: 总日志数（最近24小时）
+        success_logs:
+          type: integer
+          format: int64
+          description: 成功日志数
+        failed_logs:
+          type: integer
+          format: int64
+          description: 失败日志数
+        admin_logs:
+          type: integer
+          format: int64
+          description: 管理员操作日志数
+        user_logs:
+          type: integer
+          format: int64
+          description: 用户操作日志数
+        security_logs:
+          type: integer
+          format: int64
+          description: 安全相关日志数
+      required:
+        - total_logs
+        - success_logs
+        - failed_logs
+        - admin_logs
+        - user_logs
+        - security_logs
+    AdminListSubmitsPayload:
+      type: object
+      properties:
+        game_id:
+          type: integer
+          description: 游戏ID
+        size:
+          type: integer
+          description: 每页大小
+        offset:
+          type: integer
+          description: 偏移量
+        challenge_ids:
+          type: array
+          items:
+            type: integer
+          description: 题目ID 列表（可选，OR 关系）
+        challenge_names:
+          type: array
+          items:
+            type: string
+          description: 题目名称关键词列表（模糊匹配，可选，OR 关系）
+        team_ids:
+          type: array
+          items:
+            type: integer
+          description: 队伍ID 列表（可选）
+        team_names:
+          type: array
+          items:
+            type: string
+          description: 队伍名称关键词列表（模糊匹配，可选）
+        judge_statuses:
+          type: array
+          items:
+            type: string
+            enum: [JudgeAC, JudgeWA, JudgeError, JudgeTimeout, JudgeQueueing, JudgeRunning]
+          description: 评测结果列表（可选，OR 关系）
+        start_time:
+          type: string
+          format: date-time
+          description: 开始时间（可选）
+        end_time:
+          type: string
+          format: date-time
+          description: 结束时间（可选）
+      required:
+        - game_id
+        - size
+        - offset
+    AdminSubmitItem:
+      type: object
+      properties:
+        judge_id:
+          type: string
+          description: 判题ID
+        username:
+          type: string
+          description: 提交者用户名
+        team_name:
+          type: string
+          description: 提交者队伍名
+        team_id:
+          type: integer
+        challenge_id:
+          type: integer
+        flag_content:
+          type: string
+          description: 提交的FLAG内容
+        challenge_name:
+          type: string
+          description: 题目名称
+        judge_status:
+          type: string
+          description: 判题状态
+          enum: [JudgeAC, JudgeWA, JudgeError, JudgeTimeout, JudgeQueueing, JudgeRunning]
+        judge_time:
+          type: string
+          format: date-time
+          description: 判题时间
+      required:
+        - judge_id
+        - username
+        - team_name
+        - team_id
+        - challenge_id
+        - flag_content
+        - challenge_name
+        - judge_status
+        - judge_time
+    AdminListCheatsPayload:
+      type: object
+      properties:
+        game_id:
+          type: integer
+          description: 游戏ID
+        size:
+          type: integer
+          description: 每页大小
+        offset:
+          type: integer
+          description: 偏移量
+        challenge_ids:
+          type: array
+          items:
+            type: integer
+          description: 题目ID 列表（可选，OR 关系）
+        challenge_names:
+          type: array
+          items:
+            type: string
+          description: 题目名称关键词列表（模糊匹配，可选，OR 关系）
+        team_ids:
+          type: array
+          items:
+            type: integer
+          description: 队伍ID 列表（可选）
+        team_names:
+          type: array
+          items:
+            type: string
+          description: 队伍名称关键词列表（模糊匹配，可选）
+        cheat_types:
+          type: array
+          items:
+            type: string
+            enum: [SubmitSomeonesFlag, SubmitWithoutDownloadAttachments, SubmitWithoutStartContainer]
+          description: 作弊类型列表（可选，OR 关系）
+        start_time:
+          type: string
+          format: date-time
+          description: 开始时间（可选）
+        end_time:
+          type: string
+          format: date-time
+          description: 结束时间（可选）
+      required:
+        - game_id
+        - size
+        - offset
+    AdminCheatItem:
+      type: object
+      properties:
+        cheat_id:
+          type: string
+          description: 作弊记录ID
+        cheat_type:
+          type: string
+          description: 作弊类型
+          enum: [SubmitSomeonesFlag, SubmitWithoutDownloadAttachments, SubmitWithoutStartContainer]
+        username:
+          type: string
+          description: 作弊者用户名
+        team_name:
+          type: string
+          description: 作弊者队伍名
+        team_id:
+          type: integer
+          description: 队伍ID
+        challenge_id:
+          type: integer
+          description: 题目ID
+        challenge_name:
+          type: string
+          description: 题目名称
+        judge_id:
+          type: string
+          description: 相关判题ID
+        flag_id:
+          type: integer
+          nullable: true
+          description: 相关FLAG ID
+        extra_data:
+          type: object
+          description: 额外数据
+        cheat_time:
+          type: string
+          format: date-time
+          description: 作弊时间
+        submiter_ip:
+          type: string
+          nullable: true
+          description: 提交者IP地址
+      required:
+        - cheat_id
+        - cheat_type
+        - username
+        - team_name
+        - team_id
+        - challenge_id
+        - challenge_name
+        - judge_id
+        - extra_data
+        - cheat_time
+    SystemSettings:
+      type: object
+      description: 系统设置完整结构体
+      properties:
+        # 基本信息
+        systemName:
+          type: string
+          description: 系统名称
+          example: "A1CTF"
+          maxLength: 100
+        systemLogo:
+          type: string
+          description: 系统logo URL
+          example: "/images/logo.png"
+        systemSlogan:
+          type: string
+          description: 系统标语
+          example: "A Modern CTF Platform"
+          maxLength: 200
+        systemSummary:
+          type: string
+          description: 系统简介
+          example: "A comprehensive CTF platform for cybersecurity education"
+        systemFooter:
+          type: string
+          description: 页面底部信息
+          example: "© 2024 A1CTF Team"
+          maxLength: 500
+        systemFavicon:
+          type: string
+          description: 网站图标 URL
+          example: "/images/favicon.ico"
+        systemICP:
+          type: string
+          description: ICP备案号
+          example: "浙ICP备2023022969号"
+        systemOrganization:
+          type: string
+          description: 组织名称
+          example: "浙江师范大学"
+        systemOrganizationURL:
+          type: string
+          description: 组织官网链接
+          format: uri
+          example: "https://www.zjnu.edu.cn"
+
+        # 主题设置
+        themeColor:
+          type: string
+          description: 主题颜色
+          enum: ["blue", "red", "green", "purple", "orange", "gray"]
+          example: "blue"
+        darkModeDefault:
+          type: boolean
+          description: 默认是否为暗色模式
+          example: true
+        allowUserTheme:
+          type: boolean
+          description: 是否允许用户自定义主题
+          example: true
+
+        # 品牌资源
+        fancyBackGroundIconWhite:
+          type: string
+          description: 白色背景图标 URL
+          example: "/images/ctf_white.png"
+        fancyBackGroundIconBlack:
+          type: string
+          description: 黑色背景图标 URL
+          example: "/images/ctf_black.png"
+        defaultBGImage:
+          type: string
+          description: 默认背景图片 URL
+          example: "/images/defaultbg.jpg"
+        svgIcon:
+          type: string
+          description: SVG图标 URL
+          example: "/images/A1natas.svg"
+        svgAltData:
+          type: string
+          description: SVG图标替代文本
+          example: "A1natas"
+        trophysGold:
+          type: string
+          description: 金奖杯图标 URL
+          example: "/images/trophys/gold_trophy.png"
+        trophysSilver:
+          type: string
+          description: 银奖杯图标 URL
+          example: "/images/trophys/silver_trophy.png"
+        trophysBronze:
+          type: string
+          description: 铜奖杯图标 URL
+          example: "/images/trophys/copper_trophy.png"
+        schoolLogo:
+          type: string
+          description: 学校logo URL
+          example: "/images/zjnu_logo.png"
+        schoolSmallIcon:
+          type: string
+          description: 学校小图标 URL
+          example: "/images/zjnu_small_logo.png"
+        schoolUnionAuthText:
+          type: string
+          description: 学校联合认证文本
+          example: "ZJNU Union Authserver"
+        bgAnimation:
+          type: boolean
+          description: 是否启用背景动画
+          example: false
+
+        # SMTP设置
+        smtpHost:
+          type: string
+          description: SMTP服务器地址
+          example: "smtp.example.com"
+        smtpPort:
+          type: integer
+          description: SMTP服务器端口
+          minimum: 1
+          maximum: 65535
+          example: 587
+        smtpName:
+          type: string
+        smtpPortType:
+          type: string
+          enum: ["none", "tls", "starttls"]
+        smtpUsername:
+          type: string
+          description: SMTP用户名
+          example: "noreply@example.com"
+        smtpPassword:
+          type: string
+          description: SMTP密码
+          format: password
+          example: "password123"
+        smtpFrom:
+          type: string
+          description: 发件人邮箱
+          format: email
+          example: "noreply@example.com"
+        smtpEnabled:
+          type: boolean
+          description: 是否启用SMTP
+          example: false
+        emailTemplate:
+          type: string
+          description: 邮件模板
+          example: ""
+
+        # 验证码设置
+        captchaEnabled:
+          type: boolean
+          description: 是否启用验证码
+          example: true
+
+        # 比赛模式
+        gameActivityMode:
+          type: string
+          description: 比赛模式对应的比赛ID
+
+        # 关于我们
+        aboutus:
+          type: string
+          description: 关于我们内容
+          example: "A1CTF Platform"
+
+        # 账户激活策略
+        accountActivationMethod:
+          type: string
+          description: 账户激活方式
+          enum: ["auto", "email", "admin"]
+          example: "email"
+        registrationEnabled:
+          type: boolean
+          description: 是否启用用户注册
+          example: true
+
+        # 其他系统设置
+        defaultLanguage:
+          type: string
+          description: 默认语言
+          example: "zh-CN"
+        timeZone:
+          type: string
+          description: 时区设置
+          example: "Asia/Shanghai"
+        maxUploadSize:
+          type: integer
+          description: 最大上传文件大小(MB)
+          minimum: 1
+          maximum: 1024
+          example: 10
+
+        # 时间戳
+        updatedTime:
+          type: string
+          format: date-time
+          description: 最后更新时间
+          example: "2024-01-01T12:00:00Z"
+
+      required:
+        - systemName
+        - themeColor
+        - darkModeDefault
+        - allowUserTheme
+        - bgAnimation
+        - smtpPort
+        - smtpEnabled
+        - captchaEnabled
+        - accountActivationMethod
+        - registrationEnabled
+        - defaultLanguage
+        - timeZone
+        - maxUploadSize
+
+    SystemSettingsPartialUpdate:
+      type: object
+      description: |
+        系统设置部分更新对象。所有字段都是可选的，只需要提供需要更新的字段。
+        字段定义与 SystemSettings 相同，但都为可选字段。
+      properties:
+        # 基本信息
+        systemName:
+          type: string
+          description: 系统名称
+          maxLength: 100
+        systemLogo:
+          type: string
+          description: 系统logo URL
+        systemSlogan:
+          type: string
+          description: 系统标语
+          maxLength: 200
+        systemSummary:
+          type: string
+          description: 系统简介
+        systemFooter:
+          type: string
+          description: 页面底部信息
+          maxLength: 500
+        systemFavicon:
+          type: string
+          description: 网站图标 URL
+        systemICP:
+          type: string
+          description: ICP备案号
+        systemOrganization:
+          type: string
+          description: 组织名称
+        systemOrganizationURL:
+          type: string
+          description: 组织官网链接
+          format: uri
+
+        # 主题设置
+        themeColor:
+          type: string
+          description: 主题颜色
+        darkModeDefault:
+          type: boolean
+          description: 默认是否为暗色模式
+        allowUserTheme:
+          type: boolean
+          description: 是否允许用户自定义主题
+
+        # 品牌资源
+        fancyBackGroundIconWhite:
+          type: string
+          description: 白色背景图标 URL
+        fancyBackGroundIconBlack:
+          type: string
+          description: 黑色背景图标 URL
+        defaultBGImage:
+          type: string
+          description: 默认背景图片 URL
+        svgIcon:
+          type: string
+          description: SVG图标 URL
+        svgAltData:
+          type: string
+          description: SVG图标替代文本
+        trophysGold:
+          type: string
+          description: 金奖杯图标 URL
+        trophysSilver:
+          type: string
+          description: 银奖杯图标 URL
+        trophysBronze:
+          type: string
+          description: 铜奖杯图标 URL
+        schoolLogo:
+          type: string
+          description: 学校logo URL
+        schoolSmallIcon:
+          type: string
+          description: 学校小图标 URL
+        schoolUnionAuthText:
+          type: string
+          description: 学校联合认证文本
+        bgAnimation:
+          type: boolean
+          description: 是否启用背景动画
+
+        # SMTP设置
+        smtpHost:
+          type: string
+          description: SMTP服务器地址
+        smtpPort:
+          type: integer
+          description: SMTP服务器端口
+          minimum: 1
+          maximum: 65535
+        smtpName:
+          type: string
+        smtpPortType:
+          type: string
+          enum: ["none", "tls", "starttls"]
+        smtpUsername:
+          type: string
+          description: SMTP用户名
+        smtpPassword:
+          type: string
+          description: SMTP密码
+          format: password
+        smtpFrom:
+          type: string
+          description: 发件人邮箱
+          format: email
+        smtpEnabled:
+          type: boolean
+          description: 是否启用SMTP
+        emailTemplate:
+          type: string
+          description: 邮件模板
+
+        # 验证码设置
+        captchaEnabled:
+          type: boolean
+          description: 是否启用验证码
+
+        # 比赛模式
+        gameActivityMode:
+          type: string
+          description: 比赛模式对应的比赛ID
+
+        # 关于我们
+        aboutus:
+          type: string
+          description: 关于我们内容
+
+        # 账户激活策略
+        accountActivationMethod:
+          type: string
+          description: 账户激活方式
+          enum: ["auto", "email", "admin"]
+        registrationEnabled:
+          type: boolean
+          description: 是否启用用户注册
+
+        # 其他系统设置
+        defaultLanguage:
+          type: string
+          description: 默认语言
+        timeZone:
+          type: string
+          description: 时区设置
+        maxUploadSize:
+          type: integer
+          description: 最大上传文件大小(MB)
+          minimum: 1
+          maximum: 1024
+
+      additionalProperties: false
+      minProperties: 1
+
+    Error:
+      type: object
+      description: 错误响应格式
+      properties:
+        code:
+          type: integer
+          description: 错误代码
+        message:
+          type: string
+          description: 错误信息
+      required:
+        - code
+        - message
+
+  responses:
+    BadRequest:
+      description: 请求参数错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 400
+            message: "Invalid request data"
+
+    Unauthorized:
+      description: 未授权访问
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 401
+            message: "Unauthorized access"
+
+    Forbidden:
+      description: 权限不足
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 403
+            message: "Insufficient permissions"
+
+    InternalServerError:
+      description: 服务器内部错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: 500
+            message: "Save system settings failed: database connection error"

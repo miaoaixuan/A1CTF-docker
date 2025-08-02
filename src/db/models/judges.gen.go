@@ -43,8 +43,8 @@ type Judge struct {
 	Challenge     Challenge     `gorm:"foreignKey:ChallengeID;references:challenge_id" json:"-"`
 	TeamID        int64         `gorm:"column:team_id;not null" json:"team_id"`
 	Team          Team          `gorm:"foreignKey:TeamID;references:team_id" json:"-"`
-	FlagID        int64         `gorm:"column:flag_id;not null" json:"flag_id"`
-	TeamFlag      TeamFlag      `gorm:"foreignKey:FlagID;references:flag_id" json:"-"`
+	FlagID        *int64        `gorm:"column:flag_id" json:"flag_id"`
+	TeamFlag      TeamFlag      `gorm:"foreignKey:FlagID;references:flag_id" json:"team_flag"`
 	JudgeType     JudgeType     `gorm:"column:judge_type;not null" json:"judge_type"`
 	JudgeStatus   JudgeStatus   `gorm:"column:judge_status;not null" json:"judge_status"`
 	JudgeResult   string        `gorm:"column:judge_result" json:"judge_result"`
@@ -52,6 +52,7 @@ type Judge struct {
 	JudgeID       string        `gorm:"column:judge_id;primaryKey" json:"judge_id"`
 	JudgeTime     time.Time     `gorm:"column:judge_time;not null" json:"judge_time"`
 	JudgeContent  string        `gorm:"column:judge_content;not null" json:"judge_content"`
+	SubmiterIP    *string       `gorm:"column:submiter_ip" json:"submiter_ip"`
 }
 
 // TableName Judge's table name

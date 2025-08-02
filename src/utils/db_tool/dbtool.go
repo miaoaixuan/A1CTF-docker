@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -22,6 +23,7 @@ var db *gorm.DB
 var redis_instance *redis.Client
 var ml *melody.Melody
 var gameSessions map[*melody.Session]int64 = make(map[*melody.Session]int64)
+var gameSessionsMutex sync.RWMutex
 var ctx = context.Background()
 
 func DB() *gorm.DB {
@@ -44,13 +46,14 @@ func Init() {
 
 	// Init DB
 
-	_ = logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags), // 使用标准输出
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
 		logger.Config{
-			SlowThreshold:             time.Second, // 慢查询阈值（例如 1 秒）
-			LogLevel:                  logger.Info, // 日志级别设为 Info，记录所有 SQL
-			IgnoreRecordNotFoundError: true,        // 忽略 "记录未找到" 错误
-			Colorful:                  true,        // 启用彩色日志（可选）
+			SlowThreshold:             time.Second,   // Slow SQL threshold
+			LogLevel:                  logger.Silent, // Log level
+			IgnoreRecordNotFoundError: true,          // Ignore ErrRecordNotFound error for logger
+			ParameterizedQueries:      true,          // Don't include params in the SQL log
+			Colorful:                  false,         // Disable color
 		},
 	)
 
@@ -62,7 +65,8 @@ func Init() {
 		viper.GetString("postgres.port"),
 		viper.GetString("postgres.sslmode"))
 	db_local, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		// Logger: newLogger, // 设置自定义 Logger
+		Logger:         newLogger, // 设置自定义 Logger
+		TranslateError: true,
 	})
 	if err != nil {
 		panic(err)
@@ -99,17 +103,32 @@ func Init() {
 			return
 		}
 
+		gameSessionsMutex.Lock()
 		gameSessions[s] = gameID
+		gameSessionsMutex.Unlock()
 
 		s.Write([]byte("{ \"status\": \"connected\" }"))
 	})
 
 	ml.HandleClose(func(s *melody.Session, i int, s2 string) error {
-		delete(gameSessions, s)
+		gameSessionsMutex.Lock()
+		_, exists := gameSessions[s]
+		if exists {
+			delete(gameSessions, s)
+		}
+		gameSessionsMutex.Unlock()
 		return nil
 	})
 }
 
 func GameSessions() map[*melody.Session]int64 {
-	return gameSessions
+	gameSessionsMutex.RLock()
+	defer gameSessionsMutex.RUnlock()
+
+	// 返回一个拷贝以避免外部修改
+	result := make(map[*melody.Session]int64)
+	for k, v := range gameSessions {
+		result[k] = v
+	}
+	return result
 }

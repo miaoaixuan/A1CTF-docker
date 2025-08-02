@@ -17,7 +17,13 @@ export default defineConfig({
         target: "http://localhost:7777",
         ws: true,
       },
+    },
+    hmr: {
+      overlay: true,
     }
   },
-  plugins: [devtoolsJson(), tailwindcss(), reactRouter(), tsconfigPaths()],
+  css: {
+    devSourcemap: true,
+  },
+  plugins: [tailwindcss(), devtoolsJson(), reactRouter(), tsconfigPaths()],
 });

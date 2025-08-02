@@ -57,6 +57,7 @@ type UserSimpleGameChallenge struct {
 	CurScore      float64                  `json:"cur_score"`
 	SolveCount    int32                    `json:"solve_count"`
 	Category      models.ChallengeCategory `json:"category"`
+	Visible       bool                     `json:"visible"`
 }
 
 type ExposePortInfo struct {
@@ -79,6 +80,7 @@ type UserDetailGameChallenge struct {
 	ContainerStatus     models.ContainerStatus        `json:"container_status"`
 	ContainerExpireTime *time.Time                    `json:"container_expiretime"`
 	Containers          []ExposePortInfo              `json:"containers"`
+	Visible             bool                          `json:"visible"`
 }
 
 type GameNotice struct {
@@ -175,6 +177,7 @@ type TeamScoreItem struct {
 	TeamName         string                    `json:"team_name"`
 	TeamAvatar       *string                   `json:"team_avatar"`
 	TeamSlogan       *string                   `json:"team_slogan"`
+	Members          []TeamMemberInfo          `json:"team_members"`
 	TeamDescription  *string                   `json:"team_description"`
 	Rank             int64                     `json:"rank"`
 	Score            float64                   `json:"score"`

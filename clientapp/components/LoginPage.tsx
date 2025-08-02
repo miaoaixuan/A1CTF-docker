@@ -3,27 +3,25 @@ import { GalleryVerticalEnd } from "lucide-react"
 import { LoginForm } from "components/LoginForm"
 
 import ThemeSwitcher from "components/ToggleTheme"
-import { TransitionLink } from "components/TransitionLink";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 
 export default function LoginPage() {
 
 
-    const { clientConfig } = useGlobalVariableContext()
+    const { clientConfig, getSystemLogo } = useGlobalVariableContext()
 
     return (
         <div className="grid min-h-svh lg:grid-cols-2 select-none">
             <div className="flex flex-col gap-4 p-6 md:p-10">
-                <div className="flex justify-center gap-2 md:justify-between">
+                <div className="flex gap-2 justify-between">
                     <a href="/" className="flex items-center gap-2 font-medium">
                         <img
-                            className="dark:invert"
-                            src={clientConfig.SVGIcon}
+                            src={getSystemLogo()}
                             alt={clientConfig.SVGAltData}
                             width={40}
                             height={40}
                         />
-                        <span className="font-bold text-lg">A1natas SSO</span>
+                        <span className="font-bold text-lg">{ clientConfig.systemName } SSO</span>
                     </a>
                     <ThemeSwitcher />
                 </div>

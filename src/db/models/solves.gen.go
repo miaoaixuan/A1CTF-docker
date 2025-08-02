@@ -40,6 +40,7 @@ type Solve struct {
 	TeamID        int64         `gorm:"column:team_id;not null" json:"team_id"`
 	Team          Team          `gorm:"foreignKey:TeamID;references:team_id" json:"-"`
 	GameID        int64         `gorm:"column:game_id;not null" json:"game_id"`
+	Game          Game          `gorm:"foreignKey:GameID;references:game_id" json:"-"`
 	ContainerID   *string       `gorm:"column:container_id" json:"container_id"`
 	SolveStatus   SolveStatus   `gorm:"column:solve_status" json:"solve_status"`
 	SolverID      string        `gorm:"column:solver_id;not null" json:"solver_uuid"`

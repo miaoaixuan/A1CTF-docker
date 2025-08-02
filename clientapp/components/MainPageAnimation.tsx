@@ -58,10 +58,10 @@ export function MainPageAnimation() {
                         </div>
                     </div>
                 </motion.div> */}
-                {/* <div className="flex-col items-center gap-10 hidden lg:flex">
+                <div className="flex-col items-center gap-10 hidden lg:flex">
                     <FuzzyText
                         baseIntensity={0.2} 
-                        color={ getColor() }
+                        color={ colorTheme[3] }
                         fontSize={100}
                         enableHover={true}
                     >
@@ -69,17 +69,17 @@ export function MainPageAnimation() {
                     </FuzzyText>
                     <FuzzyText
                         baseIntensity={0.2} 
-                        color={ getColor() }
+                        color={ colorTheme[3] }
                         fontSize={90}
                         enableHover={true}
                     >
-                        A1CTF
+                        { clientConfig.systemName }
                     </FuzzyText>
                 </div>
                 <div className="flex-col items-center gap-10 hidden md:flex lg:hidden">
                     <FuzzyText
                         baseIntensity={0.2} 
-                        color={ getColor() }
+                        color={ colorTheme[3] }
                         fontSize={80}
                         enableHover={true}
                     >
@@ -87,17 +87,17 @@ export function MainPageAnimation() {
                     </FuzzyText>
                     <FuzzyText
                         baseIntensity={0.2} 
-                        color={ getColor() }
+                        color={ colorTheme[3] }
                         fontSize={70}
                         enableHover={true}
                     >
-                        A1CTF
+                        { clientConfig.systemName }
                     </FuzzyText>
                 </div>
                 <div className="flex-col items-center gap-10 hidden sm:flex md:hidden">
                     <FuzzyText
                         baseIntensity={0.2} 
-                        color={ getColor() }
+                        color={ colorTheme[3] }
                         fontSize={60}
                         enableHover={true}
                     >
@@ -105,17 +105,17 @@ export function MainPageAnimation() {
                     </FuzzyText>
                     <FuzzyText
                         baseIntensity={0.2} 
-                        color={ getColor() }
+                        color={ colorTheme[3] }
                         fontSize={50}
                         enableHover={true}
                     >
-                        A1CTF
+                        { clientConfig.systemName }
                     </FuzzyText>
                 </div>
                 <div className="flex flex-col items-center gap-10 sm:hidden">
                     <FuzzyText
                         baseIntensity={0.2} 
-                        color={ getColor() }
+                        color={ colorTheme[3] }
                         fontSize={50}
                         enableHover={true}
                     >
@@ -123,15 +123,15 @@ export function MainPageAnimation() {
                     </FuzzyText>
                     <FuzzyText
                         baseIntensity={0.2} 
-                        color={ getColor() }
+                        color={ colorTheme[3] }
                         fontSize={40}
                         enableHover={true}
                     >
-                        A1CTF
+                        { clientConfig.systemName }
                     </FuzzyText>
-                </div> */}
+                </div>
 
-                <div className="flex flex-col gap-10">
+                {/* <div className="flex flex-col gap-10">
                     <FuzzyText
                         baseIntensity={0.05} 
                         color={ colorTheme[3] }
@@ -148,7 +148,7 @@ export function MainPageAnimation() {
                     >
                         { clientConfig.systemName }
                     </FuzzyText>
-                </div>
+                </div> */}
 
             </div>
         </>

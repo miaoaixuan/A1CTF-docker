@@ -1,18 +1,19 @@
 package k8stool
 
 import (
+	"a1ctf/src/utils/zaphelper"
 	"context"
 	"database/sql/driver"
 	"errors"
 	"flag"
 	"fmt"
-	"log"
-	"time"
 
 	"github.com/bytedance/sonic"
 	"github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -111,6 +112,9 @@ type PodInfo struct {
 	TeamHash   string
 	Labels     map[string]string
 	Containers []A1Container
+	Flag       string
+	AllowWAN   bool
+	AllowDNS   bool
 }
 
 func GetClient() (*kubernetes.Clientset, error) {
@@ -137,22 +141,19 @@ func GetClient() (*kubernetes.Clientset, error) {
 	return clientsetLocal, nil
 }
 
-func ListPods() error {
+func ListPods() (*v1.PodList, error) {
 	clientset, err := GetClient()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	namespace := "a1ctf-challenges"
 
 	podList, err := clientset.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		return fmt.Errorf("error listing pods: %v", err)
+		return nil, fmt.Errorf("error listing pods: %v", err)
 	}
 
-	for _, pod := range podList.Items {
-		fmt.Printf("Found pod: %s\n", pod.Name)
-	}
-	return nil
+	return podList, nil
 }
 
 func CreatePod(podInfo *PodInfo) error {
@@ -169,6 +170,7 @@ func CreatePod(podInfo *PodInfo) error {
 		container := corev1.Container{
 			Name:  containerName,
 			Image: c.Image,
+			Env:   []v1.EnvVar{},
 		}
 		if len(c.Command) > 0 {
 			container.Command = c.Command
@@ -176,6 +178,13 @@ func CreatePod(podInfo *PodInfo) error {
 		if len(c.Env) > 0 {
 			container.Env = c.Env
 		}
+
+		// add the flag env
+		container.Env = append(container.Env, corev1.EnvVar{
+			Name:  "A1CTF_FLAG",
+			Value: podInfo.Flag,
+		})
+
 		if len(c.ExposePorts) > 0 {
 			var containerPorts []corev1.ContainerPort
 			for _, port := range c.ExposePorts {
@@ -187,23 +196,23 @@ func CreatePod(podInfo *PodInfo) error {
 			container.Ports = containerPorts
 		}
 
-		// 限制资源
+		// 只限制资源，不申请资源
 		limits := corev1.ResourceList{
 			corev1.ResourceCPU:              *resource.NewMilliQuantity(c.CPULimit, resource.DecimalSI),         // 100m = 0.1 CPU
 			corev1.ResourceMemory:           *resource.NewQuantity(c.MemoryLimit*1024*1024, resource.BinarySI),  // 64Mi
 			corev1.ResourceEphemeralStorage: *resource.NewQuantity(c.StorageLimit*1024*1024, resource.BinarySI), // 128Mi
 		}
 
-		// 设置资源请求（通常与限制相同）
-		// requests := corev1.ResourceList{
-		// 	corev1.ResourceCPU:              *resource.NewMilliQuantity(c.CPULimit, resource.DecimalSI),
-		// 	corev1.ResourceMemory:           *resource.NewQuantity(c.MemoryLimit*1024*1024, resource.BinarySI),
-		// 	corev1.ResourceEphemeralStorage: *resource.NewQuantity(c.StorageLimit*1024*1024, resource.BinarySI),
-		// }
+		// 明确设置资源请求为 0
+		requests := corev1.ResourceList{
+			corev1.ResourceCPU:              *resource.NewMilliQuantity(0, resource.DecimalSI),
+			corev1.ResourceMemory:           *resource.NewQuantity(0, resource.BinarySI),
+			corev1.ResourceEphemeralStorage: *resource.NewQuantity(0, resource.BinarySI),
+		}
 
 		container.Resources = corev1.ResourceRequirements{
-			Limits: limits,
-			// Requests: requests,
+			Limits:   limits,
+			Requests: requests,
 		}
 
 		containers = append(containers, container)
@@ -225,7 +234,6 @@ func CreatePod(podInfo *PodInfo) error {
 	if err != nil {
 		return fmt.Errorf("error creating pod: %v", err)
 	}
-	fmt.Println("Pod created")
 
 	// 构造 Service 的端口配置
 	var servicePorts []corev1.ServicePort
@@ -242,20 +250,111 @@ func CreatePod(podInfo *PodInfo) error {
 		}
 	}
 
-	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: podName,
-		},
-		Spec: corev1.ServiceSpec{
-			Type:     corev1.ServiceTypeNodePort,
-			Selector: podInfo.Labels,
-			Ports:    servicePorts,
-		},
+	if len(servicePorts) > 0 {
+		service := &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: podName,
+			},
+			Spec: corev1.ServiceSpec{
+				Type:     corev1.ServiceTypeNodePort,
+				Selector: podInfo.Labels,
+				Ports:    servicePorts,
+			},
+		}
+
+		_, err = clientset.CoreV1().Services(namespace).Create(context.Background(), service, metav1.CreateOptions{})
+		if err != nil {
+			return fmt.Errorf("error creating service: %v", err)
+		}
 	}
 
-	_, err = clientset.CoreV1().Services(namespace).Create(context.Background(), service, metav1.CreateOptions{})
-	if err != nil {
-		return fmt.Errorf("error creating service: %v", err)
+	allowedPorts := []networkingv1.NetworkPolicyPort{}
+	for _, c := range podInfo.Containers {
+		for _, port := range c.ExposePorts {
+			allowedPorts = append(allowedPorts, networkingv1.NetworkPolicyPort{
+				// all the protocols
+				// Protocol: func() *v1.Protocol {
+				// 	p := v1.ProtocolTCP
+				// 	return &p
+				// }(),
+				Port: &intstr.IntOrString{IntVal: port.Port},
+			})
+		}
+	}
+
+	if !podInfo.AllowWAN {
+		// 创建 network-policy
+		networkPolicy := &networkingv1.NetworkPolicy{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: podName,
+			},
+			Spec: networkingv1.NetworkPolicySpec{
+				PodSelector: metav1.LabelSelector{
+					MatchLabels: podInfo.Labels,
+				},
+				PolicyTypes: []networkingv1.PolicyType{
+					networkingv1.PolicyTypeIngress,
+					networkingv1.PolicyTypeEgress,
+				},
+				Ingress: []networkingv1.NetworkPolicyIngressRule{
+					{
+						From: []networkingv1.NetworkPolicyPeer{
+							{
+								// forbid all traffic to 10.0.0.0/8
+								IPBlock: &networkingv1.IPBlock{
+									CIDR: "0.0.0.0/0",
+									Except: []string{
+										"10.0.0.0/8",
+									},
+								},
+							},
+						},
+						Ports: allowedPorts,
+					},
+				},
+				Egress: []networkingv1.NetworkPolicyEgressRule{},
+			},
+		}
+
+		if podInfo.AllowDNS {
+			networkPolicy.Spec.Egress = append(networkPolicy.Spec.Egress, networkingv1.NetworkPolicyEgressRule{
+				To: []networkingv1.NetworkPolicyPeer{
+					{
+						NamespaceSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"kubernetes.io/metadata.name": "kube-system",
+							},
+						},
+						PodSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"k8s-app": "kube-dns",
+							},
+						},
+					},
+				},
+				Ports: []networkingv1.NetworkPolicyPort{
+					{
+						Protocol: func() *v1.Protocol {
+							p := v1.ProtocolUDP
+							return &p
+						}(),
+						Port: &intstr.IntOrString{IntVal: 53},
+					},
+					{
+						Protocol: func() *v1.Protocol {
+							p := v1.ProtocolTCP
+							return &p
+						}(),
+						Port: &intstr.IntOrString{IntVal: 53},
+					},
+				},
+			})
+		}
+
+		_, err = clientset.NetworkingV1().NetworkPolicies(namespace).Create(context.Background(), networkPolicy, metav1.CreateOptions{})
+		if err != nil {
+			return fmt.Errorf("error creating network policy: %v", err)
+		}
 	}
 
 	return nil
@@ -314,16 +413,26 @@ func DeletePod(podInfo *PodInfo) error {
 	namespace := "a1ctf-challenges"
 	podName := fmt.Sprintf("%s-%s", podInfo.Name, podInfo.TeamHash)
 
+	// 忽略所有错误，删除三个组件，防止出问题
+
 	// 删除 Pod
-	err = clientset.CoreV1().Pods(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
-	if err != nil {
-		return fmt.Errorf("error deleting pod: %v", err)
-	}
+	_ = clientset.CoreV1().Pods(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
+	// if err != nil {
+	// 	return fmt.Errorf("error deleting pod: %v", err)
+	// }
 
 	// 删除 Service
-	err = clientset.CoreV1().Services(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
-	if err != nil {
-		return fmt.Errorf("error deleting service: %v", err)
+	_ = clientset.CoreV1().Services(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
+	// if err != nil {
+	// 	return fmt.Errorf("error deleting service: %v", err)
+	// }
+
+	if !podInfo.AllowWAN {
+		// 删除 NetworkPolicy
+		_ = clientset.NetworkingV1().NetworkPolicies(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
+		// if err != nil {
+		// 	return fmt.Errorf("error deleting network policy: %v", err)
+		// }
 	}
 
 	return nil
@@ -348,56 +457,10 @@ func InitNamespace() error {
 		if err != nil {
 			return fmt.Errorf("error creating namespace: %v", err)
 		}
-		fmt.Println("Namespace created")
+		zaphelper.Logger.Info("K8s namespace created")
 	} else {
-		fmt.Println("Namespace already exists")
+		zaphelper.Logger.Info("K8s namespace already exists")
 	}
 
 	return nil
-}
-
-func TestCreate() {
-	// 初始化命名空间
-	if err := InitNamespace(); err != nil {
-		log.Fatalf("initNamespace error: %v", err)
-	}
-
-	// 列出命名空间下的 Pod
-	if err := ListPods(); err != nil {
-		log.Fatalf("listPods error: %v", err)
-	}
-
-	// 构造示例 PodInfo
-	podInfo := &PodInfo{
-		Name:     "example-pod",
-		TeamHash: "abc123",
-		Containers: []A1Container{
-			{
-				Name:  "app",
-				Image: "127.0.0.1:6440/ez_include",
-				ExposePorts: []PortName{
-					{Name: "http", Port: 80},
-				},
-			},
-		},
-	}
-
-	// 创建 Pod 和 Service
-	if err := CreatePod(podInfo); err != nil {
-		log.Fatalf("createPod error: %v", err)
-	}
-
-	// 等待一段时间使 Pod 被调度并创建好 Service
-	time.Sleep(10 * time.Second)
-
-	// 查询 Service 的端口映射信息
-	if _, err := GetPodPorts(podInfo); err != nil {
-		log.Fatalf("getPodPorts error: %v", err)
-	}
-
-	// 等待一段时间后删除 Pod 和 Service
-	time.Sleep(30 * time.Second)
-	if err := DeletePod(podInfo); err != nil {
-		log.Fatalf("deletePod error: %v", err)
-	}
 }

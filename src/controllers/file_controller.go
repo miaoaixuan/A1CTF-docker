@@ -5,107 +5,122 @@ import (
 	"mime"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"time"
 
+	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"gorm.io/gorm"
 
 	"a1ctf/src/db/models"
+	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
+	i18ntool "a1ctf/src/utils/i18n_tool"
 	"a1ctf/src/utils/ristretto_tool"
+	"a1ctf/src/webmodels"
 )
 
 func UploadFile(c *gin.Context) {
-	users, _ := c.Get("UserID")
-	userClaims := users.(*models.JWTUser)
+	claims := jwt.ExtractClaims(c)
+	userID := claims["UserID"].(string)
 
-	userID, err := uuid.Parse(userClaims.UserID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "Invalid user ID",
-		})
-		return
-	}
-
+	// 从表单中获取文件
 	file, err := c.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "No file uploaded",
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+			Code:    400,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "NoFileUploaded"}),
 		})
 		return
 	}
 
-	var fileID uuid.UUID
-	for {
-		fileID = uuid.New()
-		var existingUpload models.Upload
-		result := dbtool.DB().Where("file_id = ?", fileID).First(&existingUpload)
-		if result.Error == gorm.ErrRecordNotFound {
-			break
-		} else if result.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    500,
-				"message": "Database query failed",
-			})
-			return
-		}
-	}
-
-	now := time.Now().UTC()
-	storePath := filepath.Join("uploads", fmt.Sprintf("%d", now.Month()), fmt.Sprintf("%d", now.Day()))
-	if err := os.MkdirAll(storePath, 0755); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "Failed to create upload directory",
+	// 验证文件大小（限制为50MB）
+	if file.Size > 50*1024*1024 {
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+			Code:    400,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FileTooLarge"}),
 		})
 		return
 	}
 
-	newFilePath := filepath.Join(storePath, fileID.String())
-	if err := c.SaveUploadedFile(file, newFilePath); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "Failed to save file",
+	// 生成唯一的文件ID
+	fileID := uuid.New().String()
+	fileExt := filepath.Ext(file.Filename)
+
+	// 创建上传目录
+	uploadDir := "./data/uploads/files"
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCreateUploadDirectory"}),
 		})
 		return
 	}
 
-	fileType := file.Header.Get("Content-Type")
-	if fileType == "" {
-		fileType = mime.TypeByExtension(filepath.Ext(file.Filename))
-		if fileType == "" {
-			fileType = "application/octet-stream"
-		}
+	// 保存文件
+	savedFileName := fileID
+	savedPath := filepath.Join(uploadDir, savedFileName)
+
+	if err := saveUploadedFile(file, savedPath); err != nil {
+		// 记录文件上传失败日志
+		tasks.LogUserOperationWithError(c, models.ActionUpload, models.ResourceTypeFile, &fileID, map[string]interface{}{
+			"original_filename": file.Filename,
+			"file_size":         file.Size,
+			"file_extension":    fileExt,
+		}, err)
+
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToSaveFile"}),
+		})
+		return
 	}
 
-	newUpload := models.Upload{
-		FileID:     fileID.String(),
-		UserID:     userID.String(),
+	// 将文件信息保存到数据库
+	upload := models.Upload{
+		FileID:     fileID,
 		FileName:   file.Filename,
-		FilePath:   newFilePath,
-		FileHash:   "", // 可以添加文件哈希计算
-		FileType:   fileType,
+		FilePath:   savedPath,
 		FileSize:   file.Size,
-		UploadTime: now,
+		FileType:   file.Header.Get("Content-Type"),
+		UserID:     userID,
+		UploadTime: time.Now().UTC(),
 	}
 
-	if err := dbtool.DB().Create(&newUpload).Error; err != nil {
-		_ = os.Remove(newFilePath)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "Failed to save file record",
+	if err := dbtool.DB().Create(&upload).Error; err != nil {
+		// 删除已保存的文件
+		os.Remove(savedPath)
+
+		// 记录数据库保存失败日志
+		tasks.LogUserOperationWithError(c, models.ActionUpload, models.ResourceTypeFile, &fileID, map[string]interface{}{
+			"original_filename": file.Filename,
+			"file_size":         file.Size,
+			"file_extension":    fileExt,
+			"error_type":        "database_save_failed",
+		}, err)
+
+		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+			Code:    500,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToSaveFileRecord"}),
 		})
 		return
 	}
+
+	// 记录文件上传成功日志
+	tasks.LogUserOperation(c, models.ActionUpload, models.ResourceTypeFile, &fileID, map[string]interface{}{
+		"original_filename": file.Filename,
+		"file_size":         file.Size,
+		"file_extension":    fileExt,
+		"saved_path":        savedPath,
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"file_id": fileID.String(),
+		"file_id": fileID,
 	})
 }
 
@@ -116,7 +131,7 @@ func DownloadFile(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid file ID",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidFileID"}),
 		})
 		return
 	}
@@ -125,7 +140,7 @@ func DownloadFile(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Failed to load files map",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadFilesMap"}),
 		})
 	}
 
@@ -133,24 +148,24 @@ func DownloadFile(c *gin.Context) {
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":    404,
-			"message": "File not found",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FileNotFound"}),
 		})
 		return
 	}
 
-	if _, err := os.Stat(uploadRecord.FilePath); os.IsNotExist(err) {
+	if _, err := os.Stat(path.Join(uploadRecord.FilePath)); os.IsNotExist(err) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":    404,
-			"message": "File not found on server",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FileNotFoundOnServer"}),
 		})
 		return
 	}
 
-	file, err := os.Open(uploadRecord.FilePath)
+	file, err := os.Open(path.Join(uploadRecord.FilePath))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Error opening file",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ErrorOpeningFile"}),
 		})
 		return
 	}
@@ -179,7 +194,7 @@ func UploadUserAvatar(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid user ID",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidUserID"}),
 		})
 		return
 	}
@@ -189,7 +204,7 @@ func UploadUserAvatar(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "No avatar file uploaded",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "NoAvatarFileUploaded"}),
 		})
 		return
 	}
@@ -199,7 +214,7 @@ func UploadUserAvatar(c *gin.Context) {
 	if !isImageMimeType(fileType) {
 		c.JSON(http.StatusUnsupportedMediaType, gin.H{
 			"code":    415,
-			"message": "Uploaded file is not an image",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "UploadedFileIsNotImage"}),
 		})
 		return
 	}
@@ -215,7 +230,7 @@ func UploadUserAvatar(c *gin.Context) {
 		} else if result.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":    500,
-				"message": "Database query failed",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "DatabaseQueryFailed"}),
 			})
 			return
 		}
@@ -223,11 +238,11 @@ func UploadUserAvatar(c *gin.Context) {
 
 	// 创建存储目录
 	now := time.Now().UTC()
-	storePath := filepath.Join("uploads", "avatars", fmt.Sprintf("%d", now.Year()), fmt.Sprintf("%d", now.Month()))
+	storePath := filepath.Join("data", "uploads", "avatars", fmt.Sprintf("%d", now.Year()), fmt.Sprintf("%d", now.Month()))
 	if err := os.MkdirAll(storePath, 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Failed to create upload directory",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCreateUploadDirectory"}),
 		})
 		return
 	}
@@ -237,7 +252,7 @@ func UploadUserAvatar(c *gin.Context) {
 	if err := c.SaveUploadedFile(file, newFilePath); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Failed to save avatar file",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToSaveAvatarFile"}),
 		})
 		return
 	}
@@ -271,7 +286,7 @@ func UploadUserAvatar(c *gin.Context) {
 		_ = os.Remove(newFilePath)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Failed to save file record",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToSaveFileRecord"}),
 		})
 		return
 	}
@@ -285,7 +300,7 @@ func UploadUserAvatar(c *gin.Context) {
 		_ = os.Remove(newFilePath)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Failed to update user avatar",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToUpdateUserAvatar"}),
 		})
 		return
 	}
@@ -296,17 +311,15 @@ func UploadUserAvatar(c *gin.Context) {
 		_ = os.Remove(newFilePath)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Failed to commit transaction",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCommitTransaction"}),
 		})
 		return
 	}
 
-	ristretto_tool.DeleteCache("user_list")
-
 	// 返回成功响应
 	c.JSON(http.StatusOK, gin.H{
 		"code":       200,
-		"message":    "Avatar uploaded successfully",
+		"message":    i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "AvatarUploadedSuccessfully"}),
 		"avatar_url": avatarURL,
 	})
 }
@@ -337,7 +350,7 @@ func UploadTeamAvatar(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid user ID",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidUserID"}),
 		})
 		return
 	}
@@ -348,7 +361,7 @@ func UploadTeamAvatar(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "Invalid team ID",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidTeamID"}),
 		})
 		return
 	}
@@ -361,7 +374,7 @@ func UploadTeamAvatar(c *gin.Context) {
 	if err := dbtool.DB().Raw("SELECT EXISTS(SELECT 1 FROM teams WHERE team_id = ?)", teamID).Scan(&teamExists).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Database query failed",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "DatabaseQueryFailed"}),
 		})
 		return
 	}
@@ -369,7 +382,7 @@ func UploadTeamAvatar(c *gin.Context) {
 	if !teamExists {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":    404,
-			"message": "Team not found",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamNotFound"}),
 		})
 		return
 	}
@@ -378,7 +391,7 @@ func UploadTeamAvatar(c *gin.Context) {
 	if err := dbtool.DB().Where("team_id = ?", teamID).First(&team).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Database query failed",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "DatabaseQueryFailed"}),
 		})
 		return
 	}
@@ -395,7 +408,7 @@ func UploadTeamAvatar(c *gin.Context) {
 	if !isMember {
 		c.JSON(http.StatusForbidden, gin.H{
 			"code":    403,
-			"message": "User is not a member of this team",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "UserIsNotMemberOfTeam"}),
 		})
 		return
 	}
@@ -405,7 +418,7 @@ func UploadTeamAvatar(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
-			"message": "No avatar file uploaded",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "NoAvatarFileUploaded"}),
 		})
 		return
 	}
@@ -415,7 +428,7 @@ func UploadTeamAvatar(c *gin.Context) {
 	if !isImageMimeType(fileType) {
 		c.JSON(http.StatusUnsupportedMediaType, gin.H{
 			"code":    415,
-			"message": "Uploaded file is not an image",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "UploadedFileIsNotImage"}),
 		})
 		return
 	}
@@ -431,7 +444,7 @@ func UploadTeamAvatar(c *gin.Context) {
 		} else if result.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"code":    500,
-				"message": "Database query failed",
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "DatabaseQueryFailed"}),
 			})
 			return
 		}
@@ -439,11 +452,11 @@ func UploadTeamAvatar(c *gin.Context) {
 
 	// 创建存储目录
 	now := time.Now().UTC()
-	storePath := filepath.Join("uploads", "team_avatars", fmt.Sprintf("%d", now.Year()), fmt.Sprintf("%d", now.Month()))
+	storePath := filepath.Join("data", "uploads", "team_avatars", fmt.Sprintf("%d", now.Year()), fmt.Sprintf("%d", now.Month()))
 	if err := os.MkdirAll(storePath, 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Failed to create upload directory",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCreateUploadDirectory"}),
 		})
 		return
 	}
@@ -453,7 +466,7 @@ func UploadTeamAvatar(c *gin.Context) {
 	if err := c.SaveUploadedFile(file, newFilePath); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Failed to save avatar file",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToSaveAvatarFile"}),
 		})
 		return
 	}
@@ -487,7 +500,7 @@ func UploadTeamAvatar(c *gin.Context) {
 		_ = os.Remove(newFilePath)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Failed to save file record",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToSaveFileRecord"}),
 		})
 		return
 	}
@@ -501,7 +514,7 @@ func UploadTeamAvatar(c *gin.Context) {
 		_ = os.Remove(newFilePath)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Failed to update team avatar",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToUpdateTeamAvatar"}),
 		})
 		return
 	}
@@ -512,17 +525,15 @@ func UploadTeamAvatar(c *gin.Context) {
 		_ = os.Remove(newFilePath)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
-			"message": "Failed to commit transaction",
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCommitTransaction"}),
 		})
 		return
 	}
 
-	ristretto_tool.DeleteCache(fmt.Sprintf("all_teams_for_game_%d", team.GameID))
-
 	// 返回成功响应
 	c.JSON(http.StatusOK, gin.H{
 		"code":       200,
-		"message":    "Team avatar uploaded successfully",
+		"message":    i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamAvatarUploadedSuccessfully"}),
 		"avatar_url": avatarURL,
 	})
 }
