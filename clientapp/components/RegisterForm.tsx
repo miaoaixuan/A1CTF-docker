@@ -24,7 +24,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper";
 import Turnstile, { useTurnstile } from "react-turnstile";
-import { CapWidget } from "@pitininja/cap-react-widget";
+import { CapWidget, CapWidgetElement } from "@pitininja/cap-react-widget";
 
 export function RegisterForm({
     className,
@@ -34,6 +34,11 @@ export function RegisterForm({
 
     const [loading, setLoading] = useState(false)
     const [token, setToken] = useState("")
+
+    const resetCaptcha = () => {
+        const ele = document.getElementsByTagName("cap-widget")[0] as CapWidgetElement
+        ele.dispatchEvent("reset")
+    }
 
     const { theme, systemTheme } = useTheme();
 
@@ -88,11 +93,12 @@ export function RegisterForm({
             setToken("")
         }).finally(() => {
             setLoading(false)
+            resetCaptcha()
         })
     }
 
     return (
-        <div className='w-full select-none'>
+        <div className='w-full select-none overflow-hidden'>
             <div className="flex flex-col items-center gap-2 text-center mb-10">
                 <h1 className="text-2xl font-bold">{t("signup_title")}</h1>
                 <p className="text-balance text-sm text-muted-foreground">
@@ -100,7 +106,7 @@ export function RegisterForm({
                 </p>
             </div>
             <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="space-y-4">
                     <FormField
                         control={form.control}
                         name="email"
@@ -189,7 +195,7 @@ export function RegisterForm({
                         </span>
                     </div>
                     <Button type="button" variant={"outline"} className="transition-all duration-300 w-full" onClick={() => router(`/login`)}>{t("login")}</Button>
-                </form>
+                </div>
             </Form>
         </div>
     )

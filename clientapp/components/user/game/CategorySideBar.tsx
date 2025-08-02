@@ -266,6 +266,7 @@ export function CategorySidebar({
                 setChallenges={setChallenges}
                 isOpen={addChallengeOpen}
                 setIsOpen={setAddChallengeOpen}
+                setChallengeSolveStatusList={setChallengeSolveStatusList}
             />
             <Sidebar className="hide-scrollbar select-none transition-all duration-200 ml-16" onTransitionEnd={() => {
                 resizeTrigger(Math.floor(Math.random() * 1000000))

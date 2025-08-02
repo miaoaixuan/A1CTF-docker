@@ -7,6 +7,7 @@ import axios from 'axios';
 import { useTheme } from "next-themes";
 
 import useLocalStorage from "use-local-storage-state";
+import { useNavigate } from "react-router";
 
 interface ClientConfig {
     FancyBackGroundIconWhite: string;
@@ -59,6 +60,7 @@ interface GlobalVariableContextType {
     getSystemLogo: () => string;
     getSystemLogoDefault: () => string;
     isAdmin: () => boolean;
+    localStorageUID: string | undefined;
 }
 
 const globalVariableContext = createContext<GlobalVariableContextType | undefined>(undefined);
@@ -75,7 +77,7 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
 
     const [localStorageClientConfig, setLocalStorageClientConfig, { removeItem: removeClientConfig }] = useLocalStorage<ClientConfig>("clientconfig")
     const [localStorageUID, setLocalStorageUID, { removeItem: removeUID }] = useLocalStorage<string>("uid")
-
+    const navigate = useNavigate()
 
     const [curProfile, setCurProfile] = useState<UserProfile>({} as UserProfile)
 
@@ -145,6 +147,7 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
     }
 
     const unsetLoginStatus = () => {
+        navigate("/")
         removeUID()
     }
 
@@ -265,7 +268,22 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
     }, [isDarkMode]);
 
     return (
-        <globalVariableContext.Provider value={{ curProfile, updateProfile, serialOptions, clientConfig, updateClientConfg, isDarkMode, setIsDarkMode, refreshClientConfig, checkLoginStatus, unsetLoginStatus, getSystemLogo, getSystemLogoDefault, isAdmin }}>
+        <globalVariableContext.Provider value={{ 
+            curProfile, 
+            updateProfile, 
+            serialOptions, 
+            clientConfig, 
+            updateClientConfg, 
+            isDarkMode, 
+            setIsDarkMode, 
+            refreshClientConfig, 
+            checkLoginStatus, 
+            unsetLoginStatus, 
+            getSystemLogo, 
+            getSystemLogoDefault, 
+            isAdmin,
+            localStorageUID
+        }}>
             {children}
         </globalVariableContext.Provider>
     );

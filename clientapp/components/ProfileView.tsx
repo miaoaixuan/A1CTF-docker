@@ -72,68 +72,68 @@ export function ProfileView() {
     return (
 
         <div className="w-full flex justify-center h-full">
-            <div className="flex container h-full overflow-hidden relative">
-                {/* 左侧模块导航 */}
-                <div className="w-64 flex-none border-r-1 select-none hidden md:block">
-                    <div className="px-6 pt-5">
-                        <h3 className="font-bold text-lg mb-4 text-foreground/90">个人资料</h3>
-                        <div className="space-y-2">
-                            {modules.map((module) => (
-                                <Button
-                                    key={module.id}
-                                    type="button"
-                                    className='w-full h-10 flex justify-start gap-2'
-                                    variant={activeModule === module.id ? "default" : "ghost"}
-                                    onClick={() => {
-                                        navigate(`/profile/${module.id}`)
-                                    }}
-                                >
-                                    {module.icon}
-                                    <span className="font-medium">{module.name}</span>
-                                </Button>
-                            ))}
+            <MacScrollbar className="w-full h-full select-none flex flex-col items-center"
+                skin={theme == "light" ? "light" : "dark"}
+            >
+                <div className="flex container h-full">
+                    {/* 左侧模块导航 */}
+                    <div className="w-64 flex-none border-r-1 select-none hidden md:block sticky top-0">
+                        <div className="px-6 pt-5">
+                            <h3 className="font-bold text-lg mb-4 text-foreground/90">个人资料</h3>
+                            <div className="space-y-2">
+                                {modules.map((module) => (
+                                    <Button
+                                        key={module.id}
+                                        type="button"
+                                        className='w-full h-10 flex justify-start gap-2'
+                                        variant={activeModule === module.id ? "default" : "ghost"}
+                                        onClick={() => {
+                                            navigate(`/profile/${module.id}`)
+                                        }}
+                                    >
+                                        {module.icon}
+                                        <span className="font-medium">{module.name}</span>
+                                    </Button>
+                                ))}
+                            </div>
                         </div>
                     </div>
-                </div>
-                {/* 移动端右下角按钮 */}
-                <div className="absolute bottom-8 right-8 md:hidden">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="outline"
-                                className="h-10"
-                            >
-                                <div className="flex gap-2 items-center">
-                                    <Ellipsis />
-                                    <span className="text-sm">{ modules.filter((e) => e.id == activeModule)[0].name }</span>
-                                </div>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-56" align="start">
-                            <DropdownMenuLabel>资料设置</DropdownMenuLabel>
-                            {modules.map((e) => (
-                                <DropdownMenuItem
-                                    onClick={() => {
-                                        navigate(`/profile/${e.id}`)
-                                    }}
+                    {/* 移动端右下角按钮 */}
+                    <div className="absolute bottom-8 right-8 md:hidden">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className="h-10"
                                 >
                                     <div className="flex gap-2 items-center">
-                                        { e.icon }
-                                        {e.name}
+                                        <Ellipsis />
+                                        <span className="text-sm">{modules.filter((e) => e.id == activeModule)[0].name}</span>
                                     </div>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-56" align="start">
+                                <DropdownMenuLabel>资料设置</DropdownMenuLabel>
+                                {modules.map((e) => (
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            navigate(`/profile/${e.id}`)
+                                        }}
+                                    >
+                                        <div className="flex gap-2 items-center">
+                                            {e.icon}
+                                            {e.name}
+                                        </div>
+                                    </DropdownMenuItem>
+                                ))}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem>
+                                    主页
                                 </DropdownMenuItem>
-                            ))}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem>
-                                主页
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-                <div className="flex-1 overflow-hidden">
-                    <MacScrollbar className="w-full h-full overflow-hidden select-none"
-                        skin={theme == "light" ? "light" : "dark"}
-                    >
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                    <div className="flex-1">
                         <div className="w-full h-full px-10 pt-10">
                             {activeModule == "basic" && (
                                 <UserBaiscInfo />
@@ -151,9 +151,9 @@ export function ProfileView() {
                                 <DeleteAccount />
                             )}
                         </div>
-                    </MacScrollbar>
+                    </div>
                 </div>
-            </div>
+            </MacScrollbar>
         </div>
     )
 }

@@ -5,6 +5,8 @@ import { api } from "utils/ApiHelper";
 import { UserDetailGameChallenge, UserSimpleGameChallenge } from "utils/A1API";
 import { Dispatch, SetStateAction, useState } from "react";
 import AlertConformer from "components/modules/AlertConformer";
+import { toast } from "react-toastify/unstyled";
+import { useSearchParams } from "react-router";
 
 export default function InChallengeViewManager(
     { gameID, curChallenge, setCurChallenge, setChallenges }: {
@@ -46,7 +48,41 @@ export default function InChallengeViewManager(
         })
     }
 
+    const [searchParams, setSearchParams] = useSearchParams()
+
     const deleteChallenge = () => {
+        api.admin.deleteGameChallenge(gameID, curChallenge?.challenge_id ?? 0).then((res) => {
+            // 设置当前选中的题目
+            setCurChallenge(undefined)
+
+            // 删除题目列表里的题目
+            setChallenges((prev) => {
+                const categoryKey = curChallenge?.category?.toLocaleLowerCase() ?? "0";
+                const filteredChallenges = prev[categoryKey]?.filter(
+                    (c) => c.challenge_id !== curChallenge?.challenge_id
+                ) || [];
+
+                // 如果过滤后的数组不为空，则更新该分类
+                if (filteredChallenges.length > 0) {
+                    return {
+                        ...prev,
+                        [categoryKey]: filteredChallenges
+                    };
+                }
+
+                // 如果过滤后数组为空，则删除该分类
+                const newChallenges = { ...prev };
+                delete newChallenges[categoryKey];
+                return newChallenges;
+            });
+            
+            // 移除旧的 id 参数
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete("id");
+            setSearchParams(newParams)
+
+            toast.success("删除成功")
+        })
     }
 
     return (

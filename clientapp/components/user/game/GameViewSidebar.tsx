@@ -2,11 +2,15 @@ import AvatarUsername from "components/modules/AvatarUsername";
 import { A1GameStatus } from "components/modules/game/GameStatusEnum";
 import ToggleTheme from "components/ToggleTheme";
 import { Button } from "components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "components/ui/dropdown-menu";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
-import { BowArrow, Cctv, DoorOpen, Info, Settings, ShieldCheck, UserSearch, WandSparkles, Wrench } from "lucide-react";
+import { BowArrow, Cctv, DoorOpen, Info, Settings, ShieldCheck, UserRoundMinus, UserSearch, WandSparkles, Wrench } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Dispatch, SetStateAction } from "react";
+import { useCookies } from "react-cookie";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
+import { toast } from "react-toastify/unstyled";
 import { ParticipationStatus, UserFullGameInfo, UserRole } from "utils/A1API";
 
 export default function GameViewSidebar(
@@ -25,8 +29,10 @@ export default function GameViewSidebar(
     }
 ) {
 
-    const { clientConfig, curProfile, isAdmin } = useGlobalVariableContext()
-
+    const { clientConfig, curProfile, isAdmin, updateProfile, checkLoginStatus, unsetLoginStatus  } = useGlobalVariableContext()
+    const [cookies, setCookie, removeCookie] = useCookies(["a1token"])
+    const { t } = useTranslation()
+    
     type Module = {
         id: string,
         name: string,
@@ -117,20 +123,39 @@ export default function GameViewSidebar(
                                 navigate(`/games/${gameID}/${module.id}`)
                             }
                         }}
-                        disabled={ isAdmin() ? false : ( module.shouldDisable ? module.shouldDisable() : false ) }
+                        disabled={isAdmin() ? false : (module.shouldDisable ? module.shouldDisable() : false)}
                     >
                         {module.icon}
                     </Button>
                 ))}
                 <div className="flex-1" />
                 {teamStatus != ParticipationStatus.UnLogin && teamStatus != ParticipationStatus.UnRegistered && (
-                    <div className="w-[40px] h-[40px] flex-shrink-0 mb-2"
-                        data-tooltip-id="my-tooltip"
-                        data-tooltip-html={gameInfo?.team_info?.team_name ?? "????"}
-                        data-tooltip-place="right"
-                    >
-                        <AvatarUsername avatar_url={gameInfo?.team_info?.team_avatar} username={gameInfo?.team_info?.team_name || ""} />
-                    </div>
+                    <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger>
+                            <div className="w-[40px] h-[40px] flex-shrink-0 mb-2"
+                                data-tooltip-id="my-tooltip"
+                                data-tooltip-html={gameInfo?.team_info?.team_name ?? "????"}
+                                data-tooltip-place="right"
+                            >
+                                <AvatarUsername avatar_url={gameInfo?.team_info?.team_avatar} username={gameInfo?.team_info?.team_name || ""} />
+                            </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="mt-2">
+                            <DropdownMenuItem onClick={() => navigate(`/profile/basic`)}>
+                                <Settings />
+                                <span>{t("settings")}</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                                unsetLoginStatus()
+                                removeCookie("a1token")
+                                toast.success(t("login_out_success"))
+                            }}>
+                                <UserRoundMinus />
+                                <span>{t("login_out")}</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
                 )}
                 <ToggleTheme>
                     <Button

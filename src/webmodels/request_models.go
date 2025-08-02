@@ -217,3 +217,8 @@ type UpdateUserEmailPayload struct {
 type EmailVerifyPayload struct {
 	Code string `json:"code"`
 }
+
+type ChangePasswordPayload struct {
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
+}

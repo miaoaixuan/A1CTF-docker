@@ -26,6 +26,8 @@ import ChallengeSettingsSidebar from "./ChallengeSettingsSidebar"
 import { ContainerManageView } from "./ContainerManageView"
 import { GameEventModule } from "./GameEventModule"
 import ChallengeTools from "./ChallengeTools"
+import { EditChallengePage } from "../EditChallengePage"
+import { ChallengeManageForm, ChallengeManageFormWrapper } from "./ChallengeManageForm"
 
 export default function ChallengeManageSheet(
     {
@@ -42,7 +44,7 @@ export default function ChallengeManageSheet(
     const { theme } = useTheme()
     const [isOpen, setIsOpen] = useState(false)
     const [isDataLoaded, setIsDataLoaded] = useState(false)
-    const [curChoicedModule, setCurChoicedModule] = useState("game_settings")
+    const [curChoicedModule, setCurChoicedModule] = useState("challenge_settings")
     const [challengeDetail, setChallengeDetail] = useState<AdminDetailGameChallenge | undefined>(undefined)
 
     const form = useForm<z.infer<typeof GameChallengeSchema>>({
@@ -95,12 +97,31 @@ export default function ChallengeManageSheet(
                         skin={theme == "light" ? "light" : "dark"}
                     >
                         <div className="px-10 py-10">
+
+                            {curChoicedModule == "challenge_settings" && challengeDetail?.challenge_id ? (
+                                <div>
+                                    <SheetHeader className="p-0 mb-5">
+                                        <SheetTitle>
+                                            <div className="flex w-full items-center h-[38px]">
+                                                <span className="font-bold text-2xl">题目设置</span>
+                                            </div>
+                                        </SheetTitle>
+                                        <SheetDescription>
+                                            在这里可以修改题目的基本信息
+                                        </SheetDescription>
+                                    </SheetHeader>
+                                    <ChallengeManageFormWrapper 
+                                        challenge_id={challengeDetail?.challenge_id} 
+                                    />
+                                </div>
+                            ) : <></>}
+
                             {curChoicedModule == "game_settings" ? (
                                 <>
                                     <SheetHeader className="p-0 mb-5">
                                         <SheetTitle>
                                             <div className="flex w-full items-center  h-[38px]">
-                                                <span className="font-bold text-2xl">题目设置</span>
+                                                <span className="font-bold text-2xl">评测设置 & 提示设置</span>
                                             </div>
                                         </SheetTitle>
                                         <SheetDescription>

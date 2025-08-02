@@ -14,11 +14,11 @@ import { Input } from "../../ui/input";
 import { Button } from "../../ui/button";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useState } from "react";
-import { api, ErrorMessage } from "utils/GZApi";
 import { toast } from 'react-toastify/unstyled';
 import { AxiosError } from "axios";
 import { useTranslation } from "react-i18next";
 import { Save } from "lucide-react";
+import { api } from "utils/ApiHelper";
 
 export function PasswordView() {
 
@@ -53,9 +53,9 @@ export function PasswordView() {
     function onSubmit(values: z.infer<typeof formSchema>) {
         setSubmitDisabled(true)
 
-        api.account.accountChangePassword({
-            old: values.originalPassword,
-            new: values.newPassword
+        api.user.changePassword({
+            old_password: values.originalPassword,
+            new_password: values.newPassword
         }).then((res) => {
             toast.success(t("change_password_success"))
         })

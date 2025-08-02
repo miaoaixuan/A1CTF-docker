@@ -269,7 +269,9 @@ export function ChallengesView({
             const connectWebSocket = () => {
                 // 显示连接中的toast
                 const connectPromise = new Promise<void>((resolve, reject) => {
-                    const socket = new WebSocket(`ws://${baseURL}/api/hub?game=${gameID}`)
+
+                    const https_enabled = window.location.protocol == "https:"
+                    const socket = new WebSocket(`${https_enabled ? "wss" : "ws"}://${baseURL}/api/hub?game=${gameID}`)
                     wsRef.current = socket
 
                     setWsStatus("connecting")

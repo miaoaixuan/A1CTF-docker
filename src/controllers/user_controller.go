@@ -166,6 +166,11 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	// 发送账号验证邮件
+	if clientconfig.ClientConfig.AccountActivationMethod == "email" {
+		tasks.NewEmailVerificationTask(newUser)
+	}
+
 	// 记录注册成功日志
 	tasks.LogFromGinContext(c, tasks.LogEntry{
 		Category:     models.LogCategoryUser,
@@ -363,6 +368,46 @@ func VerifyEmailCode(c *gin.Context) {
 		models.User{
 			EmailVerified: true,
 		}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+	})
+}
+
+func UserChangePassword(c *gin.Context) {
+	var payload webmodels.ChangePasswordPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
+		})
+		return
+	}
+
+	user := c.MustGet("user").(models.User)
+
+	if user.Password != general.SaltPassword(payload.OldPassword, user.Salt) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "OldPasswordIncorrect"}),
+		})
+		return
+	}
+
+	newSalt := general.GenerateSalt()
+	saltedPassword := general.SaltPassword(payload.NewPassword, newSalt)
+
+	if err := dbtool.DB().Model(&user).Updates(models.User{
+		Password:   saltedPassword,
+		Salt:       newSalt,
+		JWTVersion: general.RandomPassword(16),
+	}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),

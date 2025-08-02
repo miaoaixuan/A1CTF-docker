@@ -263,6 +263,12 @@ func CachedGameInfo(gameID int64) (*models.Game, error) {
 func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData, error) {
 	var cachedData webmodels.CachedGameScoreBoardData
 
+	// 获取用户信息
+	users, err := CachedMemberMap()
+	if err != nil {
+		return nil, err
+	}
+
 	var finalScoreBoardMap map[int64]webmodels.TeamScoreItem = make(map[int64]webmodels.TeamScoreItem)
 	var timeLines []webmodels.TimeLineItem = make([]webmodels.TimeLineItem, 0)
 
@@ -297,10 +303,27 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 
 	// 初始化队伍数据
 	for _, team := range teams {
+
+		// 获取成员信息
+		teamMemberDetail := make([]webmodels.TeamMemberInfo, 0)
+
+		for idx, teamMember := range team.TeamMembers {
+			if member, exists := users[teamMember]; exists {
+				// 第一个是队长
+				teamMemberDetail = append(teamMemberDetail, webmodels.TeamMemberInfo{
+					Avatar:   member.Avatar,
+					UserName: member.Username,
+					UserID:   member.UserID,
+					Captain:  idx == 0,
+				})
+			}
+		}
+
 		teamDataMap[team.TeamID] = webmodels.TeamScoreItem{
 			TeamID:           team.TeamID,
 			TeamName:         team.TeamName,
 			TeamAvatar:       team.TeamAvatar,
+			Members:          teamMemberDetail,
 			TeamSlogan:       team.TeamSlogan,
 			TeamDescription:  team.TeamDescription,
 			GroupID:          team.GroupID,
@@ -466,6 +489,7 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 			TeamDescription:  teamData.TeamDescription,
 			Rank:             teamData.Rank,
 			Score:            teamData.Score,
+			Members:          teamData.Members,
 			Penalty:          teamData.Penalty,
 			SolvedChallenges: teamData.SolvedChallenges,
 			ScoreAdjustments: teamData.ScoreAdjustments,
@@ -489,6 +513,7 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 			TeamDescription:  teamData.TeamDescription,
 			Rank:             teamData.Rank,
 			Score:            teamData.Score,
+			Members:          teamData.Members,
 			Penalty:          teamData.Penalty,
 			SolvedChallenges: teamData.SolvedChallenges,
 			ScoreAdjustments: teamData.ScoreAdjustments,

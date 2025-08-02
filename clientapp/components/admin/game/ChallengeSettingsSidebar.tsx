@@ -1,6 +1,6 @@
 import { Button } from "components/ui/button";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
-import { BrickWall, DoorOpen, Flag, Minimize, Package, PocketKnife, Settings } from "lucide-react";
+import { BrickWall, DoorOpen, Flag, Minimize, Package, PocketKnife, Receipt, ReceiptText, Settings } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Dispatch, SetStateAction } from "react";
 import { UserFullGameInfo } from "utils/A1API";
@@ -39,8 +39,13 @@ export default function ChallengeSettingsSidebar(
 
     const modules: Module[] = [
         {
-            id: "game_settings",
+            id: "challenge_settings",
             name: "题目设置",
+            icon: <ReceiptText className="h-4 w-4" />,
+        },
+        {
+            id: "game_settings",
+            name: "基本设置",
             icon: <Settings className="h-4 w-4" />,
         },
         {

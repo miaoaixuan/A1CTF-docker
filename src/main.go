@@ -189,11 +189,6 @@ func main() {
 	http.Handle("/metrics", promhttp.Handler())
 	go http.ListenAndServe(fmt.Sprintf("%s:%s", viper.GetString("system.prometheus-host"), viper.GetString("system.prometheus-port")), nil)
 
-	// // 启动 Gzip 压缩
-	// if viper.GetBool("system.gin-gzip-enabled") {
-	// 	r.Use(gzip.Gzip(gzip.DefaultCompression))
-	// }
-
 	// JWT 鉴权中间件
 	authMiddleware := jwtauth.InitJwtMiddleWare()
 
@@ -216,7 +211,7 @@ func main() {
 			fileGroup.GET("/download/:file_id", controllers.DownloadFile)
 		}
 
-		public.GET("/client-config", controllers.GetClientConfig)
+		public.GET("/client-config", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GetClientConfig)
 
 		public.POST("/cap/challenge", controllers.CapCreateChallenge)
 		public.POST("/cap/redeem", controllers.CapRedeemChallenge)
@@ -243,6 +238,7 @@ func main() {
 
 			accountGroup.POST("/updateEmail", controllers.UpdateUserEmail)
 			accountGroup.POST("/sendVerifyEmail", controllers.SendVerifyEmail)
+			accountGroup.POST("/changePassword", controllers.UserChangePassword)
 		}
 
 		// 用户头像上传接口
@@ -316,13 +312,14 @@ func main() {
 			gameGroup.POST("/list", controllers.AdminListGames)
 			gameGroup.POST("/create", controllers.AdminCreateGame)
 
-			gameGroup.GET("/:game_id", controllers.AdminGetGame)
-			gameGroup.PUT("/:game_id", controllers.AdminUpdateGame)
+			gameGroup.GET("/:game_id", controllers.PathParmsMiddlewareBuilder("G"), controllers.AdminGetGame)
+			gameGroup.PUT("/:game_id", controllers.PathParmsMiddlewareBuilder("G"), controllers.AdminUpdateGame)
 
 			// gamechallenges 操作接口
-			gameGroup.GET("/:game_id/challenge/:challenge_id", controllers.AdminGetGameChallenge)
-			gameGroup.PUT("/:game_id/challenge/:challenge_id", controllers.AdminUpdateGameChallenge)
-			gameGroup.POST("/:game_id/challenge/:challenge_id", controllers.AdminAddGameChallenge)
+			gameGroup.GET("/:game_id/challenge/:challenge_id", controllers.PathParmsMiddlewareBuilder("GC[Challenge]"), controllers.AdminGetGameChallenge)
+			gameGroup.PUT("/:game_id/challenge/:challenge_id", controllers.PathParmsMiddlewareBuilder("G|GC"), controllers.AdminUpdateGameChallenge)
+			gameGroup.POST("/:game_id/challenge/:challenge_id", controllers.PathParmsMiddlewareBuilder("g|C"), controllers.AdminAddGameChallenge)
+			gameGroup.DELETE("/:game_id/challenge/:challenge_id", controllers.PathParmsMiddlewareBuilder("g|c"), controllers.AdminDeleteGameChallenge)
 
 			gameGroup.POST("/:game_id/submits", controllers.AdminGetSubmits)
 			gameGroup.POST("/:game_id/cheats", controllers.AdminGetCheats)

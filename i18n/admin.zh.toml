@@ -8,6 +8,10 @@ other = "无效的题目 ID"
 description = "题目未找到"
 other = "题目未找到"
 
+[ChallengeAlreadyAddedToGame]
+description = "题目已经在比赛里了"
+other = "题目已经在比赛里了"
+
 [FailedToLoadChallenge]
 description = "加载题目失败"
 other = "加载题目失败"
@@ -235,6 +239,10 @@ other = "加载创建的调整失败"
 [InvalidAdjustmentID]
 description = "无效的调整 ID"
 other = "无效的调整 ID"
+
+[InvalidTeamID]
+description = "无效的队伍 ID"
+other = "无效的队伍 ID"
 
 [ScoreAdjustmentNotFound]
 description = "分数调整未找到"
@@ -471,6 +479,10 @@ other = "用户信息已更新"
 [FailedToResetPassword]
 description = "重置密码失败"
 other = "重置密码失败"
+
+[OldPasswordIncorrect]
+description = "旧密码错误"
+other = "旧密码错误"
 
 [PasswordReset]
 description = "密码已重置"

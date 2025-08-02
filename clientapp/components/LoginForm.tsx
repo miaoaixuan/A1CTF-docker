@@ -8,7 +8,7 @@ import { LoaderCircle } from 'lucide-react';
 
 import { toastError, toastSuccess } from "utils/ToastUtil"
 
-import { CapWidget } from '@pitininja/cap-react-widget';
+import { CapWidget, CapWidgetElement } from '@pitininja/cap-react-widget';
 
 
 import axios, { AxiosError } from 'axios';
@@ -50,6 +50,11 @@ export function LoginForm({
     const { t } = useTranslation("login_form");
 
     const [token, setToken] = useState<string>("")
+
+    const resetCaptcha = () => {
+        const ele = document.getElementsByTagName("cap-widget")[0] as CapWidgetElement
+        ele.dispatchEvent("reset")
+    }
 
     const userNameRef = useRef<HTMLInputElement>(null)
     const passwordRef = useRef<HTMLInputElement>(null)
@@ -99,9 +104,8 @@ export function LoginForm({
                 toast.error("未知错误")
             }
         }).finally(() => {
-            setTimeout(() => {
-                setLoading(false)
-            }, 300)
+            setLoading(false)
+            resetCaptcha()
         })
     }
 
@@ -165,6 +169,7 @@ export function LoginForm({
                             toast.error("获取验证码失败")
                         }}
                     />
+
                 ) : <></>}
 
                 <div className='h-0' />

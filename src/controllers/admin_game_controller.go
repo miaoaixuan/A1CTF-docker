@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -157,31 +158,7 @@ func AdminCreateGame(c *gin.Context) {
 }
 
 func AdminGetGame(c *gin.Context) {
-	gameIDStr := c.Param("game_id")
-	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidGameID"}),
-		})
-		return
-	}
-
-	var game models.Game
-	if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{
-				"code":    404,
-				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "GameNotFound"}),
-			})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    500,
-				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGame"}),
-			})
-		}
-		return
-	}
+	game := c.MustGet("game").(models.Game)
 
 	result := gin.H{
 		"game_id":                game.GameID,
@@ -214,39 +191,7 @@ func AdminGetGame(c *gin.Context) {
 
 func AdminGetGameChallenge(c *gin.Context) {
 
-	gameIDStr := c.Param("game_id")
-	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidGameID"}),
-		})
-		return
-	}
-
-	challengeIDStr := c.Param("challenge_id")
-	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
-		})
-		return
-	}
-
-	var gc models.GameChallenge
-
-	// 使用 Preload 进行关联查询
-	if err := dbtool.DB().Preload("Challenge").
-		Where("game_id = ? AND challenge_id = ?", gameID, challengeID).
-		First(&gc).Error; err != nil {
-
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGameChallenge"}),
-		})
-		return
-	}
+	gc := c.MustGet("game_challenge").(models.GameChallenge)
 
 	judgeConfig := gc.JudgeConfig
 	if judgeConfig == nil {
@@ -276,25 +221,11 @@ func AdminGetGameChallenge(c *gin.Context) {
 
 func AdminUpdateGameChallenge(c *gin.Context) {
 
-	gameIDStr := c.Param("game_id")
-	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidGameID"}),
-		})
-		return
-	}
-
-	challengeIDStr := c.Param("challenge_id")
-	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
-		})
-		return
-	}
+	gameID := c.MustGet("game_id").(int64)
+	// 实际上是 challenge_id
+	challengeID := c.MustGet("game_challenge_id").(int64)
+	game := c.MustGet("game").(models.Game)
+	existingGameChallenge := c.MustGet("game_challenge").(models.GameChallenge)
 
 	// 使用 map 来接收部分字段更新
 	var payload map[string]interface{}
@@ -306,38 +237,8 @@ func AdminUpdateGameChallenge(c *gin.Context) {
 		return
 	}
 
-	var game models.Game
-	if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{
-				"code":    404,
-				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "GameNotFound"}),
-			})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    500,
-				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGame"}),
-			})
-		}
-		return
-	}
-
 	shouldSendNotice := false
 	noticeData := []string{}
-
-	// 获取当前数据库中的GameChallenge
-	var existingGameChallenge models.GameChallenge
-	if err := dbtool.DB().Where("challenge_id = ? AND game_id = ?", challengeID, gameID).First(&existingGameChallenge).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadExistingChallenge"}),
-		})
-		return
-	}
-
-	if game.StartTime.Before(time.Now().UTC()) {
-		existingGameChallenge.CurScore = existingGameChallenge.TotalScore
-	}
 
 	// 检测新增的Hint（如果payload中包含hints字段）
 	if hintsData, hasHints := payload["hints"]; hasHints {
@@ -387,7 +288,16 @@ func AdminUpdateGameChallenge(c *gin.Context) {
 	// 根据payload中的字段动态构建更新数据
 	if totalScore, ok := payload["total_score"]; ok {
 		updateData["total_score"] = totalScore
+
+		existingGameChallenge.TotalScore = totalScore.(float64)
+
 		updateFields = append(updateFields, "total_score")
+	}
+
+	// 比赛开始前，题目的 cur_store 永远等于总分
+	if game.StartTime.Before(time.Now().UTC()) {
+		updateData["cur_score"] = existingGameChallenge.TotalScore
+		updateFields = append(updateFields, "cur_score")
 	}
 	if hintsData, ok := payload["hints"]; ok {
 		// 将 hints 数据转换为正确的 Hints 类型
@@ -457,15 +367,7 @@ func AdminUpdateGameChallenge(c *gin.Context) {
 }
 
 func AdminUpdateGame(c *gin.Context) {
-	gameIDStr := c.Param("game_id")
-	gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidGameID"}),
-		})
-		return
-	}
+	game := c.MustGet("game").(models.Game)
 
 	var payload webmodels.AdminUpdateGamePayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
@@ -473,22 +375,6 @@ func AdminUpdateGame(c *gin.Context) {
 			"code":    400,
 			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
 		})
-		return
-	}
-
-	var game models.Game
-	if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{
-				"code":    404,
-				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "GameNotFound"}),
-			})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    500,
-				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGame"}),
-			})
-		}
 		return
 	}
 
@@ -527,49 +413,9 @@ func AdminUpdateGame(c *gin.Context) {
 }
 
 func AdminAddGameChallenge(c *gin.Context) {
-	gameIDStr := c.Param("game_id")
-	gameID, err1 := strconv.ParseInt(gameIDStr, 10, 64)
-	challengeIDStr := c.Param("challenge_id")
-	challengeID, err2 := strconv.ParseInt(challengeIDStr, 10, 64)
-	if err1 != nil || err2 != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidGameID"}),
-		})
-		return
-	}
-
-	var game models.Game
-	if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{
-				"code":    404,
-				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "GameNotFound"}),
-			})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    500,
-				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToVerifyGame"}),
-			})
-		}
-		return
-	}
-
-	var challenge models.Challenge
-	if err := dbtool.DB().Where("challenge_id = ?", challengeID).First(&challenge).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{
-				"code":    404,
-				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeNotFound"}),
-			})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    500,
-				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToVerifyChallenge"}),
-			})
-		}
-		return
-	}
+	gameID := c.MustGet("game_id").(int64)
+	challenge := c.MustGet("challenge").(models.Challenge)
+	challengeID := c.MustGet("challenge_id").(int64)
 
 	var gameChallenges []models.GameChallenge
 	if err := dbtool.DB().Where("challenge_id = ? AND game_id = ?", challengeID, gameID).Find(&gameChallenges).Error; err != nil {
@@ -621,6 +467,25 @@ func AdminAddGameChallenge(c *gin.Context) {
 			"judge_config":   gameChallenge.JudgeConfig,
 			"belong_stage":   gameChallenge.BelongStage,
 		},
+	})
+}
+
+func AdminDeleteGameChallenge(c *gin.Context) {
+	gameID := c.MustGet("game_id").(int64)
+	challengeID := c.MustGet("challenge_id").(int64)
+
+	if err := dbtool.DB().Where("game_id = ? AND challenge_id = ?", gameID, challengeID).Delete(&models.GameChallenge{}).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    400,
+				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeNotFound"}),
+			})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
 	})
 }
 

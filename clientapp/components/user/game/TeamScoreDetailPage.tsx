@@ -433,7 +433,7 @@ export default function TeamScoreDetailPage(
                                                         </div>
                                                         <div>
                                                             <p className='text-sm text-muted-foreground'>成员数</p>
-                                                            <p className='text-xl font-bold text-foreground'>{gameInfo?.team_info?.team_members?.length}</p>
+                                                            <p className='text-xl font-bold text-foreground'>{ showUserDetail.team_members?.length ?? 0 }</p>
                                                         </div>
                                                     </div>
                                                 </div>

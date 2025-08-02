@@ -181,6 +181,7 @@ var PermissionMap = map[string]PermissionSetting{
 	"/api/account/profile":         {RequestMethod: []string{"GET", "PUT"}, Permissions: []models.UserRole{}},
 	"/api/account/updateEmail":     {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
 	"/api/account/sendVerifyEmail": {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
+	"/api/account/changePassword":  {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
 	"/api/verifyEmailCode":         {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
 
 	"/api/file/upload":            {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
@@ -215,7 +216,7 @@ var PermissionMap = map[string]PermissionSetting{
 	"/api/admin/game/list":                             {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/game/create":                           {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/game/:game_id":                         {RequestMethod: []string{"GET", "POST", "PUT"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
-	"/api/admin/game/:game_id/challenge/:challenge_id": {RequestMethod: []string{"PUT", "GET", "POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
+	"/api/admin/game/:game_id/challenge/:challenge_id": {RequestMethod: []string{"PUT", "GET", "POST", "DELETE"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/game/:game_id/poster/upload":           {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/game/:game_id/submits":                 {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/game/:game_id/cheats":                  {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},

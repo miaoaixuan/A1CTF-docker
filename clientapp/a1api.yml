@@ -162,6 +162,41 @@ paths:
           description: Unauthorized
         '500':
           description: Server Error
+  /api/account/changePassword:
+    post:
+      tags: [user]
+      operationId: changePassword
+      summary: Update user's password
+      description: Update user's password
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                old_password:
+                  type: string
+                new_password:
+                  type: string
+              required:
+                - old_password
+                - new_password
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                required:
+                  - code
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server Error
   /api/auth/register:
     post:
       tags: [auth]
@@ -584,6 +619,44 @@ paths:
                 required:
                   - code
                   - data
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          description: The ID of the game to add
+          schema:
+            type: integer
+        - name: challenge_id
+          in: path
+          required: true
+          description: The ID of the challenge to add
+          schema:
+            type: integer
+    delete:
+      tags: [admin]
+      operationId: deleteGameChallenge
+      summary: Delete a gamechallenge from a game
+      description: Delete a gamechallenge from a game
+      responses:
+        '200':
+          description: AdminDetailGameChallenge add successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                required:
+                  - code
         '400':
           description: Bad request
         '500':
@@ -4351,6 +4424,10 @@ components:
         team_slogan:
           type: string
           example: ""
+        team_members:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminSimpleTeamMemberInfo'
         team_description:
           type: string
           example: ""

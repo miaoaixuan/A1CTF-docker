@@ -202,13 +202,6 @@ export default function EditGameChallengesModule(
                                     enable_blood_reward: true
                                 })
                                 toast.success("题目添加成功")
-                            }).catch((err: AxiosError) => {
-                                const errorMessage: ErrorMessage = err.response?.data as ErrorMessage
-                                if (err.response?.status == 409) {
-                                    toast.error("此题目已经添加到比赛中了")
-                                } else {
-                                    toast.error(errorMessage.message)
-                                }
                             })
                         }}
                     >Select</Button>

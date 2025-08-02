@@ -11,13 +11,15 @@ import { ChallengeCategory, JudgeType, UserSimpleGameChallenge } from 'utils/A1A
 import { Button } from 'components/ui/button';
 import { Checkbox } from 'components/ui/checkbox';
 import { ColumnDef, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
+import { ChallengeSolveStatus } from 'components/user/game/ChallengesView';
 
 export default function AddChallengeFromLibraryDialog(
-    { setChallenges, gameID, isOpen, setIsOpen }: {
+    { setChallenges, gameID, isOpen, setIsOpen, setChallengeSolveStatusList }: {
         setChallenges: Dispatch<SetStateAction<Record<string, UserSimpleGameChallenge[]>>>,
         gameID: number,
         isOpen: boolean,
-        setIsOpen: Dispatch<SetStateAction<boolean>>
+        setIsOpen: Dispatch<SetStateAction<boolean>>,
+        setChallengeSolveStatusList: Dispatch<SetStateAction<Record<string, ChallengeSolveStatus>>>,
     }
 ) {
 
@@ -149,18 +151,21 @@ export default function AddChallengeFromLibraryDialog(
                 solve_count: challenge.solve_count || 0,
                 visible: false,
             }
+            // 插入题目列表
             setChallenges((prev) => ({
                 ...prev,
                 [category]: [...(prev[category] || []), newSimpleChallenge]
             }))
+            // 插入题目解题状态列表
+            setChallengeSolveStatusList((prev) => ({
+                ...prev,
+                [challenge.challenge_id || 0]: {
+                    solved: false,
+                    solve_count: 0,
+                    cur_score: 0,
+                }
+            }))
             toast.success("题目添加成功")
-        }, createSkipGlobalErrorConfig()).catch((err: AxiosError) => {
-            const errorMessage: ErrorMessage = err.response?.data as ErrorMessage
-            if (err.response?.status == 409) {
-                toast.error("此题目已经添加到比赛中了")
-            } else {
-                toast.error(errorMessage.message)
-            }
         })
     }, [setChallenges])
 

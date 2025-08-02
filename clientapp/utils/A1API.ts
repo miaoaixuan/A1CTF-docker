@@ -546,6 +546,7 @@ export interface TeamScore {
   team_avatar?: string | null;
   /** @example "" */
   team_slogan?: string;
+  team_members?: AdminSimpleTeamMemberInfo[];
   /** @example "" */
   team_description?: string;
   /** @example 1 */
@@ -1871,6 +1872,35 @@ export class Api<
       }),
 
     /**
+     * @description Update user's password
+     *
+     * @tags user
+     * @name ChangePassword
+     * @summary Update user's password
+     * @request POST:/api/account/changePassword
+     */
+    changePassword: (
+      data: {
+        old_password: string;
+        new_password: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+        },
+        void
+      >({
+        path: `/api/account/changePassword`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * No description
      *
      * @tags user
@@ -2565,6 +2595,31 @@ export class Api<
       >({
         path: `/api/admin/game/${gameId}/challenge/${challengeId}`,
         method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Delete a gamechallenge from a game
+     *
+     * @tags admin
+     * @name DeleteGameChallenge
+     * @summary Delete a gamechallenge from a game
+     * @request DELETE:/api/admin/game/{game_id}/challenge/{challenge_id}
+     */
+    deleteGameChallenge: (
+      gameId: number,
+      challengeId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+        },
+        void | ErrorMessage
+      >({
+        path: `/api/admin/game/${gameId}/challenge/${challengeId}`,
+        method: "DELETE",
         format: "json",
         ...params,
       }),

@@ -36,6 +36,7 @@ import ScreenTooSmall from "components/modules/ScreenTooSmall";
 import { isMobile } from "react-device-detect";
 import { useTheme } from "next-themes";
 import { setGlobalNavigate } from "utils/ApiHelper";
+import ClientChecker from "components/modules/ClientChecker";
 
 export const links: Route.LinksFunction = () => [
     { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -168,6 +169,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                                         <CanvasProvider>
                                             <ThemeAwareLinks />
                                             <ClientToaster />
+                                            <ClientChecker />
                                             <div className="bg-background absolute top-0 left-0 w-screen h-screen z-[-1]" />
                                             {animationPresent && <FancyBackground />}
                                             <GameSwitchHover animation={true} />

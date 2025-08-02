@@ -177,6 +177,7 @@ type TeamScoreItem struct {
 	TeamName         string                    `json:"team_name"`
 	TeamAvatar       *string                   `json:"team_avatar"`
 	TeamSlogan       *string                   `json:"team_slogan"`
+	Members          []TeamMemberInfo          `json:"team_members"`
 	TeamDescription  *string                   `json:"team_description"`
 	Rank             int64                     `json:"rank"`
 	Score            float64                   `json:"score"`

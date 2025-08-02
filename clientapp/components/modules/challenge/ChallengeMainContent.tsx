@@ -288,9 +288,9 @@ export default function ChallengeMainContent(
                                                                 onClick={() => {
                                                                     const status = copy(`${port.ip}:${port.port}`)
                                                                     if (status) {
-                                                                        toast.success(t("copied"))
+                                                                        toast.success("已复制")
                                                                     } else {
-                                                                        toast.success(t("fail_copy"))
+                                                                        toast.success("复制失败")
                                                                     }
                                                                 }}
                                                             >

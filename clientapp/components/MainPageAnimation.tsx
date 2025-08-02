@@ -73,7 +73,7 @@ export function MainPageAnimation() {
                         fontSize={90}
                         enableHover={true}
                     >
-                        A1CTF
+                        { clientConfig.systemName }
                     </FuzzyText>
                 </div>
                 <div className="flex-col items-center gap-10 hidden md:flex lg:hidden">
@@ -91,7 +91,7 @@ export function MainPageAnimation() {
                         fontSize={70}
                         enableHover={true}
                     >
-                        A1CTF
+                        { clientConfig.systemName }
                     </FuzzyText>
                 </div>
                 <div className="flex-col items-center gap-10 hidden sm:flex md:hidden">
@@ -109,7 +109,7 @@ export function MainPageAnimation() {
                         fontSize={50}
                         enableHover={true}
                     >
-                        A1CTF
+                        { clientConfig.systemName }
                     </FuzzyText>
                 </div>
                 <div className="flex flex-col items-center gap-10 sm:hidden">
@@ -127,7 +127,7 @@ export function MainPageAnimation() {
                         fontSize={40}
                         enableHover={true}
                     >
-                        A1CTF
+                        { clientConfig.systemName }
                     </FuzzyText>
                 </div>
 

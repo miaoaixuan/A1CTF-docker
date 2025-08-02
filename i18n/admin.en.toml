@@ -8,6 +8,10 @@ other = "Invalid challenge ID"
 description = "Challenge not found"
 other = "Challenge not found"
 
+[ChallengeAlreadyAddedToGame]
+description = "Challenge has already added to the game"
+other = "Challenge has already added to the game"
+
 [FailedToLoadChallenge]
 description = "Failed to load challenge"
 other = "Failed to load challenge"
@@ -35,6 +39,10 @@ other = "Challenge deleted"
 [FailedToUpdateChallenge]
 description = "Failed to update challenge"
 other = "Failed to update challenge"
+
+[OldPasswordIncorrect]
+description = "Old password incorrect"
+other = "Old password incorrect"
 
 [InvalidRequestPayload]
 description = "Invalid request payload"
@@ -397,6 +405,10 @@ other = "Team not found"
 [DatabaseError]
 description = "Database error"
 other = "Database error"
+
+[InvalidTeamID]
+description = "Invalid Team ID"
+other = "Invalid Team ID"
 
 [FailedToApproveTeam]
 description = "Failed to approve team"
