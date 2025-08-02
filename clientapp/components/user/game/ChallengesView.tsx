@@ -10,7 +10,7 @@ import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper"
 import { GameNotice, GameScoreboardData, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "utils/A1API"
 
 import dayjs from "dayjs";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { AxiosError } from "axios";
 
 import { AnimatePresence, motion } from "framer-motion";
@@ -37,8 +37,6 @@ import LoadingModule from "components/modules/LoadingModule";
 import GameTeamStatusCard from "components/modules/game/GameTeamStatusCard";
 import { A1GameStatus } from "components/modules/game/GameStatusEnum";
 import useConditionalState from "hooks/ContidionalState";
-import AddChallengeFromLibraryDialog from "components/admin/game/AddChallengeFromLibraryDialog";
-import { Button } from "components/ui/button";
 
 export interface ChallengeSolveStatus {
     solved: boolean;
@@ -73,27 +71,11 @@ export function ChallengesView({
     const [curChallenge, setCurChallenge] = useState<UserDetailGameChallenge>()
     const curChallengeDetail = useRef<UserDetailGameChallenge>()
 
-    // 附件下载信息
-    interface DownloadInfo {
-        size: string;
-        progress: number;
-        speed: string;
-    };
-
     // 前一个题目
     const prevChallenge = useRef<UserDetailGameChallenge>();
 
-    // 头像 URL
-    const [avatarURL, setAvatarURL] = useState("#")
-
-    // 用户名
-    const [userName, setUserName] = useState("")
-
     // 加载动画
     const [loadingVisible, setLoadingVisibility] = useState(true)
-
-    // 侧栏打开关闭的时候更新 Terminal 宽度用的钩子
-    const [resizeTrigger, setResizeTrigger] = useState<number>(0)
 
     // 页面切换动画
     const [pageSwitch, setPageSwitch] = useState(false)
@@ -109,16 +91,9 @@ export function ChallengesView({
 
     const noticesRef = useRef<GameNotice[]>([])
 
-    const [scoreBoardVisible, setScoreBoardVisible] = useState(false)
-
     const { theme } = useTheme()
 
     const { curProfile, isAdmin } = useGlobalVariableContext()
-
-
-    const [beforeGameTime, setBeforeGameTime] = useState("")
-
-    const checkInterStarted = useRef(false)
 
     const [blood, setBlood] = useState("")
     const [bloodMessage, setBloodMessage] = useState("")
@@ -132,7 +107,6 @@ export function ChallengesView({
     const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected" | "ingore">("ingore")
 
     const [searchParams, setSearchParams] = useSearchParams()
-    const location = useLocation()
 
     const challengeSearched = searchParams.get("id") ? true : false
 
@@ -155,15 +129,6 @@ export function ChallengesView({
             if (updateScoreBoardInter) clearInterval(updateScoreBoardInter)
         }
     }, [gameID])
-
-
-    // 更新当前选中题目信息, 根据 Websocket 接收到的信息被动调用
-    const updateChallenge = () => {
-        if (!prevChallenge.current) return
-        api.user.userGetGameChallenge(gameID, prevChallenge.current.challenge_id || 0).then((response) => {
-            setCurChallenge(response.data.data || {})
-        }).catch((error: AxiosError) => { })
-    }
 
     const setChallengeSolved = (id: number) => {
         if (isAdmin()) {
@@ -201,12 +166,6 @@ export function ChallengesView({
             if (detail) curChallengeDetail.current = detail
         })
 
-        // const noneDict: Record<number, boolean> = {}
-        // for (let i = 0; i < (curChallenge?.hints?.length || 0); i++) {
-        //     noneDict[i] = true
-        // }
-        // setFoldedItems(noneDict)
-
         const timeout = setTimeout(() => setPageSwitch(false), 300)
 
         return () => {
@@ -222,7 +181,6 @@ export function ChallengesView({
     useEffect(() => {
         // 根据比赛状态处理事件
         if (gameStatus == "running" || gameStatus == "practiceMode" || isAdmin()) {
-
             const challengeID = searchParams.get("id")
             if (challengeID) {
                 const challengeIDInt = parseInt(challengeID, 10)
@@ -453,24 +411,6 @@ export function ChallengesView({
         }
     }, [gameStatus])
 
-    useEffect(() => {
-        setAvatarURL(curProfile.avatar || "#")
-        setUserName(curProfile.username || "")
-    }, [curProfile])
-
-    const startCheckForGameStart = () => {
-        const checkGameStartedInter = setInterval(() => {
-            api.user.userGetGameChallenges(gameID).then((res) => {
-                clearInterval(checkGameStartedInter)
-
-                // 防卡
-                setTimeout(() => {
-                    setGameStatus(A1GameStatus.Running)
-                }, randomInt(1000, 2000))
-            }, createSkipGlobalErrorConfig()).catch((error: AxiosError) => { })
-        }, 2000)
-    }
-
     // 为游戏描述创建 memo 化的 Mdx 组件
     const memoizedGameDescription = useMemo(() => {
         return gameInfo?.description ? (
@@ -517,20 +457,16 @@ export function ChallengesView({
                     gameid={id}
                     curChallenge={curChallenge}
                     setCurChallenge={setCurChallenge}
-                    // setGameDetail={setGameDeatail}
                     curChallengeRef={curChallengeDetail}
-                    resizeTrigger={setResizeTrigger}
                     setPageSwitching={setPageSwitch}
                     challenges={challenges || {}}
                     setChallenges={setChallenges}
                     challengeSolveStatusList={challengeSolveStatusList}
                     setChallengeSolveStatusList={setChallengeSolveStatusList}
                     gameStatus={gameStatus}
-                    setGameStatus={setGameStatus}
                     teamStatus={teamStatus}
                     setTeamStatus={setTeamStatus}
                     loadingVisible={loadingVisible}
-                    gameInfo={gameInfo}
                 />
                 <div className="w-full h-screen relative">
                     <div className="absolute h-full w-full top-0 left-0">
@@ -538,9 +474,8 @@ export function ChallengesView({
                             <ChallengesViewHeader
                                 wsStatus={wsStatus}
                                 gameStatus={gameStatus} gameInfo={gameInfo}
-                                setNoticeOpened={setNoticeOpened} setScoreBoardVisible={setScoreBoardVisible}
+                                setNoticeOpened={setNoticeOpened}
                                 notices={notices}
-                                curProfile={curProfile}
                                 loadingVisible={loadingVisible}
                             />
                             <div className="relative overflow-hidden h-full">
@@ -592,10 +527,8 @@ export function ChallengesView({
                                                     setCurChallenge={setCurChallenge}
                                                     challengeSolveStatusList={challengeSolveStatusList}
                                                     setSubmitFlagWindowVisible={setSubmitFlagWindowVisible}
-                                                    gameInfo={gameInfo}
                                                     setShowHintsWindowVisible={setShowHintsWindowVisible}
                                                     setRedirectURL={setRedirectURL}
-                                                    scoreBoardModel={scoreBoardModel}
                                                 />
                                             ) : (
                                                 <></>

@@ -2,14 +2,17 @@ package jobs
 
 import (
 	"a1ctf/src/db/models"
+	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	noticetool "a1ctf/src/utils/notice_tool"
 	"a1ctf/src/utils/zaphelper"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 func processQueueingJudge(judge *models.Judge) error {
@@ -37,6 +40,15 @@ func processQueueingJudge(judge *models.Judge) error {
 			// 查询已经解出来的人
 			var solves []models.Solve
 			if err := dbtool.DB().Where("game_id = ? AND challenge_id = ?", judge.GameID, judge.ChallengeID).Find(&solves).Error; err != nil {
+				judge.JudgeStatus = models.JudgeError
+				if !errors.Is(err, gorm.ErrRecordNotFound) {
+					// 记录错误
+					tasks.LogJudgeOperation(nil, nil, models.ActionJudge, judge.JudgeID, map[string]interface{}{
+						"team_id": judge.TeamID,
+						"game_id": judge.GameID,
+						"judge":   judge,
+					}, err)
+				}
 				return fmt.Errorf("database error: %w data: %+v", err, judge)
 			}
 
@@ -132,8 +144,7 @@ func FlagJudgeJob() {
 
 	for _, judge := range judges {
 		if err := processQueueingJudge(&judge); err != nil {
-			fmt.Printf("process judge error: %v\n", err)
-			continue
+			zaphelper.Logger.Error("Judge task failed", zap.Error(err), zap.Any("judge", judge))
 		}
 
 		if err := dbtool.DB().Save(&judge).Error; err != nil {

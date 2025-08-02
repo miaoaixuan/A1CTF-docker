@@ -38,19 +38,15 @@ const ChallengesViewHeader = (
         gameStatus,
         gameInfo,
         setNoticeOpened,
-        setScoreBoardVisible,
         notices,
         wsStatus,
-        curProfile,
         loadingVisible
     }: {
         gameStatus: string,
         gameInfo: UserFullGameInfo | undefined,
         setNoticeOpened: (arg0: boolean) => void,
-        setScoreBoardVisible: (arg0: boolean) => void,
         notices: GameNotice[],
         wsStatus: "connecting" | "connected" | "disconnected" | "ingore",
-        curProfile: UserProfile,
         loadingVisible: boolean
     },
 ) => {

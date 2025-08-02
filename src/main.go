@@ -24,6 +24,7 @@ import (
 	dbtool "a1ctf/src/utils/db_tool"
 	i18ntool "a1ctf/src/utils/i18n_tool"
 	k8stool "a1ctf/src/utils/k8s_tool"
+	redistool "a1ctf/src/utils/redis_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/utils/zaphelper"
 
@@ -129,6 +130,10 @@ func main() {
 	// 初始化多语言文件
 	i18ntool.LoadLanguageFiles()
 
+	// 初始化 redis 的连接
+	redistool.ConnectToRedis()
+
+	// 初始化 k8s 节点名称和地址映射
 	k8stool.InitNodeAddressMap()
 
 	// 初始化数据库连接
@@ -140,7 +145,6 @@ func main() {
 	// 初始化缓存池
 	ristretto_tool.LoadCacheTime()
 	ristretto_tool.InitCachePool()
-
 	defer ristretto_tool.CloseCachePool()
 
 	// 初始化 db
@@ -156,6 +160,7 @@ func main() {
 		defer systemMonitor.Stop()
 	}
 
+	// 初始化任务队列
 	tasks.InitTaskQueue()
 
 	memoryStore := persist.NewMemoryStore(1 * time.Minute)

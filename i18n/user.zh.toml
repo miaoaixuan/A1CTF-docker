@@ -431,3 +431,15 @@ other = "您必须先验证邮箱"
 [OperationNotAllowedAfterGameStart]
 description = "比赛开始后不允许此操作"
 other = "比赛开始后不允许此操作"
+
+[SendEmailTooFast]
+description = "邮件发送过快, 请等待一分钟"
+other = "邮件发送过快, 请等待一分钟"
+
+[RequestTooFast]
+description = "请求过快, 请 {{.Time}} 秒后重试"
+other = "请求过快, 请 {{.Time}} 秒后重试"
+
+[ContainerExpireTimeTooShort]
+description = "靶机剩余时间超过半小时, 不可延长"
+other = "靶机剩余时间超过半小时, 不可延长"

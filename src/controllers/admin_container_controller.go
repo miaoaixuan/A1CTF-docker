@@ -49,7 +49,7 @@ func AdminListContainers(c *gin.Context) {
 	query.Count(&total)
 
 	var containers []models.Container
-	if err := query.Offset(payload.Offset).Limit(payload.Size).Find(&containers).Error; err != nil {
+	if err := query.Offset(payload.Offset).Limit(payload.Size).Order("start_time ASC").Find(&containers).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadContainers"}),

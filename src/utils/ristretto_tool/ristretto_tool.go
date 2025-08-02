@@ -1088,8 +1088,8 @@ func CachedAllContainerStatus(gameID int64, challengeID int64) (map[int64][]mode
 
 	obj, err := GetOrCacheSingleFlight(fmt.Sprintf("all_container_status_%d_%d", gameID, challengeID), func() (interface{}, error) {
 		var containerList []models.Container
-		if err := dbtool.DB().Where("game_id = ? AND challenge_id = ? AND (container_status = ? OR container_status = ?)",
-			gameID, challengeID, models.ContainerRunning, models.ContainerQueueing).Find(&containerList).Error; err != nil {
+		if err := dbtool.DB().Where("game_id = ? AND challenge_id = ? AND (container_status = ? OR container_status = ? OR container_status = ?)",
+			gameID, challengeID, models.ContainerRunning, models.ContainerQueueing, models.ContainerStarting).Find(&containerList).Error; err != nil {
 			return nil, errors.New("failed to load containers")
 		}
 

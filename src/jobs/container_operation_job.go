@@ -163,8 +163,6 @@ func UpdateLivingContainers() {
 			AllowDNS: container.Challenge.AllowDNS,
 		}
 
-		// fmt.Printf("%s -> %s, %s\n", pod.Name, pod.Status.Phase, container.ContainerStatus)
-
 		if podStatus == v1.PodRunning && container.ContainerStatus == models.ContainerStarting {
 			// 如果远程服务器Pod已经是Running状态，就获取端口并且更新数据库
 			zaphelper.FileLogger.Info("Getting container port", zap.Any("container", container))
