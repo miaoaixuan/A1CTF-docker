@@ -8,6 +8,7 @@ import { useTheme } from "next-themes";
 
 import useLocalStorage from "use-local-storage-state";
 import { useNavigate } from "react-router";
+import { useCookies } from "react-cookie";
 
 interface ClientConfig {
     FancyBackGroundIconWhite: string;
@@ -77,6 +78,7 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
 
     const [localStorageClientConfig, setLocalStorageClientConfig, { removeItem: removeClientConfig }] = useLocalStorage<ClientConfig>("clientconfig")
     const [localStorageUID, setLocalStorageUID, { removeItem: removeUID }] = useLocalStorage<string>("uid")
+    const [cookies, setCookie, removeCookie] = useCookies(["a1token"])
     const navigate = useNavigate()
 
     const [curProfile, setCurProfile] = useState<UserProfile>({} as UserProfile)
@@ -147,8 +149,11 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
     }
 
     const unsetLoginStatus = () => {
-        navigate("/")
+        // 删掉 localStorage 里的 UID
         removeUID()
+        // 删掉 token
+        removeCookie("a1token")
+        navigate("/")
     }
 
     const getSystemLogo = () => {

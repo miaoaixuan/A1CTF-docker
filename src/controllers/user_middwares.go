@@ -3,6 +3,7 @@ package controllers
 import (
 	"a1ctf/src/db/models"
 	clientconfig "a1ctf/src/modules/client_config"
+	jwtauth "a1ctf/src/modules/jwt_auth"
 	i18ntool "a1ctf/src/utils/i18n_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/webmodels"
@@ -15,8 +16,13 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
+type GameStatusMiddlewareProps struct {
+	VisibleAfterEnded bool
+	CheckGameStarted  bool
+}
+
 // 比赛状态检查中间件
-func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool, checkGameStarted bool) gin.HandlerFunc {
+func GameStatusMiddleware(props GameStatusMiddlewareProps) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		gameIDStr := c.Param("game_id")
 		gameID, err := strconv.ParseInt(gameIDStr, 10, 64)
@@ -39,18 +45,28 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool, checkGameS
 			return
 		}
 
-		if !game.Visible {
-			c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
-				Code:    404,
-				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "GameNotFound"}),
-			})
-			c.Abort()
-			return
-		}
-
+		// 获取一下当前账号信息
 		user, exists := c.Get("user")
 
-		// 管理员绕过时间检查
+		// 再换一种方式获取登陆状态，给获取比赛信息接口用
+		if c.FullPath() == "/api/game/:game_id" && c.Request.Method == "GET" {
+			claims, errFromJwt := jwtauth.GetJwtMiddleWare().GetClaimsFromJWT(c)
+			if errFromJwt == nil {
+				user_id, userIDExists := claims["UserID"]
+				if userIDExists {
+					all_users, err := ristretto_tool.CachedMemberMap()
+					if err == nil {
+						tmpUser, userExists := all_users[user_id.(string)]
+						if userExists {
+							user = tmpUser
+							exists = true
+						}
+					}
+				}
+			}
+		}
+
+		// 管理员是否绕过比赛状态检查（比赛是否开始）
 		var skipTimeCheck bool = false
 
 		if exists {
@@ -60,9 +76,20 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool, checkGameS
 			}
 		}
 
+		// 管理员跳过时间检查
 		if !skipTimeCheck {
-			now := time.Now().UTC()
-			if game.StartTime.After(now) && checkGameStarted {
+			// 普通用户需要检查比赛是否可见
+			if !game.Visible {
+				c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
+					Code:    404,
+					Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "GameNotFound"}),
+				})
+				c.Abort()
+				return
+			}
+
+			// 检查比赛是否开始
+			if props.CheckGameStarted && game.StartTime.After(time.Now().UTC()) {
 				c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
 					Code:    403,
 					Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "GameNotStartedYet"}),
@@ -71,7 +98,8 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool, checkGameS
 				return
 			}
 
-			if !visibleAfterEnded && game.EndTime.Before(now) && !game.PracticeMode {
+			// 检查比赛在结束后是否可见，如果是练习模式就保持可见
+			if !props.VisibleAfterEnded && !game.PracticeMode && game.EndTime.Before(time.Now().UTC()) {
 				c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
 					Code:    403,
 					Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "GameHasEnded"}),
@@ -79,13 +107,6 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool, checkGameS
 				c.Abort()
 				return
 			}
-		}
-
-		if extractUserID {
-			claims := jwt.ExtractClaims(c)
-			user_id := claims["UserID"].(string)
-
-			c.Set("user_id", user_id)
 		}
 
 		// 将比赛信息存入上下文
@@ -96,11 +117,11 @@ func GameStatusMiddleware(visibleAfterEnded bool, extractUserID bool, checkGameS
 
 func TeamStatusMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		claims := jwt.ExtractClaims(c)
 		game := c.MustGet("game").(models.Game)
-		user_id := claims["UserID"].(string)
 
-		c.Set("user_id", user_id)
+		// TODO: 目前看来 这个队伍状态中间件都是在鉴权接口后的，所以应该能直接用鉴权接口设置的 user，避免直接从 jwt 里 extract
+		claims := jwt.ExtractClaims(c)
+		user_id := claims["UserID"].(string)
 
 		memberBelongSearchMap, err := ristretto_tool.CachedMemberSearchTeamMap(game.GameID)
 		if err != nil {
@@ -145,6 +166,7 @@ func TeamStatusMiddleware() gin.HandlerFunc {
 	}
 }
 
+// 邮箱未验证前不许操作中间件
 func EmailVerifiedMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		user := c.MustGet("user").(models.User)
@@ -163,6 +185,7 @@ func EmailVerifiedMiddleware() gin.HandlerFunc {
 	}
 }
 
+// 比赛开始后不允许操作中间件
 func OperationNotAllowedAfterGameStartMiddleWare() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		game := c.MustGet("game").(models.Game)

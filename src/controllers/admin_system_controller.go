@@ -168,9 +168,29 @@ func UpdateSystemSettings(c *gin.Context) {
 			existingSettings.SmtpEnabled = b
 		}
 	}
-	if value, exists := updateData["emailTemplate"]; exists {
+
+	// 邮件模板测试
+	if value, exists := updateData["verifyEmailTemplate"]; exists {
 		if str, ok := value.(string); ok {
-			existingSettings.EmailTemplate = str
+			existingSettings.VerifyEmailTemplate = str
+		}
+	}
+
+	if value, exists := updateData["verifyEmailHeader"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.VerifyEmailHeader = str
+		}
+	}
+
+	if value, exists := updateData["forgetPasswordTemplate"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.ForgetPasswordTemplate = str
+		}
+	}
+
+	if value, exists := updateData["forgetPasswordHeader"]; exists {
+		if str, ok := value.(string); ok {
+			existingSettings.ForgetPasswordHeader = str
 		}
 	}
 
@@ -232,7 +252,7 @@ func UpdateSystemSettings(c *gin.Context) {
 		tasks.LogAdminOperationWithError(c, models.ActionUpdate, models.ResourceTypeSystem, nil, updateData, err)
 
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
+			"code": 500,
 			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{
 				MessageID: "FailedToSaveSystemSettings",
 				TemplateData: map[string]interface{}{
@@ -260,7 +280,7 @@ func UploadSystemFile(c *gin.Context) {
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
+			"code": 400,
 			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{
 				MessageID: "FileUploadFailed",
 				TemplateData: map[string]interface{}{
@@ -334,7 +354,7 @@ func UploadSystemFile(c *gin.Context) {
 		}, err)
 
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
+			"code": 500,
 			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{
 				MessageID: "FailedToSaveFile",
 				TemplateData: map[string]interface{}{
@@ -432,7 +452,8 @@ func UploadSystemFile(c *gin.Context) {
 // TestSMTPSettings 测试SMTP设置
 func TestSMTPSettings(c *gin.Context) {
 	var smtpConfig struct {
-		To string `json:"to"`
+		To   string `json:"to"`
+		Type string `json:"type"`
 	}
 
 	if err := c.ShouldBindJSON(&smtpConfig); err != nil {
@@ -443,7 +464,7 @@ func TestSMTPSettings(c *gin.Context) {
 		return
 	}
 
-	tasks.NewSendTestMailTask(smtpConfig.To)
+	tasks.NewSendTestMailTask(smtpConfig.To, smtpConfig.Type)
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
@@ -527,7 +548,7 @@ func GetSystemLogs(c *gin.Context) {
 	logs, total, err := general.QuerySystemLogs(params)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
+			"code": 500,
 			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{
 				MessageID: "FailedToQuerySystemLogs",
 				TemplateData: map[string]interface{}{

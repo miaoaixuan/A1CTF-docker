@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Button } from "components/ui/button";
-import { Atom, Bird, Cat, Image, Loader2, Mail, Save, Siren, UserLock } from "lucide-react";
+import { Atom, Bird, Cat, Image, Loader2, Mail, NotepadTextDashed, Save, Siren, UserLock } from "lucide-react";
 import { toast } from 'react-toastify/unstyled';
 import { MacScrollbar } from "mac-scrollbar";
 import { useForm } from "react-hook-form";
@@ -18,6 +18,7 @@ import SecurityPolicySettings from "./SecurityPolicy";
 import OtherSettings from "./OtherSettings";
 import UserPolicySettings from "./UserPolicy";
 import { useTheme } from "next-themes";
+import TemplateSettings from "./TemplateSettings";
 
 // interface SystemSettings {
 //     // 基本信息
@@ -115,7 +116,14 @@ const systemSettingsSchema = z.object({
     smtpPassword: z.string().optional(),
     smtpFrom: z.string().optional(),
     smtpEnabled: z.boolean().optional(),
-    emailTemplate: z.string().optional(),
+    
+    // 邮件验证模板
+    verifyEmailTemplate: z.string().optional(),
+    verifyEmailHeader: z.string().optional(),
+
+    // 找回密码模板
+    forgetPasswordTemplate: z.string().optional(),
+    forgetPasswordHeader: z.string().optional(),
 
     // 验证码
     captchaEnabled: z.boolean().optional(),
@@ -195,7 +203,13 @@ export const AdminSettingsPage = () => {
             smtpPassword: "",
             smtpFrom: "",
             smtpEnabled: false,
-            emailTemplate: "",
+
+            // 邮件验证模板
+            verifyEmailTemplate: "",
+            verifyEmailHeader: "",
+            // 找回密码模板
+            forgetPasswordTemplate: "",
+            forgetPasswordHeader: "",
 
             aboutus: "",
 
@@ -264,6 +278,11 @@ export const AdminSettingsPage = () => {
             id: 'mail',
             name: '邮件设置',
             icon: <Mail className="h-4 w-4" />
+        },
+        {
+            id: 'template',
+            name: '模板设置',
+            icon: <NotepadTextDashed className="h-4 w-4" />
         },
         {
             id: 'security',
@@ -343,6 +362,12 @@ export const AdminSettingsPage = () => {
 
                                             {activeModule == "mail" && (
                                                 <MailSettings
+                                                    form={form}
+                                                />
+                                            )}
+
+                                            {activeModule == "template" && (
+                                                <TemplateSettings
                                                     form={form}
                                                 />
                                             )}

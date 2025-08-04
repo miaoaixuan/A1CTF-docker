@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"a1ctf/src/db/models"
-	i18ntool "a1ctf/src/utils/i18n_tool"
 	jwtauth "a1ctf/src/modules/jwt_auth"
 	dbtool "a1ctf/src/utils/db_tool"
+	i18ntool "a1ctf/src/utils/i18n_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/webmodels"
 	"net/http"
@@ -54,22 +54,16 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 
 	game := c.MustGet("game").(models.Game)
 
-	claims, err := jwtauth.GetJwtMiddleWare().GetClaimsFromJWT(c)
+	// 因为这个接口是 Public 的，没法利用 jwt 组件设置的 user 值，只能常识性的从 jwt 里 extract
+	claims, errFromJwt := jwtauth.GetJwtMiddleWare().GetClaimsFromJWT(c)
+	isLogined := errFromJwt == nil
 
-	var user_id string
-	var logined bool = false
 	var curTeam models.Team
 	var teamFounded bool = false
 
-	if err != nil {
-		logined = false
-	} else {
-		logined = true
-	}
-
 	// 先获取所有队伍的信息
-	teamDataMap, err := ristretto_tool.CachedMemberSearchTeamMap(game.GameID)
-	if err != nil {
+	teamDataMap, errFromJwt := ristretto_tool.CachedMemberSearchTeamMap(game.GameID)
+	if errFromJwt != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
 			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadTeamData"}),
@@ -77,15 +71,16 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 		return
 	}
 
-	tmpUserID, ok := claims["UserID"]
-	if ok {
-		user_id = tmpUserID.(string)
+	var team_status models.ParticipationStatus = models.ParticipateUnRegistered
+
+	tmpUserID, userIDExists := claims["UserID"]
+	if userIDExists {
+		user_id := tmpUserID.(string)
 		curTeam, teamFounded = teamDataMap[user_id]
 	}
 
-	var team_status models.ParticipationStatus = models.ParticipateUnRegistered
-
-	if logined {
+	// 根据登陆状态返回队伍信息
+	if isLogined {
 		if teamFounded {
 			team_status = curTeam.TeamStatus
 		}

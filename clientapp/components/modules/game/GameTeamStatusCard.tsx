@@ -18,7 +18,6 @@ export default function GameTeamStatusCard(
         teamStatus: ParticipationStatus
     }
 ) {
-
     const teamStatusElement = {
         "Pending": (
             <div className="flex flex-col gap-2 items-center backdrop-blur-sm rounded-2xl border-1 border-green-400 py-3 px-6 select-none">

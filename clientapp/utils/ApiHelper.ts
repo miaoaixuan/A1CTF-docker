@@ -145,6 +145,7 @@ const handleGlobalError = (error: any, config?: any) => {
         // 使用防抖机制，避免短时间内重复处理401错误
         if (errorToastDebouncer.canShowToast(401)) {
             document.cookie = "a1token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            localStorage.removeItem("uid")
             goto("/login")
         }
     } else if (errorCode == 421) {

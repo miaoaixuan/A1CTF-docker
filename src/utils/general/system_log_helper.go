@@ -24,7 +24,8 @@ func QuerySystemLogs(params QueryLogParams) ([]models.SystemLog, int64, error) {
 	}
 
 	if params.Action != nil {
-		query = query.Where("action = ?", *params.Action)
+		keyword := fmt.Sprintf("%%%s%%", *params.Action)
+		query = query.Where("action ILIKE ?", keyword)
 	}
 
 	if params.ResourceType != nil {

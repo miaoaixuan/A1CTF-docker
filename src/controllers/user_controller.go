@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -26,9 +25,7 @@ import (
 
 // GetProfile 获取用户的基本资料信息
 func GetProfile(c *gin.Context) {
-	// 从JWT中提取用户信息
-	claims := jwt.ExtractClaims(c)
-	userID := claims["UserID"].(string)
+	user := c.MustGet("user").(models.User)
 
 	userMap, err := ristretto_tool.CachedMemberMap()
 	if err != nil {
@@ -39,7 +36,7 @@ func GetProfile(c *gin.Context) {
 		return
 	}
 
-	user, ok := userMap[userID]
+	user, ok := userMap[user.UserID]
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":    404,

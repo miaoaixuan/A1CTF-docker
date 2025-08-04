@@ -272,7 +272,7 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 	var finalScoreBoardMap map[int64]webmodels.TeamScoreItem = make(map[int64]webmodels.TeamScoreItem)
 	var timeLines []webmodels.TimeLineItem = make([]webmodels.TimeLineItem, 0)
 
-	// 获取所有队伍，排除掉 Admin 第五
+	// 获取所有队伍，排除掉 Admin 队伍
 	var teams []models.Team
 	if err := dbtool.DB().Where("game_id = ? AND team_status = ? AND team_type = ?", gameID, models.ParticipateApproved, models.TeamTypePlayer).Preload("Group").Find(&teams).Error; err != nil {
 		return nil, errors.New("failed to load teams")
@@ -394,7 +394,7 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 
 					challengeScore += rewardScore
 
-					// 往前端添加解题记录
+					// 往前端添加三血的加分记录
 					teamData.ScoreAdjustments = append(teamData.ScoreAdjustments, adjustment)
 				}
 			}
@@ -402,6 +402,7 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 			teamData.Score += challengeScore
 			teamData.Penalty += penalty
 
+			// 插入解题记录
 			teamData.SolvedChallenges = append(teamData.SolvedChallenges, webmodels.TeamSolveItem{
 				ChallengeID: solve.ChallengeID,
 				Score:       challengeScore,
@@ -410,6 +411,7 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 				SolveTime:   solve.SolveTime,
 			})
 
+			// 更新最后解题时间
 			if teamData.LastSolveTime < solve.SolveTime.UnixMilli() {
 				teamData.LastSolveTime = solve.SolveTime.UnixMilli()
 			}
@@ -427,7 +429,9 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 	// 应用分数修正到队伍数据
 	for _, adjustment := range adjustments {
 		if teamData, exists := teamDataMap[adjustment.TeamID]; exists {
+			// 应用修正
 			teamData.Score += adjustment.ScoreChange
+
 			// 添加分数修正到队伍的分数修正列表
 			if teamData.ScoreAdjustments == nil {
 				teamData.ScoreAdjustments = make([]webmodels.TeamScoreAdjustmentItem, 0)
@@ -452,7 +456,7 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 	// 使用 sort.Slice 进行多条件排序：
 	// 1. 总分降序（分数高的排前面）
 	// 2. 总分相同时，罚时升序（罚时少的排前面）
-	// 3. 罚时相同时，最后解题时间降序（解题时间晚的排前面）
+	// 3. 罚时相同时，最后解题时间升序（解题时间早的排前面）
 	// 4. 最后比较队伍名称（升序，字典序小的排前面）... 这个应该不会出现
 	sort.Slice(teamRankings, func(i, j int) bool {
 		teamI, teamJ := teamRankings[i], teamRankings[j]
@@ -467,9 +471,9 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 			return teamI.Penalty < teamJ.Penalty
 		}
 
-		// 罚时相同时比较最后解题时间（降序，解题时间晚的排前面）
+		// 罚时相同时比较最后解题时间（升序，解题时间早的排前面）
 		if teamI.LastSolveTime != teamJ.LastSolveTime {
-			return teamI.LastSolveTime > teamJ.LastSolveTime
+			return teamI.LastSolveTime < teamJ.LastSolveTime
 		}
 
 		// 比较队伍 ID。。。
@@ -519,6 +523,7 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 			ScoreAdjustments: teamData.ScoreAdjustments,
 			GroupID:          teamData.GroupID,
 		})
+		// 防止队伍数量少于 10报错
 		idx += 1
 		if idx == 10 {
 			break
@@ -526,14 +531,9 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 	}
 
 	// 构建时间线数据（基于原有的 scoreboard 数据）
-
-	var teamsParticipated []models.Team = make([]models.Team, 0)
+	// 初始化 团队 ID 列表
 	var participatedTeamIDs []int64
-	if err := dbtool.DB().Model(&models.Team{}).Where("game_id = ? AND team_type = ?", gameID, models.TeamTypePlayer).Find(&teamsParticipated).Error; err != nil {
-		return nil, errors.New("failed to load teams for game")
-	}
-
-	for _, team := range teamsParticipated {
+	for _, team := range teams {
 		participatedTeamIDs = append(participatedTeamIDs, team.TeamID)
 	}
 
@@ -545,7 +545,7 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 	}
 
 	for _, scoreboard := range teamGameScoreborad {
-		// 顺便排序好
+		// 顺便根据记录时间排序好
 		sort.Slice(scoreboard.Data, func(i, j int) bool {
 			return scoreboard.Data[i].RecordTime.Before(scoreboard.Data[j].RecordTime)
 		})
@@ -554,6 +554,7 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 	}
 
 	if len(teamGameScoreborad) == 0 {
+		// 没有积分榜数据就初始化个新的
 		timeLines = make([]webmodels.TimeLineItem, 0)
 		cachedData.AllTimeLines = make([]webmodels.TimeLineItem, 0)
 	} else {

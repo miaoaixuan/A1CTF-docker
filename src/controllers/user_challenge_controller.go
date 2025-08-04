@@ -304,7 +304,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 		TeamID:       team.TeamID,
 		JudgeType:    gameChallenge.JudgeConfig.JudgeType,
 		JudgeStatus:  models.JudgeQueueing,
-		SubmiterID:   c.MustGet("user_id").(string),
+		SubmiterID:   user.UserID,
 		JudgeID:      uuid.NewString(),
 		JudgeTime:    time.Now().UTC(),
 		JudgeContent: payload.FlagContent,

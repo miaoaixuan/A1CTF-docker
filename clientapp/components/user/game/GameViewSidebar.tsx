@@ -96,6 +96,11 @@ export default function GameViewSidebar(
         }
     }
 
+    const handleLoginOut = () => {
+        unsetLoginStatus()
+        toast.success(t("login_out_success"))
+    }
+
     return (
         <div className="w-16 h-full border-r-[1px] z-[20] bg-background select-none">
             <div className="flex flex-col w-full h-full gap-4 items-center py-4 pt-5">
@@ -140,16 +145,12 @@ export default function GameViewSidebar(
                                 <AvatarUsername avatar_url={gameInfo?.team_info?.team_avatar} username={gameInfo?.team_info?.team_name || ""} />
                             </div>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="mt-2">
+                        <DropdownMenuContent className="ml-2">
                             <DropdownMenuItem onClick={() => navigate(`/profile/basic`)}>
                                 <Settings />
                                 <span>{t("settings")}</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {
-                                unsetLoginStatus()
-                                removeCookie("a1token")
-                                toast.success(t("login_out_success"))
-                            }}>
+                            <DropdownMenuItem onClick={handleLoginOut}>
                                 <UserRoundMinus />
                                 <span>{t("login_out")}</span>
                             </DropdownMenuItem>
