@@ -273,6 +273,8 @@ export interface AdminDetailGameChallenge {
   category?: ChallengeCategory;
   judge_config?: JudgeConfig;
   minimal_score?: number;
+  /** @format double */
+  difficulty?: number;
   enable_blood_reward?: boolean;
 }
 
@@ -583,6 +585,11 @@ export interface SolvedChallenge {
    * @example "2025-05-03T07:07:34.650351Z"
    */
   solve_time?: string;
+  /**
+   * @format float
+   * @example 0
+   */
+  blood_reward?: number;
 }
 
 export interface TeamScoreAdjustment {

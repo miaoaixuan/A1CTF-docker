@@ -349,6 +349,7 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 			}
 
 			challengeScore := solve.GameChallenge.CurScore
+			rewardScore := 0.0
 
 			// 这里计算分数了，处理一下三血
 			if solve.GameChallenge.BloodRewardEnabled && solve.Rank <= 3 {
@@ -357,7 +358,6 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 				// 三血对于的奖励分数比例是否开启
 				var rankRewardEnabled bool = false
 
-				rewardScore := 0.0
 				switch solve.Rank {
 				case 3:
 					rewardScore = float64(solve.Game.ThirdBloodReward) * solve.GameChallenge.CurScore / 100
@@ -409,6 +409,7 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 				Solver:      solve.Solver.Username,
 				Rank:        int64(solve.Rank),
 				SolveTime:   solve.SolveTime,
+				BloodReward: rewardScore,
 			})
 
 			// 更新最后解题时间

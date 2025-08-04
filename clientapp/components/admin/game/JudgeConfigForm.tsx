@@ -19,6 +19,7 @@ import { ScanBarcode, FileCode, ClockArrowUp, PlusCircle, Trash2, Megaphone, App
 import { Button } from 'components/ui/button';
 import EditorDialog from 'components/modules/EditorDialog';
 import AlertConformer from 'components/modules/AlertConformer';
+import ChallengeScoreGraph from 'components/modules/ChallengeScoreGraph';
 
 interface JudgeConfigFormProps {
     /** react-hook-form control 对象 */
@@ -47,6 +48,15 @@ export function JudgeConfigForm({ control, form }: JudgeConfigFormProps) {
         control,
         name: `hints`,
     });
+
+    const [
+        difficulty,
+        total_score,
+        minimal_score
+    ] = useWatch({
+        control,
+        name: ['difficulty', 'total_score', 'minimal_score'],
+    })
 
     return (
         <>
@@ -182,49 +192,84 @@ export function JudgeConfigForm({ control, form }: JudgeConfigFormProps) {
                 )}
             /> */}
 
-            {/* 题目总分 */}
-            <FormField
-                control={form.control}
-                name={`total_score`}
-                render={({ field }) => (
-                    <FormItem className="select-none">
-                        <div className="flex items-center h-[20px]">
-                            <FormLabel>题目总分</FormLabel>
-                            <div className="flex-1" />
-                            <FormMessage className="text-[14px]" />
-                        </div>
-                        <FormControl>
-                            <Input {...field} value={field.value ?? ''} />
-                        </FormControl>
-                        <div className="flex flex-col text-[12px] text-foreground/60">
-                            <span>这里是题目的最大分数</span>
-                            <span>在开启动态积分的情况下，积分会自动衰减</span>
-                        </div>
-                    </FormItem>
-                )}
-            />
+            <div className="flex gap-6">
+                <div className="flex flex-col gap-8 w-[35%]">
+                    {/* 题目总分 */}
+                    <FormField
+                        control={form.control}
+                        name={`total_score`}
+                        render={({ field }) => (
+                            <FormItem className="select-none">
+                                <div className="flex items-center h-[20px]">
+                                    <FormLabel>题目总分</FormLabel>
+                                    <div className="flex-1" />
+                                    <FormMessage className="text-[14px]" />
+                                </div>
+                                <FormControl>
+                                    <Input {...field} value={field.value ?? ''} />
+                                </FormControl>
+                                <div className="flex flex-col text-[12px] text-foreground/60">
+                                    <span>这里是题目的最大分数</span>
+                                    <span>在开启动态积分的情况下，积分会自动衰减</span>
+                                </div>
+                            </FormItem>
+                        )}
+                    />
 
-            {/* 题目最小分数 */}
-            <FormField
-                control={form.control}
-                name={`minimal_score`}
-                render={({ field }) => (
-                    <FormItem className="select-none">
-                        <div className="flex items-center h-[20px]">
-                            <FormLabel>题目最低分</FormLabel>
-                            <div className="flex-1" />
-                            <FormMessage className="text-[14px]" />
-                        </div>
-                        <FormControl>
-                            <Input {...field} value={field.value ?? ''} />
-                        </FormControl>
-                        <div className="flex flex-col text-[12px] text-foreground/60">
-                            <span>这里是题目的最小分数</span>
-                            <span>积分衰减不会小于这个分数</span>
-                        </div>
-                    </FormItem>
-                )}
-            />
+                    {/* 题目最小分数 */}
+                    <FormField
+                        control={form.control}
+                        name={`minimal_score`}
+                        render={({ field }) => (
+                            <FormItem className="select-none">
+                                <div className="flex items-center h-[20px]">
+                                    <FormLabel>题目最低分</FormLabel>
+                                    <div className="flex-1" />
+                                    <FormMessage className="text-[14px]" />
+                                </div>
+                                <FormControl>
+                                    <Input {...field} value={field.value ?? ''} />
+                                </FormControl>
+                                <div className="flex flex-col text-[12px] text-foreground/60">
+                                    <span>这里是题目的最小分数</span>
+                                    <span>积分衰减不会小于这个分数</span>
+                                </div>
+                            </FormItem>
+                        )}
+                    />
+
+                    {/* 题目难度系数 */}
+                    <FormField
+                        control={form.control}
+                        name={`difficulty`}
+                        render={({ field }) => (
+                            <FormItem className="select-none">
+                                <div className="flex items-center h-[20px]">
+                                    <FormLabel>题目难度系数</FormLabel>
+                                    <div className="flex-1" />
+                                    <FormMessage className="text-[14px]" />
+                                </div>
+                                <FormControl>
+                                    <Input {...field} value={field.value ?? ''} />
+                                </FormControl>
+                                <div className="flex flex-col text-[12px] text-foreground/60">
+                                    <span>这里是题目的难度系数, 会影响分数曲线</span>
+                                </div>
+                            </FormItem>
+                        )}
+                    />
+                </div>
+                <div className="flex-1">
+                    <ChallengeScoreGraph
+                        S={total_score}
+                        d={difficulty}
+                        r={minimal_score / total_score}
+                        onDChange={(v) => {
+                            form.setValue(`difficulty`, v)
+                        }}
+                    />
+                </div>
+            </div>
 
             {/* Hints */}
             <div className="flex items-center w-full gap-2">

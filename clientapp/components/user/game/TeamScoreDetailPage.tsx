@@ -157,7 +157,7 @@ export default function TeamScoreDetailPage(
         showUserDetail.solved_challenges.forEach(solved => {
             const solver = solved.solver || 'Unknown';
             const challenge = getChallenge(solved.challenge_id || 0);
-            memberScores[solver] = (memberScores[solver] || 0) + (challenge?.cur_score || 0);
+            memberScores[solver] = (memberScores[solver] || 0) + (challenge?.cur_score || 0) + (solved.blood_reward || 0);
         });
 
         return Object.entries(memberScores).map(([name, score]) => ({
@@ -174,7 +174,7 @@ export default function TeamScoreDetailPage(
             const challenge = getChallenge(solved.challenge_id || 0);
             return {
                 name: challenge?.challenge_name || 'Unknown',
-                value: challenge?.cur_score || 0,
+                value: (challenge?.cur_score || 0) + (solved.blood_reward || 0),
                 category: challenge?.category || 'MISC'
             };
         }).sort((a, b) => b.value - a.value);

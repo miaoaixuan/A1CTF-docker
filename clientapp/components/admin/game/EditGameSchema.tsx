@@ -30,6 +30,7 @@ export const GameChallengeSchema = z.object({
     total_score: z.coerce.number().min(1, '请输入一个有效的数字'),
     cur_score: z.number(),
     solve_count: z.number(),
+    difficulty: z.coerce.number().min(1, '请输入一个有效的数字'),
     minimal_score: z.coerce.number().min(0, '请输入一个有效的数字'),
     enable_blood_reward: z.boolean(),
     hints: z.array(

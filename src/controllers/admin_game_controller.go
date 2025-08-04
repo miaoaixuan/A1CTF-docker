@@ -211,6 +211,7 @@ func AdminGetGameChallenge(c *gin.Context) {
 		"belong_stage":        gc.BelongStage,
 		"visible":             gc.Visible,
 		"minimal_score":       gc.MinimalScore,
+		"difficulty":          gc.Difficulty,
 		"enable_blood_reward": gc.BloodRewardEnabled,
 	}
 
@@ -327,6 +328,10 @@ func AdminUpdateGameChallenge(c *gin.Context) {
 	if belongStage, ok := payload["belong_stage"]; ok {
 		updateData["belong_stage"] = belongStage
 		updateFields = append(updateFields, "belong_stage")
+	}
+	if difficulty, ok := payload["difficulty"]; ok {
+		updateData["difficulty"] = difficulty
+		updateFields = append(updateFields, "difficulty")
 	}
 	if minimalScore, ok := payload["minimal_score"]; ok {
 		updateData["minimal_score"] = minimalScore

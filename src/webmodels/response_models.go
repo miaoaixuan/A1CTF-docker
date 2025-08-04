@@ -162,6 +162,7 @@ type TeamSolveItem struct {
 	Solver      string    `json:"solver"`
 	Rank        int64     `json:"rank"`
 	SolveTime   time.Time `json:"solve_time"`
+	BloodReward float64   `json:"blood_reward"`
 }
 
 type TeamScoreAdjustmentItem struct {

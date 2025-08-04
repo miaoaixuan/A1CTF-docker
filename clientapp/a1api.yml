@@ -3859,6 +3859,9 @@ components:
           $ref: '#/components/schemas/JudgeConfig'
         minimal_score:
           type: number
+        difficulty:
+          type: number
+          format: double
         enable_blood_reward:
           type: boolean
     AddGameChallengePayload:
@@ -4482,6 +4485,10 @@ components:
           type: string
           format: date-time
           example: "2025-05-03T07:07:34.650351Z"
+        blood_reward:
+          type: number
+          format: float
+          example: 0
 
     TeamScoreAdjustment:
       type: object
