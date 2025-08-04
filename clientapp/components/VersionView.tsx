@@ -30,6 +30,14 @@ export function VersionView() {
                             }}
                         >carbofish</span>
                     </div>
+                    <div className="flex gap-1 items-center pt-1 pb-1 pl-3 pr-3 hover:bg-foreground/10 rounded-md transiiton-[background] duration-300">
+                        <Link size={20} />
+                        <span className="text-lg"
+                            onClick={() => {
+                                window.open('https://github.com/carbofish/A1CTF')
+                            }}
+                        >A1CTF 🌟</span>
+                    </div>
                 </div>
                 <span className="text-lg mt-5 text-red-400">💖Thanks</span>
                 <div className="flex gap-2 mt-1 scale-75 sm:scale-100">
@@ -75,9 +83,9 @@ export function VersionView() {
                             <Link size={20} />
                             <span className="text-md" 
                                 onClick={() => {
-                                    window.open('https://github.com/vercel/next.js')
+                                    window.open('https://vite.dev/')
                                 }}
-                            >Next.js</span>
+                            >Vite</span>
                         </div>
                         <div className="flex gap-2 items-center pt-2 pb-2 pl-3 pr-3 hover:bg-foreground/10 rounded-md transiiton-[background] duration-300">
                             <Link size={20} />

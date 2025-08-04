@@ -2,10 +2,22 @@ FROM node:22-alpine AS frontend-builder
 
 WORKDIR /app/clientapp
 
+# Install git for getting commit hash
+RUN apk add --no-cache git
+
 COPY clientapp/package*.json ./
 RUN npm ci --only=production
 
 COPY clientapp/ ./
+COPY .git/ .git/
+
+# Generate version.ts with git hash and build time
+RUN GIT_HASH=$(git rev-parse --short HEAD) && \
+    BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z") && \
+    echo "export const A1CTF_VERSION = \"dev-${GIT_HASH}\"" > version.ts && \
+    echo "export const A1CTF_NAME = \"A1CTF Preview\"" >> version.ts && \
+    echo "export const BUILD_TIME = \"${BUILD_TIME}\"" >> version.ts
+
 RUN npm install
 RUN npm run build
 

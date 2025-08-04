@@ -12,3 +12,4 @@ appdata
 test
 .idea/
 .DS_Store
+docker_test/
