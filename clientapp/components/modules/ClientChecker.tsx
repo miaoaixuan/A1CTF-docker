@@ -17,6 +17,7 @@ export default function () {
         "/games": { title: "比赛列表" },
         "/about": { title: "关于" },
         "/signup": { title: "注册" },
+        "/version": { title: "版本信息" },
     }
 
     const unLoginAllowedPage = [
@@ -25,6 +26,7 @@ export default function () {
         "/signup",
         "/games",
         "/about",
+        "/version",
         "/games/\\d+/info",
         "/games/\\d+/scoreboard",
     ]

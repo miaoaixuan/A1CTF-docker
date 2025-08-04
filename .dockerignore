@@ -1,5 +1,4 @@
 # Git相关
-.git
 .gitignore
 
 # 构建产物
@@ -60,4 +59,4 @@ docs/
 # Docker相关
 Dockerfile*
 docker-compose*.yml
-.dockerignore 
+.dockerignore
