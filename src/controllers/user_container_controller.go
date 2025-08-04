@@ -5,7 +5,10 @@ import (
 	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	i18ntool "a1ctf/src/utils/i18n_tool"
+	redistool "a1ctf/src/utils/redis_tool"
 	"a1ctf/src/webmodels"
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -32,11 +35,11 @@ func UserCreateGameContainer(c *gin.Context) {
 		return
 	}
 
-	var gameChallenges []models.GameChallenge
+	var gameChallenge models.GameChallenge
 
 	if err := dbtool.DB().Preload("Challenge").
 		Where("game_id = ? and game_challenges.challenge_id = ?", game.GameID, challengeID).
-		Find(&gameChallenges).Error; err != nil {
+		First(&gameChallenge).Error; err != nil {
 
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
@@ -44,16 +47,6 @@ func UserCreateGameContainer(c *gin.Context) {
 		})
 		return
 	}
-
-	if len(gameChallenges) == 0 {
-		c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
-			Code:    404,
-			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeNotFound"}),
-		})
-		return
-	}
-
-	gameChallenge := gameChallenges[0]
 
 	var containers []models.Container
 	if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND (container_status = ? or container_status = ?)", game.GameID, team.TeamID, models.ContainerRunning, models.ContainerQueueing).Find(&containers).Error; err != nil {
@@ -83,8 +76,8 @@ func UserCreateGameContainer(c *gin.Context) {
 	}
 
 	if len(containers) > int(game.ContainerNumberLimit) {
-		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
-			Code:    400,
+		c.JSON(http.StatusConflict, webmodels.ErrorMessage{
+			Code:    409,
 			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "YouHaveCreatedTooManyContainers"}),
 		})
 		return
@@ -127,7 +120,28 @@ func UserCreateGameContainer(c *gin.Context) {
 		SubmiterIP:           &clientIP,
 	}
 
+	// 用户操作靶机的 60 秒 CD
+	operationName := fmt.Sprintf("%s:containerOperation", user.UserID)
+	locked := redistool.LockForATime(operationName, time.Minute)
+
+	if !locked {
+		c.JSON(http.StatusTooManyRequests, webmodels.ErrorMessage{
+			Code:    429,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "RequestTooFast", TemplateData: map[string]interface{}{"Time": time.Minute.Seconds()}}),
+		})
+		return
+	}
+
 	if err := dbtool.DB().Create(&newContainer).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+				Code:    400,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "YouHaveCreatedContainerForChallenge"}),
+			})
+			return
+		}
+
 		// 记录创建容器失败日志
 		tasks.LogUserOperationWithError(c, models.ActionStartContainer, models.ResourceTypeContainer, &newContainer.ContainerID, map[string]interface{}{
 			"game_id":        game.GameID,
@@ -138,7 +152,7 @@ func UserCreateGameContainer(c *gin.Context) {
 		}, err)
 
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-			Code:    501,
+			Code:    500,
 			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
 		})
 		return
@@ -203,6 +217,18 @@ func UserCloseGameContainer(c *gin.Context) {
 
 	curContainer := containers[0]
 
+	// 锁住对一个容器ID的操作
+	operationNameForContainer := fmt.Sprintf("containerLock:%s", curContainer.ContainerID)
+	lockedForContainer := redistool.LockForATime(operationNameForContainer, time.Minute)
+
+	if !lockedForContainer {
+		c.JSON(http.StatusTooManyRequests, webmodels.ErrorMessage{
+			Code:    429,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "RequestTooFast", TemplateData: map[string]interface{}{"Time": time.Minute.Seconds()}}),
+		})
+		return
+	}
+
 	if err := dbtool.DB().Model(&curContainer).Updates(map[string]interface{}{
 		"container_status": models.ContainerStopping,
 	}).Error; err != nil {
@@ -255,6 +281,17 @@ func UserExtendGameContainer(c *gin.Context) {
 		return
 	}
 
+	operationName := fmt.Sprintf("%s:containerOperation", user.UserID)
+	locked := redistool.LockForATime(operationName, time.Minute)
+
+	if !locked {
+		c.JSON(http.StatusTooManyRequests, webmodels.ErrorMessage{
+			Code:    429,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "RequestTooFast", TemplateData: map[string]interface{}{"Time": time.Minute.Seconds()}}),
+		})
+		return
+	}
+
 	var containers []models.Container
 	if err := dbtool.DB().Where("challenge_id = ? AND team_id = ? AND container_status = ?", challengeID, team.TeamID, models.ContainerRunning).Find(&containers).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
@@ -281,6 +318,27 @@ func UserExtendGameContainer(c *gin.Context) {
 	}
 
 	curContainer := containers[0]
+
+	// 锁住对一个容器ID的操作
+	operationNameForContainer := fmt.Sprintf("containerLock:%s", curContainer.ContainerID)
+	lockedForContainer := redistool.LockForATime(operationNameForContainer, time.Minute)
+
+	if !lockedForContainer {
+		c.JSON(http.StatusTooManyRequests, webmodels.ErrorMessage{
+			Code:    429,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "RequestTooFast", TemplateData: map[string]interface{}{"Time": time.Minute.Seconds()}}),
+		})
+		return
+	}
+
+	// 到期时间大于两小时的不可延长
+	if curContainer.ExpireTime.Sub(time.Now().UTC()) < time.Minute*30 {
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+			Code:    400,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ContainerExpireTimeTooShort"}),
+		})
+		return
+	}
 
 	// 延长时间为当前时间的2小时之后
 	newExpireTime := time.Now().Add(time.Duration(2) * time.Hour).UTC()

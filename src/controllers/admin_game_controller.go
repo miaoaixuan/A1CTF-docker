@@ -125,6 +125,7 @@ func AdminCreateGame(c *gin.Context) {
 		return
 	}
 
+	// 创建管理员默认队伍
 	newTeam := models.Team{
 		TeamID:          0,
 		GameID:          game.GameID,

@@ -24,6 +24,7 @@ import (
 	dbtool "a1ctf/src/utils/db_tool"
 	i18ntool "a1ctf/src/utils/i18n_tool"
 	k8stool "a1ctf/src/utils/k8s_tool"
+	redistool "a1ctf/src/utils/redis_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/utils/zaphelper"
 
@@ -129,6 +130,10 @@ func main() {
 	// 初始化多语言文件
 	i18ntool.LoadLanguageFiles()
 
+	// 初始化 redis 的连接
+	redistool.ConnectToRedis()
+
+	// 初始化 k8s 节点名称和地址映射
 	k8stool.InitNodeAddressMap()
 
 	// 初始化数据库连接
@@ -140,7 +145,6 @@ func main() {
 	// 初始化缓存池
 	ristretto_tool.LoadCacheTime()
 	ristretto_tool.InitCachePool()
-
 	defer ristretto_tool.CloseCachePool()
 
 	// 初始化 db
@@ -156,6 +160,7 @@ func main() {
 		defer systemMonitor.Stop()
 	}
 
+	// 初始化任务队列
 	tasks.InitTaskQueue()
 
 	memoryStore := persist.NewMemoryStore(1 * time.Minute)
@@ -202,9 +207,15 @@ func main() {
 		public.POST("/auth/register", controllers.Register)
 
 		public.GET("/game/list", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.UserListGames)
-		public.GET("/game/:game_id/scoreboard", controllers.GameStatusMiddleware(true, false, true), controllers.UserGameGetScoreBoard)
+		public.GET("/game/:game_id/scoreboard", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+			VisibleAfterEnded: true,
+			CheckGameStarted:  true,
+		}), controllers.UserGameGetScoreBoard)
 
-		public.GET("/game/:game_id", controllers.GameStatusMiddleware(true, false, false), controllers.UserGetGameDetailWithTeamInfo)
+		public.GET("/game/:game_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+			VisibleAfterEnded: true,
+			CheckGameStarted:  false,
+		}), controllers.UserGetGameDetailWithTeamInfo)
 
 		fileGroup := public.Group("/file")
 		{
@@ -250,7 +261,10 @@ func main() {
 
 		// 团队相关管理接口
 		teamManagePublicGroup := auth.Group("/game/:game_id/team")
-		teamManagePublicGroup.Use(controllers.GameStatusMiddleware(false, false, false))
+		teamManagePublicGroup.Use(controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+			VisibleAfterEnded: false,
+			CheckGameStarted:  false,
+		}))
 		// 专门给 Join 预留的，无需 TeamStatus 验证
 		{
 			teamManagePublicGroup.POST("/join", controllers.TeamJoinRequest)
@@ -258,7 +272,10 @@ func main() {
 
 		// 这里需要验证比赛状态
 		teamManageGroup := auth.Group("/game/:game_id/team")
-		teamManageGroup.Use(controllers.GameStatusMiddleware(false, false, false))
+		teamManageGroup.Use(controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+			VisibleAfterEnded: false,
+			CheckGameStarted:  false,
+		}))
 		teamManageGroup.Use(controllers.TeamStatusMiddleware())
 		teamManageGroup.Use(controllers.EmailVerifiedMiddleware())
 		{
@@ -353,29 +370,62 @@ func main() {
 		userGameGroup.Use(controllers.EmailVerifiedMiddleware())
 		{
 			// 获取比赛的题目列表
-			userGameGroup.GET("/:game_id/challenges", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenges)
+			userGameGroup.GET("/:game_id/challenges", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+				VisibleAfterEnded: false,
+				CheckGameStarted:  true,
+			}), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenges)
 
 			// 查询比赛中的某道题
-			userGameGroup.GET("/:game_id/challenge/:challenge_id", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenge)
+			userGameGroup.GET("/:game_id/challenge/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+				VisibleAfterEnded: false,
+				CheckGameStarted:  true,
+			}), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenge)
 
 			// 比赛通知接口
-			userGameGroup.GET("/:game_id/notices", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameNotices)
+			userGameGroup.GET("/:game_id/notices", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+				VisibleAfterEnded: false,
+				CheckGameStarted:  true,
+			}), controllers.TeamStatusMiddleware(), controllers.UserGetGameNotices)
 
 			// 用户获取分组列表（公开接口，用于创建团队时选择分组）
-			userGameGroup.GET("/:game_id/groups", controllers.GameStatusMiddleware(true, false, false), controllers.UserGetGameGroups)
+			userGameGroup.GET("/:game_id/groups", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+				VisibleAfterEnded: true,
+				CheckGameStarted:  false,
+			}), controllers.UserGetGameGroups)
 
 			// 创建比赛队伍
-			userGameGroup.POST("/:game_id/createTeam", controllers.GameStatusMiddleware(false, true, false), controllers.UserCreateGameTeam)
+			userGameGroup.POST("/:game_id/createTeam", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+				VisibleAfterEnded: false,
+				CheckGameStarted:  false,
+			}), controllers.UserCreateGameTeam)
 
 			// 题目容器
-			userGameGroup.POST("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserCreateGameContainer)
-			userGameGroup.DELETE("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserCloseGameContainer)
-			userGameGroup.PATCH("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserExtendGameContainer)
-			userGameGroup.GET("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallengeContainerInfo)
+			userGameGroup.POST("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+				VisibleAfterEnded: false,
+				CheckGameStarted:  true,
+			}), controllers.TeamStatusMiddleware(), controllers.UserCreateGameContainer)
+			userGameGroup.DELETE("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+				VisibleAfterEnded: false,
+				CheckGameStarted:  true,
+			}), controllers.TeamStatusMiddleware(), controllers.UserCloseGameContainer)
+			userGameGroup.PATCH("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+				VisibleAfterEnded: false,
+				CheckGameStarted:  true,
+			}), controllers.TeamStatusMiddleware(), controllers.UserExtendGameContainer)
+			userGameGroup.GET("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+				VisibleAfterEnded: false,
+				CheckGameStarted:  true,
+			}), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallengeContainerInfo)
 
 			// 提交 Flag
-			userGameGroup.POST("/:game_id/flag/:challenge_id", RateLimiter(100, 1*time.Second), controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserGameChallengeSubmitFlag)
-			userGameGroup.GET("/:game_id/flag/:judge_id", controllers.GameStatusMiddleware(false, true, true), controllers.TeamStatusMiddleware(), controllers.UserGameGetJudgeResult)
+			userGameGroup.POST("/:game_id/flag/:challenge_id", RateLimiter(100, 1*time.Second), controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+				VisibleAfterEnded: false,
+				CheckGameStarted:  true,
+			}), controllers.TeamStatusMiddleware(), controllers.UserGameChallengeSubmitFlag)
+			userGameGroup.GET("/:game_id/flag/:judge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+				VisibleAfterEnded: false,
+				CheckGameStarted:  true,
+			}), controllers.TeamStatusMiddleware(), controllers.UserGameGetJudgeResult)
 		}
 
 		// 实时通知服务
@@ -414,22 +464,10 @@ func main() {
 		}
 	}
 
-	// 未知接口
-	// r.NoRoute(authMiddleware.MiddlewareFunc(), handleNoRoute())
-
-	// r.Static("/assets", "./clientapp/assets")
-	// r.Static("/favicon.ico", "./clientapp/favicon.ico")
-	// r.Static("/images", "./clientapp/images")
-	// r.Static("/locales", "./clientapp/locales")
-	// r.NoRoute(func(c *gin.Context) {
-	// 	c.File("./clientapp/index.html")
-	// })
-
+	// 资源文件
 	r.Static("/assets", "./clientapp/build/client/assets")
-
 	r.StaticFile("/css/github-markdown-dark.css", "./clientapp/build/client/css/github-markdown-dark.css")
 	r.StaticFile("/css/github-markdown-light.css", "./clientapp/build/client/css/github-markdown-light.css")
-
 	r.StaticFile("/favicon.ico", viper.GetString("system.favicon"))
 
 	r.Static("/images", "./clientapp/build/client/images")
@@ -444,7 +482,7 @@ func main() {
 		c.File("./clientapp/build/client/index.html")
 	})
 
-	// 任务线程
+	// 启动任务线程
 	StartLoopEvent()
 
 	// 创建HTTP服务器

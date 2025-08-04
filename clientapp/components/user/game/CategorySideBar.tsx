@@ -38,34 +38,27 @@ export function CategorySidebar({
     setCurChallenge,
     curChallengeRef,
     gameStatus,
-    setGameStatus,
-    teamStatus,
     setTeamStatus,
-    resizeTrigger,
     setPageSwitching,
     challenges,
     setChallenges,
     challengeSolveStatusList,
     setChallengeSolveStatusList,
     loadingVisible,
-    gameInfo
 }: {
     gameid: string,
     curChallenge: UserDetailGameChallenge | undefined,
     setCurChallenge: Dispatch<SetStateAction<UserDetailGameChallenge | undefined>>,
     gameStatus: A1GameStatus,
     curChallengeRef: MutableRefObject<UserDetailGameChallenge | undefined>,
-    setGameStatus: Dispatch<SetStateAction<A1GameStatus | undefined>>,
     teamStatus: ParticipationStatus,
     setTeamStatus: Dispatch<SetStateAction<ParticipationStatus>>,
-    resizeTrigger: Dispatch<SetStateAction<number>>,
     setPageSwitching: Dispatch<SetStateAction<boolean>>,
     challenges: Record<string, UserSimpleGameChallenge[]>,
     setChallenges: Dispatch<SetStateAction<Record<string, UserSimpleGameChallenge[]>>>,
     challengeSolveStatusList: Record<string, ChallengeSolveStatus>,
     setChallengeSolveStatusList: Dispatch<SetStateAction<Record<string, ChallengeSolveStatus>>>,
     loadingVisible: boolean,
-    gameInfo: UserFullGameInfo | undefined
 }) {
 
     const { theme } = useTheme()
@@ -268,9 +261,7 @@ export function CategorySidebar({
                 setIsOpen={setAddChallengeOpen}
                 setChallengeSolveStatusList={setChallengeSolveStatusList}
             />
-            <Sidebar className="hide-scrollbar select-none transition-all duration-200 ml-16" onTransitionEnd={() => {
-                resizeTrigger(Math.floor(Math.random() * 1000000))
-            }} >
+            <Sidebar className="hide-scrollbar select-none transition-all duration-200 ml-16">
                 <SidebarContent>
                     {isAdmin() && (
                         <div className="absolute bottom-5 right-5 z-10 flex flex-col gap-4">

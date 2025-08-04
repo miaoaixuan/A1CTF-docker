@@ -51,6 +51,8 @@ func AdminListChallenges(c *gin.Context) {
 		query = query.Where("category = ?", payload.Category)
 	}
 
+	query = query.Order("challenge_id ASC")
+
 	if err := query.Find(&challenges).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,

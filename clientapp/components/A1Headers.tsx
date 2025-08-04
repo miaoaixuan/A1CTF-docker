@@ -36,7 +36,6 @@ const PageHeader = () => {
 
     const curPath = useLocation().pathname;
 
-    const [cookies, setCookie, removeCookie] = useCookies(["a1token"])
     const { curProfile, updateProfile, checkLoginStatus, unsetLoginStatus } = useGlobalVariableContext()
 
     let path = useLocation().pathname.split("/")[1];
@@ -50,6 +49,11 @@ const PageHeader = () => {
     const navigate = useNavigate();
 
     const { clientConfig, getSystemLogo } = useGlobalVariableContext()
+
+    const handleLoginOut = () => {
+        unsetLoginStatus()
+        toast.success(t("login_out_success"))
+    }
 
     return (
         <div className="sticky top-0 select-none z-1">
@@ -118,19 +122,12 @@ const PageHeader = () => {
                                             )}
                                         </Avatar>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="mt-2">
+                                    <DropdownMenuContent className="mt-2 mr-4">
                                         <DropdownMenuItem onClick={() => navigate(`/profile/basic`)}>
                                             <Settings />
                                             <span>{t("settings")}</span>
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => {
-                                            unsetLoginStatus()
-                                            removeCookie("a1token")
-                                            updateProfile(() => {
-                                                navigate(`/`)
-                                                toast.success(t("login_out_success"))
-                                            })
-                                        }}>
+                                        <DropdownMenuItem onClick={handleLoginOut}>
                                             <UserRoundMinus />
                                             <span>{t("login_out")}</span>
                                         </DropdownMenuItem>
@@ -232,11 +229,7 @@ const PageHeader = () => {
                                                         <Settings />
                                                         <span>{t("settings")}</span>
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => {
-                                                        unsetLoginStatus()
-                                                        removeCookie("a1token")
-                                                        toast.success(t("login_out_success"))
-                                                    }}>
+                                                    <DropdownMenuItem onClick={handleLoginOut}>
                                                         <UserRoundMinus />
                                                         <span>{t("login_out")}</span>
                                                     </DropdownMenuItem>

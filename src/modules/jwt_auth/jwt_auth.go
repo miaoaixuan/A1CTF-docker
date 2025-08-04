@@ -187,7 +187,6 @@ var PermissionMap = map[string]PermissionSetting{
 	"/api/file/upload":            {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
 	"/api/file/download/:file_id": {RequestMethod: []string{"GET"}, Permissions: []models.UserRole{}},
 	"/api/user/avatar/upload":     {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
-	"/api/team/avatar/upload":     {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
 
 	// 战队管理相关权限
 	"/api/game/:game_id/team/join":                       {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
@@ -196,6 +195,7 @@ var PermissionMap = map[string]PermissionSetting{
 	"/api/game/:game_id/team/:team_id/transfer-captain":  {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
 	"/api/game/:game_id/team/:team_id/member/:user_id":   {RequestMethod: []string{"DELETE"}, Permissions: []models.UserRole{}},
 	"/api/game/:game_id/team/:team_id":                   {RequestMethod: []string{"DELETE", "PUT"}, Permissions: []models.UserRole{}},
+	"/api/game/:game_id/team/avatar/upload":              {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{}},
 
 	"/api/admin/challenge/list":          {RequestMethod: []string{"GET", "POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
 	"/api/admin/challenge/create":        {RequestMethod: []string{"POST"}, Permissions: []models.UserRole{models.UserRoleAdmin}},
@@ -340,28 +340,10 @@ func authorizator() func(data interface{}, c *gin.Context) bool {
 					return false
 				}
 
-				var all_users map[string]models.User = make(map[string]models.User)
-
-				obj, err := ristretto_tool.GetOrCacheSingleFlight("jwt_version_map", func() (interface{}, error) {
-
-					var tmpAllUsers map[string]models.User = make(map[string]models.User)
-					var tmpUser []models.User
-					if err := dbtool.DB().Find(&tmpUser).Error; err != nil {
-						return nil, err
-					}
-
-					for _, user := range tmpUser {
-						tmpAllUsers[user.UserID] = user
-					}
-
-					return tmpAllUsers, nil
-				}, 1*time.Second, true)
-
+				all_users, err := ristretto_tool.CachedMemberMap()
 				if err != nil {
 					return false
 				}
-
-				all_users = obj.(map[string]models.User)
 
 				finalUser, ok := all_users[v.UserID]
 				if !ok {

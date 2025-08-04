@@ -32,6 +32,8 @@ func AdminListTeams(c *gin.Context) {
 		query = query.Where("team_name LIKE ? OR team_slogan LIKE ?", searchPattern, searchPattern)
 	}
 
+	query = query.Order("team_id ASC")
+
 	var teams []models.Team
 	if err := query.Offset(payload.Offset).Limit(payload.Size).Find(&teams).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{

@@ -162,37 +162,19 @@ export const MailSettings = (
                 )}
             />
 
-            <FormField
-                control={form.control}
-                name="emailTemplate"
-                render={({ field }) => (
-                    <FormItem>
-                        <div className="flex items-center h-[20px]">
-                            <FormLabel>邮件模板</FormLabel>
-                            <div className="flex-1" />
-                            <FormMessage className="text-[14px]" />
-                        </div>
-                        <FormControl>
-                            <ThemedEditor
-                                value={field.value}
-                                onChange={field.onChange}
-                                language="html"
-                                className='h-[500px]'
-                            />
-                        </FormControl>
-                        <FormDescription>可以在这里输入你的邮件模板, 关键数据的模板名称请参考文档</FormDescription>
-                    </FormItem>
-                )}
-            />
-
             <div className="flex flex-col gap-2 mt-1">
                 <FormLabel>邮件测试</FormLabel>
                 <div className="flex gap-4 mt-1">
                     <Input value={smtpTestTarget} onChange={(val) => setSmtpTestTarget(val.target.value)} />
                     <Button
                         onClick={() => {
+                            if (!smtpTestTarget) {
+                                toast.error("请输入测试邮箱")
+                                return
+                            }
                             api.system.sendSmtpTestMail({
-                                to: smtpTestTarget
+                                to: smtpTestTarget,
+                                type: "test"
                             }, createSkipGlobalErrorConfig()).then((res) => {
                                 toast.success("测试邮件已发送")
                             }).catch((err) => {

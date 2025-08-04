@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -25,8 +24,7 @@ import (
 )
 
 func UploadFile(c *gin.Context) {
-	claims := jwt.ExtractClaims(c)
-	userID := claims["UserID"].(string)
+	user := c.MustGet("user").(models.User)
 
 	// 从表单中获取文件
 	file, err := c.FormFile("file")
@@ -87,7 +85,7 @@ func UploadFile(c *gin.Context) {
 		FilePath:   savedPath,
 		FileSize:   file.Size,
 		FileType:   file.Header.Get("Content-Type"),
-		UserID:     userID,
+		UserID:     user.UserID,
 		UploadTime: time.Now().UTC(),
 	}
 

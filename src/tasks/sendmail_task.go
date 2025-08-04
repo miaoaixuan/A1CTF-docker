@@ -32,6 +32,7 @@ type SendMailTaskPayload struct {
 	MailSendType          MailTaskType
 	EmailVerificationData *EmailVerificationData
 	SendTestMailTo        *string
+	TestMailType          *string
 }
 
 func NewEmailVerificationTask(user models.User) error {
@@ -54,10 +55,11 @@ func NewEmailVerificationTask(user models.User) error {
 	return err
 }
 
-func NewSendTestMailTask(to string) error {
+func NewSendTestMailTask(to string, mailType string) error {
 	payload, err := msgpack.Marshal(SendMailTaskPayload{
 		MailSendType:   MailTaskTypeSendTestMail,
 		SendTestMailTo: &to,
+		TestMailType:   &mailType,
 	})
 
 	if err != nil {
@@ -97,9 +99,13 @@ func HandleSendMailTask(ctx context.Context, t *asynq.Task) error {
 			return fmt.Errorf("generate mail token failed: %v: %w", err, asynq.SkipRetry)
 		}
 		m.SetAddressHeader("To", *receiver.Email, receiver.Username)
-		m.SetHeader("Subject", "这是你的邮箱验证码")
 
-		mailTeamplate := clientconfig.ClientConfig.EmailTemplate
+		emailHeader := clientconfig.ClientConfig.VerifyEmailHeader
+		emailHeader = strings.ReplaceAll(emailHeader, "{username}", receiver.Username)
+
+		m.SetHeader("Subject", emailHeader)
+
+		mailTeamplate := clientconfig.ClientConfig.VerifyEmailTemplate
 
 		verification_url := fmt.Sprintf("%s/email-verify?code=%s", viper.GetString("system.baseURL"), token)
 
@@ -109,8 +115,18 @@ func HandleSendMailTask(ctx context.Context, t *asynq.Task) error {
 		m.SetBody("text/html", mailTeamplate)
 	case MailTaskTypeSendTestMail:
 		m.SetAddressHeader("To", *p.SendTestMailTo, "EMMMMMMMMM")
-		m.SetHeader("Subject", "这是一封测试邮件")
-		m.SetBody("text/html", "这是一封测试邮件")
+
+		switch *p.TestMailType {
+		case "verify":
+			m.SetHeader("Subject", clientconfig.ClientConfig.VerifyEmailHeader)
+			m.SetBody("text/html", clientconfig.ClientConfig.VerifyEmailTemplate)
+		case "forget":
+			m.SetHeader("Subject", clientconfig.ClientConfig.ForgetPasswordHeader)
+			m.SetBody("text/html", clientconfig.ClientConfig.ForgetPasswordTemplate)
+		default:
+			m.SetHeader("Subject", "这是一封测试邮件")
+			m.SetBody("text/html", "这是一封测试邮件")
+		}
 	}
 
 	d := mail.NewDialer(clientconfig.ClientConfig.SmtpHost, clientconfig.ClientConfig.SmtpPort, clientconfig.ClientConfig.SmtpUsername, clientconfig.ClientConfig.SmtpPassword)

@@ -1,11 +1,11 @@
 package controllers
 
 import (
-	"log"
+	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
-	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -18,15 +18,14 @@ import (
 	dbtool "a1ctf/src/utils/db_tool"
 	general "a1ctf/src/utils/general"
 	i18ntool "a1ctf/src/utils/i18n_tool"
+	redistool "a1ctf/src/utils/redis_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/webmodels"
 )
 
 // GetProfile 获取用户的基本资料信息
 func GetProfile(c *gin.Context) {
-	// 从JWT中提取用户信息
-	claims := jwt.ExtractClaims(c)
-	userID := claims["UserID"].(string)
+	user := c.MustGet("user").(models.User)
 
 	userMap, err := ristretto_tool.CachedMemberMap()
 	if err != nil {
@@ -37,7 +36,7 @@ func GetProfile(c *gin.Context) {
 		return
 	}
 
-	user, ok := userMap[userID]
+	user, ok := userMap[user.UserID]
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":    404,
@@ -123,6 +122,9 @@ func Register(c *gin.Context) {
 	newSalt := general.GenerateSalt()
 	saltedPassword := general.SaltPassword(payload.Password, newSalt)
 
+	// avoid attack
+	loweredEmail := strings.ToLower(payload.Email)
+
 	newUser := models.User{
 		UserID:        uuid.New().String(),
 		Username:      payload.Username,
@@ -136,7 +138,7 @@ func Register(c *gin.Context) {
 		Slogan:        nil,
 		Avatar:        nil,
 		SsoData:       nil,
-		Email:         &payload.Email,
+		Email:         &loweredEmail,
 		EmailVerified: false,
 		JWTVersion:    general.RandomString(16),
 		RegisterTime:  time.Now().UTC(),
@@ -293,6 +295,9 @@ func UpdateUserEmail(c *gin.Context) {
 
 	user := c.MustGet("user").(models.User)
 
+	// avoid attack
+	payload.NewEmail = strings.ToLower(payload.NewEmail)
+
 	if *user.Email == payload.NewEmail {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -305,7 +310,7 @@ func UpdateUserEmail(c *gin.Context) {
 		Email:         &payload.NewEmail,
 		EmailVerified: false,
 	}).Error; err != nil {
-		log.Printf("UpdateUserEmail error: %v", err)
+		// 一般是邮箱地址重名了
 		if dbtool.IsDuplicateKeyError(err) {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"code":    400,
@@ -332,6 +337,18 @@ func SendVerifyEmail(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
 			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "EmailAlreadyVerified"}),
+		})
+		return
+	}
+
+	operationName := fmt.Sprintf("%s:sendMail", user.UserID)
+	operationName2 := fmt.Sprintf("verificationMailSentTo:%s", *user.Email)
+	locked := redistool.LockForATime(operationName, time.Minute*1) && redistool.LockForATime(operationName2, time.Minute*1)
+
+	if !locked {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SendEmailTooFast"}),
 		})
 		return
 	}

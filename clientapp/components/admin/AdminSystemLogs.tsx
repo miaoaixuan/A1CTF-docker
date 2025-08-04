@@ -117,16 +117,16 @@ export function AdminSystemLogs() {
             size: pageSize,
         };
 
-        if (debouncedSearchKeyword) {
+        if (debouncedSearchKeyword != "") {
             params.keyword = debouncedSearchKeyword;
         }
-        if (categoryFilter) {
+        if (categoryFilter != "") {
             params.category = categoryFilter;
         }
-        if (statusFilter) {
+        if (statusFilter != "") {
             params.status = statusFilter;
         }
-        if (actionFilter) {
+        if (actionFilter != "") {
             params.action = actionFilter;
         }
 
@@ -235,7 +235,15 @@ export function AdminSystemLogs() {
             header: "操作",
             cell: ({ row }) => (
                 <div className="text-sm">
-                    {t(`${row.getValue("action")}`)}
+                    <span
+                        // data-tooltip-content={row.getValue("action")}
+                        // data-tooltip-placement="top"
+                        // data-tooltip-id="my-tooltip"
+                    >
+                        {/* {t(`${row.getValue("action")}`)} */}
+                        { row.getValue("action") }
+                    </span>
+
                 </div>
             ),
         },
@@ -371,166 +379,176 @@ export function AdminSystemLogs() {
     const { theme } = useTheme()
 
     return (
-        <div className="w-full space-y-6">
-            {/* 统计卡片 */}
-            {stats && (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">总日志数</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{stats.total_logs}</div>
-                            <p className="text-xs text-muted-foreground">最近24小时</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">成功</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-green-600">{stats.success_logs}</div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">失败</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-red-600">{stats.failed_logs}</div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">管理员</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-purple-600">{stats.admin_logs}</div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">用户</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-blue-600">{stats.user_logs}</div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">安全</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-yellow-600">{stats.security_logs}</div>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
+        <MacScrollbar className="w-full h-full" skin={theme == "light" ? "light" : "dark"}>
+            <div className="w-full space-y-6 p-10 mb-10">
+                {/* 统计卡片 */}
+                {stats && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">总日志数</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{stats.total_logs}</div>
+                                <p className="text-xs text-muted-foreground">最近24小时</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">成功</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-green-600">{stats.success_logs}</div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">失败</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-red-600">{stats.failed_logs}</div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">管理员</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-purple-600">{stats.admin_logs}</div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">用户</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-blue-600">{stats.user_logs}</div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">安全</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-yellow-600">{stats.security_logs}</div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
 
-            {/* 筛选和搜索 */}
-            <div className="flex items-center gap-4 flex-wrap">
-                <div className="flex items-center gap-2">
-                    <Search className="h-4 w-4 text-gray-500" />
+                {/* 筛选和搜索 */}
+                <div className="flex items-center gap-4 flex-wrap">
+                    <div className="flex items-center gap-2">
+                        <Search className="h-5 w-5 text-gray-500 flex-none" />
+                        <Input
+                            placeholder="搜索日志..."
+                            value={searchKeyword}
+                            onChange={(event) => setSearchKeyword(event.target.value)}
+                            className="max-w-sm"
+                        />
+                    </div>
+
+                    <Select value={categoryFilter} onValueChange={(value) => {
+                        if (value == "ALL") {
+                            setCategoryFilter("")
+                        } else {
+                            setCategoryFilter(value as LogCategory | "")
+                        }
+                    }}>
+                        <SelectTrigger className="w-32">
+                            <SelectValue placeholder="类别" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">全部类别</SelectItem>
+                            <SelectItem value="ADMIN">管理员</SelectItem>
+                            <SelectItem value="USER">用户</SelectItem>
+                            <SelectItem value="SYSTEM">系统</SelectItem>
+                            <SelectItem value="CONTAINER">容器</SelectItem>
+                            <SelectItem value="JUDGE">判题</SelectItem>
+                            <SelectItem value="SECURITY">安全</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    <Select value={statusFilter} onValueChange={(value) => {
+                        if (value == "ALL") {
+                            setStatusFilter("")
+                        } else {
+                            setStatusFilter(value as LogCategory | "")
+                        }
+                    }}>
+                        <SelectTrigger className="w-32">
+                            <SelectValue placeholder="状态" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">全部状态</SelectItem>
+                            <SelectItem value="SUCCESS">成功</SelectItem>
+                            <SelectItem value="FAILED">失败</SelectItem>
+                            <SelectItem value="WARNING">警告</SelectItem>
+                        </SelectContent>
+                    </Select>
+
                     <Input
-                        placeholder="搜索日志..."
-                        value={searchKeyword}
-                        onChange={(event) => setSearchKeyword(event.target.value)}
+                        placeholder="操作类型..."
+                        value={actionFilter}
+                        onChange={(event) => setActionFilter(event.target.value)}
                         className="max-w-sm"
                     />
+
+                    <Button
+                        variant="outline"
+                        onClick={() => {
+                            setCategoryFilter("");
+                            setStatusFilter("");
+                            setActionFilter("");
+                            setSearchKeyword("");
+                        }}
+                    >
+                        <Filter className="h-4 w-4 mr-2" />
+                        清除筛选
+                    </Button>
+
+                    <Button
+                        variant="outline"
+                        onClick={() => {
+                            fetchLogs();
+                            fetchStats();
+                        }}
+                        disabled={isLoading}
+                    >
+                        <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                        刷新
+                    </Button>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="ml-auto">
+                                列显示 <ChevronDown className="ml-2 h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            {table
+                                .getAllColumns()
+                                .filter((column) => column.getCanHide())
+                                .map((column) => {
+                                    return (
+                                        <DropdownMenuCheckboxItem
+                                            key={column.id}
+                                            className="capitalize"
+                                            checked={column.getIsVisible()}
+                                            onCheckedChange={(value) =>
+                                                column.toggleVisibility(!!value)
+                                            }
+                                        >
+                                            {column.id}
+                                        </DropdownMenuCheckboxItem>
+                                    )
+                                })}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
 
-                <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as LogCategory | "")}>
-                    <SelectTrigger className="w-32">
-                        <SelectValue placeholder="类别" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="ALL">全部类别</SelectItem>
-                        <SelectItem value="ADMIN">管理员</SelectItem>
-                        <SelectItem value="USER">用户</SelectItem>
-                        <SelectItem value="SYSTEM">系统</SelectItem>
-                        <SelectItem value="CONTAINER">容器</SelectItem>
-                        <SelectItem value="JUDGE">判题</SelectItem>
-                        <SelectItem value="SECURITY">安全</SelectItem>
-                    </SelectContent>
-                </Select>
-
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-32">
-                        <SelectValue placeholder="状态" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="ALL">全部状态</SelectItem>
-                        <SelectItem value="SUCCESS">成功</SelectItem>
-                        <SelectItem value="FAILED">失败</SelectItem>
-                        <SelectItem value="WARNING">警告</SelectItem>
-                    </SelectContent>
-                </Select>
-
-                <Input
-                    placeholder="操作类型..."
-                    value={actionFilter}
-                    onChange={(event) => setActionFilter(event.target.value)}
-                    className="max-w-sm"
-                />
-
-                <Button
-                    variant="outline"
-                    onClick={() => {
-                        setCategoryFilter("");
-                        setStatusFilter("");
-                        setActionFilter("");
-                        setSearchKeyword("");
-                    }}
-                >
-                    <Filter className="h-4 w-4 mr-2" />
-                    清除筛选
-                </Button>
-
-                <Button
-                    variant="outline"
-                    onClick={() => {
-                        fetchLogs();
-                        fetchStats();
-                    }}
-                    disabled={isLoading}
-                >
-                    <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                    刷新
-                </Button>
-
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="ml-auto">
-                            列显示 <ChevronDown className="ml-2 h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        {table
-                            .getAllColumns()
-                            .filter((column) => column.getCanHide())
-                            .map((column) => {
-                                return (
-                                    <DropdownMenuCheckboxItem
-                                        key={column.id}
-                                        className="capitalize"
-                                        checked={column.getIsVisible()}
-                                        onCheckedChange={(value) =>
-                                            column.toggleVisibility(!!value)
-                                        }
-                                    >
-                                        {column.id}
-                                    </DropdownMenuCheckboxItem>
-                                )
-                            })}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-
-            {/* 表格 */}
-            <div className="rounded-md border">
-                <MacScrollbar
-                    skin={theme == "light" ? "light" : "dark"}
-                >
+                {/* 表格 */}
+                <div className="rounded-md border">
                     <Table>
                         <TableHeader>
                             {table.getHeaderGroups().map((headerGroup) => (
@@ -589,35 +607,35 @@ export function AdminSystemLogs() {
                             )}
                         </TableBody>
                     </Table>
-                </MacScrollbar>
-            </div>
+                </div>
 
-            {/* 分页 */}
-            <div className="flex items-center justify-between space-x-2 py-4">
-                <div className="text-sm text-muted-foreground">
-                    共 {totalCount} 条记录，第 {curPage + 1} / {Math.ceil(totalCount / pageSize)} 页
-                </div>
-                <div className="flex items-center space-x-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurPage(Math.max(0, curPage - 1))}
-                        disabled={curPage === 0 || isLoading}
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                        上一页
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurPage(curPage + 1)}
-                        disabled={curPage >= Math.ceil(totalCount / pageSize) - 1 || isLoading}
-                    >
-                        下一页
-                        <ArrowRight className="h-4 w-4" />
-                    </Button>
+                {/* 分页 */}
+                <div className="flex items-center justify-between space-x-2 py-4">
+                    <div className="text-sm text-muted-foreground">
+                        共 {totalCount} 条记录，第 {curPage + 1} / {Math.ceil(totalCount / pageSize)} 页
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurPage(Math.max(0, curPage - 1))}
+                            disabled={curPage === 0 || isLoading}
+                        >
+                            <ArrowLeft className="h-4 w-4" />
+                            上一页
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurPage(curPage + 1)}
+                            disabled={curPage >= Math.ceil(totalCount / pageSize) - 1 || isLoading}
+                        >
+                            下一页
+                            <ArrowRight className="h-4 w-4" />
+                        </Button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </MacScrollbar>
     );
 }

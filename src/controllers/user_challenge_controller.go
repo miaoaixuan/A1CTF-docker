@@ -206,18 +206,6 @@ func UserGetGameChallenge(c *gin.Context) {
 			}
 		}
 
-		// var tempPorts models.ExposePorts = make(models.ExposePorts, 0)
-
-		// for _, port := range container.ExposePorts {
-		// 	tempPorts = append(tempPorts, models.ExposePort{
-		// 		PortName: port.Name,
-		// 		Port:     port.Port,
-		// 		IP:       "node1.ctf.a1natas.com",
-		// 	})
-		// }
-
-		// tempConfig["container_ports"] = tempPorts
-
 		result.Containers = append(result.Containers, tempConfig)
 	}
 
@@ -316,7 +304,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 		TeamID:       team.TeamID,
 		JudgeType:    gameChallenge.JudgeConfig.JudgeType,
 		JudgeStatus:  models.JudgeQueueing,
-		SubmiterID:   c.MustGet("user_id").(string),
+		SubmiterID:   user.UserID,
 		JudgeID:      uuid.NewString(),
 		JudgeTime:    time.Now().UTC(),
 		JudgeContent: payload.FlagContent,

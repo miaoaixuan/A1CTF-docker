@@ -45,15 +45,22 @@ type SystemSettings struct {
 	FancyBackGroundIconHeight float64 `json:"fancyBackGroundIconHeight"`
 
 	// SMTP设置
-	SmtpHost      string `json:"smtpHost"`
-	SmtpPort      int    `json:"smtpPort"`
-	SmtpUsername  string `json:"smtpUsername"`
-	SmtpPassword  string `json:"smtpPassword"`
-	SmtpName      string `json:"smtpName"`
-	SmtpPortType  string `json:"smtpPortType"`
-	SmtpFrom      string `json:"smtpFrom"`
-	SmtpEnabled   bool   `json:"smtpEnabled"`
-	EmailTemplate string `json:"emailTemplate"`
+	SmtpHost     string `json:"smtpHost"`
+	SmtpPort     int    `json:"smtpPort"`
+	SmtpUsername string `json:"smtpUsername"`
+	SmtpPassword string `json:"smtpPassword"`
+	SmtpName     string `json:"smtpName"`
+	SmtpPortType string `json:"smtpPortType"`
+	SmtpFrom     string `json:"smtpFrom"`
+	SmtpEnabled  bool   `json:"smtpEnabled"`
+
+	// 邮件验证模板
+	VerifyEmailTemplate string `json:"verifyEmailTemplate"`
+	VerifyEmailHeader   string `json:"verifyEmailHeader"`
+
+	// 找回密码模板
+	ForgetPasswordTemplate string `json:"forgetPasswordTemplate"`
+	ForgetPasswordHeader   string `json:"forgetPasswordHeader"`
 
 	// Proof-of-work 验证码设置
 	CaptchaEnabled bool `json:"captchaEnabled"`
@@ -105,8 +112,16 @@ var DefaultSettings = SystemSettings{
 	SchoolLogo:          "/images/zjnu_logo.png",
 	SchoolSmallIcon:     "/images/zjnu_small_logo.png",
 	SchoolUnionAuthText: "ZJNU Union Authserver",
-	EmailTemplate:       "",
-	BGAnimation:         false,
+
+	// 邮件验证模板
+	VerifyEmailTemplate: "",
+	VerifyEmailHeader:   "",
+
+	// 找回密码模板
+	ForgetPasswordTemplate: "",
+	ForgetPasswordHeader:   "",
+
+	BGAnimation: false,
 
 	CaptchaEnabled: true,
 	AboutUS:        "A1CTF Platform",

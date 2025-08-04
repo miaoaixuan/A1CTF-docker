@@ -40,6 +40,7 @@ RUN mkdir -p /app/data && \
 COPY --from=frontend-builder /app/clientapp/build/client ./clientapp/build/client
 COPY --from=backend-builder /app/app ./
 COPY migrations/ ./migrations/
+COPY i18n/ ./i18n/
 
 RUN chown -R appuser:appgroup /app && \
     chmod +x /app/app

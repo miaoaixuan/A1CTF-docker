@@ -4,7 +4,6 @@ import (
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
 	i18ntool "a1ctf/src/utils/i18n_tool"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -262,8 +261,6 @@ func PathParmsMiddlewareBuilder(mode string) gin.HandlerFunc {
 			props.ExtractTeam.Preloads = preloads
 		}
 	}
-
-	log.Printf("%+v\n", props)
 
 	return PathParmsMiddleware(props)
 }

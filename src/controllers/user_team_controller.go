@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"time"
 
-	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -24,6 +23,7 @@ import (
 func UserCreateGameTeam(c *gin.Context) {
 
 	game := c.MustGet("game").(models.Game)
+	user := c.MustGet("user").(models.User)
 
 	var payload webmodels.UserCreateTeamPayload = webmodels.UserCreateTeamPayload{}
 	if err := c.ShouldBindJSON(&payload); err != nil {
@@ -70,7 +70,7 @@ func UserCreateGameTeam(c *gin.Context) {
 	}
 
 	inviteCode := fmt.Sprintf("%s-%s", payload.Name, uuid.New().String())
-	teamMembers := pq.StringArray{c.MustGet("user_id").(string)}
+	teamMembers := pq.StringArray{user.UserID}
 
 	newTeam := models.Team{
 		TeamID:          0,
@@ -124,8 +124,8 @@ func UserCreateGameTeam(c *gin.Context) {
 
 // TeamJoinRequest 申请加入战队
 func TeamJoinRequest(c *gin.Context) {
-	claims := jwt.ExtractClaims(c)
-	userID := claims["UserID"].(string)
+	user := c.MustGet("user").(models.User)
+	userID := user.UserID
 
 	var payload struct {
 		InviteCode string `json:"invite_code" binding:"required"`
@@ -218,8 +218,8 @@ func TeamJoinRequest(c *gin.Context) {
 
 // GetTeamJoinRequests 获取战队加入申请列表
 func GetTeamJoinRequests(c *gin.Context) {
-	claims := jwt.ExtractClaims(c)
-	userID := claims["UserID"].(string)
+	user := c.MustGet("user").(models.User)
+	userID := user.UserID
 
 	teamIDStr := c.Param("team_id")
 	teamID, err := strconv.ParseInt(teamIDStr, 10, 64)

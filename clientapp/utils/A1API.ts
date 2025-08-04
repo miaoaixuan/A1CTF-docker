@@ -1354,11 +1354,14 @@ export interface SystemSettings {
    * @example false
    */
   smtpEnabled: boolean;
-  /**
-   * 邮件模板
-   * @example ""
-   */
-  emailTemplate?: string;
+  /** 邮箱验证邮件模板 */
+  verifyEmailTemplate?: string;
+  /** 邮箱验证邮件标题 */
+  verEmailHeader?: string;
+  /** 忘记密码邮件模板 */
+  forgetPasswordTemplate?: string;
+  /** 忘记密码邮件标题 */
+  forgetPasswordHeader?: string;
   /**
    * 是否启用验证码
    * @example true
@@ -1495,8 +1498,14 @@ export interface SystemSettingsPartialUpdate {
   smtpFrom?: string;
   /** 是否启用SMTP */
   smtpEnabled?: boolean;
-  /** 邮件模板 */
-  emailTemplate?: string;
+  /** 邮箱验证邮件模板 */
+  verifyEmailTemplate?: string;
+  /** 邮箱验证邮件标题 */
+  verEmailHeader?: string;
+  /** 忘记密码邮件模板 */
+  forgetPasswordTemplate?: string;
+  /** 忘记密码邮件标题 */
+  forgetPasswordHeader?: string;
   /** 是否启用验证码 */
   captchaEnabled?: boolean;
   /** 比赛模式对应的比赛ID */
@@ -3660,6 +3669,8 @@ export class Api<
       data: {
         /** 接收邮件的邮箱地址 */
         to: string;
+        /** 接收邮件的邮箱地址 */
+        type: "forget" | "verify" | "test";
       },
       params: RequestParams = {},
     ) =>

@@ -98,7 +98,7 @@ export function RegisterForm({
     }
 
     return (
-        <div className='w-full select-none overflow-hidden'>
+        <div className='w-full select-none overflow-hidden px-5'>
             <div className="flex flex-col items-center gap-2 text-center mb-10">
                 <h1 className="text-2xl font-bold">{t("signup_title")}</h1>
                 <p className="text-balance text-sm text-muted-foreground">
@@ -188,7 +188,9 @@ export function RegisterForm({
                         />
                     ) : <></>}
                     <div className='h-0' />
-                    <Button type="submit" className="transition-all duration-300 w-full" disabled={loading || (clientConfig.captchaEnabled && token == "")}>{t("signup")}</Button>
+                    <Button type="submit" className="transition-all duration-300 w-full" disabled={loading || (clientConfig.captchaEnabled && token == "")}
+                        onClick={form.handleSubmit(onSubmit)}
+                    >{t("signup")}</Button>
                     <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border transition-[border-color] duration-300">
                         <span className="relative z-10 bg-background px-2 text-muted-foreground transition-all duration-300">
                             {t("or_continue_with")}

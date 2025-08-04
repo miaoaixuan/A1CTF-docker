@@ -2292,8 +2292,12 @@ paths:
                 to:
                   type: string
                   description: 接收邮件的邮箱地址
+                type:
+                  enum: ["forget", "verify", "test"]
+                  description: 接收邮件的邮箱地址
               required:
                 - to
+                - type
   /api/admin/system/upload:
     post:
       tags: [system]
@@ -5660,10 +5664,18 @@ components:
           type: boolean
           description: 是否启用SMTP
           example: false
-        emailTemplate:
+        verifyEmailTemplate:
           type: string
-          description: 邮件模板
-          example: ""
+          description: 邮箱验证邮件模板
+        verEmailHeader:
+          type: string
+          description: 邮箱验证邮件标题
+        forgetPasswordTemplate:
+          type: string
+          description: 忘记密码邮件模板
+        forgetPasswordHeader:
+          type: string
+          description: 忘记密码邮件标题
 
         # 验证码设置
         captchaEnabled:
@@ -5847,9 +5859,19 @@ components:
         smtpEnabled:
           type: boolean
           description: 是否启用SMTP
-        emailTemplate:
+
+        verifyEmailTemplate:
           type: string
-          description: 邮件模板
+          description: 邮箱验证邮件模板
+        verEmailHeader:
+          type: string
+          description: 邮箱验证邮件标题
+        forgetPasswordTemplate:
+          type: string
+          description: 忘记密码邮件模板
+        forgetPasswordHeader:
+          type: string
+          description: 忘记密码邮件标题
 
         # 验证码设置
         captchaEnabled:

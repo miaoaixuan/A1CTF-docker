@@ -14,6 +14,7 @@ services:
       - ./k8sconfig.yaml:/app/k8sconfig.yaml:ro
     depends_on:
       - postgres
+      - redis
     restart: unless-stopped
     networks:
       - a1ctf-network
