@@ -50,7 +50,7 @@ A1CTF is a modern CTF (Capture The Flag) competition platform, supporting large-
 - Redis 7+
 - Kubernetes (可选 / Optional)
 
-### 🔧 安装步骤 / Installation / From prebuild docker image
+### 🔧 安装步骤 / Installation / From prebuilt docker image
 
 1. **拉取镜像 / Pull the image**
    ```bash
