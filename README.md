@@ -50,7 +50,74 @@ A1CTF is a modern CTF (Capture The Flag) competition platform, supporting large-
 - Redis 7+
 - Kubernetes (可选 / Optional)
 
-### 🔧 安装步骤 / Installation
+### 🔧 安装步骤 / Installation / From prebuild docker image
+
+1. **拉取镜像 / Pull the image**
+   ```bash
+   docker pull crpi-mw55fu1cvsu0r2z1.cn-shanghai.personal.cr.aliyuncs.com/carbofish/a1ctf:latest
+   # docker pull ghcr.io/carbofish/a1ctf/a1ctf:latest
+   ```
+
+2. **配置环境 / Configure Environment**
+   ```bash
+   cp config.example.yaml config.yaml
+   # 编辑 config.yaml 文件，配置数据库和其他服务
+   # Edit config.yaml to configure database and other services
+   ```
+
+3. **使用 Docker Compose 启动 🌟 / Start with Docker Compose**
+   ```yaml
+   version: '3.8'
+   
+   services:
+     app:
+       build: .
+       image: crpi-mw55fu1cvsu0r2z1.cn-shanghai.personal.cr.aliyuncs.com/carbofish/a1ctf:latest
+       ports:
+         - "8081:7777"
+       environment:
+         - GIN_MODE=release
+       volumes:
+         - ./appdata:/app/data
+         - ./config.yaml:/app/config.yaml:ro
+         - ./k8sconfig.yaml:/app/k8sconfig.yaml:ro
+       depends_on:
+         - postgres
+         - redis
+       restart: unless-stopped
+       networks:
+         - a1ctf-network
+   
+     postgres:
+       image: postgres:17-alpine
+       environment:
+         POSTGRES_DB: a1ctf
+         POSTGRES_USER: postgres
+         POSTGRES_PASSWORD: postgres
+       volumes:
+         - ./postgres_data:/var/lib/postgresql/data
+       ports:
+         - "5433:5432"
+       restart: unless-stopped
+       networks:
+         - a1ctf-network
+   
+     redis:
+       image: redis:alpine
+       restart: unless-stopped
+       networks:
+         - a1ctf-network
+   
+   networks:
+     a1ctf-network:
+       driver: bridge 
+   ```
+   
+   ```bash
+   docker compose up -d
+   ```
+
+### 🔧 安装步骤 / Installation / From source code
 
 1. **克隆项目 / Clone Repository**
    ```bash
@@ -67,7 +134,7 @@ A1CTF is a modern CTF (Capture The Flag) competition platform, supporting large-
 
 3. **使用 Docker Compose 启动 / Start with Docker Compose**
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 4. **或者手动启动 / Or Start Manually**
