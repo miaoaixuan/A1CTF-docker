@@ -145,6 +145,8 @@ func UpdateLivingContainers() {
 
 		container := findExistContainer(containers, teamHash, inGameIDInt)
 		if container == nil {
+			// zaphelper.Logger.Info("Stopping container that not found in database", zap.Any("container", container))
+			// k8stool.ForceDeletePod(pod.Name)
 			continue
 		}
 
@@ -171,11 +173,12 @@ func UpdateLivingContainers() {
 				getContainerPorts(podInfo, container)
 			}
 
-			if time.Now().UTC().After(container.ExpireTime) {
-				// 如果远程服务器Pod已经是Running状态，并且已经超时，就删除Pod并且更新数据库
-				zaphelper.Logger.Info("Stopping container for life over", zap.Any("container", container))
-				tasks.NewContainerStopTask(*container)
-			}
+			// 下面会处理
+			// if time.Now().UTC().After(container.ExpireTime) {
+			// 	// 如果远程服务器Pod已经是Running状态，并且已经超时，就删除Pod并且更新数据库
+			// 	zaphelper.Logger.Info("Stopping container for life over", zap.Any("container", container))
+			// 	tasks.NewContainerStopTask(*container)
+			// }
 
 			if container.ContainerStatus == models.ContainerStopped {
 				zaphelper.Logger.Info("Stopping deaded container", zap.Any("container", container))
@@ -210,7 +213,7 @@ func UpdateLivingContainers() {
 			tasks.NewContainerStopTask(container)
 		}
 
-		// 到期容器处理，这种情况一般是远程容器已经不存在，但是本地还有记录
+		// 到期容器处理
 		if time.Now().UTC().After(container.ExpireTime) &&
 			container.ContainerStatus != models.ContainerStopping {
 			zaphelper.Logger.Info("Deleting expired container", zap.Any("container", container))

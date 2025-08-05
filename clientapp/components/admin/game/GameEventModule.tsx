@@ -22,6 +22,8 @@ import {
     SelectValue,
 } from "components/ui/select"
 import copy from "copy-to-clipboard"
+import { Switch } from "components/ui/switch"
+import { Label } from "components/ui/label"
 
 export function GameEventModule(
     { GgameID = undefined, GchallengeID = undefined }: {
@@ -104,6 +106,7 @@ export function GameEventModule(
     const [judgeStatuses, setJudgeStatuses] = useState<JudgeStatus[]>([])
     const statusOptions: JudgeStatus[] = ["JudgeAC", "JudgeWA"]
 
+    const [recordAutoUpdate, setRecordAutoUpdate] = useState<boolean>(true)
 
     // cheats filter state
     const [cheatsChallengeNames, setCheatsChallengeNames] = useState<string[]>([])
@@ -195,11 +198,11 @@ export function GameEventModule(
             setChallengeIds(prev => prev.includes(GchallengeID) ? prev : [...prev, GchallengeID])
             setCheatsChallengeIds(prev => prev.includes(GchallengeID) ? prev : [...prev, GchallengeID])
         }
-    }, [])
+    }, [GchallengeID])
 
     useEffect(() => {
         // 初次加载
-        if (gameId) {
+        if (gameId && GgameID == undefined && GchallengeID == undefined) {
             loadSubmissions(1)
             loadCheats()
         }
@@ -248,8 +251,22 @@ export function GameEventModule(
     // 当过滤或分页改变时加载
     useEffect(() => {
         loadSubmissions(currentPage)
+        loadCheats()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentPage, challengeNames, teamNames, judgeStatuses, startTime, endTime, teamIds, challengeIds])
+
+    useEffect(() => {
+        let updateInter: NodeJS.Timeout | undefined = undefined
+        if (recordAutoUpdate) {
+            updateInter = setInterval(() => {
+                loadSubmissions(currentPage)
+                loadCheats()
+            }, 4000)
+        }
+        return () => {
+            if (updateInter) clearInterval(updateInter)
+        }
+    }, [recordAutoUpdate, currentPage, challengeNames, teamNames, judgeStatuses, startTime, endTime, teamIds, challengeIds, cheatsCurrentPage, cheatsChallengeNames, cheatsTeamNames, cheatsChallengeIds, cheatsTeamIds, cheatTypes, cheatsStartTime, cheatsEndTime])
 
     return (
         <div className="flex flex-col gap-4">
@@ -326,6 +343,11 @@ export function GameEventModule(
                             onClick={() => { if (!loading) { setCurrentPage(1); loadSubmissions(1) } }}
                         />
                         <span className="text-muted-foreground text-sm select-none">共 {total} 条提交</span>
+                        <div className="flex-1" />
+                        <div className="flex items-center space-x-2">
+                            <Switch defaultChecked={recordAutoUpdate} onCheckedChange={setRecordAutoUpdate} />
+                            <Label>Auto Update</Label>
+                        </div>
                     </div>
 
                     {submissions.length === 0 && !loading ? (
