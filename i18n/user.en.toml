@@ -181,8 +181,8 @@ description = "Flag haven't been created yet, please wait"
 other = "Flag haven't been created yet, please wait"
 
 [LaunchContainerFirst]
-description = "Launch a container first"
-other = "Launch a container first"
+description = "Container does't exists or failed to launch, please contact the administrator"
+other = "Container does't exists or failed to launch, please contact the administrator"
 
 # User Controller Error Messages
 

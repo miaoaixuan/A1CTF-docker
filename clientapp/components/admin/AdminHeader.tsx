@@ -27,6 +27,7 @@ export function AdminHeader() {
                         alt={"A1CTF"}
                         width={32}
                         height={32}
+                        className="dark:invert"
                     />
                     <span className="text-lg font-bold">A1CTF Admin</span>
                 </div>

@@ -6,18 +6,14 @@ import { GameScoreboardData, ParticipationStatus, UserFullGameInfo } from "utils
 import { CreateTeamDialog } from "components/dialogs/CreateTeamDialog";
 import { JoinTeamDialog } from "components/dialogs/JoinTeamDialog";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
+import { useGame } from "hooks/UseGame";
 
 export default function GameTeamStatusCard(
-    {
-        gameInfo,
-        scoreBoardModel,
-        teamStatus
-    }: {
-        gameInfo: UserFullGameInfo | undefined,
-        scoreBoardModel: GameScoreboardData | undefined,
-        teamStatus: ParticipationStatus
-    }
+    { gameID } : { gameID: number }
 ) {
+
+    const { gameInfo, teamStatus, isLoading } = useGame(gameID)
+
     const teamStatusElement = {
         "Pending": (
             <div className="flex flex-col gap-2 items-center backdrop-blur-sm rounded-2xl border-1 border-green-400 py-3 px-6 select-none">
@@ -99,6 +95,8 @@ export default function GameTeamStatusCard(
         )
     }
 
+    if (isLoading) return <></>
+
     return (
         <div className="flex px-5 py-2 flex-col gap-2 backdrop-blur-sm rounded-2xl select-none border-1 shadow-xl">
             <div className="flex gap-2 items-center">
@@ -108,11 +106,11 @@ export default function GameTeamStatusCard(
             <div className="flex gap-4">
                 <div className="flex gap-2 items-center">
                     <Flag className="size-5" />
-                    <span>{scoreBoardModel != undefined ? (scoreBoardModel?.your_team?.score) : (gameInfo?.team_info?.team_score ?? 0)} pts</span>
+                    <span>{gameInfo?.team_info?.team_score ?? 0} pts</span>
                 </div>
-                <div className={`flex gap-2 items-center transition-colors duration-300 ${rankColor(scoreBoardModel != undefined ? (scoreBoardModel?.your_team?.rank ?? 0) : (gameInfo?.team_info?.rank ?? 0))}`}>
+                <div className={`flex gap-2 items-center transition-colors duration-300 ${rankColor(gameInfo?.team_info?.rank ?? 0)}`}>
                     <ChartNoAxesCombined className="size-5" />
-                    <span>Rank {scoreBoardModel != undefined ? (scoreBoardModel?.your_team?.rank ?? 0) : (gameInfo?.team_info?.rank ?? 0)}</span>
+                    <span>Rank {gameInfo?.team_info?.rank ?? 0}</span>
                 </div>
             </div>
         </div>

@@ -78,7 +78,7 @@ export function ChallengesManageView() {
                     
                     <Button 
                         onClick={() => router(`/admin/challenges/create`)}
-                        className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200"
+                        variant="outline"
                     >
                         <CirclePlus className="h-4 w-4" />
                         添加题目

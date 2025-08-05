@@ -51,19 +51,16 @@ import { useLocation, useNavigate } from 'react-router';
 import { UploadImageDialog } from 'components/dialogs/UploadImageDialog';
 import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
 import AlertConformer from 'components/modules/AlertConformer';
+import { useGame } from 'hooks/UseGame';
 
-interface MyTeamInfomationViewProps {
-    gameid: number;
-    gameInfo: UserFullGameInfo | undefined,
-    gameStatus: string;
-}
 
-const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
-    gameid,
-    gameInfo,
-    gameStatus
+const MyTeamInfomationView = ({
+    gameID,
+} : {
+    gameID: number;
 }) => {
 
+    const { gameInfo, gameStatus, isLoading } = useGame(gameID)
     const { t } = useTranslation();
     const { theme } = useTheme();
 
@@ -93,7 +90,7 @@ const MyTeamInfomationView: React.FC<MyTeamInfomationViewProps> = ({
             return
         }
 
-        api.user.userGetGameScoreboard(gameid)
+        api.user.userGetGameScoreboard(gameID)
             .then((response) => {
                 setScoreBoardData(response.data.data);
 

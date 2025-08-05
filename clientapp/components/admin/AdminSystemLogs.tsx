@@ -265,7 +265,7 @@ export function AdminSystemLogs() {
             accessorKey: "ip_address",
             header: "IP地址",
             cell: ({ row }) => (
-                <div className="font-mono text-sm text-gray-600">
+                <div className="font-mono text-sm text-muted-foreground">
                     {row.getValue("ip_address") || "-"}
                 </div>
             ),
@@ -285,7 +285,7 @@ export function AdminSystemLogs() {
                 )
             },
             cell: ({ row }) => (
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                     {new Date(row.getValue("create_time")).toLocaleString('zh-CN')}
                 </div>
             ),
@@ -350,6 +350,14 @@ export function AdminSystemLogs() {
                                 </DropdownMenuItem>
                             )}
                             {log.resource_type == "CONTAINER" && containerOperations}
+                            <DropdownMenuItem
+                                onClick={() => {
+                                    navigator.clipboard.writeText(JSON.stringify(log));
+                                    toast.success('原始数据已复制到剪切板');
+                                }}
+                            >
+                                复制Raw
+                            </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 );

@@ -1,28 +1,22 @@
-import { ChartArea, CircleArrowLeft, LogOut, X, Download, Calculator, Gift, Ban, AlertTriangle } from 'lucide-react'
+import { ChartArea, Download } from 'lucide-react'
 
-import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
 
-import React, { Dispatch, SetStateAction, useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import dayjs from 'dayjs';
-import ThemeSwitcher from 'components/ToggleTheme';
 import { useTheme } from 'next-themes';
 import { ScoreTable } from 'components/ScoreTable';
 import * as XLSX from 'xlsx-js-style';
 
 import { Tooltip } from 'react-tooltip';
-import { AnimatePresence, motion } from 'framer-motion';
 import { Button } from 'components/ui/button';
 
 import { randomInt } from "mathjs";
-import { Avatar, AvatarFallback, AvatarImage } from 'components/ui/avatar';
-import { Skeleton } from 'components/ui/skeleton';
 import { MacScrollbar } from 'mac-scrollbar';
 import BetterChart from 'components/BetterChart';
 
 import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
 import { api } from 'utils/ApiHelper';
-import { GameScoreboardData, TeamScore, TeamTimeline, UserFullGameInfo, UserSimpleGameChallenge, GameGroupSimple, PaginationInfo } from 'utils/A1API';
-import { LoadingPage } from 'components/LoadingPage';
+import { GameScoreboardData, TeamScore, UserFullGameInfo, UserSimpleGameChallenge, GameGroupSimple, PaginationInfo } from 'utils/A1API';
 import { useLocation, useNavigate } from 'react-router';
 import { useIsMobile } from 'hooks/use-mobile';
 import { ScoreTableMobile } from 'components/ScoreTableMobile';

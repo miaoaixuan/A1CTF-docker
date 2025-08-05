@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from 'components/ui/dialog';
 import { Input } from 'components/ui/input';
-import { ArrowLeft, ArrowRight, ArrowUpDown, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUpDown, CirclePlus, Loader2 } from 'lucide-react';
 import { Dispatch, memo, ReactNode, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/ui/table';
 import dayjs from 'dayjs';
@@ -37,9 +37,6 @@ export default function AddChallengeFromLibraryDialog(
     const [rowSelection, setRowSelection] = useState({})
     const [loadingHover, setLoadingHover] = useState(false)
     const lastInputTime = useRef(0)
-
-    const [curPage, setCurPage] = useState(0);
-    const [totalCount, setTotalCount] = useState(0);
 
     const setInputState = (value: string) => {
         setAddChallengeInput(value)
@@ -132,7 +129,7 @@ export default function AddChallengeFromLibraryDialog(
                         type="button"
                         className="select-none"
                         onClick={() => handleAddChallenge(data)}
-                    >Select</Button>
+                    ><CirclePlus />添加</Button>
                 )
             },
         },
@@ -177,27 +174,108 @@ export default function AddChallengeFromLibraryDialog(
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         onRowSelectionChange: setRowSelection,
+        initialState: {
+            pagination: {
+                pageSize: 5,
+            },
+        },
         state: {
             rowSelection,
         },
     })
 
+    const handleBatchAddChallenges = useCallback(async () => {
+        const selectedRows = table.getFilteredSelectedRowModel().rows
+        if (selectedRows.length === 0) {
+            toast.error("请先选择要添加的题目")
+            return
+        }
+
+        setLoadingHover(true)
+        let successCount = 0
+        let failCount = 0
+
+        try {
+            for (const row of selectedRows) {
+                const data = row.original
+                try {
+                    const res = await api.admin.addGameChallenge(data.GameID, data.ChallengeID)
+                    const challenge = res.data.data
+                    const category: string = challenge.category?.toLocaleLowerCase() as string
+                    const newSimpleChallenge: UserSimpleGameChallenge = {
+                        challenge_id: challenge.challenge_id ?? 0,
+                        challenge_name: challenge.challenge_name ?? "",
+                        category: challenge.category || ChallengeCategory.MISC,
+                        total_score: challenge.total_score ?? 0,
+                        cur_score: challenge.cur_score ?? 0,
+                        solve_count: challenge.solve_count || 0,
+                        visible: false,
+                    }
+                    // 插入题目列表
+                    setChallenges((prev) => ({
+                        ...prev,
+                        [category]: [...(prev[category] || []), newSimpleChallenge]
+                    }))
+                    // 插入题目解题状态列表
+                    setChallengeSolveStatusList((prev) => ({
+                        ...prev,
+                        [challenge.challenge_id || 0]: {
+                            solved: false,
+                            solve_count: 0,
+                            cur_score: 0,
+                        }
+                    }))
+                    successCount++
+                } catch (error) {
+                    failCount++
+                }
+            }
+
+            if (successCount > 0) {
+                toast.success(`成功添加 ${successCount} 个题目${failCount > 0 ? `，失败 ${failCount} 个` : ''}`)
+                // 清空选择
+                setRowSelection({})
+            } else {
+                toast.error("批量添加失败")
+            }
+        } finally {
+            setLoadingHover(false)
+        }
+    }, [table, setChallenges, setChallengeSolveStatusList, setRowSelection])
+
+    const performSearch = useCallback((keyword: string) => {
+        setLoadingHover(true)
+        api.admin.searchChallenges({ keyword }).then((res) => {
+            setSearchResult(res.data.data.map((c) => ({
+                "Category": c.category,
+                "ChallengeID": c.challenge_id || 0,
+                "Name": c.name,
+                "GameID": gameID,
+                "CreateTime": c.create_time
+            })))
+            setLoadingHover(false)
+        }).catch(() => {
+            setLoadingHover(false)
+        })
+    }, [gameID])
+
     useEffect(() => {
         if (isOpen) {
-            setLoadingHover(true)
-            api.admin.searchChallenges({ keyword: curKeyWord.current }).then((res) => {
-                setSearchResult(res.data.data.map((c) => ({
-                    "Category": c.category,
-                    "ChallengeID": c.challenge_id || 0,
-                    "Name": c.name,
-                    "GameID": gameID,
-                    "CreateTime": c.create_time
-                })))
-                setTotalCount(res.data.data.length)
-                setLoadingHover(false)
-            })
+            performSearch(curKeyWord.current)
         }
-    }, [isOpen])
+    }, [isOpen, performSearch])
+
+    useEffect(() => {
+        if (!isOpen) return
+        
+        const timeoutId = setTimeout(() => {
+            if (lastInputTime.current > 0 && dayjs().valueOf() - lastInputTime.current >= 500) {
+                performSearch(curKeyWord.current)
+            }
+        }, 500)
+
+        return () => clearTimeout(timeoutId)
+    }, [addChallengeInput, isOpen, performSearch])
 
     return (
         <Dialog open={isOpen} onOpenChange={(status) => {
@@ -211,7 +289,7 @@ export default function AddChallengeFromLibraryDialog(
                     </DialogDescription>
                 </DialogHeader>
                 <Input className="select-none" value={addChallengeInput} onChange={(e) => setInputState(e.target.value)} placeholder="在这里输入题目名字" />
-                <div className="rounded-md border relative h-[300px]">
+                <div className="rounded-md border relative h-[300px] overflow-auto">
                     {loadingHover && (
                         <div className="absolute top-0 left-0 w-full h-full bg-background opacity-95 z-10 flex items-center justify-center">
                             <div className="flex">
@@ -277,28 +355,38 @@ export default function AddChallengeFromLibraryDialog(
                     <div className="flex gap-3 items-center">
                         <Button
                             type="button"
+                            variant="default"
+                            size="sm"
+                            onClick={handleBatchAddChallenges}
+                            disabled={table.getFilteredSelectedRowModel().rows.length === 0 || loadingHover}
+                        >
+                            {loadingHover ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    添加中...
+                                </>
+                            ) : (
+                                `批量添加 (${table.getFilteredSelectedRowModel().rows.length})`
+                            )}
+                        </Button>
+                        <Button
+                            type="button"
                             variant="outline"
                             size="icon"
-                            onClick={() => {
-                                setCurPage(curPage - 1)
-                                table.previousPage()
-                            }}
-                            disabled={curPage == 0}
+                            onClick={() => table.previousPage()}
+                            disabled={!table.getCanPreviousPage()}
                         >
                             <ArrowLeft />
                         </Button>
                         <div className="text-sm text-muted-foreground">
-                            {curPage + 1} / {Math.ceil(totalCount / 5)}
+                            {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
                         </div>
                         <Button
                             type="button"
                             variant="outline"
                             size="icon"
-                            onClick={() => {
-                                setCurPage(curPage + 1)
-                                table.nextPage()
-                            }}
-                            disabled={curPage >= Math.ceil(totalCount / 5) - 1}
+                            onClick={() => table.nextPage()}
+                            disabled={!table.getCanNextPage()}
                         >
                             <ArrowRight />
                         </Button>

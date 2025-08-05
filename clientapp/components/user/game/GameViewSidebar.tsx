@@ -4,6 +4,7 @@ import ToggleTheme from "components/ToggleTheme";
 import { Button } from "components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "components/ui/dropdown-menu";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
+import { useGame } from "hooks/UseGame";
 import { BowArrow, Cctv, DoorOpen, Info, Settings, ShieldCheck, UserRoundMinus, UserSearch, WandSparkles, Wrench } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Dispatch, SetStateAction } from "react";
@@ -17,18 +18,12 @@ export default function GameViewSidebar(
     {
         curChoicedModule,
         gameID,
-        gameInfo,
-        gameStatus,
-        teamStatus,
     }: {
         curChoicedModule: string,
-        gameID: string,
-        gameInfo: UserFullGameInfo | undefined,
-        gameStatus: A1GameStatus,
-        teamStatus: ParticipationStatus,
+        gameID: number,
     }
 ) {
-
+    const { gameInfo, gameStatus, teamStatus } = useGame(gameID)
     const { clientConfig, curProfile, isAdmin, updateProfile, checkLoginStatus, unsetLoginStatus  } = useGlobalVariableContext()
     const [cookies, setCookie, removeCookie] = useCookies(["a1token"])
     const { t } = useTranslation()

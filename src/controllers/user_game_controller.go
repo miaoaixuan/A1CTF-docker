@@ -51,7 +51,6 @@ func UserListGames(c *gin.Context) {
 }
 
 func UserGetGameDetailWithTeamInfo(c *gin.Context) {
-
 	game := c.MustGet("game").(models.Game)
 
 	// 因为这个接口是 Public 的，没法利用 jwt 组件设置的 user 值，只能常识性的从 jwt 里 extract
@@ -93,7 +92,6 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 		"game_id":                game.GameID,
 		"name":                   game.Name,
 		"summary":                game.Summary,
-		"description":            game.Description,
 		"game_icon_light":        game.GameIconLight,
 		"game_icon_dark":         game.GameIconDark,
 		"poster":                 game.Poster,
@@ -173,14 +171,14 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 				return
 			}
 
-			teamSatus, ok := cachedData.FinalScoreBoardMap[curTeam.TeamID]
+			myTeamInfo, ok := cachedData.FinalScoreBoardMap[curTeam.TeamID]
 
 			if !ok {
 				teamInfo["rank"] = 0
 				teamInfo["penalty"] = 0
 			} else {
-				teamInfo["rank"] = teamSatus.Rank
-				teamInfo["penalty"] = teamSatus.Penalty
+				teamInfo["rank"] = myTeamInfo.Rank
+				teamInfo["penalty"] = myTeamInfo.Penalty
 
 				if curTeam.Group != nil {
 					teamInfo["group_name"] = curTeam.Group.GroupName
@@ -195,6 +193,15 @@ func UserGetGameDetailWithTeamInfo(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
 		"data": gameInfo,
+	})
+}
+
+func UserGetGameDescription(c *gin.Context) {
+	game := c.MustGet("game").(models.Game)
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": game.Description,
 	})
 }
 

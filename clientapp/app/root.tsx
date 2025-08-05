@@ -8,7 +8,7 @@ import {
     useLocation,
     useNavigate,
 } from "react-router";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 
 import type { Route } from "./+types/root";
 
@@ -37,6 +37,8 @@ import { isMobile } from "react-device-detect";
 import { useTheme } from "next-themes";
 import { setGlobalNavigate } from "utils/ApiHelper";
 import ClientChecker from "components/modules/ClientChecker";
+
+import { SWRConfig } from 'swr'
 
 export const links: Route.LinksFunction = () => [
     { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -157,29 +159,37 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </head>
             <body>
                 <ClientOnly>
-                    {/* <NextIntlClientProvider messages={messages}> */}
-                    <ThemeProvider
-                        attribute="class"
-                        enableSystem
+                    <SWRConfig
+                        value={{
+                            fetcher: (resource, init) => fetch(resource, init).then(res => res.json()),
+                        }}
                     >
-                        <I18nextProvider i18n={i18n}>
-                            <CookiesProvider>
-                                <GlobalVariableProvider>
-                                    <GameSwitchProvider>
-                                        <CanvasProvider>
-                                            <ThemeAwareLinks />
-                                            <ClientToaster />
-                                            <ClientChecker />
-                                            <div className="bg-background absolute top-0 left-0 w-screen h-screen z-[-1]" />
-                                            {animationPresent && <FancyBackground />}
-                                            <GameSwitchHover animation={true} />
-                                            {screenTooSmall ? children : <ScreenTooSmall />}
-                                        </CanvasProvider>
-                                    </GameSwitchProvider>
-                                </GlobalVariableProvider>
-                            </CookiesProvider>
-                        </I18nextProvider>
-                    </ThemeProvider>
+                        {/* <NextIntlClientProvider messages={messages}> */}
+                        <ThemeProvider
+                            attribute="class"
+                            enableSystem
+                        >
+                            <I18nextProvider i18n={i18n}>
+                                <CookiesProvider>
+                                    <GlobalVariableProvider>
+                                        <GameSwitchProvider>
+                                            <CanvasProvider>
+                                                <ThemeAwareLinks />
+                                                <ClientToaster />
+                                                <ClientChecker />
+                                                <div className="bg-background absolute top-0 left-0 w-screen h-screen z-[-1]" />
+                                                {animationPresent && <FancyBackground />}
+                                                <GameSwitchHover animation={true} />
+                                                {screenTooSmall ? (
+                                                    <Suspense>{ children }</Suspense>
+                                                ) : <ScreenTooSmall />}
+                                            </CanvasProvider>
+                                        </GameSwitchProvider>
+                                    </GlobalVariableProvider>
+                                </CookiesProvider>
+                            </I18nextProvider>
+                        </ThemeProvider>
+                    </SWRConfig>
                 </ClientOnly>
                 {/* </NextIntlClientProvider> */}
                 <ScrollRestoration />

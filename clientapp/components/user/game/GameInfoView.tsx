@@ -3,34 +3,29 @@ import ImageLoader from "components/modules/ImageLoader";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { Captions, LibraryBig, QrCode } from "lucide-react";
 import { MacScrollbar } from "mac-scrollbar";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { ParticipationStatus, UserFullGameInfo } from "utils/A1API";
 import GamePosterInfoModule from "./GamePosterInfoModule";
 import GameTeamStatusCard, { LoginFirstCard } from "components/modules/game/GameTeamStatusCard";
 import { A1GameStatus } from "components/modules/game/GameStatusEnum";
 import { useTheme } from "next-themes";
+import { useGame, useGameDescription } from "hooks/UseGame";
 
 export default function GameInfoView(
     {
-        gameInfo,
-        gameStatus,
-        teamStatus
+        gameID,
     }: {
-        gameInfo: UserFullGameInfo | undefined,
-        gameStatus: A1GameStatus
-        teamStatus: ParticipationStatus
+        gameID: number,
     }
 ) {
-
-    const memoizedGameDescription = useMemo(() => {
-        return gameInfo?.description ? (
-            <Mdx source={gameInfo.description || ""} />
-        ) : null;
-    }, [gameInfo?.description]);
+    const { gameInfo, gameStatus, teamStatus, isLoading } = useGame(gameID)
+    const { gameDescription } = useGameDescription(gameID)
 
     const { clientConfig, checkLoginStatus } = useGlobalVariableContext()
 
     const { theme } = useTheme()
+    
+    if (isLoading) return <></>
 
     return (
         <div className="w-full h-full">
@@ -52,7 +47,9 @@ export default function GameInfoView(
                             <div className="flex-1" />
                             <QrCode />
                         </div>
-                        {gameInfo?.description ? memoizedGameDescription : (
+                        {gameDescription ? (
+                            <Mdx source={gameDescription || ""} />
+                        ) : (
                             <div className="w-full h-[60vh] flex items-center justify-center select-none">
                                 <span className="font-bold text-lg">Emmmmmm</span>
                             </div>
@@ -72,9 +69,7 @@ export default function GameInfoView(
             {checkLoginStatus() ? (
                 <div className="absolute bottom-5 right-7 z-10 flex justify-end flex-col gap-[8px]">
                     <GameTeamStatusCard
-                        gameInfo={gameInfo}
-                        scoreBoardModel={undefined}
-                        teamStatus={teamStatus}
+                        gameID={gameID}
                     />
                 </div>
             ) : (

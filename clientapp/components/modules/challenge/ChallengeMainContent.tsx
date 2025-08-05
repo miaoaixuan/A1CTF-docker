@@ -72,6 +72,10 @@ export default function ChallengeMainContent(
                 // Flag 还未创建成功
                 setContainerLaunching(false)
                 toast.error(errorMessage)
+            } else if (err.response?.status == 429) {
+                // 速率过快
+                setContainerLaunching(false)
+                toast.error(errorMessage) 
             } else if (err.response?.status == 500) {
                  // 系统错误
                 setContainerLaunching(false)
@@ -140,7 +144,7 @@ export default function ChallengeMainContent(
                             ? dayjs(res.data.data.container_expiretime)
                             : null)
 
-                        toast.success(t("container_start_success"))
+                        toast.success("靶机开启成功")
 
                         clearInterval(inter)
                         setRefreshContainerTrigger(false)
@@ -186,10 +190,6 @@ export default function ChallengeMainContent(
             setContainerRunningTrigger(false)
         }
     }, [curChallenge])
-
-    useEffect(() => {
-        console.log(curProfile)
-    }, [curProfile])
 
     return (
         <>

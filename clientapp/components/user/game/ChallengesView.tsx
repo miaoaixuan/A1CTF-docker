@@ -37,6 +37,7 @@ import LoadingModule from "components/modules/LoadingModule";
 import GameTeamStatusCard from "components/modules/game/GameTeamStatusCard";
 import { A1GameStatus } from "components/modules/game/GameStatusEnum";
 import useConditionalState from "hooks/ContidionalState";
+import { useGame, useGameDescription } from "hooks/UseGame";
 
 export interface ChallengeSolveStatus {
     solved: boolean;
@@ -45,22 +46,19 @@ export interface ChallengeSolveStatus {
 }
 
 export function ChallengesView({
-    id,
-    gameInfo,
-    gameStatus,
-    setGameStatus,
-    teamStatus,
-    setTeamStatus,
-    fetchGameInfoWithTeamInfo
+    gameID,
 }: {
-    id: string,
-    gameInfo: UserFullGameInfo | undefined,
-    gameStatus: A1GameStatus,
-    setGameStatus: Dispatch<SetStateAction<A1GameStatus | undefined>>,
-    teamStatus: ParticipationStatus,
-    setTeamStatus: Dispatch<SetStateAction<ParticipationStatus>>,
-    fetchGameInfoWithTeamInfo: () => void
+    gameID: number,
 }) {
+
+    const {
+        gameInfo,
+        gameStatus, 
+        teamStatus, 
+        isLoading: isGameDataLoading 
+    } = useGame(gameID)
+
+    const { gameDescription, isLoading: isGameDescriptionLoading } = useGameDescription(gameID)
 
     const { t } = useTranslation()
 
@@ -93,12 +91,10 @@ export function ChallengesView({
 
     const { theme } = useTheme()
 
-    const { curProfile, isAdmin } = useGlobalVariableContext()
+    const { isAdmin } = useGlobalVariableContext()
 
     const [blood, setBlood] = useState("")
     const [bloodMessage, setBloodMessage] = useState("")
-
-    const gameID = parseInt(id, 10)
 
     const [submitFlagWindowVisible, setSubmitFlagWindowVisible] = useState(false)
     const [showHintsWindowVisible, setShowHintsWindowVisible] = useState(false)
@@ -109,26 +105,6 @@ export function ChallengesView({
     const [searchParams, setSearchParams] = useSearchParams()
 
     const challengeSearched = searchParams.get("id") ? true : false
-
-    const [scoreBoardModel, setScoreBoardModel] = useConditionalState<GameScoreboardData | undefined>(undefined)
-
-    useEffect(() => {
-        const updateScoreBoard = () => {
-            if (gameStatus == "running" || gameStatus == "practiceMode") {
-                api.user.userGetGameScoreboard(gameID).then((res) => {
-                    setScoreBoardModel(res.data.data)
-                })
-            }
-        }
-
-        updateScoreBoard()
-
-        const updateScoreBoardInter = setInterval(updateScoreBoard, randomInt(2000, 4000))
-
-        return () => {
-            if (updateScoreBoardInter) clearInterval(updateScoreBoardInter)
-        }
-    }, [gameID])
 
     const setChallengeSolved = (id: number) => {
         if (isAdmin()) {
@@ -174,13 +150,12 @@ export function ChallengesView({
     }, [curChallenge]);
 
     const finishLoading = () => {
-        // setTimeout(() => setLoadingVisibility(false), 200000)
         setLoadingVisibility(false)
     }
 
     useEffect(() => {
         // 根据比赛状态处理事件
-        if (gameStatus == "running" || gameStatus == "practiceMode" || isAdmin()) {
+        if (gameStatus == A1GameStatus.Running || gameStatus == A1GameStatus.PracticeMode || isAdmin()) {
             const challengeID = searchParams.get("id")
             if (challengeID) {
                 const challengeIDInt = parseInt(challengeID, 10)
@@ -354,7 +329,7 @@ export function ChallengesView({
             }
 
             // 初始连接
-            if ((gameStatus == A1GameStatus.Running || gameStatus == A1GameStatus.PracticeMode) && teamStatus == ParticipationStatus.Approved) {
+            if (teamStatus == ParticipationStatus.Approved) {
                 setWsStatus("disconnected")
                 setTimeout(() => {
                     connectWebSocket()
@@ -377,54 +352,36 @@ export function ChallengesView({
                 }
             }
 
-        } else if (teamStatus == ParticipationStatus.UnRegistered) {
-            // 未注册 先获取队伍信息
-            finishLoading()
-        } else if (teamStatus == ParticipationStatus.Pending) {
-            // 启动一个监听进程
-            const refershTeamStatusInter = setInterval(() => {
-                api.user.userGetGameInfoWithTeamInfo(gameID).then((res) => {
-                    if (res.data.data.team_status == ParticipationStatus.Approved) {
-                        if (dayjs() < dayjs(res.data.data.start_time)) {
-                            // 等待比赛开始
-                            setGameStatus(A1GameStatus.Pending)
-                        } else if (dayjs() < dayjs(res.data.data.end_time)) {
-                            // 比赛进行中
-                            setGameStatus(A1GameStatus.Running)
-                        } else if (dayjs() > dayjs(res.data.data.end_time)) {
-                            setGameStatus(A1GameStatus.Ended)
-                        }
-                        // 结束监听
-                        clearInterval(refershTeamStatusInter)
-                    }
-                })
-            }, 2000)
-
-            finishLoading()
-        } else if (teamStatus == ParticipationStatus.Banned || gameStatus == A1GameStatus.Ended || gameStatus == A1GameStatus.NoSuchGame || teamStatus == ParticipationStatus.UnLogin) {
-            finishLoading()
-        } else if (gameStatus == A1GameStatus.Pending) {
-            finishLoading()
-            return () => {
-                // if (penddingTimeInter) clearInterval(penddingTimeInter)
-            }
         }
     }, [gameStatus])
 
     // 为游戏描述创建 memo 化的 Mdx 组件
     const memoizedGameDescription = useMemo(() => {
-        return gameInfo?.description ? (
+        return gameDescription ? (
             <div className="p-10">
-                <Mdx source={gameInfo.description || ""} />
+                <Mdx source={gameDescription || ""} />
             </div>
         ) : null;
-    }, [gameInfo?.description]); // 只依赖游戏描述
+    }, [gameDescription]); // 只依赖游戏描述
 
     useEffect(() => {
         if (curChallenge?.challenge_id) {
             setSearchParams({ id: curChallenge.challenge_id.toString() })
         }
     }, [curChallenge?.challenge_id])
+
+
+    if (isGameDataLoading || isGameDescriptionLoading) {
+        return <></>
+    }
+
+    if (!([A1GameStatus.Running, A1GameStatus.PracticeMode].includes(gameStatus) || teamStatus == ParticipationStatus.Banned || isAdmin())) {
+        return (
+            <div className="w-full h-full flex items-center justify-center">
+                <span className="text-2xl font-bold">比赛未开始</span>
+            </div>
+        )
+    }
 
     return (
         <>
@@ -441,10 +398,7 @@ export function ChallengesView({
             <ChallengeHintPage curChallenge={curChallenge} visible={showHintsWindowVisible} setVisible={setShowHintsWindowVisible} />
 
             {/* 比赛各种状态页 */}
-            <GameStatusMask
-                gameStatus={gameStatus}
-                teamStatus={teamStatus}
-            />
+            <GameStatusMask gameID={gameID} />
 
             {/* 重定向警告页 */}
             <RedirectNotice redirectURL={redirectURL} setRedirectURL={setRedirectURL} />
@@ -454,7 +408,7 @@ export function ChallengesView({
             {/* 题目侧栏和题目信息 */}
             <SidebarProvider>
                 <CategorySidebar
-                    gameid={id}
+                    gameID={gameID}
                     curChallenge={curChallenge}
                     setCurChallenge={setCurChallenge}
                     curChallengeRef={curChallengeDetail}
@@ -463,17 +417,14 @@ export function ChallengesView({
                     setChallenges={setChallenges}
                     challengeSolveStatusList={challengeSolveStatusList}
                     setChallengeSolveStatusList={setChallengeSolveStatusList}
-                    gameStatus={gameStatus}
-                    teamStatus={teamStatus}
-                    setTeamStatus={setTeamStatus}
                     loadingVisible={loadingVisible}
                 />
                 <div className="w-full h-screen relative">
                     <div className="absolute h-full w-full top-0 left-0">
                         <div className="flex flex-col h-full w-full overflow-hidden relative">
                             <ChallengesViewHeader
+                                gameID={gameID}
                                 wsStatus={wsStatus}
-                                gameStatus={gameStatus} gameInfo={gameInfo}
                                 setNoticeOpened={setNoticeOpened}
                                 notices={notices}
                                 loadingVisible={loadingVisible}
@@ -494,15 +445,11 @@ export function ChallengesView({
                                     ) : (null)}
                                 </AnimatePresence>
                                 <div className="absolute bottom-0 right-0 z-10 pr-7 pb-5">
-                                    <GameTeamStatusCard
-                                        gameInfo={gameInfo}
-                                        scoreBoardModel={scoreBoardModel}
-                                        teamStatus={teamStatus}
-                                    />
+                                    <GameTeamStatusCard gameID={gameID} />
                                 </div>
                                 {!challengeSearched && !loadingVisible ? (
                                     <div className="absolute top-0 left-0 w-full h-full flex flex-col">
-                                        {gameInfo?.description ? (
+                                        {gameDescription ? (
                                             <MacScrollbar
                                                 className="w-full flex flex-col"
                                                 skin={theme === "dark" ? "dark" : "light"}

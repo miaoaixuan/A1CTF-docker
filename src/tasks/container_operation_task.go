@@ -5,7 +5,6 @@ import (
 	dbtool "a1ctf/src/utils/db_tool"
 	"context"
 	"fmt"
-	"log"
 
 	"a1ctf/src/utils/zaphelper"
 
@@ -15,6 +14,11 @@ import (
 
 	k8stool "a1ctf/src/utils/k8s_tool"
 )
+
+type ContainerFailedPayload struct {
+	Container models.Container
+	PodStatus k8stool.PodStatusDecision
+}
 
 func NewContainerStartTask(data models.Container) error {
 	payload, err := msgpack.Marshal(data)
@@ -35,6 +39,20 @@ func NewContainerStopTask(data models.Container) error {
 
 	task := asynq.NewTask(TypeStopContainer, payload)
 	_, err = client.Enqueue(task, asynq.TaskID(fmt.Sprintf("container_stop_for_%d_%d", data.TeamID, data.InGameID)))
+	return err
+}
+
+func NewContainerFailedTask(data models.Container, podStatus k8stool.PodStatusDecision) error {
+	payload, err := msgpack.Marshal(ContainerFailedPayload{
+		Container: data,
+		PodStatus: podStatus,
+	})
+	if err != nil {
+		return err
+	}
+
+	task := asynq.NewTask(TypeContainerFailedOperation, payload)
+	_, err = client.Enqueue(task, asynq.TaskID(fmt.Sprintf("container_failed_for_%d_%d", data.TeamID, data.InGameID)))
 	return err
 }
 
@@ -112,7 +130,6 @@ func HandleContainerStopTask(ctx context.Context, t *asynq.Task) error {
 		AllowDNS: task.Challenge.AllowDNS,
 	}
 
-	log.Printf("data %+v\n", podInfo)
 	err := k8stool.DeletePod(&podInfo)
 	if err != nil {
 		LogContainerOperation(nil, nil, models.ActionContainerStopping, task.ContainerID, map[string]interface{}{
@@ -142,6 +159,62 @@ func HandleContainerStopTask(ctx context.Context, t *asynq.Task) error {
 		"pod_name":     podInfo.Name,
 		"container_id": task.ContainerID,
 	}, nil)
+
+	return nil
+}
+
+func HandleContainerFailedTask(ctx context.Context, t *asynq.Task) error {
+	var payload ContainerFailedPayload
+	if err := msgpack.Unmarshal(t.Payload(), &payload); err != nil {
+		return fmt.Errorf("json.Unmarshal failed: %v: %w", err, asynq.SkipRetry)
+	}
+
+	task := payload.Container
+	podStatus := payload.PodStatus
+
+	podInfo := k8stool.PodInfo{
+		Name:       fmt.Sprintf("cl-%d", task.InGameID),
+		TeamHash:   task.TeamHash,
+		Containers: task.ContainerConfig,
+		Labels: map[string]string{
+			"team_hash": task.TeamHash,
+			"ingame_id": fmt.Sprintf("%d", task.InGameID),
+		},
+		Flag:     task.TeamFlag.FlagContent,
+		AllowWAN: task.Challenge.AllowWAN,
+		AllowDNS: task.Challenge.AllowDNS,
+	}
+
+	err := k8stool.DeletePod(&podInfo)
+	if err != nil {
+		LogContainerOperation(nil, nil, models.ActionContainerFailed, task.ContainerID, map[string]interface{}{
+			"team_hash":    task.TeamHash,
+			"ingame_id":    task.InGameID,
+			"pod_name":     podInfo.Name,
+			"container_id": task.ContainerID,
+		}, err)
+		return fmt.Errorf("DeletePod %+v error: %v", task, err)
+	} else {
+		if err := dbtool.DB().Model(&task).Updates(map[string]interface{}{
+			"container_status": models.ContainerError,
+		}).Error; err != nil {
+			LogContainerOperation(nil, nil, models.ActionContainerFailed, task.ContainerID, map[string]interface{}{
+				"team_hash":    task.TeamHash,
+				"ingame_id":    task.InGameID,
+				"pod_name":     podInfo.Name,
+				"container_id": task.ContainerID,
+			}, err)
+			return fmt.Errorf("failed to update container status: %v", err)
+		}
+	}
+
+	LogContainerOperation(nil, nil, models.ActionContainerFailed, task.ContainerID, map[string]interface{}{
+		"team_hash":    task.TeamHash,
+		"ingame_id":    task.InGameID,
+		"pod_name":     podInfo.Name,
+		"container_id": task.ContainerID,
+		"reason":       podStatus.Message,
+	}, fmt.Errorf("failed to open container"))
 
 	return nil
 }

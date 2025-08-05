@@ -13,22 +13,22 @@ import TimerDisplay from "../TimerDisplay";
 import dayjs from "dayjs";
 import { useNavigate } from "react-router";
 import { A1GameStatus } from "./GameStatusEnum";
+import { useGame } from "hooks/UseGame";
 
-export default function GameStatusMask(
-    { gameStatus, teamStatus }: {
-        gameStatus: A1GameStatus,
-        teamStatus: ParticipationStatus
-    }
-) {
+export default function GameStatusMask({ gameID } : { gameID: number }) {
+
+    const {
+        gameStatus, 
+        teamStatus, 
+        isLoading
+    } = useGame(gameID)
 
     const { t } = useTranslation('challenge_view');
     const { theme } = useTheme()
 
     const navigate = useNavigate()
 
-    useEffect(() => {
-        console.log(gameStatus)
-    }, [gameStatus])
+    if (isLoading) return <></>
 
     return (
         <>

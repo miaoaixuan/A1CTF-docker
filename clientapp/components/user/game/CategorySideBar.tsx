@@ -31,14 +31,13 @@ import { useNavigate } from "react-router";
 import { A1GameStatus } from "components/modules/game/GameStatusEnum";
 import AddChallengeFromLibraryDialog from "components/admin/game/AddChallengeFromLibraryDialog";
 import { log } from "console";
+import { useGame } from "hooks/UseGame";
 
 export function CategorySidebar({
-    gameid,
+    gameID,
     curChallenge,
     setCurChallenge,
     curChallengeRef,
-    gameStatus,
-    setTeamStatus,
     setPageSwitching,
     challenges,
     setChallenges,
@@ -46,13 +45,10 @@ export function CategorySidebar({
     setChallengeSolveStatusList,
     loadingVisible,
 }: {
-    gameid: string,
+    gameID: number,
     curChallenge: UserDetailGameChallenge | undefined,
     setCurChallenge: Dispatch<SetStateAction<UserDetailGameChallenge | undefined>>,
-    gameStatus: A1GameStatus,
     curChallengeRef: MutableRefObject<UserDetailGameChallenge | undefined>,
-    teamStatus: ParticipationStatus,
-    setTeamStatus: Dispatch<SetStateAction<ParticipationStatus>>,
     setPageSwitching: Dispatch<SetStateAction<boolean>>,
     challenges: Record<string, UserSimpleGameChallenge[]>,
     setChallenges: Dispatch<SetStateAction<Record<string, UserSimpleGameChallenge[]>>>,
@@ -63,8 +59,12 @@ export function CategorySidebar({
 
     const { theme } = useTheme()
 
-    // 比赛 ID
-    const gameID = parseInt(gameid, 10)
+    const {
+        gameStatus,
+        teamStatus,
+        mutateTeamStatus: setTeamStatus,
+        isLoading: isGameDataLoading
+    } = useGame(gameID)
 
     const [challengesLoaded, setChallengesLoaded] = useState<boolean>(false)
 
@@ -202,7 +202,7 @@ export function CategorySidebar({
 
             updateChallengeInter = setInterval(() => {
                 updateChalenges()
-            }, randomInt(4000, 5000))
+            }, randomInt(4000, 6000))
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
         return () => { if (updateChallengeInter) clearInterval(updateChallengeInter) }
@@ -251,6 +251,10 @@ export function CategorySidebar({
 
     const { clientConfig, isAdmin, getSystemLogoDefault } = useGlobalVariableContext()
     const [addChallengeOpen, setAddChallengeOpen] = useState(false)
+
+    if (isGameDataLoading) {
+        return <></>
+    }
     
     return (
         <>

@@ -181,8 +181,8 @@ description = "Flag尚未创建，请稍等"
 other = "Flag尚未创建，请稍等"
 
 [LaunchContainerFirst]
-description = "请先启动容器"
-other = "请先启动容器"
+description = "容器不存在或启动失败, 请联系管理员"
+other = "容器不存在或启动失败, 请联系管理员"
 
 # User Controller 错误信息
 

@@ -33,24 +33,26 @@ import {
     TooltipTrigger,
 } from "components/ui/tooltip"
 import GameTimeCounter from "../game/GameTimeCounter"
+import { useGame } from "hooks/UseGame"
 
 const ChallengesViewHeader = (
     {
-        gameStatus,
-        gameInfo,
+        gameID,
         setNoticeOpened,
         notices,
         wsStatus,
         loadingVisible
     }: {
-        gameStatus: string,
-        gameInfo: UserFullGameInfo | undefined,
+        gameID: number,
         setNoticeOpened: (arg0: boolean) => void,
         notices: GameNotice[],
         wsStatus: "connecting" | "connected" | "disconnected" | "ingore",
         loadingVisible: boolean
     },
 ) => {
+
+    const { gameStatus, gameInfo, isLoading } = useGame(gameID)
+
     const { t } = useTranslation('challenge_view');
     const [wsStatusTooltipVisible, setWsStatusTooltipVisible] = useState(wsStatus != "ingore" ? true : false)
 
@@ -74,6 +76,8 @@ const ChallengesViewHeader = (
             if (wsStatus != "ingore") setWsStatusTooltipVisible(true)
         }
     }, [wsStatus])
+
+    if (isLoading) return <></>
 
     return (
         <div className="h-[70px] flex items-center pl-4 pr-4 z-20 w-full bg-transparent border-b-[1px] transition-[border-color] duration-300 flex-none">

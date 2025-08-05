@@ -102,8 +102,8 @@ export function AdminGameManagePage() {
                     </div>
 
                     <Button
+                        variant="outline"
                         onClick={() => navigate(`/admin/games/create`)}
-                        className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200"
                     >
                         <CirclePlus className="h-4 w-4" />
                         添加比赛
