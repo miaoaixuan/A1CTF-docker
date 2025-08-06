@@ -1,16 +1,14 @@
 import { MacScrollbar } from "mac-scrollbar";
 import { Button } from "../ui/button";
-import { CirclePlus, Copy, GalleryVerticalEnd, Pencil, Search, Squirrel, Trash, Trash2, Volleyball } from "lucide-react";
+import { CirclePlus, Copy, GalleryVerticalEnd, Pencil, Search, Trash2 } from "lucide-react";
 import { useTheme } from "next-themes";
 
-import { BadgeCent, Binary, Bot, Bug, ChevronDown, ChevronUp, Chrome, CircleArrowLeft, Earth, FileSearch, Github, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
 import { useEffect, useState } from "react";
-import { api, ErrorMessage } from "utils/ApiHelper";
-import { ChallengeCategory, AdminChallengeSimpleInfo } from "utils/A1API";
+import { api } from "utils/ApiHelper";
+import { AdminChallengeSimpleInfo } from "utils/A1API";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 import { toast } from 'react-toastify/unstyled';
-import { AxiosError } from "axios";
 
 import { ConfirmDialog, DialogOption } from "../dialogs/ConfirmDialog";
 import { challengeCategoryColorMap, challengeCategoryIcons } from "utils/ClientAssets";

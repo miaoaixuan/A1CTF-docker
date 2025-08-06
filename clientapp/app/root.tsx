@@ -40,28 +40,28 @@ import { SWRConfig } from 'swr'
 import { Loader2 } from "lucide-react";
 
 export const links: Route.LinksFunction = () => [
-    { rel: "preconnect", href: "https://fonts.googleapis.com" },
-    {
-        rel: "preconnect",
-        href: "https://fonts.gstatic.com",
-        crossOrigin: "anonymous",
-    },
-    {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
-    },
-    {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap",
-    },
-    {
-        rel: "stylesheet",
-        href: "/css/github-markdown-dark.css",
-    },
-    {
-        rel: "stylesheet",
-        href: "/css/github-markdown-light.css",
-    }
+    // { rel: "preconnect", href: "https://fonts.googleapis.com" },
+    // {
+    //     rel: "preconnect",
+    //     href: "https://fonts.gstatic.com",
+    //     crossOrigin: "anonymous",
+    // },
+    // {
+    //     rel: "stylesheet",
+    //     href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+    // },
+    // {
+    //     rel: "stylesheet",
+    //     href: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap",
+    // },
+    // {
+    //     rel: "stylesheet",
+    //     href: "/css/github-markdown-dark.css",
+    // },
+    // {
+    //     rel: "stylesheet",
+    //     href: "/css/github-markdown-light.css",
+    // }
 ];
 
 const AnimationPresent = (path: string) => {
@@ -153,6 +153,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <meta charSet="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <title>Loading....</title>
+                { import.meta.env.MODE == "development" ? (
+                    <>
+                        <link rel="preload" as="style" href="/@webfonts/webfonts.css" />
+                        <link rel="stylesheet" href="/@webfonts/webfonts.css"></link>
+                    </>
+                ) : (
+                    <>
+                        <link rel="preload" as="style" href="/assets/webfonts.css" />
+                        <link rel="stylesheet" href="/assets/webfonts.css"></link>
+                    </>
+                )}
                 <Meta />
                 <Links />
             </head>
@@ -180,7 +191,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                                                 {animationPresent && <FancyBackground />}
                                                 <GameSwitchHover animation={true} />
                                                 {screenTooSmall ? (
-                                                    <Suspense>{ children }</Suspense>
+                                                    <Suspense>{children}</Suspense>
                                                 ) : <ScreenTooSmall />}
                                             </CanvasProvider>
                                         </GameSwitchProvider>

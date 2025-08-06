@@ -399,7 +399,8 @@ export function CreateGameView() {
             wp_expire_time: format_date(values.wp_expire_time ?? new Date()),
             stages: [],
             visible: values.visible,
-            challenges: []
+            challenges: [],
+            team_policy: "auto"
         };
 
         api.admin.createGame(finalData as AdminFullGameInfo).then((res) => {
