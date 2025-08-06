@@ -7,10 +7,8 @@ import rehypeRaw from 'rehype-raw' // 新增：用于解析 HTML
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
-import { Button } from "./ui/button";
 import { useTheme } from 'next-themes';
 
-import xss from 'xss';
 import ImageLoader from './modules/ImageLoader';
 import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
 
@@ -124,7 +122,7 @@ export function Mdx({ source }: { source: string }) {
                     //         {props.children}
                     //     </ol>
                     // ),
-                    img: ({ node, ...props }) => (
+                    img: ({ node: _node, ...props }) => (
                         <ImageLoader
                             src={props.src || clientConfig.DefaultBGImage}
                             alt={props.alt || ""}

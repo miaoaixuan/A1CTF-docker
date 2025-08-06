@@ -12,7 +12,7 @@ export default function GameSwitchHover({ animation } : { animation: boolean }) 
     const [animeMethod, setAnimeMethod] = useState("easeInOut")
     const [exitAnimationTime, setExitAnimationTime] = useState(0)
 
-    const [scope, animate] = useAnimate()
+    const [scope, _animate] = useAnimate()
 
     useEffect(() => {
         setShouldAnime(true)

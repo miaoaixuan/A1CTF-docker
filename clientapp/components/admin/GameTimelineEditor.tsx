@@ -8,11 +8,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "components/ui/popover";
 import { Calendar } from "components/ui/calendar";
 import { ScrollArea, ScrollBar } from "components/ui/scroll-area";
 import { Badge } from "components/ui/badge";
-import { cn } from "lib/utils";
 import { format } from "date-fns";
 import { CalendarIcon, Clock, Plus, Edit, Trash2, GripVertical } from "lucide-react";
 import { challengeCategoryIcons } from "utils/ClientAssets";
-import dayjs from "dayjs";
 import { EditGameFormSchema } from './game/EditGameSchema';
 import { UseFormReturn, useWatch } from 'react-hook-form';
 

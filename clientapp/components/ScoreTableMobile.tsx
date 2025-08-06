@@ -1,47 +1,22 @@
-import { Award, Flag, Medal, Trophy } from "lucide-react";
-import { MacScrollbar } from "mac-scrollbar";
-import { useTheme } from "next-themes";
-import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
+import { Medal } from "lucide-react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Button } from "./ui/button";
-import dayjs from "dayjs";
 
-import ReactDOMServer from 'react-dom/server';
 import { GameScoreboardData, TeamScore, UserSimpleGameChallenge } from "utils/A1API";
 import AvatarUsername from "./modules/AvatarUsername";
 
-export function ScoreTableMobile ({ scoreBoardModel, setShowUserDetail, challenges }: { scoreBoardModel: GameScoreboardData, setShowUserDetail: Dispatch<SetStateAction<TeamScore>>, challenges: Record<string, UserSimpleGameChallenge[]> }) {
+export function ScoreTableMobile ({ scoreBoardModel, setShowUserDetail, challenges: _challenges }: { scoreBoardModel: GameScoreboardData, setShowUserDetail: Dispatch<SetStateAction<TeamScore>>, challenges: Record<string, UserSimpleGameChallenge[]> }) {
 
-    const tableRef = useRef<HTMLDivElement | null>(null)
     const [pageLines, setPageLines] = useState(10)
-    const [challengeCount, setChallengeCount] = useState(20)
-    const [containerWidth, setContainerWidth] = useState(0)
-
-    const { theme } = useTheme() 
 
     const [scoreboardItems, setScoreBoardItems] = useState<TeamScore[]>([])
     const [curPageData, setCurPageData] = useState<TeamScore[]>([])
     const [curPage, setCurPage] = useState(1)
     const [totalPage, setTotalPage] = useState(0)
 
-    const [pageDataLoaded, setPageDataLoaded] = useState(false)
-
-    // 计算总列数
-    const totalColumns = Object.values(challenges).reduce((sum, challengeList) => sum + challengeList.length, 0)
-    const fixedColumnWidth = 96 // w-24 对应 96px
-    const totalFixedWidth = totalColumns * fixedColumnWidth
-
-    // 判断是否需要添加空白列和计算空白列宽度
-    const shouldAddBlankColumn = containerWidth > 0 && totalFixedWidth < containerWidth
-    const blankColumnWidth = shouldAddBlankColumn ? containerWidth - totalFixedWidth : 0
-
     const handleChangeView = () => {
         const pageLines = Math.floor((window.innerHeight * 0.8 - 8) / 48) - 4;
         setPageLines(pageLines)
-        
-        // 更新容器宽度
-        if (tableRef.current?.parentElement) {
-            setContainerWidth(tableRef.current.parentElement.clientWidth)
-        }
     }
 
     useEffect(() => {
@@ -61,16 +36,7 @@ export function ScoreTableMobile ({ scoreBoardModel, setShowUserDetail, challeng
         
         setCurPageData(pageData)
 
-        setPageDataLoaded(true)
-
         window.addEventListener("resize", handleChangeView)
-        
-        // 初始化容器宽度
-        setTimeout(() => {
-            if (tableRef.current?.parentElement) {
-                setContainerWidth(tableRef.current.parentElement.clientWidth)
-            }
-        }, 100)
 
         return () => {
             window.removeEventListener("resize", handleChangeView)
@@ -98,70 +64,6 @@ export function ScoreTableMobile ({ scoreBoardModel, setShowUserDetail, challeng
             <span>{ rank }</span>
         )
     }
-
-    const rankColor = (rank: number) => {
-        if (rank == 1) return "#FFB02E"
-        else if (rank == 2) return "#BEBEBE"
-        else if (rank == 3) return "#D3883E"
-    }
-
-    const getSolveStatus = (challenge: UserSimpleGameChallenge, target: TeamScore) => {
-        if (!target) return (<></>)
-
-        const targetChallenge = target.solved_challenges?.find((e) => e.challenge_id == challenge.challenge_id)
-        
-
-        if (targetChallenge) {
-
-            const cardView = ReactDOMServer.renderToStaticMarkup(
-                <div className="flex flex-col text-[12px]">
-                    <span>{ target.team_name }</span>
-                    <span>{ challenge.challenge_name }</span>
-                    <span>{ dayjs(targetChallenge.solve_time).format("YYYY-MM-DD HH:mm:ss") }</span>
-                    <span className="text-green-300">+ { challenge.cur_score }</span>
-                </div>
-            )
-
-            if (targetChallenge.rank == 1) {
-                return (
-                    <span
-                        data-tooltip-id="challengeTooltip"
-                        data-tooltip-html={cardView}
-                    >
-                        <Award className="stroke-[#FFB02E]"/>
-                    </span>
-                )
-            } else if (targetChallenge.rank == 2) {
-                return (
-                    <span
-                        data-tooltip-id="challengeTooltip"
-                        data-tooltip-html={cardView}
-                    ><Award className="stroke-[#BEBEBE]"/></span>
-                )
-            } else if (targetChallenge.rank == 3) {
-                return (
-                    <span
-                        data-tooltip-id="challengeTooltip"
-                        data-tooltip-html={cardView}
-                    ><Award className="stroke-[#D3883E]"/></span>
-                )
-            } else {
-                return (
-                    <span
-                        data-tooltip-id="challengeTooltip"
-                        data-tooltip-html={cardView}
-                    ><Flag className="stroke-green-600"/></span>
-                )
-            }
-        } else {
-            return (<></>)
-        }
-    }
-
-    // 移除之前的动态宽度计算函数，现在所有列都使用固定宽度
-    // getCategoryWidth 和 getChallengeColumnWidth 函数不再需要
-
-    // if (!pageLines) return (<></>)
 
     return (
         
@@ -243,7 +145,7 @@ export function ScoreTableMobile ({ scoreBoardModel, setShowUserDetail, challeng
                     </>
                 ) : (
                     <>
-                        { totalPage > 0 && new Array(totalPage).fill(0).map((e, index) => (
+                        { totalPage > 0 && Array.from({ length: totalPage }).fill(0).map((e, index) => (
                             <Button size={"icon"} key={`pageX-${index + 1}`} variant={ curPage == index + 1 ? "default" : "ghost"} onClick={() => { setCurPage(index + 1) }}>{ index + 1 }</Button>
                         )) }
                     </>

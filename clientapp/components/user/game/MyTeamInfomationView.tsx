@@ -5,7 +5,6 @@ import { Input } from "components/ui/input";
 import { Label } from "components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "components/ui/card";
 import { Badge } from "components/ui/badge";
-import { Separator } from "components/ui/separator";
 import { Users, Trophy, Hash, Copy, Crown, UserCheck, UserMinus, UserPlus, Settings, Trash2, CircleArrowLeft, Upload, Group, Pencil, Ban, Gift, AlertTriangle, Calculator, Loader2 } from "lucide-react";
 import {
     Dialog,
@@ -29,9 +28,7 @@ import {
 } from "components/ui/alert-dialog";
 import { toast } from 'react-toastify/unstyled';
 import copy from "copy-to-clipboard";
-import { AxiosError } from "axios";
 import dayjs from "dayjs";
-import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
 import { MacScrollbar } from "mac-scrollbar";
 import { api } from 'utils/ApiHelper';
@@ -40,13 +37,10 @@ import type {
     HandleJoinRequestPayload,
     TransferCaptainPayload,
     UpdateTeamInfoPayload,
-    UserFullGameInfo,
     GameScoreboardData,
     TeamScore,
-    SolvedChallenge,
     UserSimpleGameChallenge
 } from 'utils/A1API';
-import { LoadingPage } from 'components/LoadingPage';
 import { useLocation, useNavigate } from 'react-router';
 import { UploadImageDialog } from 'components/dialogs/UploadImageDialog';
 import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
@@ -60,8 +54,7 @@ const MyTeamInfomationView = ({
     gameID: number;
 }) => {
 
-    const { gameInfo, gameStatus, isLoading } = useGame(gameID)
-    const { t } = useTranslation();
+    const { gameInfo, gameStatus } = useGame(gameID)
     const { theme } = useTheme();
 
     const [scoreBoardData, setScoreBoardData] = useState<GameScoreboardData>();
@@ -382,7 +375,7 @@ const MyTeamInfomationView = ({
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            onClick={() => copyToClipboard(teamInfo?.invite_code!, '邀请码已复制')}
+                                            onClick={() => copyToClipboard(teamInfo?.invite_code ?? "", '邀请码已复制')}
                                         >
                                             <Copy className="w-4 h-4" />
                                         </Button>

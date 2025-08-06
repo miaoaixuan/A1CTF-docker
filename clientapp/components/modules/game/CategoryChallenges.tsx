@@ -1,6 +1,6 @@
 import { UserDetailGameChallenge, UserSimpleGameChallenge } from 'utils/A1API';
 import { useTransition, animated } from '@react-spring/web';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { SidebarGroupContent, SidebarGroupLabel, SidebarMenu } from 'components/ui/sidebar';
 import { ChevronDown } from 'lucide-react';
 import { Button } from 'components/ui/button';
@@ -35,9 +35,7 @@ export default function CategoryChallenges({
         shouldExtend = curChallenge?.category?.toString().toLocaleLowerCase() == category
     }
 
-
     const [categoryFolded, setCategoryFolded] = useState(!shouldExtend);
-    const [hasPadding, setCategoryPadding] = useState(true);
     const contentRef = useRef<HTMLDivElement>(null);
 
     const { isAdmin } = useGlobalVariableContext()
@@ -79,16 +77,6 @@ export default function CategoryChallenges({
             friction: 20,
             clamp: false
         },
-        onStart: () => {
-            if (!categoryFolded) {
-                setCategoryPadding(true);
-            }
-        },
-        onRest: () => {
-            if (categoryFolded) {
-                setCategoryPadding(false);
-            }
-        }
     });
 
     return (

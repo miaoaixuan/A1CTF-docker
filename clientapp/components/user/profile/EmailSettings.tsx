@@ -3,9 +3,7 @@ import { Button } from "components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "components/ui/form";
 import { Input } from "components/ui/input";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
-import { cn } from "lib/utils";
 import { BadgeAlert, BadgeCheck, MailPlus, Save } from "lucide-react";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from 'react-toastify/unstyled';
 import { api } from "utils/ApiHelper";
@@ -31,14 +29,14 @@ export default function EmailSettings() {
     function onSubmit(values: z.infer<typeof MailOperationSchema>) {
         api.user.updateEmailAddress({
             email: values.email
-        }).then((res) => {
+        }).then(() => {
             toast.success("邮箱地址已更新")
             updateProfile()
         })
     }
 
     function sendVerifyEmail() {
-        api.user.sendVerifyEmail().then((res) => {
+        api.user.sendVerifyEmail().then(() => {
             toast.success("验证邮件已发出")
         })
     }

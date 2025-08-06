@@ -3,13 +3,11 @@ import {
     Dialog,
     DialogContent,
     DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
 } from "components/ui/dialog"
 import { Input } from "components/ui/input"
-import { Label } from "components/ui/label"
 
 import {
     Form,
@@ -24,17 +22,10 @@ import {
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { useEffect, useState } from "react";
-import { Textarea } from "../ui/textarea";
-import { AxiosError } from "axios";
+import { useState } from "react";
 import { toast } from 'react-toastify/unstyled';
 import { useTranslation } from "react-i18next";
 import { api } from "utils/ApiHelper"
-
-interface ErrorMessage {
-    status: number;
-    title: string;
-}
 
 export const JoinTeamDialog: React.FC<{ callback: () => void, game_id: number, children: React.ReactNode }> = ({ game_id, callback: updateTeam, children }) => {
 

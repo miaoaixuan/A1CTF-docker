@@ -1,6 +1,6 @@
 import { Button } from "components/ui/button";
 import { Users, Trash2 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from 'react-toastify/unstyled';
 import { api } from "utils/ApiHelper";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from 'components/ui/alert-dialog';
@@ -51,6 +51,12 @@ export default function ChallengeTools(
         })
     }, [gameID]);
 
+    useEffect(() => {
+        if (teamSearchTerm) {
+            searchTeams(teamSearchTerm)
+        }
+    }, [teamSearchTerm])
+
     // 删除特定队伍的解题记录
     const handleDeleteTeamSolve = (challengeId: number) => {
         setCurrentChallengeId(challengeId);
@@ -68,7 +74,7 @@ export default function ChallengeTools(
 
     // 确认清空所有解题记录
     const confirmClearAllSolves = async () => {
-        api.admin.deleteChallengeSolves(gameID, clearSolvesChallengeId, {}).then((res) => {
+        api.admin.deleteChallengeSolves(gameID, clearSolvesChallengeId, {}).then(() => {
             toast.success('已清空所有解题记录');
             setIsClearSolvesAlertOpen(false);
         })
@@ -83,7 +89,7 @@ export default function ChallengeTools(
 
         api.admin.deleteChallengeSolves(gameID, currentChallengeId, {
             team_id: selectedTeamId
-        }).then((res) => {
+        }).then(() => {
             toast.success('已删除队伍解题记录');
             setIsDeleteTeamSolveOpen(false);
         })

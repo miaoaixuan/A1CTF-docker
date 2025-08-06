@@ -18,7 +18,7 @@ let messages: GameNotice[] = []
 // 单独的消息卡片组件，使用React.memo优化
 const NoticeCard = memo(({ 
     notice, 
-    index, 
+    index: _index, 
     theme 
 }: { 
     notice: GameNotice, 
@@ -104,48 +104,6 @@ const NoticeCard = memo(({
 
 NoticeCard.displayName = 'NoticeCard';
 
-const calcTranslateX = (index: number) => {
-    const width = window.innerWidth;
-    const boxWidth = (width >= 1024 ? 600 : 300);
-    return `${((width - boxWidth) / 2) + boxWidth}px`
-}
-
-const calcTranslateY = (index: number) => {
-    const height = window.innerHeight
-
-    let boxHeight = 0
-    let untilCurBoxHeight = 0
-
-    // 估计信息盒子的高度
-    messages.forEach((ele, curIndex) => {
-        // 先根据换行符拆开
-        const lines = ele.data[0].split("\n")
-
-        // 当前盒子的高度
-        let curBoxHeight = 64
-        // 基础的 内外高度
-        boxHeight += 64
-
-        lines.forEach((line) => {
-            const line_count = Math.ceil(line.length / 68)
-            // 测试得到一行文本的高度大概为 24
-            boxHeight += line_count * 24
-            curBoxHeight += line_count * 24
-        })
-
-        // gap 为 16px
-        boxHeight += 16
-        curBoxHeight += 16
-
-        if (curIndex <= index) untilCurBoxHeight += curBoxHeight
-    })
-
-    boxHeight = Math.min(boxHeight, height - 80)
-
-    const paddingTop = (height - boxHeight) / 2
-    return `-${untilCurBoxHeight + paddingTop + 40}px`
-}
-
 const shouldAnimated = (index: number) => {
     const height = window.innerHeight
 
@@ -186,17 +144,13 @@ export function NoticesView({ opened, setOpened, notices }: { opened: boolean, s
 
     messages = notices
 
-    const { t } = useTranslation("notices_view")
     const { theme } = useTheme();
 
     // 消息卡片的可见列表
     const [visible, setVisible] = useState<boolean>(false)
-    // 背景模糊的可见
-    const [visible2, setVisible2] = useState<boolean>(false)
 
     // 延迟和动画时间
     const [durationTime, setDurationTime] = useState<Record<string, number>>({})
-    const [delayTime, setDelayTime] = useState<Record<string, number>>({})
 
     // 懒加载，屏幕外面的消息卡片不需要动画时间
     const observerRef = useRef<IntersectionObserver | null>(null);
@@ -243,12 +197,10 @@ export function NoticesView({ opened, setOpened, notices }: { opened: boolean, s
             })
 
             // 更新
-            setDelayTime(newDelayTime)
             setDurationTime(newDurationTime)
 
             // 计算完成后设置可视状态
             setVisible(true)
-            setVisible2(true)
         } else {
             // 关闭动画由于已经渲染卡片，可以直接得到这个卡片是否在屏幕外面或者里面
             const newDelayTime: Record<string, number> = {};
@@ -281,7 +233,6 @@ export function NoticesView({ opened, setOpened, notices }: { opened: boolean, s
                 }
             })
 
-            setDelayTime(newDelayTime)
             setDurationTime(newDurationTime)
         }
     }, [opened])
@@ -292,21 +243,8 @@ export function NoticesView({ opened, setOpened, notices }: { opened: boolean, s
             let visibleCount = 0
             Object.values(visibleItems).forEach((value) => { visibleCount += value ? 1 : 0 })
             setVisible(false)
-
-            // 等卡片动画结束再进行背景动画
-            setTimeout(() => {
-                setVisible2(false)
-            }, Math.min((900 + 100 * (visibleCount)) - 500, 2000))
         }
     }, [durationTime])
-
-    // 观察器
-    const observeItem = (el: HTMLElement, id: string) => {
-        if (el && observerRef.current) {
-            el.dataset.id = id;
-            observerRef.current.observe(el);
-        }
-    };
 
     const transitions = useTransition(visible, {
         from: {

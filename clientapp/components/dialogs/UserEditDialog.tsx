@@ -2,14 +2,11 @@ import { Button } from "components/ui/button"
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
 } from "components/ui/dialog"
 import { Input } from "components/ui/input"
-import { Label } from "components/ui/label"
 
 import {
     Form,
@@ -31,7 +28,6 @@ import { toast } from 'react-toastify/unstyled';
 import { Avatar } from "@radix-ui/react-avatar";
 import { AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Skeleton } from "../ui/skeleton";
-import { UploadImageDialog } from "./UploadImageDialog";
 import { AdminListUserItem, UserRole } from "utils/A1API";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 

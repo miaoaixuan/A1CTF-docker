@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from 'components/ui/button';
 import { Input } from 'components/ui/input';
 import { Textarea } from 'components/ui/textarea';
@@ -22,7 +22,6 @@ import {
 import {
     Form,
     FormControl,
-    FormDescription,
     FormField,
     FormItem,
     FormLabel,
@@ -34,7 +33,6 @@ import { z } from 'zod';
 import { toast } from 'react-toastify/unstyled';
 import { api } from 'utils/ApiHelper';
 import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
-import { AxiosError } from 'axios';
 
 interface GameGroup {
     group_id: number;
@@ -104,7 +102,7 @@ export function GameGroupManager({ gameId }: GameGroupManagerProps) {
         api.admin.adminCreateGameGroup(gameId, {
             group_name: data.group_name,
             description: data.description || '',
-        }).then((res) => {
+        }).then(() => {
             toast.success('分组创建成功');
             setIsCreateDialogOpen(false);
             createForm.reset();
@@ -119,7 +117,7 @@ export function GameGroupManager({ gameId }: GameGroupManagerProps) {
         api.admin.adminUpdateGameGroup(gameId, editingGroup.group_id, {
             group_name: data.group_name,
             description: data.description || '',
-        }).then((res) => {
+        }).then(() => {
             toast.success('分组更新成功');
             setIsEditDialogOpen(false);
             setEditingGroup(null);
@@ -134,7 +132,7 @@ export function GameGroupManager({ gameId }: GameGroupManagerProps) {
             return;
         }
 
-        api.admin.adminDeleteGameGroup(gameId, groupId).then((res) => {
+        api.admin.adminDeleteGameGroup(gameId, groupId).then(() => {
             toast.success('分组删除成功');
             loadGroups();
         })

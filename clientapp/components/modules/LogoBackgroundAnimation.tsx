@@ -1,8 +1,6 @@
-import { log } from "console";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useTheme } from "next-themes";
 import React, { useRef, useEffect } from "react";
-import * as StackBlur from 'stackblur-canvas';
 
 type CanvasStrokeStyle = string | CanvasGradient | CanvasPattern;
 

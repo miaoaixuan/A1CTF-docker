@@ -1,5 +1,4 @@
-import { Loader2, LoaderCircle, LoaderPinwheel } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 export const LoadingPage = ({visible, screen = true, absolute = false, background = true} : { visible: boolean, screen?: boolean, absolute?: boolean, background?: boolean }) => {
 

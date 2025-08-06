@@ -1,7 +1,5 @@
-import React from 'react';
 
 import { Input } from 'components/ui/input';
-import { Textarea } from 'components/ui/textarea';
 import {
     FormField,
     FormItem,
@@ -15,7 +13,7 @@ import { Switch } from 'components/ui/switch';
 import { useFieldArray, useWatch } from 'react-hook-form';
 import CodeEditor from '@uiw/react-textarea-code-editor';
 import dayjs from 'dayjs';
-import { ScanBarcode, FileCode, ClockArrowUp, PlusCircle, Trash2, Megaphone, AppWindowMac, PencilRulerIcon } from 'lucide-react';
+import { ScanBarcode, FileCode, ClockArrowUp, PlusCircle, Trash2, AppWindowMac, PencilRulerIcon } from 'lucide-react';
 import { Button } from 'components/ui/button';
 import EditorDialog from 'components/modules/EditorDialog';
 import AlertConformer from 'components/modules/AlertConformer';

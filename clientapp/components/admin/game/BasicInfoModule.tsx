@@ -1,10 +1,7 @@
-import React, { useRef } from 'react';
+import React from 'react';
 
-import { format } from 'date-fns';
 import { Switch } from 'components/ui/switch';
-import { cn } from 'lib/utils';
 
-import { Button } from 'components/ui/button';
 import { Input } from 'components/ui/input';
 import { Textarea } from 'components/ui/textarea';
 import {
@@ -15,25 +12,15 @@ import {
     FormDescription,
     FormControl,
 } from 'components/ui/form';
-import { Popover, PopoverTrigger, PopoverContent } from 'components/ui/popover';
-import { Calendar } from 'components/ui/calendar';
-import { ScrollArea, ScrollBar } from 'components/ui/scroll-area';
-import { CalendarIcon, FilePenLine, Upload } from 'lucide-react';
+import { FilePenLine } from 'lucide-react';
 import ImageUploader from 'components/modules/ImageUploader';
 import { api } from 'utils/ApiHelper';
 import { SystemResourceType } from 'utils/A1API';
 import { DateTimePicker24h } from 'components/ui/data-time-picker';
-import { Editor } from '@monaco-editor/react';
 import ThemedEditor from 'components/modules/ThemedEditor';
 
 interface BasicInfoModuleProps {
     form: any;
-    handleDateSelect: (date: Date | undefined, tmType: 'start_time' | 'end_time') => void;
-    handleTimeChange: (
-        type: 'hour' | 'minute',
-        value: string,
-        tmType: 'start_time' | 'end_time'
-    ) => void;
     gameID: number;
 }
 
@@ -41,8 +28,7 @@ interface BasicInfoModuleProps {
  * 基本信息管理模块
  * 从 EditGameView.tsx 中抽离，提升主组件可读性
  */
-export function BasicInfoModule({ form, handleDateSelect, handleTimeChange, gameID }: BasicInfoModuleProps) {
-    const fileInputRef = useRef<HTMLInputElement>(null);
+export function BasicInfoModule({ form, gameID }: BasicInfoModuleProps) {
 
     const handleImageUpload = (type: SystemResourceType) => {
         return (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,10 +51,6 @@ export function BasicInfoModule({ form, handleDateSelect, handleTimeChange, game
                 })
             }
         }
-    };
-
-    const handleImageClick = () => {
-        fileInputRef.current?.click();
     };
 
     return (

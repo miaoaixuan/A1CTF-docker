@@ -23,7 +23,7 @@ export default function InChallengeViewManager(
         setSwitchVisibleLoading(true)
         api.admin.updateGameChallenge(gameID, curChallenge?.challenge_id ?? 0, {
             visible: !curChallenge?.visible
-        }).then((res) => {
+        }).then(() => {
             if (curChallenge) {
                 setSwitchVisibleLoading(false)
                 setCurChallenge({
@@ -51,7 +51,7 @@ export default function InChallengeViewManager(
     const [searchParams, setSearchParams] = useSearchParams()
 
     const deleteChallenge = () => {
-        api.admin.deleteGameChallenge(gameID, curChallenge?.challenge_id ?? 0).then((res) => {
+        api.admin.deleteGameChallenge(gameID, curChallenge?.challenge_id ?? 0).then(() => {
             // 设置当前选中的题目
             setCurChallenge(undefined)
 

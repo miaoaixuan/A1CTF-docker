@@ -1,13 +1,12 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from 'components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from 'components/ui/dialog';
 import { Input } from 'components/ui/input';
 import { ArrowLeft, ArrowRight, ArrowUpDown, CirclePlus, Loader2 } from 'lucide-react';
-import { Dispatch, memo, ReactNode, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
+import { Dispatch, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/ui/table';
 import dayjs from 'dayjs';
 import { toast } from 'react-toastify/unstyled';
-import { AxiosError } from 'axios';
-import { api, createSkipGlobalErrorConfig, ErrorMessage } from 'utils/ApiHelper';
-import { ChallengeCategory, JudgeType, UserSimpleGameChallenge } from 'utils/A1API';
+import { api } from 'utils/ApiHelper';
+import { ChallengeCategory, UserSimpleGameChallenge } from 'utils/A1API';
 import { Button } from 'components/ui/button';
 import { Checkbox } from 'components/ui/checkbox';
 import { ColumnDef, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
@@ -228,6 +227,7 @@ export default function AddChallengeFromLibraryDialog(
                     successCount++
                 } catch (error) {
                     failCount++
+                    const _ = error
                 }
             }
 

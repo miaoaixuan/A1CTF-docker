@@ -72,9 +72,9 @@ export function SolvedAnimation({ blood, setBlood, bloodMessage } : { blood: str
                             style={{
                                 imageRendering: 'pixelated',
                             }}
-                            onClick={(e) => {
+                            onClick={() => {
                                 if (divRef.current) {
-                                    const r = party.confetti(divRef.current, {
+                                    const _r = party.confetti(divRef.current, {
                                         count: 100,  // 增加粒子数量
                                         size: 2,
                                         spread: 40,

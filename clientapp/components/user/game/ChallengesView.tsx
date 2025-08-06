@@ -4,10 +4,10 @@ import { CategorySidebar } from "components/user/game/CategorySideBar";
 import { toastNewNotice, toastNewHint } from "utils/ToastUtil";
 
 import { Mdx } from "components/MdxCompoents";
-import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper"
-import { GameNotice, GameScoreboardData, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "utils/A1API"
+import { GameNotice, NoticeCategory, ParticipationStatus, UserDetailGameChallenge, UserSimpleGameChallenge } from "utils/A1API"
 
 import dayjs from "dayjs";
 import { Loader2 } from "lucide-react";
@@ -22,7 +22,6 @@ import { useTheme } from "next-themes";
 
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 
-import { randomInt } from "mathjs";
 
 import { SolvedAnimation } from "components/SolvedAnimation";
 import ChallengesViewHeader from "components/modules/challenge/ChallengeViewHeader";
@@ -31,7 +30,7 @@ import SubmitFlagView from "components/modules/challenge/SubmitFlagView";
 import GameStatusMask from "components/modules/game/GameStatusMask";
 import ChallengeHintPage from "components/modules/challenge/ChallengeHintPage";
 import { useTranslation } from "react-i18next";
-import { useLocation, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 import ChallengeMainContent from "components/modules/challenge/ChallengeMainContent";
 import LoadingModule from "components/modules/LoadingModule";
 import GameTeamStatusCard from "components/modules/game/GameTeamStatusCard";
@@ -166,7 +165,7 @@ export function ChallengesView({
                     // setPageSwitch(true)
 
                     finishLoading()
-                }, createSkipGlobalErrorConfig()).catch((error: AxiosError) => { })
+                }, createSkipGlobalErrorConfig()).catch((_error: AxiosError) => { })
             } else {
                 finishLoading()
             }
@@ -308,7 +307,7 @@ export function ChallengesView({
                         console.error('WebSocket error:', error)
                     }
 
-                    socket.onclose = (event) => {
+                    socket.onclose = (_event) => {
                         setWsStatus("disconnected")
                         clearTimeout(connectTimeout)
 

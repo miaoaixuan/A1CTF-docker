@@ -9,9 +9,9 @@ import {
 import { Button } from "components/ui/button"
 import { Progress } from "components/ui/progress"
 import { useRef, useState, useCallback } from "react";
-import { AxiosError, AxiosProgressEvent } from "axios";
+import { AxiosProgressEvent } from "axios";
 import { toast } from 'react-toastify/unstyled';
-import { Upload, File, X, CheckCircle, AlertCircle } from "lucide-react";
+import { Upload, File, CheckCircle, AlertCircle } from "lucide-react";
 import { api, createSkipGlobalErrorConfig, ErrorMessage } from "utils/ApiHelper";
 import { cn } from "lib/utils";
 

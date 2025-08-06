@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceArea } from 'recharts';
+import { useState, useMemo } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { Slider } from '../ui/slider';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Label } from '../ui/label';
@@ -101,7 +101,7 @@ export default function ChallengeScoreGraph({
                                 label={{ value: '分数', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
                             />
                             <Tooltip
-                                formatter={(value, name) => [value, '分数']}
+                                formatter={(value, _name) => [value, '分数']}
                                 labelFormatter={(label) => `提交次数: ${label}`}
                                 contentStyle={{
                                     backgroundColor: colors.background,

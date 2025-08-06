@@ -8,13 +8,7 @@ import {
     FormMessage,
 } from "components/ui/form"
 
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "components/ui/popover"
-
-import { useFieldArray, Controller, useWatch } from "react-hook-form";
+import { useFieldArray, useWatch } from "react-hook-form";
 
 import {
     Select,
@@ -29,10 +23,8 @@ import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "../ui/button";
-import { cn } from "lib/utils";
 
-import { CalendarIcon, CircleArrowLeft, Cloud, FileCode, Github, PlusCircle, Save, ScanBarcode, TableProperties, Upload } from "lucide-react"
-import { Textarea } from "../ui/textarea";
+import { CircleArrowLeft, Cloud, FileCode, Github, PlusCircle, Save, ScanBarcode, TableProperties, Upload } from "lucide-react"
 
 import CodeEditor from '@uiw/react-textarea-code-editor';
 
@@ -40,10 +32,8 @@ import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageS
 import { useEffect, useState } from "react";
 import { MacScrollbar } from "mac-scrollbar";
 import { AdminChallengeConfig } from "utils/A1API";
-import { api, ErrorMessage } from "utils/ApiHelper";
-import dayjs from "dayjs";
+import { api } from "utils/ApiHelper";
 import { toast } from 'react-toastify/unstyled';
-import { AxiosError } from "axios";
 import { useNavigate } from "react-router";
 import { UploadFileDialog } from "components/dialogs/UploadFileDialog";
 import { Switch } from "components/ui/switch";
@@ -416,6 +406,7 @@ function AttachmentForm({ control, index, form, removeAttachment, onFormSubmit }
                                 // toast.success("题目信息已自动保存");
                             } catch (error) {
                                 toast.error("自动保存失败，请手动保存");
+                                const _ = error;
                             }
                         }}
                     >
@@ -604,7 +595,7 @@ export function EditChallengeView({ challenge_info }: { challenge_info: AdminCha
             flag_type: values.flag_type
         };
 
-        api.admin.updateChallenge(challenge_info.challenge_id!, finalData as AdminChallengeConfig).then((res) => {
+        api.admin.updateChallenge(challenge_info.challenge_id!, finalData as AdminChallengeConfig).then(() => {
             toast.success("更新成功");
         })
     }
@@ -985,6 +976,7 @@ export function EditChallengeView({ challenge_info }: { challenge_info: AdminCha
                                                 },
                                                 (errors) => {
                                                     reject(new Error('Form validation failed'));
+                                                    const _ = errors
                                                 }
                                             )();
                                         });

@@ -1,7 +1,5 @@
 import { Avatar } from "@radix-ui/react-avatar";
 import { AvatarFallback, AvatarImage } from "components/ui/avatar";
-import { Skeleton } from "components/ui/skeleton";
-import { Loader2 } from "lucide-react";
 
 export default function AvatarUsername({
     avatar_url, username, size = 35, fontSize = 16

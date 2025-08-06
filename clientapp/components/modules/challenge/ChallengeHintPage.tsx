@@ -1,7 +1,6 @@
 import { MacScrollbar } from "mac-scrollbar";
 import ChallengeHintCard from "./ChallengeHintCard";
 import { useTheme } from "next-themes";
-import { randomInt } from "mathjs";
 import SafeComponent from "components/SafeComponent";
 import dayjs from "dayjs";
 import { UserDetailGameChallenge } from "utils/A1API";
@@ -26,27 +25,6 @@ export default function ChallengeHintPage(
 ) {
 
     const { theme } = useTheme()
-
-    function generateRandomString(regex: RegExp, length: number): string {
-        let result = '';
-        const validChars = [];
-
-        // 根据正则表达式找到字符集
-        for (let i = 0; i < 256; i++) {
-            const char = String.fromCharCode(i);
-            if (regex.test(char)) {
-                validChars.push(char);
-            }
-        }
-
-        // 生成随机字符串
-        while (result.length < length) {
-            const randomIndex = Math.floor(Math.random() * validChars.length);
-            result += validChars[randomIndex];
-        }
-
-        return result;
-    }
 
     const transitions = useTransition(visible, {
         from: {

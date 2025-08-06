@@ -3,15 +3,12 @@ import { Badge } from "components/ui/badge";
 import { Button } from "components/ui/button";
 import { Checkbox } from "components/ui/checkbox";
 import { Label } from "components/ui/label";
-import { Switch } from "components/ui/switch";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import dayjs from "dayjs";
 import { FastAverageColor } from "fast-average-color";
 import { EyeClosed, Calendar, Settings, Calculator, Trash2, Pause, Play, Square, Plane } from "lucide-react";
-import { index } from "mathjs";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { toast } from 'react-toastify/unstyled';
 import { UserGameSimpleInfo } from "utils/A1API";
 import { api } from "utils/ApiHelper";
 
@@ -145,7 +142,7 @@ export default function GameCard(
                                     <Checkbox
                                         id="toggle-2"
                                         checked={gameActivityMode}
-                                        onCheckedChange={(val) => {
+                                        onCheckedChange={() => {
                                             if (gameActivityMode) {
                                                 updateClientConfg("gameActivityMode", "")
                                                 api.system.updateSystemSettings({

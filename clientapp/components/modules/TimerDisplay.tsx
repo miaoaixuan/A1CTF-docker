@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 const TimerDisplay = (
     { targetTime: target_time, className, onFinishCallback } : { targetTime: dayjs.Dayjs | number | string | null, className: string, onFinishCallback: () => void }

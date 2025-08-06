@@ -1,10 +1,9 @@
-import { File, Pickaxe, ArrowDownUp, FileDown, Ruler } from "lucide-react";
+import { File, Pickaxe, ArrowDownUp, FileDown } from "lucide-react";
 import { Button } from "components/ui/button";
 import { Progress } from "components/ui/progress";
 import { AttachmentType, UserAttachmentConfig } from "utils/A1API";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import dayjs from "dayjs";
-import { Rule } from "postcss";
 
 interface DownloadInfo {
     size: string;
@@ -18,11 +17,6 @@ const FileDownloader = (
 
     const [downloadSpeed, setDownloadSpeed] = useState<DownloadInfo>();
     const [downloading, setDownloading] = useState(false);
-
-    const getAttachmentName = (url: string) => {
-        const parts = url.split("/")
-        return parts[parts.length - 1]
-    }
 
     const formatFileSize = (bytes: number): string => {
         if (bytes === 0) return '0 Bytes';

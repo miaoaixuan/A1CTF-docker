@@ -17,7 +17,6 @@ import BetterChart from 'components/BetterChart';
 import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
 import { api } from 'utils/ApiHelper';
 import { GameScoreboardData, TeamScore, UserFullGameInfo, UserSimpleGameChallenge, GameGroupSimple, PaginationInfo } from 'utils/A1API';
-import { useLocation, useNavigate } from 'react-router';
 import { useIsMobile } from 'hooks/use-mobile';
 import { ScoreTableMobile } from 'components/ScoreTableMobile';
 import { toast } from 'react-toastify/unstyled';
@@ -36,13 +35,9 @@ export default function ScoreBoardPage(
         :
         { gmid: number }
 ) {
-
-    const [chartData, setChartData] = useState<any>([])
-
-    const { theme, resolvedTheme } = useTheme();
+    const { theme } = useTheme();
 
     const [gameInfo, setGameInfo] = useState<UserFullGameInfo | undefined>(undefined)
-    const [gameStatus, setGameStatus] = useState<string>("")
     const [challenges, setChallenges] = useState<Record<string, UserSimpleGameChallenge[]>>({})
     const [scoreBoardModel, setScoreBoardModel] = useState<GameScoreboardData>()
 
@@ -54,20 +49,14 @@ export default function ScoreBoardPage(
     const [pagination, setPagination] = useState<PaginationInfo | undefined>(undefined)
 
     const lastTimeLine = useRef<string>()
-    const [showGraphy, setShowGraphy] = useState(false)
     const [isChartFullscreen, setIsChartFullscreen] = useState(false)
     const [isChartFloating, setIsChartFloating] = useState(false)
     const [isChartMinimized, setIsChartMinimized] = useState(false)
     const [isNormalChartMinimized, setIsNormalChartMinimized] = useState(false)
     const [isDownloading, setIsDownloading] = useState(false)
-
-    const [chartOption, setChartOpton] = useState<echarts.EChartsOption>()
     const [showUserDetail, setShowUserDetail] = useState<TeamScore>({})
 
     const isMobile = useIsMobile()
-
-    // 加载动画
-    const [loadingVisiblity, setLoadingVisibility] = useState(true)
     // 换页加载状态
     const [pageLoading, setPageLoading] = useState(false)
 
@@ -162,11 +151,6 @@ export default function ScoreBoardPage(
         const groupId = value === "all" ? undefined : parseInt(value);
         setSelectedGroupId(groupId);
         setCurrentPage(1); // 重置到第一页
-    }, []);
-
-    // 分页处理
-    const handlePageChange = useCallback((page: number) => {
-        setCurrentPage(page);
     }, []);
 
     // 页面大小变化处理
@@ -421,7 +405,7 @@ export default function ScoreBoardPage(
 
                 const curTimeLine = JSON.stringify(res.data.data?.top10_timelines)
 
-                if (curTimeLine != lastTimeLine.current || true) {
+                if (curTimeLine != lastTimeLine.current) {
                     lastTimeLine.current = curTimeLine
 
                     serialOptions.current = [
@@ -476,11 +460,9 @@ export default function ScoreBoardPage(
                         }) as echarts.SeriesOption) || [])
                     ] as echarts.SeriesOption[]
                 }
-
-                setLoadingVisibility(false)
                 // 结束加载状态
                 setTimeout(() => setPageLoading(false), 200)
-            }).catch(error => {
+            }).catch((_error) => {
                 // 出错时也要结束加载状态
                 setPageLoading(false);
             })
@@ -496,10 +478,6 @@ export default function ScoreBoardPage(
             clearInterval(scoreBoardInter)
         }
     }, [gameInfo, currentPage, selectedGroupId, pageSize])
-
-    const navigator = useNavigate()
-
-    const gamePath = useLocation().pathname.split("/").slice(0, -1).join("/")
 
     return (
         <>

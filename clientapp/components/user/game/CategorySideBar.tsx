@@ -1,12 +1,9 @@
-import { Asterisk, BadgeCent, Bed, BedDouble, Binary, Bot, Bug, ChevronDown, ChevronUp, Chrome, CircleArrowLeft, Columns3Cog, Earth, FileSearch, Github, GlobeLock, HardDrive, Loader2, MessageSquareLock, Plus, Radar, Smartphone, SquareCode, Underline } from "lucide-react"
+import { BedDouble, Columns3Cog, Plus } from "lucide-react"
 
 import {
     Sidebar,
     SidebarContent,
     SidebarGroup,
-    SidebarGroupContent,
-    SidebarGroupLabel,
-    SidebarMenu,
 } from "components/ui/sidebar"
 
 import { Button } from "components/ui/button"
@@ -16,21 +13,18 @@ import { Dispatch, MutableRefObject, SetStateAction, useEffect, useRef, useState
 
 import { MacScrollbar } from 'mac-scrollbar';
 import { useTheme } from "next-themes";
-import SafeComponent from "components/SafeComponent";
 
 import { randomInt } from "mathjs";
 import { toast } from 'react-toastify/unstyled';
-import { ErrorMessage, ParticipationStatus, UserDetailGameChallenge, UserFullGameInfo, UserSimpleGameChallenge } from "utils/A1API";
+import { ParticipationStatus, UserDetailGameChallenge, UserSimpleGameChallenge } from "utils/A1API";
 import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper";
 import { ChallengeSolveStatus } from "components/user/game/ChallengesView";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import CategoryChallenges from "components/modules/game/CategoryChallenges";
-import { challengeCategoryColorMap, challengeCategoryIcons } from "utils/ClientAssets";
+import { challengeCategoryColorMap } from "utils/ClientAssets";
 import LoadingModule from "components/modules/LoadingModule";
 import { useNavigate } from "react-router";
-import { A1GameStatus } from "components/modules/game/GameStatusEnum";
 import AddChallengeFromLibraryDialog from "components/admin/game/AddChallengeFromLibraryDialog";
-import { log } from "console";
 import { useGame } from "hooks/UseGame";
 
 export function CategorySidebar({
@@ -61,7 +55,6 @@ export function CategorySidebar({
 
     const {
         gameStatus,
-        teamStatus,
         mutateTeamStatus: setTeamStatus,
         isLoading: isGameDataLoading
     } = useGame(gameID)
@@ -70,30 +63,22 @@ export function CategorySidebar({
 
     // 之前的题目列表
     const prevChallenges = useRef<Record<string, UserSimpleGameChallenge[]>>()
-    const prevGameDetail = useRef<UserFullGameInfo>()
 
     // 懒加载, 当前题目卡片是否在视窗内
     const observerRef = useRef<IntersectionObserver | null>(null);
     const [visibleItems, setVisibleItems] = useState<Record<string, Record<string, boolean>>>({});
 
-    const [categoryFolded, setCategoryFolded] = useState<Record<string, boolean>>({});
-    const [categoryPadding, setCategoryPadding] = useState<Record<string, boolean>>({});
-
     let updateChallengeInter: NodeJS.Timeout;
 
     const colorMap: { [key: string]: string } = challengeCategoryColorMap
 
-    const cateIcon: { [key: string]: any } = challengeCategoryIcons
-
     useEffect(() => {
         const foldMap: Record<string, boolean> = {};
         Object.keys(colorMap).forEach((key) => foldMap[key] = true);
-
-        setCategoryFolded(foldMap)
     }, [])
 
     // 更新题目列表
-    const updateChalenges = (first?: boolean) => {
+    const updateChalenges = () => {
 
         api.user.userGetGameChallenges(gameID).then((res) => {
 
@@ -160,7 +145,7 @@ export function CategorySidebar({
                         setVisibleItems((prev) => ({
                             ...prev,
                             [category]: {
-                                ...(prev[category] || {}),
+                                ...(prev[category]),
                                 [id]: true, // 标记为可见
                             },
                         }));
@@ -168,7 +153,7 @@ export function CategorySidebar({
                         setVisibleItems((prev) => ({
                             ...prev,
                             [category]: {
-                                ...(prev[category] || {}),
+                                ...(prev[category]),
                                 [id]: false, // 标记为不可见
                             },
                         }));
@@ -179,7 +164,10 @@ export function CategorySidebar({
                 {
                     rootMargin: "200px 0px",
                 });
-            setChallengesLoaded(true)
+                
+            setTimeout(() => {
+                setChallengesLoaded(true)
+            }, 200)
         }, createSkipGlobalErrorConfig()).catch((error: AxiosError) => {
             if (error.response?.status == 400) {
                 clearInterval(updateChallengeInter)
@@ -198,8 +186,7 @@ export function CategorySidebar({
     useEffect(() => {
 
         if (gameStatus == "running" || gameStatus == "practiceMode" || isAdmin()) {
-            updateChalenges(true)
-
+            updateChalenges()
             updateChallengeInter = setInterval(() => {
                 updateChalenges()
             }, randomInt(4000, 6000))
@@ -227,7 +214,7 @@ export function CategorySidebar({
 
     // 处理切换题目
     const handleChangeChallenge: (id: number) => React.MouseEventHandler<HTMLDivElement> = (id: number) => {
-        return (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+        return (_event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
 
             if (id == curChallenge?.challenge_id) return
 
@@ -236,7 +223,7 @@ export function CategorySidebar({
                 curChallengeRef.current = response.data.data
                 setCurChallenge(response.data.data)
                 setPageSwitching(true)
-            }).catch((error: AxiosError) => { })
+            }).catch((_error: AxiosError) => { })
         };
     };
 

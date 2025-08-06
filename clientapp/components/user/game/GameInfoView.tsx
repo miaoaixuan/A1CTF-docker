@@ -1,13 +1,9 @@
 import { Mdx } from "components/MdxCompoents";
-import ImageLoader from "components/modules/ImageLoader";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
-import { Captions, LibraryBig, QrCode } from "lucide-react";
+import { LibraryBig, QrCode } from "lucide-react";
 import { MacScrollbar } from "mac-scrollbar";
-import { useEffect, useMemo } from "react";
-import { ParticipationStatus, UserFullGameInfo } from "utils/A1API";
 import GamePosterInfoModule from "./GamePosterInfoModule";
 import GameTeamStatusCard, { LoginFirstCard } from "components/modules/game/GameTeamStatusCard";
-import { A1GameStatus } from "components/modules/game/GameStatusEnum";
 import { useTheme } from "next-themes";
 import { useGame, useGameDescription } from "hooks/UseGame";
 
@@ -21,7 +17,7 @@ export default function GameInfoView(
     const { gameInfo, gameStatus, teamStatus, isLoading } = useGame(gameID)
     const { gameDescription } = useGameDescription(gameID)
 
-    const { clientConfig, checkLoginStatus } = useGlobalVariableContext()
+    const { checkLoginStatus } = useGlobalVariableContext()
 
     const { theme } = useTheme()
     

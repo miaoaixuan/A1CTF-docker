@@ -1,8 +1,8 @@
 import { Button } from "components/ui/button"
-import { AlarmClock, AudioWaveform, ChartNoAxesCombined, CheckCheck, CircleFadingArrowUp, CirclePower, CircleX, ClockArrowUp, Flag, Loader2, Network, Package, PanelBottomClose, PanelTopClose, PanelTopOpen, Paperclip, Wrench } from "lucide-react"
+import { AlarmClock, CheckCheck, CirclePower, CircleX, ClockArrowUp, Flag, Loader2, Network, Package, Paperclip } from "lucide-react"
 import { MacScrollbar } from "mac-scrollbar"
 import TimerDisplay from "../TimerDisplay"
-import { ContainerStatus, ExposePortInfo, GameScoreboardData, UserDetailGameChallenge, UserFullGameInfo, UserRole, UserSimpleGameChallenge } from "utils/A1API"
+import { ContainerStatus, ExposePortInfo, UserDetailGameChallenge, UserRole, UserSimpleGameChallenge } from "utils/A1API"
 import { ChallengeSolveStatus } from "components/user/game/ChallengesView"
 import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react"
 import { api, createSkipGlobalErrorConfig, ErrorMessage } from "utils/ApiHelper"
@@ -10,13 +10,10 @@ import { randomInt } from "mathjs"
 import dayjs from "dayjs"
 import { Mdx } from "components/MdxCompoents"
 import { toast } from 'react-toastify/unstyled';
-import { useTranslation } from "react-i18next"
 import ChallengeNameTitle from "./ChallengeNameTitle"
 import { useTheme } from "next-themes"
 import FileDownloader from "./FileDownloader"
 import copy from "copy-to-clipboard"
-import GameTeamStatusCard from "../game/GameTeamStatusCard"
-import ChallengeManageSheet from "components/admin/game/ChallengeManageSheet"
 import InChallengeViewManager from "components/admin/game/InChallengeViewManager"
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext"
 import { AxiosError } from "axios"
@@ -43,8 +40,6 @@ export default function ChallengeMainContent(
     }
 ) {
 
-    const { t } = useTranslation()
-
     const [containerLaunching, setContainerLaunching] = useState(false)
 
     const [containerInfo, setContainerInfo] = useState<ExposePortInfo[]>([])
@@ -59,11 +54,11 @@ export default function ChallengeMainContent(
     const handleLaunchContainer = () => {
         setContainerLaunching(true)
 
-        api.user.userCreateContainerForAChallenge(gameID, curChallenge?.challenge_id ?? 0, createSkipGlobalErrorConfig()).then((res) => {
+        api.user.userCreateContainerForAChallenge(gameID, curChallenge?.challenge_id ?? 0, createSkipGlobalErrorConfig()).then(() => {
             // 开始刷新靶机状态
             setRefreshContainerTrigger(true)
         }).catch((err: AxiosError) => {
-            const errorMessage = (err.response?.data as ErrorMessage).message ?? "未知错误"
+            const errorMessage = ((err.response?.data ?? { message: "未知错误" }) as ErrorMessage).message 
             if (err.response?.status == 409) {
                 // 容器数量超限
                 setContainerLaunching(false)
@@ -94,7 +89,7 @@ export default function ChallengeMainContent(
 
     const handleDestoryContainer = () => {
 
-        api.user.userDeleteContainerForAChallenge(gameID, curChallenge?.challenge_id ?? 0).then((res) => {
+        api.user.userDeleteContainerForAChallenge(gameID, curChallenge?.challenge_id ?? 0).then(() => {
             setContainerRunningTrigger(false)
 
             const newContainers = containerInfo

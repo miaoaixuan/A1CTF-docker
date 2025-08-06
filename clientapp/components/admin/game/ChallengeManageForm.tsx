@@ -8,13 +8,7 @@ import {
     FormMessage,
 } from "components/ui/form"
 
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "components/ui/popover"
-
-import { useFieldArray, Controller, useWatch } from "react-hook-form";
+import { useFieldArray, useWatch } from "react-hook-form";
 
 import {
     Select,
@@ -29,25 +23,17 @@ import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "components/ui/button";
-import { cn } from "lib/utils";
 
-import { CalendarIcon, CircleArrowLeft, Cloud, FileCode, Github, PlusCircle, Save, ScanBarcode, TableProperties, Upload } from "lucide-react"
-import { Textarea } from "components/ui/textarea";
+import { Cloud, FileCode, Github, PlusCircle, Save, ScanBarcode, TableProperties, Upload } from "lucide-react"
 
-import CodeEditor from '@uiw/react-textarea-code-editor';
 
 import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
 import { useEffect, useState } from "react";
-import { MacScrollbar } from "mac-scrollbar";
 import { AdminChallengeConfig } from "utils/A1API";
-import { api, ErrorMessage } from "utils/ApiHelper";
-import dayjs from "dayjs";
+import { api } from "utils/ApiHelper";
 import { toast } from 'react-toastify/unstyled';
-import { AxiosError } from "axios";
-import { useNavigate } from "react-router";
 import { UploadFileDialog } from "components/dialogs/UploadFileDialog";
 import { Switch } from "components/ui/switch";
-import { useTheme } from "next-themes";
 import ThemedEditor from "components/modules/ThemedEditor";
 
 interface ContainerFormProps {
@@ -410,6 +396,7 @@ function AttachmentForm({ control, index, form, removeAttachment, onFormSubmit }
                                                 // toast.success("题目信息已自动保存");
                                             } catch (error) {
                                                 toast.error("自动保存失败，请手动保存");
+                                                const _ = error
                                             }
                                         }}
                                     >
@@ -593,7 +580,7 @@ export function ChallengeManageForm({ challengeInfo }: { challengeInfo: AdminCha
         name: "attachments",
     });
 
-    const [showScript, setShowScript] = useState(false);
+    const [_showScript, setShowScript] = useState(false);
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         const finalData = {
@@ -619,14 +606,10 @@ export function ChallengeManageForm({ challengeInfo }: { challengeInfo: AdminCha
             flag_type: values.flag_type
         };
 
-        api.admin.updateChallenge(challengeInfo?.challenge_id!, finalData as AdminChallengeConfig).then((res) => {
+        api.admin.updateChallenge(challengeInfo?.challenge_id ?? 0, finalData as AdminChallengeConfig).then(() => {
             toast.success("更新成功");
         })
     }
-
-    const router = useNavigate()
-
-    const { theme } = useTheme()
 
     return (
         <Form {...form}>
@@ -919,6 +902,7 @@ export function ChallengeManageForm({ challengeInfo }: { challengeInfo: AdminCha
                                         },
                                         (errors) => {
                                             reject(new Error('Form validation failed'));
+                                            const _ = errors
                                         }
                                     )();
                                 });

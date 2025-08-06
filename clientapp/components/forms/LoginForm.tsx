@@ -1,18 +1,9 @@
-import { cn } from "lib/utils"
 import { Button } from "components/ui/button"
 import { Input } from "components/ui/input"
 import { Label } from "components/ui/label"
-
-import { FormEventHandler, useRef, useState } from "react";
-import { LoaderCircle } from 'lucide-react';
-
-import { toastError, toastSuccess } from "utils/ToastUtil"
-
+import { useState } from "react";
 import { CapWidget, CapWidgetElement } from '@pitininja/cap-react-widget';
-
-
-import axios, { AxiosError } from 'axios';
-import { useTheme } from "next-themes";
+import { AxiosError } from 'axios';
 
 import {
     Form,
@@ -35,18 +26,9 @@ import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 
-import Turnstile, { useTurnstile } from "react-turnstile";
 import { useNavigateFrom } from "hooks/NavigateFrom";
 
-interface ErrorLoginResponse {
-    title: string;
-    status: number;
-}
-
-export function LoginForm({
-    className,
-    ...props
-}: React.ComponentPropsWithoutRef<"form">) {
+export function LoginForm() {
     const { t } = useTranslation("login_form");
 
     const [token, setToken] = useState<string>("")
@@ -62,9 +44,7 @@ export function LoginForm({
 
     const [loading, setLoading] = useState(false)
 
-    const { theme, systemTheme } = useTheme();
-
-    const [navigateFrom, getNavigateFrom] = useNavigateFrom()
+    const [_navigateFrom, getNavigateFrom] = useNavigateFrom()
 
     const formSchema = z.object({
         userName: z.string().nonempty(t("username_not_null")),
@@ -85,7 +65,7 @@ export function LoginForm({
             username: values.userName,
             password: values.password,
             captcha: token
-        }, createSkipGlobalErrorConfig()).then(response => {
+        }, createSkipGlobalErrorConfig()).then(() => {
             updateProfile(() => {
                 router(getNavigateFrom() ?? "/")
 

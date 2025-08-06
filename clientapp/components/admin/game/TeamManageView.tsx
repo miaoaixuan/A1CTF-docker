@@ -11,7 +11,7 @@ import {
     useReactTable,
 } from "@tanstack/react-table"
 
-import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, Pencil, LockIcon, CheckIcon, TrashIcon, UnlockIcon, ClipboardList, RefreshCw } from "lucide-react"
+import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, LockIcon, CheckIcon, TrashIcon, UnlockIcon, ClipboardList, RefreshCw } from "lucide-react"
 
 import * as React from "react"
 
@@ -23,7 +23,6 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "components/ui/dropdown-menu"
 
@@ -37,12 +36,11 @@ import {
     TableRow,
 } from "components/ui/table"
 
-import { MacScrollbar } from "mac-scrollbar";
 
 import { Badge } from "../../ui/badge";
-import { AdminListTeamItem, ParticipationStatus, UserGameSimpleInfo } from "utils/A1API";
+import { ParticipationStatus } from "utils/A1API";
 
-import { api, ErrorMessage } from "utils/ApiHelper";
+import { api } from "utils/ApiHelper";
 import AvatarUsername from "../../modules/AvatarUsername";
 import { toast } from 'react-toastify/unstyled';
 import {
@@ -55,21 +53,6 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "components/ui/alert-dialog";
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-} from "components/ui/command"
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "components/ui/popover"
-import { cn } from "lib/utils"
-import { Check, ChevronsUpDown } from "lucide-react"
-import { AxiosResponse } from "axios";
 
 export type TeamModel = {
     team_id: number,
@@ -132,16 +115,11 @@ export function TeamManageView(
         React.useState<VisibilityState>({})
     const [rowSelection, setRowSelection] = React.useState({})
 
-    const [pageSize, setPageSize] = React.useState(30);
+    const [pageSize, _setPageSize] = React.useState(30);
     const [curPage, setCurPage] = React.useState(0);
     const [totalCount, setTotalCount] = React.useState(0);
     const [searchKeyword, setSearchKeyword] = React.useState("");
     const [debouncedSearchKeyword, setDebouncedSearchKeyword] = React.useState("");
-
-    // 比赛选择相关状态
-    const [games, setGames] = React.useState<UserGameSimpleInfo[]>([]);
-    const [open, setOpen] = React.useState(false);
-    const [searchValue, setSearchValue] = React.useState("");
 
     // 对话框状态
     const [confirmDialog, setConfirmDialog] = React.useState({
@@ -186,7 +164,7 @@ export function TeamManageView(
         toast.promise(apiCall, {
             pending: loadingMessage,
             success: {
-                render({data}) {
+                render({data: _data}) {
                     fetchTeams(); // 刷新数据
                     return '队伍状态已更新';
                 },
@@ -207,7 +185,7 @@ export function TeamManageView(
                     {
                         pending: '正在删除队伍...',
                         success: {
-                            render({data}) {
+                            render({data: _data}) {
                                 fetchTeams(); // 刷新数据
                                 setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                                 return '队伍已删除';

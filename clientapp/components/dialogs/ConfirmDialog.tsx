@@ -7,15 +7,9 @@ import {
     DialogTrigger,
 } from "components/ui/dialog"
 
-
 import { Dispatch, SetStateAction } from "react";
 import { CircleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
-
-interface ErrorMessage {
-    status: number;
-    title: string;
-}
 
 export type DialogOption = { 
     onConfirm?: () => void, onCancel?: () => void, isOpen: boolean, message: string, title?: string

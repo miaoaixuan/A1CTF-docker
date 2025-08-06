@@ -112,7 +112,7 @@ export function ContainerManageView({
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
     const [rowSelection, setRowSelection] = React.useState({})
 
-    const [pageSize, setPageSize] = React.useState(30);
+    const [pageSize, _setPageSize] = React.useState(30);
     const [curPage, setCurPage] = React.useState(0);
     const [totalCount, setTotalCount] = React.useState(0);
 
@@ -150,7 +150,7 @@ export function ContainerManageView({
                     {
                         pending: '正在停止容器...',
                         success: {
-                            render({ data }) {
+                            render({ data: _data }) {
                                 fetchContainers(); // 刷新数据
                                 setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                                 return '容器正在停止';
@@ -219,7 +219,7 @@ export function ContainerManageView({
             {
                 pending: '正在延长容器生命周期...',
                 success: {
-                    render({ data }) {
+                    render({ data: _data }) {
                         fetchContainers(); // 刷新数据
                         return '容器生命周期已延长';
                     }

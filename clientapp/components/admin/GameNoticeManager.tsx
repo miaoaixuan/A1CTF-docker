@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from 'components/ui/button';
 import { Input } from 'components/ui/input';
-import { Textarea } from 'components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from 'components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from 'components/ui/alert-dialog';
 import { Badge } from 'components/ui/badge';
@@ -11,7 +10,7 @@ import { useTheme } from 'next-themes';
 import { toast } from 'react-toastify/unstyled';
 import { api } from 'utils/ApiHelper';
 import { AdminNoticeItem } from 'utils/A1API';
-import { PlusCircle, Trash2, MessageSquare, Calendar, AlertCircle, Eye, MoreHorizontal } from 'lucide-react';
+import { PlusCircle, Trash2, MessageSquare, Calendar, AlertCircle, Eye } from 'lucide-react';
 import dayjs from 'dayjs';
 import ThemedEditor from 'components/modules/ThemedEditor';
 
@@ -62,7 +61,7 @@ export function GameNoticeManager({ gameId }: GameNoticeManagerProps) {
         api.admin.adminCreateGameNotice(gameId, {
             title: createForm.title,
             content: createForm.content
-        }).then((res) => {
+        }).then(() => {
             toast.success('公告创建成功');
             setCreateForm({ title: '', content: '' });
             setIsCreateDialogOpen(false);
@@ -74,7 +73,7 @@ export function GameNoticeManager({ gameId }: GameNoticeManagerProps) {
     const handleDeleteNotice = async (noticeId: number) => {
         api.admin.adminDeleteGameNotice({
             notice_id: noticeId
-        }).then((res) => {
+        }).then(() => {
             toast.success('公告删除成功');
             loadNotices();
         })

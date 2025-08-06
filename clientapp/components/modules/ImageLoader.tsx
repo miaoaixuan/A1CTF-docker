@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Loader, Loader2, LoaderPinwheel } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { cn } from 'lib/utils';
 import { useSpring, animated } from '@react-spring/web';
 
@@ -8,7 +8,7 @@ const ImageLoader = ({
     alt = '',
     className = '',
     width = 1920,
-    primaryColor = "white",
+    primaryColor: _primaryColor = "white",
     height = 1080,
     text = true,
     onLoad = () => {},
@@ -26,7 +26,6 @@ const ImageLoader = ({
 }) => {
     const [loaded, setLoaded] = useState(false);
     const imgRef = useRef(null);
-    const placeholderRef = useRef(null);
 
     // Spring 动画配置
     const fadeSpring = useSpring({

@@ -1,18 +1,16 @@
 import { Button } from "components/ui/button"
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "components/ui/table"
 import { Badge } from "components/ui/badge"
 import { MacScrollbar } from "mac-scrollbar"
-import { Captions, TriangleAlert, RefreshCw, AlertCircle, CheckCircle2, XCircle, Clock, Flag, Trophy, User, Users, Plus, X, Filter, Trash, Copy, Shield, MapPin } from "lucide-react"
+import { Captions, TriangleAlert, RefreshCw, AlertCircle, CheckCircle2, XCircle, Clock, Flag, Trophy, User, Users, X, Filter, Trash, Copy, Shield, MapPin } from "lucide-react"
 import { useParams } from "react-router"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import dayjs from "dayjs"
 import { api } from "utils/ApiHelper"
 import { AdminSubmitItem, AdminCheatItem } from "utils/A1API"
 import { useTheme } from "next-themes"
 import { toast } from 'react-toastify/unstyled';
 import { Input } from "components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "components/ui/popover"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "components/ui/dialog"
 
 import {
     Select,

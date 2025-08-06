@@ -16,20 +16,13 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useState } from "react";
-
-import { useTheme } from "next-themes";
-import { AxiosError } from 'axios';
 import { toast } from 'react-toastify/unstyled';
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
-import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper";
-import Turnstile, { useTurnstile } from "react-turnstile";
+import { api } from "utils/ApiHelper";
 import { CapWidget, CapWidgetElement } from "@pitininja/cap-react-widget";
 
-export function RegisterForm({
-    className,
-    ...props
-}: React.ComponentPropsWithoutRef<"form">) {
+export function RegisterForm() {
     const { t } = useTranslation("register_form");
 
     const [loading, setLoading] = useState(false)
@@ -39,8 +32,6 @@ export function RegisterForm({
         const ele = document.getElementsByTagName("cap-widget")[0] as CapWidgetElement
         ele.dispatchEvent("reset")
     }
-
-    const { theme, systemTheme } = useTheme();
 
     const { updateProfile, clientConfig } = useGlobalVariableContext()
 
@@ -78,7 +69,7 @@ export function RegisterForm({
             username: values.userName,
             password: values.password,
             captcha: token
-        }).then((res) => {
+        }).then(() => {
             updateProfile(() => {
                 router(`/login`)
 
@@ -86,7 +77,7 @@ export function RegisterForm({
                     toast.success(t("signup_success"))
                 }, 300)
             })
-        }).catch((error: AxiosError) => {
+        }).catch(() => {
             setToken("")
         }).finally(() => {
             setLoading(false)

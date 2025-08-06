@@ -1,7 +1,7 @@
 import { CirclePlus, Search, Trophy } from "lucide-react";
 import { MacScrollbar } from "mac-scrollbar";
 import { useTheme } from "next-themes";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { UserGameSimpleInfo } from "utils/A1API";
@@ -16,54 +16,14 @@ export function AdminGameManagePage() {
 
     const navigate = useNavigate()
 
-    const [primaryColorMap, setPrimaryColorMap] = useState<{ [key: number]: string }>({});
-
     // 懒加载, 当前题目卡片是否在视窗内
-    const observerRef = useRef<IntersectionObserver | null>(null);
-    const [visibleItems, setVisibleItems] = useState<Record<string, boolean>>({});
-    const [isLoaded, setIsLoaded] = useState<Record<string, boolean>>({});
     const [searchContent, setSearchContent] = useState("")
 
     useEffect(() => {
         api.admin.listGames({ size: 16, offset: 0 }).then((res) => {
             setGames(res.data.data)
         })
-
-        observerRef.current = new IntersectionObserver((entries) => {
-            entries.forEach((entry) => {
-                const target = entry.target as HTMLElement;
-
-                const id = target.dataset.id as string;
-
-                if (entry.isIntersecting) {
-                    setVisibleItems((prev) => ({
-                        ...prev,
-                        [id]: true
-                    }));
-                    setIsLoaded((prev) => ({
-                        ...prev,
-                        [id]: true
-                    }));
-                } else {
-                    setVisibleItems((prev) => ({
-                        ...prev,
-                        [id]: false
-                    }));
-                }
-            }
-            );
-        },
-            {
-                rootMargin: "420px 0px",
-            });
     }, [])
-
-    const observeItem = (el: HTMLElement, id: string) => {
-        if (el && observerRef.current) {
-            el.dataset.id = id;
-            observerRef.current.observe(el);
-        }
-    };
 
     // 过滤比赛
     const filteredGames = games.filter((game) => {

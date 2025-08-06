@@ -1,7 +1,7 @@
 import { Button } from "components/ui/button";
 import { useNavigateFrom } from "hooks/NavigateFrom";
-import { AudioWaveform, ChartNoAxesCombined, Fingerprint, Flag, Grid2X2, Grid2X2X, IdCard, Key, KeyRound, PencilLine, Pickaxe, ScanFace, ScanText, Users, Lock, Star } from "lucide-react";
-import { GameScoreboardData, ParticipationStatus, UserFullGameInfo } from "utils/A1API";
+import { AudioWaveform, ChartNoAxesCombined, Flag, IdCard, KeyRound, PencilLine, Pickaxe, ScanFace, ScanText, Users, Lock, Star } from "lucide-react";
+import { ParticipationStatus } from "utils/A1API";
 
 import { CreateTeamDialog } from "components/dialogs/CreateTeamDialog";
 import { JoinTeamDialog } from "components/dialogs/JoinTeamDialog";
@@ -119,7 +119,7 @@ export default function GameTeamStatusCard(
 
 export function LoginFirstCard() {
 
-    const [navigateFrom, getNavigateFrom] = useNavigateFrom()
+    const [navigateFrom, _getNavigateFrom] = useNavigateFrom()
 
     return (
         <div className="pl-5 pr-5 py-2 border-l-1 border-y-1 rounded-l-2xl w-full flex gap-6 items-center select-none">

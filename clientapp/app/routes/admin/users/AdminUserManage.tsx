@@ -1,8 +1,6 @@
 import SafeComponent from "components/SafeComponent"
 import { AdminHeader } from "components/admin/AdminHeader";
-import { EditChallengePage } from "components/admin/EditChallengePage";
 import { UserManageView } from "components/admin/UserManageView";
-import { useParams } from "react-router";
 
 export default function Home () {
 

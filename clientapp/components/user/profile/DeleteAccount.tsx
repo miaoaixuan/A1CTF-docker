@@ -1,6 +1,4 @@
-import { Button } from "components/ui/button";
 import { Shell } from "lucide-react";
-import { toast } from 'react-toastify/unstyled';
 
 export default function DeleteAccount() {
     return (

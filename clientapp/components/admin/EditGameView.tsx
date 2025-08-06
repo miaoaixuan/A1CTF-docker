@@ -312,8 +312,6 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                             {activeModule === 'basic' && (
                                 <BasicInfoModule
                                     form={form}
-                                    handleDateSelect={handleDateSelect}
-                                    handleTimeChange={handleTimeChange}
                                     gameID={game_info.game_id}
                                 />
                             )}

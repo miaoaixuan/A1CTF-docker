@@ -5,14 +5,12 @@ import { Button } from "components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "components/ui/dropdown-menu";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useGame } from "hooks/UseGame";
-import { BowArrow, Cctv, DoorOpen, Info, Settings, ShieldCheck, UserRoundMinus, UserSearch, WandSparkles, Wrench } from "lucide-react";
+import { BowArrow, Cctv, DoorOpen, Info, Settings, UserRoundMinus, UserSearch, WandSparkles, Wrench } from "lucide-react";
 import { useTheme } from "next-themes";
-import { Dispatch, SetStateAction } from "react";
-import { useCookies } from "react-cookie";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { toast } from "react-toastify/unstyled";
-import { ParticipationStatus, UserFullGameInfo, UserRole } from "utils/A1API";
+import { ParticipationStatus, UserRole } from "utils/A1API";
 
 export default function GameViewSidebar(
     {
@@ -24,8 +22,7 @@ export default function GameViewSidebar(
     }
 ) {
     const { gameInfo, gameStatus, teamStatus } = useGame(gameID)
-    const { clientConfig, curProfile, isAdmin, updateProfile, checkLoginStatus, unsetLoginStatus  } = useGlobalVariableContext()
-    const [cookies, setCookie, removeCookie] = useCookies(["a1token"])
+    const { clientConfig, curProfile, isAdmin, unsetLoginStatus  } = useGlobalVariableContext()
     const { t } = useTranslation()
     
     type Module = {

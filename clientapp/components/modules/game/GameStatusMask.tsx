@@ -1,30 +1,19 @@
-import { CreateTeamDialog } from "components/dialogs/CreateTeamDialog";
-import { JoinTeamDialog } from "components/dialogs/JoinTeamDialog";
-import { Mdx } from "components/MdxCompoents";
 import { Button } from "components/ui/button";
-import { ParticipationStatus, UserFullGameInfo } from "utils/A1API";
+import { ParticipationStatus } from "utils/A1API";
 import { motion } from "framer-motion";
-import { AlarmClock, Ban, Info, ListCheck, NotebookPen, Pickaxe, Presentation, TriangleAlert, Undo2, Users } from "lucide-react";
-import { MacScrollbar } from "mac-scrollbar";
+import { TriangleAlert, Undo2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "next-themes";
-import { Dispatch, SetStateAction, useEffect } from "react";
-import TimerDisplay from "../TimerDisplay";
-import dayjs from "dayjs";
 import { useNavigate } from "react-router";
-import { A1GameStatus } from "./GameStatusEnum";
 import { useGame } from "hooks/UseGame";
 
 export default function GameStatusMask({ gameID } : { gameID: number }) {
 
     const {
-        gameStatus, 
         teamStatus, 
         isLoading
     } = useGame(gameID)
 
     const { t } = useTranslation('challenge_view');
-    const { theme } = useTheme()
 
     const navigate = useNavigate()
 

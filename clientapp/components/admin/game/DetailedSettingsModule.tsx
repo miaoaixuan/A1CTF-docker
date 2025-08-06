@@ -35,9 +35,9 @@ interface DetailedSettingsModuleProps {
 
 export function DetailedSettingsModule({
     form,
-    handleDateSelect,
+    handleDateSelect: _handleDateSelect,
     game_info,
-    handleTimeChange,
+    handleTimeChange: _handleTimeChange,
     clientConfig,
 }: DetailedSettingsModuleProps) {
     // 监听 poster 字段变化，用于实时预览
