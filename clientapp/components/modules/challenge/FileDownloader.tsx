@@ -42,7 +42,6 @@ const FileDownloader = (
         
     
         if (attach.attach_type == AttachmentType.STATICFILE || attach.attach_type == AttachmentType.REMOTEFILE) {
-            const url: string = `/api/file/download/${attach.attach_hash}`;
             const fileName = attach.attach_name
 
             setDownloadSpeed({
@@ -52,7 +51,7 @@ const FileDownloader = (
             });
             setDownloading(true)
     
-            const fetchFile = async () => {
+            const fetchFile = async (url: string) => {
                 try {
                     const response = await fetch(url);
                     const contentLength = response.headers.get("Content-Length") || "0";
@@ -121,8 +120,12 @@ const FileDownloader = (
                     setDownloading(false)
                 }
             };
-    
-            fetchFile();
+
+            if (attach.attach_type == AttachmentType.STATICFILE) {
+                fetchFile(`/api/file/download/${attach.attach_hash}`)
+            } else {
+                fetchFile(attach.attach_url ?? "");
+            }
         } else {
             setRedirectURL(attach.attach_url ?? "");
         }
@@ -132,6 +135,7 @@ const FileDownloader = (
         <Button variant="secondary" onClick={() => handleDownload(attach)}
             className="p-0 w-full lg:w-[300px] h-[105px] text-md [&_svg]:size-5 transition-all duration-300 hover:bg-foreground/20 select-none disabled:opacity-100"
             disabled={downloading}
+            title={attach.attach_name}
         >
             <div className={`flex flex-col p-4 w-full h-full ${!downloading ? "justify-center gap-2" : "justify-between"}`}>
                 {downloading ? (

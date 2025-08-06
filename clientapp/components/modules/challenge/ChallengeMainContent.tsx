@@ -230,7 +230,7 @@ export default function ChallengeMainContent(
             >
                 <div className="p-5 lg:p-10">
                     {curChallenge?.challenge_name && (
-                        <div className="flex flex-col gap-4 mb-4">
+                        <div className="flex flex-col gap-8 mb-8">
                             <ChallengeNameTitle challengeSolveStatusList={challengeSolveStatusList} curChallenge={curChallenge} setShowHintsWindowVisible={setShowHintsWindowVisible} />
                             {memoizedDescription}
                         </div>
@@ -320,7 +320,7 @@ export default function ChallengeMainContent(
                     ) : <></>}
 
                     {curChallenge?.attachments?.length ? (
-                        <div className="flex flex-col gap-2 mb-4">
+                        <div className="flex flex-col gap-4 mb-4">
                             <div className={`flex items-center gap-2 px-5 py-3 border-2 rounded-xl bg-foreground/[0.04] backdrop-blur-sm `}>
                                 <Paperclip />
                                 <span className="font-bold text-lg">附件列表</span>

@@ -196,7 +196,7 @@ export interface ExposePort {
 }
 
 export interface Container {
-  command?: string | null;
+  command?: string[] | null;
   env?: EnvironmentItem[];
   expose_ports: ExposePort[];
   image: string;
@@ -1865,7 +1865,7 @@ export class Api<
      * @tags user
      * @name VerifyEmailCode
      * @summary Verify email code
-     * @request POST:/api/verifyEmailCode
+     * @request POST:/api/account/verifyEmailCode
      */
     verifyEmailCode: (
       data: {
@@ -1879,7 +1879,7 @@ export class Api<
         },
         void
       >({
-        path: `/api/verifyEmailCode`,
+        path: `/api/account/verifyEmailCode`,
         method: "POST",
         body: data,
         type: ContentType.Json,
@@ -1909,6 +1909,63 @@ export class Api<
         void
       >({
         path: `/api/account/changePassword`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description send forget password email
+     *
+     * @tags user
+     * @name SendForgetPasswordEmail
+     * @summary send forget password email
+     * @request POST:/api/account/sendForgetPasswordEmail
+     */
+    sendForgetPasswordEmail: (
+      data: {
+        email: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+        },
+        void
+      >({
+        path: `/api/account/sendForgetPasswordEmail`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Reset user's password
+     *
+     * @tags user
+     * @name ResetPassword
+     * @summary Reset user's password
+     * @request POST:/api/account/resetPassword
+     */
+    resetPassword: (
+      data: {
+        code: string;
+        new_password: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+        },
+        void
+      >({
+        path: `/api/account/resetPassword`,
         method: "POST",
         body: data,
         type: ContentType.Json,
@@ -3452,8 +3509,6 @@ export class Api<
         category?: LogCategory;
         /** 用户ID */
         user_id?: string;
-        /** 操作类型 */
-        action?: string;
         /** 资源类型 */
         resource_type?: string;
         /** 状态 */

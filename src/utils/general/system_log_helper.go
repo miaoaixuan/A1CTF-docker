@@ -23,11 +23,6 @@ func QuerySystemLogs(params QueryLogParams) ([]models.SystemLog, int64, error) {
 		query = query.Where("user_id = ?", *params.UserID)
 	}
 
-	if params.Action != nil {
-		keyword := fmt.Sprintf("%%%s%%", *params.Action)
-		query = query.Where("action ILIKE ?", keyword)
-	}
-
 	if params.ResourceType != nil {
 		query = query.Where("resource_type = ?", *params.ResourceType)
 	}
@@ -54,7 +49,7 @@ func QuerySystemLogs(params QueryLogParams) ([]models.SystemLog, int64, error) {
 
 	if params.Keyword != nil {
 		keyword := fmt.Sprintf("%%%s%%", *params.Keyword)
-		query = query.Where("username ILIKE ? OR action ILIKE ? OR resource_type ILIKE ?", keyword, keyword, keyword)
+		query = query.Where("username ILIKE ? OR action ILIKE ? OR resource_type ILIKE ? OR resource_id ILIKE ?", keyword, keyword, keyword, keyword)
 	}
 
 	// 获取总数
@@ -90,7 +85,6 @@ func QuerySystemLogs(params QueryLogParams) ([]models.SystemLog, int64, error) {
 type QueryLogParams struct {
 	Category     *models.LogCategory `json:"category,omitempty"`
 	UserID       *string             `json:"user_id,omitempty"`
-	Action       *string             `json:"action,omitempty"`
 	ResourceType *string             `json:"resource_type,omitempty"`
 	Status       *string             `json:"status,omitempty"`
 	StartTime    *time.Time          `json:"start_time,omitempty"`

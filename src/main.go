@@ -233,7 +233,10 @@ func main() {
 		public.POST("/cap/validate", controllers.CapValidateToken)
 
 		// 邮箱验证接口
-		public.POST("/verifyEmailCode", controllers.VerifyEmailCode)
+		public.POST("/account/verifyEmailCode", controllers.VerifyEmailCode)
+
+		public.POST("/account/sendForgetPasswordEmail", controllers.UserForgetPassword)
+		public.POST("/account/resetPassword", controllers.UserVerifyAndResetPassword)
 	}
 
 	// 鉴权接口

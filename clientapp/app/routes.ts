@@ -16,6 +16,7 @@ export default [
     route("signup", "routes/auth/UserSignupPage.tsx"),
     route("email-verify", "routes/auth/EmailVerify.tsx"),
     route("forget-password", "routes/auth/ForgetPassword.tsx"),
+    route("reset-password", "routes/auth/ResetPassword.tsx"),
 
     route("admin", "routes/admin/AdminPageMain.tsx"),
     route("admin/challenges", "routes/admin/challenges/AdminGetChallengeList.tsx"),

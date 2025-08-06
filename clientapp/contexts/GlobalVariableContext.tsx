@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState, ReactNode, Dispatch, SetStateAction } from "react";
 import { browserName } from "react-device-detect";
 import { UserProfile, UserRole } from "utils/A1API";
 import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper";
@@ -60,6 +60,7 @@ interface GlobalVariableContextType {
     getSystemLogo: () => string;
     getSystemLogoDefault: () => string;
     isAdmin: () => boolean;
+    setCurProfile: Dispatch<SetStateAction<UserProfile>>;
     localStorageUID: string | undefined;
 }
 
@@ -279,7 +280,8 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
             getSystemLogo, 
             getSystemLogoDefault, 
             isAdmin,
-            localStorageUID
+            localStorageUID,
+            setCurProfile
         }}>
             {children}
         </globalVariableContext.Provider>

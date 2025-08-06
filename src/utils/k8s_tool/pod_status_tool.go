@@ -24,14 +24,27 @@ type PodStatusDecision struct {
 }
 
 func CheckPodStatus(pod *corev1.Pod) (PodStatusDecision, error) {
+
+	podReady := false
+
+	for _, v := range pod.Status.Conditions {
+		if v.Type == corev1.PodReady {
+			podReady = v.Status == corev1.ConditionTrue
+		}
+	}
+
 	switch pod.Status.Phase {
 	case corev1.PodRunning:
-		return PodStatusDecision{
-			Status:         CustomPodRunning,
-			ShouldContinue: false,
-			ShouldReport:   false,
-			Message:        "Pod is running successfully",
-		}, nil
+		if podReady {
+			return PodStatusDecision{
+				Status:         CustomPodRunning,
+				ShouldContinue: false,
+				ShouldReport:   false,
+				Message:        "Pod is running successfully",
+			}, nil
+		} else {
+			return handleRunningPodButNotReady(pod)
+		}
 
 	case corev1.PodSucceeded:
 		return PodStatusDecision{
@@ -64,6 +77,7 @@ func CheckPodStatus(pod *corev1.Pod) (PodStatusDecision, error) {
 		}, nil
 	}
 }
+
 func handleFailedPod(pod *corev1.Pod) (PodStatusDecision, error) {
 	// 检查容器状态获取更详细的信息
 	for _, containerStatus := range pod.Status.ContainerStatuses {
@@ -85,6 +99,48 @@ func handleFailedPod(pod *corev1.Pod) (PodStatusDecision, error) {
 		ShouldContinue: false,
 		ShouldReport:   true,
 		Message:        "Pod failed but no specific container error found",
+	}, nil
+}
+
+func handleRunningPodButNotReady(pod *corev1.Pod) (PodStatusDecision, error) {
+	for _, containerStatus := range pod.Status.ContainerStatuses {
+		if containerStatus.State.Waiting != nil {
+			switch containerStatus.State.Waiting.Reason {
+			case "CrashLoopBackOff", "RunContainerError", "DeadlineExceeded":
+				return PodStatusDecision{
+					Status:         CustomPodFailed,
+					ShouldContinue: false,
+					ShouldReport:   true,
+					Message: fmt.Sprintf("%s for container %s: %s",
+						containerStatus.State.Waiting.Reason, containerStatus.Name, containerStatus.State.Waiting.Message),
+				}, nil
+			default:
+				// 其他等待状态可能需要特殊处理
+				return PodStatusDecision{
+					Status:         CustomPodFailed,
+					ShouldContinue: false,
+					ShouldReport:   false,
+					Message: fmt.Sprintf("Container %s is waiting: %s %s",
+						containerStatus.Name, containerStatus.State.Waiting.Reason, containerStatus.State.Waiting.Message),
+				}, nil
+			}
+		}
+		// if containerStatus.State.Terminated != nil {
+		// 	return PodStatusDecision{
+		// 		Status:         CustomPodFailed,
+		// 		ShouldContinue: false,
+		// 		ShouldReport:   false,
+		// 		Message: fmt.Sprintf("Container %s is terminated: %s %s",
+		// 			containerStatus.Name, containerStatus.State.Terminated.Reason, containerStatus.State.Terminated.Message),
+		// 	}, nil
+		// }
+	}
+
+	return PodStatusDecision{
+		Status:         CustomPodWaiting,
+		ShouldContinue: true,
+		ShouldReport:   false,
+		Message:        fmt.Sprintf("Pod status %s", pod.Status.Phase),
 	}, nil
 }
 
@@ -115,7 +171,46 @@ func handlePendingPod(pod *corev1.Pod) (PodStatusDecision, error) {
 					Message: fmt.Sprintf("Failed to pull image for container %s: %s",
 						containerStatus.Name, containerStatus.State.Waiting.Message),
 				}, nil
-
+			case "InvalidImageName":
+				return PodStatusDecision{
+					Status:         CustomPodFailed,
+					ShouldContinue: false,
+					ShouldReport:   true,
+					Message: fmt.Sprintf("Image name incorrect for container %s: %s",
+						containerStatus.Name, containerStatus.State.Waiting.Message),
+				}, nil
+			case "RegistryUnavailable":
+				return PodStatusDecision{
+					Status:         CustomPodFailed,
+					ShouldContinue: false,
+					ShouldReport:   true,
+					Message: fmt.Sprintf("Registry unavailable for container %s: %s",
+						containerStatus.Name, containerStatus.State.Waiting.Message),
+				}, nil
+			case "ImageInspectError":
+				return PodStatusDecision{
+					Status:         CustomPodFailed,
+					ShouldContinue: false,
+					ShouldReport:   true,
+					Message: fmt.Sprintf("Image inspect error for container %s: %s",
+						containerStatus.Name, containerStatus.State.Waiting.Message),
+				}, nil
+			case "ErrImageNeverPull":
+				return PodStatusDecision{
+					Status:         CustomPodFailed,
+					ShouldContinue: false,
+					ShouldReport:   true,
+					Message: fmt.Sprintf("You set imagePullPolicy:Never and remote is missing image for container %s: %s",
+						containerStatus.Name, containerStatus.State.Waiting.Message),
+				}, nil
+			case "CreateContainerConfigError", "CreateContainerError", "CreatePodSandboxError", "ConfigPodSandboxError", "KillPodSandboxError", "NetworkPluginNotReady", "PreStartHookError", "CreateContainerTimeout":
+				return PodStatusDecision{
+					Status:         CustomPodFailed,
+					ShouldContinue: false,
+					ShouldReport:   true,
+					Message: fmt.Sprintf("%s for container %s: %s",
+						containerStatus.State.Waiting.Reason, containerStatus.Name, containerStatus.State.Waiting.Message),
+				}, nil
 			case "ContainerCreating", "PodInitializing":
 				// 这些是正常等待状态
 				continue
@@ -131,6 +226,15 @@ func handlePendingPod(pod *corev1.Pod) (PodStatusDecision, error) {
 				}, nil
 			}
 		}
+		// if containerStatus.State.Terminated != nil {
+		// 	return PodStatusDecision{
+		// 		Status:         CustomPodFailed,
+		// 		ShouldContinue: false,
+		// 		ShouldReport:   false,
+		// 		Message: fmt.Sprintf("Container %s is terminated: %s %s",
+		// 			containerStatus.Name, containerStatus.State.Terminated.Reason, containerStatus.State.Terminated.Message),
+		// 	}, nil
+		// }
 	}
 
 	// 检查资源情况

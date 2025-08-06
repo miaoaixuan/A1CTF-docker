@@ -1,4 +1,5 @@
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext"
+import { title } from "process"
 import { useEffect } from "react"
 import { useNavigate } from "react-router"
 import { toast } from "react-toastify/unstyled"
@@ -18,6 +19,9 @@ export default function () {
         "/about": { title: "关于" },
         "/signup": { title: "注册" },
         "/version": { title: "版本信息" },
+        "/forget-password": { title: "忘记密码" },
+        "/reset-password": { title: "重置密码" },
+        "/email-verify": { title: "邮箱验证" },
     }
 
     const unLoginAllowedPage = [
@@ -29,6 +33,9 @@ export default function () {
         "/version",
         "/games/\\d+/info",
         "/games/\\d+/scoreboard",
+        "/email-verify",
+        "/forget-password",
+        "/reset-password"
     ]
 
     useEffect(() => {

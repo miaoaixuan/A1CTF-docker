@@ -101,13 +101,6 @@ func HandleContainerStartTask(ctx context.Context, t *asynq.Task) error {
 		}
 	}
 
-	LogContainerOperation(nil, nil, models.ActionContainerStarted, task.ContainerID, map[string]interface{}{
-		"team_hash":    task.TeamHash,
-		"ingame_id":    task.InGameID,
-		"pod_name":     podInfo.Name,
-		"container_id": task.ContainerID,
-	}, nil)
-
 	return nil
 }
 

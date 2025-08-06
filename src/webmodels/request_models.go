@@ -222,3 +222,12 @@ type ChangePasswordPayload struct {
 	OldPassword string `json:"old_password"`
 	NewPassword string `json:"new_password"`
 }
+
+type ForgetPasswordWithVerifyCodePayload struct {
+	Code        string `json:"code"`
+	NewPassword string `json:"new_password"`
+}
+
+type ForgetPasswordSendMailPayload struct {
+	Email string `json:"email"`
+}

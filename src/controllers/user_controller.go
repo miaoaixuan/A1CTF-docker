@@ -177,6 +177,7 @@ func Register(c *gin.Context) {
 	tasks.LogFromGinContext(c, tasks.LogEntry{
 		Category:     models.LogCategoryUser,
 		Action:       "REGISTER",
+		Username:     &payload.Username,
 		ResourceType: models.ResourceTypeUser,
 		ResourceID:   &newUser.UserID,
 		Details: map[string]interface{}{
@@ -379,6 +380,14 @@ func VerifyEmailCode(c *gin.Context) {
 		return
 	}
 
+	if claims.Usage != "email-verify" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
+		})
+		return
+	}
+
 	userID := claims.UserID
 
 	if err := dbtool.DB().Model(&models.User{}).Where("user_id = ?", userID).Updates(
@@ -421,6 +430,98 @@ func UserChangePassword(c *gin.Context) {
 	saltedPassword := general.SaltPassword(payload.NewPassword, newSalt)
 
 	if err := dbtool.DB().Model(&user).Updates(models.User{
+		Password:   saltedPassword,
+		Salt:       newSalt,
+		JWTVersion: general.RandomPassword(16),
+	}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+	})
+}
+
+func UserForgetPassword(c *gin.Context) {
+	var payload webmodels.ForgetPasswordSendMailPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
+		})
+		return
+	}
+
+	allUsers, err := ristretto_tool.CachedMemberMap()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SystemError"}),
+		})
+		return
+	}
+
+	for _, v := range allUsers {
+		if *v.Email == payload.Email {
+
+			operationName := fmt.Sprintf("verificationMailSentTo:%s", *v.Email)
+			locked := redistool.LockForATime(operationName, time.Minute*1)
+
+			if !locked {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"code":    400,
+					"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "SendEmailTooFast"}),
+				})
+				return
+			}
+
+			tasks.NewForgePasswordEmailTask(v)
+			break
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+	})
+}
+
+func UserVerifyAndResetPassword(c *gin.Context) {
+	var payload webmodels.ForgetPasswordWithVerifyCodePayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
+		})
+		return
+	}
+
+	claims, err := emailjwt.GetEmailVerificationClaims(payload.Code)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
+		})
+		return
+	}
+
+	if claims.Usage != "reset-password" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
+		})
+		return
+	}
+
+	newSalt := general.GenerateSalt()
+	saltedPassword := general.SaltPassword(payload.NewPassword, newSalt)
+
+	if err := dbtool.DB().Model(&models.User{}).Where("user_id = ?", claims.UserID).Updates(models.User{
 		Password:   saltedPassword,
 		Salt:       newSalt,
 		JWTVersion: general.RandomPassword(16),
