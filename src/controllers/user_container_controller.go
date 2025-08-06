@@ -217,6 +217,18 @@ func UserCloseGameContainer(c *gin.Context) {
 
 	curContainer := containers[0]
 
+	// 用户操作靶机的 60 秒 CD
+	operationName := fmt.Sprintf("%s:containerOperation", user.UserID)
+	locked := redistool.LockForATime(operationName, time.Minute)
+
+	if !locked {
+		c.JSON(http.StatusTooManyRequests, webmodels.ErrorMessage{
+			Code:    429,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "RequestTooFast", TemplateData: map[string]interface{}{"Time": time.Minute.Seconds()}}),
+		})
+		return
+	}
+
 	// 锁住对一个容器ID的操作
 	operationNameForContainer := fmt.Sprintf("containerLock:%s", curContainer.ContainerID)
 	lockedForContainer := redistool.LockForATime(operationNameForContainer, time.Minute)

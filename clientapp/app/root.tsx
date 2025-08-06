@@ -30,8 +30,6 @@ import { I18nextProvider } from "react-i18next";
 
 import i18n from 'i18n';
 import GameSwitchHover from "components/GameSwitchHover";
-import { LoadingPage } from "components/LoadingPage";
-import HydrateFallbackPage from "components/HydrateFallbackPage";
 import ScreenTooSmall from "components/modules/ScreenTooSmall";
 import { isMobile } from "react-device-detect";
 import { useTheme } from "next-themes";
@@ -39,6 +37,7 @@ import { setGlobalNavigate } from "utils/ApiHelper";
 import ClientChecker from "components/modules/ClientChecker";
 
 import { SWRConfig } from 'swr'
+import { Loader2 } from "lucide-react";
 
 export const links: Route.LinksFunction = () => [
     { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -205,7 +204,12 @@ export default function App() {
 
 export function HydrateFallback() {
     return (
-        <HydrateFallbackPage />
+        <div className={`w-screen h-screen select-none flex justify-center items-center z-50 absolute bg-background transition-opacity duration-300 ease-in-out overflow-hidden opacity-100`}>
+            <div className="flex">
+                <Loader2 className="animate-spin" />
+                <span className="font-bold ml-3">Page Loading...</span>
+            </div>
+        </div>
     );
 }
 

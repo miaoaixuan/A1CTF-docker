@@ -1,26 +1,25 @@
-import { GalleryVerticalEnd, WandSparkles } from "lucide-react"
+import { WandSparkles } from "lucide-react"
 import { MacScrollbar } from "mac-scrollbar"
 import { useTheme } from "next-themes"
 
-import { LoginForm } from "components/LoginForm"
 
 import ThemeSwitcher from "components/ToggleTheme"
-import { RegisterForm } from "components/RegisterForm";
+import { RegisterForm } from "components/forms/RegisterForm";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useNavigate } from "react-router";
-import { Button } from "./ui/button"
+import { Button } from "components/ui/button"
 
-export default function SignupPage() {
+export default function SignupPageMain() {
 
     const { clientConfig, getSystemLogo } = useGlobalVariableContext()
     const navigate = useNavigate()
     const { theme } = useTheme()
 
     return (
-        <div className="h-screen overflow-hidden">
+        <div className="h-screen overflow-hidden select-none">
             <MacScrollbar className="w-full h-full" skin={theme === "dark" ? "dark" : "light"}>
-                <div className="flex flex-col gap-4 p-6 md:p-10 lg:w-[50vw] w-screen">
-                    <div className="flex gap-2 justify-between">
+                <div className="min-h-screen flex flex-col p-6 md:p-10 lg:w-[50vw] w-screen">
+                    <div className="flex gap-2 justify-between flex-shrink-0">
                         <div onClick={() => {
                             navigate(`/`)
                         }} className="flex items-center gap-2 font-medium">
@@ -38,7 +37,7 @@ export default function SignupPage() {
                             </Button>
                         </ThemeSwitcher>
                     </div>
-                    <div className="flex flex-1 items-center justify-center">
+                    <div className="flex-1 flex items-center justify-center py-8">
                         <div className="w-full max-w-[400px]">
                             <RegisterForm />
                         </div>

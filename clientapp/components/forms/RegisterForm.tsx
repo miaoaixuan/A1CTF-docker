@@ -12,8 +12,8 @@ import {
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Input } from "./ui/input";
-import { Button } from "./ui/button";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useState } from "react";
 
@@ -70,9 +70,6 @@ export function RegisterForm({
             "confirmPassword": ""
         },
     })
-
-    const [submitDisabled, setSubmitDisabled] = useState(false)
-    const turnstile = useTurnstile();
 
     function onSubmit(values: z.infer<typeof formSchema>) {
         setLoading(true)

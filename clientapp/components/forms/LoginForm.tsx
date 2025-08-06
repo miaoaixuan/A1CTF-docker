@@ -56,9 +56,6 @@ export function LoginForm({
         ele.dispatchEvent("reset")
     }
 
-    const userNameRef = useRef<HTMLInputElement>(null)
-    const passwordRef = useRef<HTMLInputElement>(null)
-
     const router = useNavigate()
 
     const { updateProfile, clientConfig } = useGlobalVariableContext()
@@ -117,7 +114,7 @@ export function LoginForm({
                     {t("login_hint")}
                 </p>
             </div>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-4">
                 <FormField
                     control={form.control}
                     name="userName"
@@ -173,10 +170,15 @@ export function LoginForm({
                 ) : <></>}
 
                 <div className='h-0' />
-                <Button type="submit" className="transition-all duration-300 w-full" disabled={loading || (clientConfig.captchaEnabled && token == "")}>{t("login")}</Button>
+                <Button 
+                    type="submit" 
+                    className="transition-all duration-300 w-full" 
+                    disabled={loading || (clientConfig.captchaEnabled && token == "")}
+                    onClick={form.handleSubmit(onSubmit)}
+                >{t("login")}</Button>
                 <div className="text-center text-sm">
                     {t("dont_have_account")}{" "}
-                    <a className="underline underline-offset-4" onClick={() => router(`/signup`)}>
+                    <a className="underline underline-offset-4 cursor-pointer" onClick={() => router(`/signup`)}>
                         {t("sign_up_title")}
                     </a>
                 </div>
@@ -205,7 +207,7 @@ export function LoginForm({
                         {t("login_with_zjnu")}
                     </Button> */}
                 </div>
-            </form>
+            </div>
         </Form>
     )
 }

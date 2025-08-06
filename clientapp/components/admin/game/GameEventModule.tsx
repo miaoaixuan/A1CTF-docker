@@ -4,7 +4,7 @@ import { Badge } from "components/ui/badge"
 import { MacScrollbar } from "mac-scrollbar"
 import { Captions, TriangleAlert, RefreshCw, AlertCircle, CheckCircle2, XCircle, Clock, Flag, Trophy, User, Users, Plus, X, Filter, Trash, Copy, Shield, MapPin } from "lucide-react"
 import { useParams } from "react-router"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import dayjs from "dayjs"
 import { api } from "utils/ApiHelper"
 import { AdminSubmitItem, AdminCheatItem } from "utils/A1API"
@@ -107,6 +107,11 @@ export function GameEventModule(
     const statusOptions: JudgeStatus[] = ["JudgeAC", "JudgeWA"]
 
     const [recordAutoUpdate, setRecordAutoUpdate] = useState<boolean>(true)
+    
+    // 初始化状态管理
+    const [isInitialized, setIsInitialized] = useState<boolean>(false)
+    const [challengeIdsReady, setChallengeIdsReady] = useState<boolean>(false)
+    const [cheatsIdsReady, setCheatsIdsReady] = useState<boolean>(false)
 
     // cheats filter state
     const [cheatsChallengeNames, setCheatsChallengeNames] = useState<string[]>([])
@@ -193,26 +198,40 @@ export function GameEventModule(
         })
     }
 
+    // 处理外部传入的challengeID
     useEffect(() => {
         if (GchallengeID) {
-            setChallengeIds(prev => prev.includes(GchallengeID) ? prev : [...prev, GchallengeID])
-            setCheatsChallengeIds(prev => prev.includes(GchallengeID) ? prev : [...prev, GchallengeID])
+            setChallengeIds(prev => {
+                const newIds = prev.includes(GchallengeID) ? prev : [...prev, GchallengeID]
+                setChallengeIdsReady(true)
+                return newIds
+            })
+            setCheatsChallengeIds(prev => {
+                const newIds = prev.includes(GchallengeID) ? prev : [...prev, GchallengeID]
+                setCheatsIdsReady(true)
+                return newIds
+            })
+        } else {
+            setChallengeIdsReady(true)
+            setCheatsIdsReady(true)
         }
     }, [GchallengeID])
 
+    // 统一的初始化逻辑
     useEffect(() => {
-        // 初次加载
-        if (gameId && GgameID == undefined && GchallengeID == undefined) {
+        if (gameId && challengeIdsReady && cheatsIdsReady && !isInitialized) {
             loadSubmissions(1)
             loadCheats()
+            setIsInitialized(true)
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gameId])
+    }, [gameId, challengeIdsReady, cheatsIdsReady, isInitialized])
 
+    // 当作弊记录筛选条件或分页变化时重新加载
     useEffect(() => {
-        // 当作弊记录筛选条件或分页变化时重新加载
-        loadCheats()
-    }, [cheatsCurrentPage, cheatsChallengeNames, cheatsTeamNames, cheatsChallengeIds, cheatsTeamIds, cheatTypes, cheatsStartTime, cheatsEndTime])
+        if (isInitialized) {
+            loadCheats()
+        }
+    }, [cheatsCurrentPage, cheatsChallengeNames, cheatsTeamNames, cheatsChallengeIds, cheatsTeamIds, cheatTypes, cheatsStartTime, cheatsEndTime, isInitialized])
 
     const statusColor = (status: string) => {
         switch (status) {
@@ -248,16 +267,17 @@ export function GameEventModule(
 
     const totalPages = Math.ceil(total / pageSize) || 1
 
-    // 当过滤或分页改变时加载
+    // 当提交记录筛选条件或分页变化时重新加载
     useEffect(() => {
-        loadSubmissions(currentPage)
-        loadCheats()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage, challengeNames, teamNames, judgeStatuses, startTime, endTime, teamIds, challengeIds])
+        if (isInitialized) {
+            loadSubmissions(currentPage)
+        }
+    }, [currentPage, challengeNames, teamNames, judgeStatuses, startTime, endTime, teamIds, challengeIds, isInitialized])
 
+    // 自动更新逻辑
     useEffect(() => {
         let updateInter: NodeJS.Timeout | undefined = undefined
-        if (recordAutoUpdate) {
+        if (recordAutoUpdate && isInitialized) {
             updateInter = setInterval(() => {
                 loadSubmissions(currentPage)
                 loadCheats()
@@ -266,7 +286,7 @@ export function GameEventModule(
         return () => {
             if (updateInter) clearInterval(updateInter)
         }
-    }, [recordAutoUpdate, currentPage, challengeNames, teamNames, judgeStatuses, startTime, endTime, teamIds, challengeIds, cheatsCurrentPage, cheatsChallengeNames, cheatsTeamNames, cheatsChallengeIds, cheatsTeamIds, cheatTypes, cheatsStartTime, cheatsEndTime])
+    }, [recordAutoUpdate, isInitialized, currentPage, challengeNames, teamNames, judgeStatuses, startTime, endTime, teamIds, challengeIds, cheatsCurrentPage, cheatsChallengeNames, cheatsTeamNames, cheatsChallengeIds, cheatsTeamIds, cheatTypes, cheatsStartTime, cheatsEndTime])
 
     return (
         <div className="flex flex-col gap-4">
