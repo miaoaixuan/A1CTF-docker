@@ -1,10 +1,7 @@
 import { WandSparkles } from "lucide-react"
 import { MacScrollbar } from "mac-scrollbar"
 import { useTheme } from "next-themes"
-
-
 import ThemeSwitcher from "components/ToggleTheme"
-import { RegisterForm } from "components/forms/RegisterForm";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useNavigate } from "react-router";
 import { Button } from "components/ui/button"

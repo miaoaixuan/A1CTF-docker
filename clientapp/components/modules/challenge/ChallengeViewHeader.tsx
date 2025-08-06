@@ -7,25 +7,14 @@ import {
 
 import { SidebarTrigger } from "components/ui/sidebar"
 import { Button } from "components/ui/button"
-import { AppWindow, Bath, Cable, CircleCheck, CircleX, Loader2, PackageOpen, Presentation, Settings, TriangleAlert, X } from "lucide-react"
-import ToggleTheme from "components/ToggleTheme"
+import { AppWindow, Bath, Cable, Loader2, PackageOpen } from "lucide-react"
 
-import {
-    Avatar,
-    AvatarFallback,
-    AvatarImage,
-} from "components/ui/avatar"
 
 import { Badge } from "components/ui/badge"
-import { Dispatch, SetStateAction, Suspense, useEffect, useState } from "react";
-import dayjs from "dayjs";
-import { GameNotice, NoticeCategory, UserFullGameInfo, UserProfile } from "utils/A1API";
+import { useEffect, useState } from "react";
+import { GameNotice, NoticeCategory } from "utils/A1API";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "components/ui/skeleton";
-import { ProfileUserInfoModel } from "utils/GZApi";
-import AvatarUsername from "../AvatarUsername"
-import { EditTeamDialog } from "components/dialogs/EditTeamDialog"
-import { useNavigate } from "react-router"
 
 import {
     Tooltip,

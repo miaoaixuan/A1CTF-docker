@@ -1,8 +1,4 @@
-import SafeComponent from "components/SafeComponent"
-import { EditChallengePage } from "components/admin/EditChallengePage";
-import { EditGamePage } from "components/admin/EditGamePage";
 import { EditGameView } from "components/admin/EditGameView";
-import { MacScrollbar } from "mac-scrollbar";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { AdminFullGameInfo } from "utils/A1API";

@@ -8,39 +8,23 @@ import {
     FormMessage,
 } from "components/ui/form"
 
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "components/ui/popover"
-
-import { useFieldArray } from "react-hook-form";
-
-
 import { Input } from "../ui/input";
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "../ui/button";
-import { cn } from "lib/utils";
 
-import { ArrowUpDown, CalendarIcon, CircleArrowLeft, Github, Save } from "lucide-react"
+import { ArrowUpDown, CircleArrowLeft, Github, Save } from "lucide-react"
 import { Textarea } from "../ui/textarea";
-
 
 import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
 import { useEffect, useRef, useState } from "react";
 import { MacScrollbar } from "mac-scrollbar";
 import { AdminFullGameInfo } from "utils/A1API";
-import { api, ErrorMessage } from "utils/ApiHelper";
+import { api } from "utils/ApiHelper";
 import dayjs from "dayjs";
 import { toast } from 'react-toastify/unstyled';
-import { AxiosError } from "axios";
-
-import { ScrollArea, ScrollBar } from "components/ui/scroll-area";
 import { Switch } from "components/ui/switch"
-import { Calendar } from "../ui/calendar";
-import { format } from "date-fns";
 
 import {
     ColumnDef,
@@ -51,127 +35,11 @@ import {
     useReactTable,
 } from "@tanstack/react-table"
 
-
-
 import { Checkbox } from "../ui/checkbox";
-import { challengeCategoryColorMap, challengeCategoryIcons } from "utils/ClientAssets";
 import { useNavigate } from "react-router";
 import { Slider } from 'components/ui/slider';
 import { DateTimePicker24h } from "components/ui/data-time-picker";
 import { useTheme } from "next-themes";
-
-interface GameStageFormProps {
-    control: any;
-    index: number;
-    form: any,
-    removeStage: (index: number) => void;
-}
-
-interface GameChallengeFormProps {
-    control: any;
-    index: number;
-    form: any;
-    removeGameChallenge: (index: number) => void;
-}
-
-function GameStageForm({ control, index, removeStage, form }: GameStageFormProps) {
-
-    function handleDateSelect(date: Date | undefined, tm_type: "start_time" | "end_time") {
-        if (date) {
-            form.setValue(`stages.${index}.${tm_type}`, date);
-        }
-    }
-
-    function handleTimeChange(type: "hour" | "minute", value: string, tm_type: "start_time" | "end_time") {
-        const field_name = `stages.${index}.${tm_type}`;
-        console.log(field_name)
-        const currentDate = form.getValues(field_name) || new Date();
-        const newDate = new Date(currentDate);
-
-        if (type === "hour") {
-            const hour = parseInt(value, 10);
-            newDate.setHours(hour);
-        } else if (type === "minute") {
-            newDate.setMinutes(parseInt(value, 10));
-        }
-
-        console.log(newDate)
-        form.setValue(field_name, newDate);
-    }
-
-
-    return (
-        <div className="border p-6 mb-4 rounded-lg hover:shadow-lg transition-shadow duration-300 space-y-4">
-            <div className="flex justify-between items-center mb-2">
-                <span className="font-md font-semibold">阶段 {index + 1}</span>
-                <Button variant="destructive" type="button" onClick={() => removeStage(index)}>
-                    删除阶段
-                </Button>
-            </div>
-            <FormField
-                control={control}
-                name={`stages.${index}.stage_name`}
-                render={({ field }) => (
-                    <FormItem>
-                        <div className="flex items-center h-[20px]">
-                            <FormLabel>阶段名称</FormLabel>
-                            <div className="flex-1" />
-                            <FormMessage className="text-[14px]" />
-                        </div>
-                        <FormControl>
-                            <Input {...field} value={field.value ?? ""} />
-                        </FormControl>
-                    </FormItem>
-                )}
-            />
-            <div className="grid grid-cols-2 gap-4">
-                <FormField
-                    control={form.control}
-                    name={`stages.${index}.start_time`}
-                    render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                            <FormLabel>开始时间</FormLabel>
-                            <DateTimePicker24h
-                                date={field.value}
-                                setDate={field.onChange}
-                            />
-                            <FormDescription>
-                                请选择这个阶段的开始时间
-                            </FormDescription>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name={`stages.${index}.end_time`}
-                    render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                            <FormLabel>结束时间</FormLabel>
-                            <DateTimePicker24h
-                                date={field.value}
-                                setDate={field.onChange}
-                            />
-                            <FormDescription>
-                                请选择这个阶段的结束时间
-                            </FormDescription>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            </div>
-        </div>
-    );
-}
-
-function GameChallengeForm({ control, index, form, removeGameChallenge }: GameChallengeFormProps) {
-
-    return (
-        <div className="border-[1px] rounded-lg h-full w-full shadow-md">
-
-        </div>
-    );
-}
 
 export type ChallengeSearchResult = {
     ChallengeID: number,
@@ -251,7 +119,7 @@ export const columns: ColumnDef<ChallengeSearchResult>[] = [
         id: "Actions",
         header: "Actions",
         enableHiding: false,
-        cell: ({ row }) => {
+        cell: ({ row: _row }) => {
             return (
                 <Button variant={"outline"} size={"sm"} className="select-none" >Select</Button>
             )
@@ -317,26 +185,6 @@ export function CreateGameView() {
         )
     });
 
-    const env_to_string = (data: { name: string, value: string }[]) => {
-        console.log(data)
-        let env = ""
-        data.forEach((item) => {
-            env += `${item.name}=${item.value},`
-        })
-        return env.substring(0, env.length - 1)
-    }
-
-    const string_to_env = (data: string): { name: string, value: string }[] => {
-        const env: { name: string, value: string }[] = []
-
-        data.split(",").forEach((item) => {
-            const [name, value] = item.split("=")
-            env.push({ name, value })
-        })
-
-        return env
-    }
-
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -358,29 +206,9 @@ export function CreateGameView() {
         }
     })
 
-    const {
-        fields: challengeFields,
-        append: appendChallenge,
-        remove: removeChallenge,
-    } = useFieldArray({
-        control: form.control,
-        name: "challenges",
-    });
-
-    const {
-        fields: stageFields,
-        append: appendStage,
-        remove: removeStage,
-    } = useFieldArray({
-        control: form.control,
-        name: "stages",
-    });
-
     const format_date = (dt: Date) => {
         return dt.toISOString()
     }
-
-    const [showScript, setShowScript] = useState(false);
 
     function onSubmit(values: z.infer<typeof formSchema>) {
         const finalData = {
@@ -403,34 +231,20 @@ export function CreateGameView() {
             team_policy: "auto"
         };
 
-        api.admin.createGame(finalData as AdminFullGameInfo).then((res) => {
+        api.admin.createGame(finalData as AdminFullGameInfo).then((_res) => {
             toast.success("创建成功")
         })
     }
 
-    const colorMap: { [key: string]: string } = challengeCategoryColorMap
-
-    const cateIcon: { [key: string]: any } = challengeCategoryIcons
-
-    const [searchContent, setSearchContent] = useState("")
-    const [curChoicedCategory, setCurChoicedCategory] = useState("all")
-
     const router = useNavigate()
 
-    const filtedData = challengeFields.filter((chl) => {
-        if (searchContent == "") return curChoicedCategory == "all" || chl.category?.toLowerCase() == curChoicedCategory;
-        else return chl.challenge_name.toLowerCase().includes(searchContent.toLowerCase()) && (curChoicedCategory == "all" || chl.category?.toLowerCase() == curChoicedCategory)
-    })
-
     const curKeyWord = useRef("")
-    const [addChallengeInput, setAddChallengeInput] = useState("")
     const [searchResult, setSearchResult] = useState<ChallengeSearchResult[]>([])
     const [rowSelection, setRowSelection] = useState({})
-    const [loadingHover, setLoadingHover] = useState(false)
+    const [_loadingHover, setLoadingHover] = useState(false)
     const lastInputTime = useRef(0)
 
-    const [curPage, setCurPage] = useState(0);
-    const [totalCount, setTotalCount] = useState(0);
+    const [_totalCount, setTotalCount] = useState(0);
 
     const table = useReactTable<ChallengeSearchResult>({
         data: searchResult,
@@ -444,15 +258,6 @@ export function CreateGameView() {
             rowSelection,
         },
     })
-
-    const [isOpen, setIsOpen] = useState(false)
-
-    const setInputState = (value: string) => {
-        setAddChallengeInput(value)
-        curKeyWord.current = value
-        if (lastInputTime.current == 0) setLoadingHover(true)
-        lastInputTime.current = dayjs().valueOf()
-    }
 
     useEffect(() => {
         table.setPageSize(5)
@@ -477,28 +282,6 @@ export function CreateGameView() {
             clearInterval(inputListener)
         }
     }, [])
-
-
-    function handleDateSelect(date: Date | undefined, tm_type: "start_time" | "end_time" | "wp_expire_time") {
-        if (date) {
-            form.setValue(tm_type, date);
-        }
-    }
-
-    function handleTimeChange(type: "hour" | "minute", value: string, tm_type: "start_time" | "end_time" | "wp_expire_time") {
-        const field_name = tm_type;
-        const currentDate = form.getValues(field_name) || new Date();
-        const newDate = new Date(currentDate);
-
-        if (type === "hour") {
-            const hour = parseInt(value, 10);
-            newDate.setHours(hour);
-        } else if (type === "minute") {
-            newDate.setMinutes(parseInt(value, 10));
-        }
-
-        form.setValue(field_name, newDate);
-    }
 
     const { theme } = useTheme()
 

@@ -1,6 +1,5 @@
 import { Button } from "components/ui/button";
-import { BadgeAlert, BadgeCheck, BadgePercent, BadgeX, House } from "lucide-react";
-import { ap } from "node_modules/react-router/dist/development/route-data-C6QaL0wu.mjs";
+import { BadgeCheck, BadgePercent, BadgeX, House } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper";
@@ -24,9 +23,9 @@ export default function EmailVerify() {
     useEffect(() => {
         api.user.verifyEmailCode({
             code: code ?? ""
-        }, createSkipGlobalErrorConfig()).then((res) => {
+        }, createSkipGlobalErrorConfig()).then((_res) => {
             setEmailVerifyStatus("verified")
-        }).catch((res) => {
+        }).catch((_res) => {
             setEmailVerifyStatus("error")
         })
     }, [code])

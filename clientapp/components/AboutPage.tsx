@@ -1,9 +1,7 @@
 import { MacScrollbar } from "mac-scrollbar";
 import { Mdx } from "./MdxCompoents";
 import { useTheme } from "next-themes";
-import { useEffect, useMemo, useState } from "react";
-import { api } from "utils/GZApi";
-import { LoadingPage } from "./LoadingPage";
+import { useMemo, useState } from "react";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { Rss } from "lucide-react";
 
@@ -13,7 +11,7 @@ export function AboutPage() {
 
     const { clientConfig } = useGlobalVariableContext()
 
-    const [source, setSource] = useState(clientConfig.AboutUS)
+    const [source, _setSource] = useState(clientConfig.AboutUS)
 
     const memoizedDescription = useMemo(() => {
         return <div className="w-full">

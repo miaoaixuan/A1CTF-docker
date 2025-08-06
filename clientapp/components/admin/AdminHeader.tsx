@@ -1,6 +1,5 @@
-import { Cable, ContactRound, Dices, Flag, Home, Package, Settings, User, UserRound, UsersRound } from "lucide-react";
+import { Cable, ContactRound, Dices, Flag, Home, Settings } from "lucide-react";
 import { Button } from "../ui/button";
-import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router";
 
 export function AdminHeader() {

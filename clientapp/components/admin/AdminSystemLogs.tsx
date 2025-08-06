@@ -22,7 +22,6 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "components/ui/dropdown-menu"
 
@@ -51,7 +50,6 @@ import {
     SelectValue,
 } from "components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "components/ui/card";
-import { useTranslation } from "react-i18next"
 import { useTheme } from "next-themes"
 
 interface LogTableRow {
@@ -76,7 +74,7 @@ export function AdminSystemLogs() {
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
     const [rowSelection, setRowSelection] = React.useState({})
 
-    const [pageSize, setPageSize] = React.useState(20);
+    const [pageSize, _setPageSize] = React.useState(20);
     const [curPage, setCurPage] = React.useState(0);
     const [totalCount, setTotalCount] = React.useState(0);
     const [searchKeyword, setSearchKeyword] = React.useState("");
@@ -87,7 +85,6 @@ export function AdminSystemLogs() {
     const [statusFilter, setStatusFilter] = React.useState<string>("");
     const [actionFilter, setActionFilter] = React.useState<string>("");
 
-    const [curPageData, setCurPageData] = React.useState<SystemLogItem[]>([])
     const [isLoading, setIsLoading] = React.useState(false);
     const [stats, setStats] = React.useState<SystemLogStats | null>(null);
 
@@ -134,7 +131,6 @@ export function AdminSystemLogs() {
             if (response.data.code === 200) {
                 const logs = response.data.data.logs;
                 setTotalCount(response.data.data.total);
-                setCurPageData(logs);
 
                 // 转换数据格式
                 const tableData: LogTableRow[] = logs.map((log: SystemLogItem) => ({
@@ -211,8 +207,6 @@ export function AdminSystemLogs() {
             </Badge>
         );
     };
-
-    const { t } = useTranslation("system_logs")
 
     // 表格列定义
     const columns: ColumnDef<LogTableRow>[] = [

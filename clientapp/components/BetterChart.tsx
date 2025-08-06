@@ -1,9 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
-import type { ECharts, EChartsOption, SeriesOption, DataZoomComponentOption } from 'echarts';
+import type { ECharts, EChartsOption, DataZoomComponentOption } from 'echarts';
 import dayjs from 'dayjs';
 import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
-import { clear } from 'console';
 import { UserFullGameInfo } from 'utils/A1API';
 import { Maximize2, Minimize2, Move, X, Minus, Download } from 'lucide-react';
 import { Button } from './ui/button';
@@ -61,7 +60,7 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
     const [isResizing, setIsResizing] = useState(false);
     const [resizeType, setResizeType] = useState('');
     const [resizeStart, setResizeStart] = useState({ size: { width: 0, height: 0 }, position: { x: 0, y: 0 }, mouse: { x: 0, y: 0 } });
-    const [isMinimized, setIsMinimized] = useState(false);
+    const [isMinimized, _setIsMinimized] = useState(false);
     const floatingRef = useRef<HTMLDivElement>(null);
 
     const { serialOptions } = useGlobalVariableContext()
@@ -215,15 +214,6 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
             position: { ...position },
             mouse: { x: e.clientX, y: e.clientY }
         });
-    };
-
-    // 最小化处理
-    const handleMinimize = () => {
-        setIsMinimized(true);
-    };
-
-    const handleRestore = () => {
-        setIsMinimized(false);
     };
 
     // 保存图表为图片
@@ -435,9 +425,6 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
             clearInterval(updateIns)
         }
     }, [currentTheme]) // 只依赖主题，移除gameInfo和serialOptions依赖
-
-    const end = dayjs(gameInfo?.end_time);
-    const isGameEnded = end.diff(dayjs(), 's') < 0;
 
     const chartOption: EChartsOption = {
         backgroundColor: 'transparent',

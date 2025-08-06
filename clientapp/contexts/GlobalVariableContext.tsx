@@ -1,5 +1,4 @@
-import { AxiosError } from "axios";
-import React, { createContext, Dispatch, SetStateAction, useContext, useEffect, useRef, useState, ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { browserName } from "react-device-detect";
 import { UserProfile, UserRole } from "utils/A1API";
 import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper";
@@ -76,9 +75,9 @@ export const useGlobalVariableContext = () => {
 
 export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
-    const [localStorageClientConfig, setLocalStorageClientConfig, { removeItem: removeClientConfig }] = useLocalStorage<ClientConfig>("clientconfig")
+    const [localStorageClientConfig, setLocalStorageClientConfig] = useLocalStorage<ClientConfig>("clientconfig")
     const [localStorageUID, setLocalStorageUID, { removeItem: removeUID }] = useLocalStorage<string>("uid")
-    const [cookies, setCookie, removeCookie] = useCookies(["a1token"])
+    const [_cookies, _setCookie, removeCookie] = useCookies(["a1token"])
     const navigate = useNavigate()
 
     const [curProfile, setCurProfile] = useState<UserProfile>({} as UserProfile)
@@ -137,7 +136,7 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
         api.user.getUserProfile().then((res) => {
             setCurProfile(res.data.data)
             setLocalStorageUID(res.data.data.user_id)
-        }, createSkipGlobalErrorConfig()).catch((error: AxiosError) => {
+        }, createSkipGlobalErrorConfig()).catch((_) => {
             removeUID()
         }).finally(() => {
             if (callback) callback()
@@ -172,7 +171,7 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
             api.user.getUserProfile().then((res) => {
                 setCurProfile(res.data.data)
                 setLocalStorageUID(res.data.data.user_id)
-            }, createSkipGlobalErrorConfig()).catch((error: AxiosError) => {
+            }, createSkipGlobalErrorConfig()).catch((_) => {
                 removeUID()
             })
         }
@@ -239,13 +238,6 @@ export const GlobalVariableProvider: React.FC<{ children: ReactNode }> = ({ chil
             document.documentElement.classList.add('dark');
         } else {
             document.documentElement.classList.remove('dark');
-        }
-    };
-
-    // 设置主题
-    const handleSetIsDarkMode = (isDark: boolean) => {
-        if (clientConfig.allowUserTheme) {
-            updateTheme(isDark);
         }
     };
 

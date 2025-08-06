@@ -1,12 +1,9 @@
-import { History, Box, GitPullRequest, GitPullRequestArrow, Mail } from 'lucide-react'
+import { Box, GitPullRequestArrow, Mail } from 'lucide-react'
 import { useState } from "react";
 
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "components/ui/dropdown-menu"
 

@@ -1,10 +1,8 @@
-import Editor, { Monaco } from '@monaco-editor/react';
 import { Mdx } from 'components/MdxCompoents';
 import ThemedEditor from 'components/modules/ThemedEditor';
 import { Button } from 'components/ui/button';
 import { Save } from 'lucide-react';
 import { MacScrollbar } from 'mac-scrollbar';
-import { editor } from 'monaco-editor';
 import { useTheme } from 'next-themes';
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { UseFormReturn, useWatch } from 'react-hook-form';
@@ -17,7 +15,6 @@ export default function AboutPage(
     }
 ) {
 
-    const editorRef = useRef<any>(null);
     const [aboutMeSource, setAboutMeSource] = useState<string>("");
     const [debouncedSource, setDebouncedSource] = useState<string>("");
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -41,10 +38,6 @@ export default function AboutPage(
             }
         };
     }, []);
-
-    function handleEditorDidMount(editor: editor.IStandaloneCodeEditor, monaco: Monaco) {
-        editorRef.current = editor;
-    }
 
     // 使用 useMemo 优化 Mdx 组件，只在 debouncedSource 改变时重新渲染
     const memoizedMdx = useMemo(() => {

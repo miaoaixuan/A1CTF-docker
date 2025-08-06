@@ -1,25 +1,14 @@
-import { A1LogoWithoutAnimation } from "components/A1LogoWithoutAnimation";
 
 import { ChallengesView } from 'components/user/game/ChallengesView';
 import MyTeamInfomationView from "components/user/game/MyTeamInfomationView";
 import ScoreBoardPage from "components/user/game/ScoreBoardPage";
 import GameViewSidebar from "components/user/game/GameViewSidebar";
-import { Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router";
-import { ErrorMessage, ParticipationStatus, UserFullGameInfo } from "utils/A1API";
-import dayjs from "dayjs";
-import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper";
-import { parse } from "path";
-import { AxiosError } from "axios";
-import GameCountDowner from "components/modules/game/GameCountDowner";
 import GameInfoView from "components/user/game/GameInfoView";
 import { useGameSwitchContext } from "contexts/GameSwitchContext";
-import { LoadingPage } from "components/LoadingPage";
 import { Panda } from "lucide-react";
 import { A1GameStatus } from "components/modules/game/GameStatusEnum";
-import useConditionalState from "hooks/ContidionalState";
-import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
-import { randomInt } from "mathjs";
 import { useGame } from "hooks/UseGame";
 
 export default function Games() {
