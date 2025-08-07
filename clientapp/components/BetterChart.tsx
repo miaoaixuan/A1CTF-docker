@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
-import type { ECharts, EChartsOption, DataZoomComponentOption } from 'echarts';
+import type { ECharts, EChartsOption } from 'echarts';
 import dayjs from 'dayjs';
 import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
 import { UserFullGameInfo } from 'utils/A1API';
@@ -17,29 +17,6 @@ interface SmartUpdateChartProps {
     onMinimize?: () => void;
 }
 
-interface ViewState {
-    xAxis: {
-        inside?: {
-            startValue?: number;
-            endValue?: number;
-        };
-        slider?: {
-            startValue?: number;
-            endValue?: number;
-        };
-    },
-    yAxis: {
-        inside?: {
-            startValue?: number;
-            endValue?: number;
-        };
-        slider?: {
-            startValue?: number;
-            endValue?: number;
-        };
-    }
-}
-
 const BetterChart: React.FC<SmartUpdateChartProps> = ({
     theme = 'light',
     gameInfo,
@@ -50,7 +27,6 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
     onMinimize,
 }) => {
     const chartRef = useRef<ReactECharts>(null);
-    const lastViewState = useRef<ViewState | null>(null);
     const serData = React.useRef<echarts.SeriesOption[]>([])
     const lastSerData = useRef<string>("")
     const [position, setPosition] = useState({ x: 100, y: 100 });
@@ -275,34 +251,6 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
             const chartInstance: ECharts | undefined = chartRef.current?.getEchartsInstance();
             if (!chartInstance) return;
 
-            // 保存当前的选择范围
-            const option: EChartsOption = chartInstance.getOption() as EChartsOption;
-            const dataZooms = option.dataZoom as DataZoomComponentOption[];
-
-            lastViewState.current = {
-                xAxis: {
-                    inside: dataZooms[0] ? {
-                        startValue: dataZooms[0].startValue !== undefined ? Number(dataZooms[0].startValue) : undefined,
-                        endValue: dataZooms[0].endValue !== undefined ? Number(dataZooms[0].endValue) : undefined
-                    } : undefined,
-                    slider: dataZooms[1] ? {
-                        startValue: dataZooms[1].startValue !== undefined ? Number(dataZooms[1].startValue) : undefined,
-                        endValue: dataZooms[1].endValue !== undefined ? Number(dataZooms[1].endValue) : undefined
-                    } : undefined
-                },
-                yAxis: {
-                    inside: dataZooms[2] ? {
-                        startValue: dataZooms[2].startValue !== undefined ? Number(dataZooms[2].startValue) : undefined,
-                        endValue: dataZooms[2].endValue !== undefined ? Number(dataZooms[2].endValue) : undefined
-                    } : undefined,
-                    slider: dataZooms[3] ? {
-                        startValue: dataZooms[3].startValue !== undefined ? Number(dataZooms[3].startValue) : undefined,
-                        endValue: dataZooms[3].endValue !== undefined ? Number(dataZooms[3].endValue) : undefined
-                    } : undefined
-                }
-            };
-
-            // 静默更新
             chartInstance.setOption({
                 series: serialOptions.current.map((serie, index) => ({
                     ...serie,
@@ -345,6 +293,9 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
                     smooth: 0.3,
                     emphasis: {
                         focus: 'series',
+                        scale: 1.1,
+                        animationDuration: 200,
+                        animationEasing: 'cubicInOut',
                         lineStyle: {
                             width: 4,
                             shadowBlur: 12,
@@ -355,54 +306,20 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
                             shadowBlur: 10,
                             shadowOffsetY: 4
                         }
+                    },
+                    blur: {
+                        lineStyle: {
+                            opacity: 0.3
+                        },
+                        itemStyle: {
+                            opacity: 0.3
+                        },
+                        areaStyle: {
+                            opacity: 0.1
+                        }
                     }
                 }))
-            }, {
-                silent: true,
-                replaceMerge: ['series'] // Only replace series data
             });
-
-            // 恢复之前的视窗
-            if (lastViewState.current) {
-                // 恢复x轴缩放
-                if (lastViewState.current.xAxis.inside) {
-                    chartInstance.dispatchAction({
-                        type: 'dataZoom',
-                        dataZoomIndex: 0, // 第一个x轴inside dataZoom
-                        startValue: lastViewState.current.xAxis.inside.startValue,
-                        endValue: lastViewState.current.xAxis.inside.endValue
-                    });
-                }
-
-                if (lastViewState.current.xAxis.slider) {
-                    chartInstance.dispatchAction({
-                        type: 'dataZoom',
-                        dataZoomIndex: 1, // 第二个x轴slider dataZoom
-                        startValue: lastViewState.current.xAxis.slider.startValue,
-                        endValue: lastViewState.current.xAxis.slider.endValue
-                    });
-                }
-
-                // 恢复y轴缩放
-                if (lastViewState.current.yAxis.inside) {
-                    chartInstance.dispatchAction({
-                        type: 'dataZoom',
-                        dataZoomIndex: 2, // 第一个y轴inside dataZoom
-                        startValue: lastViewState.current.yAxis.inside.startValue,
-                        endValue: lastViewState.current.yAxis.inside.endValue
-                    });
-                }
-
-                if (lastViewState.current.yAxis.slider) {
-                    chartInstance.dispatchAction({
-                        type: 'dataZoom',
-                        dataZoomIndex: 3, // 第二个y轴slider dataZoom
-                        startValue: lastViewState.current.yAxis.slider.startValue,
-                        endValue: lastViewState.current.yAxis.slider.endValue
-                    });
-                }
-            }
-
 
             // 更新完成
             if (serialOptions.current[1]) {   
@@ -428,9 +345,16 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
 
     const chartOption: EChartsOption = {
         backgroundColor: 'transparent',
-        animation: false,
-        animationDuration: 0,
+        animation: true,
+        animationDuration: 300,
         animationEasing: 'cubicOut',
+        animationDelay: 0,
+        animationDurationUpdate: 200,
+        animationEasingUpdate: 'cubicInOut',
+        animationDelayUpdate: 0,
+        // 高亮动画配置
+        hoverLayerThreshold: 3000,
+        useUTC: false,
         // 添加颜色调色板
         color: currentTheme.lineColors,
         grid: {
@@ -447,6 +371,10 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
             borderWidth: 0,
             borderRadius: 12,
             padding: [12, 16],
+            showDelay: 0,
+            hideDelay: 100,
+            enterable: true,
+            transitionDuration: 0.2,
             textStyle: {
                 fontSize: 14,
                 color: currentTheme.tooltipText,
@@ -698,7 +626,7 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
         ],
         series: []
     };
-
+    
     return (
         <div 
             ref={floatingRef}

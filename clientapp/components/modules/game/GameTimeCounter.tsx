@@ -5,9 +5,9 @@ import { GameStage } from "utils/A1API";
 import { A1GameStatus } from "./GameStatusEnum";
 import TimeCounterWithProgressBar from "components/user/game/TimeCounterWithProgressBar";
 import useConditionalState from "hooks/ContidionalState";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel } from "components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent } from "components/ui/dropdown-menu";
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
-import { ClockArrowDown, ClockArrowUp, Eclipse, SquareChartGantt } from "lucide-react";
+import { ClockArrowDown, ClockArrowUp, SquareChartGantt } from "lucide-react";
 
 export default function GameTimeCounter(
     { gameID }: {

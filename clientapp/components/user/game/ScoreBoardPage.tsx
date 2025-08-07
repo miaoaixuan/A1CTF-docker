@@ -435,7 +435,7 @@ export default function ScoreBoardPage(
                                         ],
                                     },
                         },
-                        ...(res.data.data?.top10_timelines?.map((team) => ({
+                        ...(res.data.data?.top10_timelines?.map((team, index) => ({
                             name: team.team_name,
                             type: 'line',
                             showSymbol: false,
@@ -450,11 +450,33 @@ export default function ScoreBoardPage(
                             },
                             endLabel: {
                                 show: true,
-                                formatter: `${team.team_name} - ${team.scores![team.scores!.length - 1]?.score ?? 0} pts`, // {a} 表示系列名称
-                                color: theme === 'dark' ? '#e2e8f0' : '#1e293b',
+                                formatter: `${team.team_name} - ${team.scores![team.scores!.length - 1]?.score ?? 0} pts`,
+                                color: theme === 'dark' ? '#f1f5f9' : '#0f172a',
                                 fontWeight: 'bold',
-                                fontSize: 14,
-                                distance: 10 // 调整标签与端点的距离
+                                fontSize: 12, // 稍微减小字体避免重叠
+                                distance: 15 + (index % 3) * 8, // 动态调整距离，错开标签位置
+                                verticalAlign: index % 2 === 0 ? 'middle' : (index % 4 < 2 ? 'top' : 'bottom'), // 垂直错开
+                                backgroundColor: theme === 'dark' ? 'rgba(15, 23, 42, 0.9)' : 'rgba(248, 250, 252, 0.95)', // 更好的背景对比度
+                                borderColor: theme === 'dark' ? '#334155' : '#cbd5e1',
+                                borderWidth: 1,
+                                borderRadius: 6,
+                                padding: [4, 8], // 增加内边距提高可读性
+                                shadowBlur: theme === 'dark' ? 8 : 4, // 添加阴影增强层次感
+                                shadowColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.1)',
+                                shadowOffsetX: 0,
+                                shadowOffsetY: 2,
+                                rich: {
+                                    // 富文本样式，用于更好的标签显示
+                                    teamName: {
+                                        fontWeight: 'bold',
+                                        fontSize: 12,
+                                        color: theme === 'dark' ? '#f1f5f9' : '#0f172a'
+                                    },
+                                    score: {
+                                        color: theme === 'dark' ? '#94a3b8' : '#64748b',
+                                        fontSize: 11
+                                    }
+                                }
                             },
                             smooth: true,
                         }) as echarts.SeriesOption) || [])
@@ -477,7 +499,7 @@ export default function ScoreBoardPage(
         return () => {
             clearInterval(scoreBoardInter)
         }
-    }, [gameInfo, currentPage, selectedGroupId, pageSize])
+    }, [gameInfo, currentPage, selectedGroupId, pageSize, theme])
 
     return (
         <>
