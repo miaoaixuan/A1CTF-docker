@@ -8,23 +8,15 @@ import {
 
 
 import { useRef, useState } from "react";
-import { AxiosError } from "axios";
 import { toast } from 'react-toastify/unstyled';
 import { Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { api } from "utils/ApiHelper";
 
-interface ErrorMessage {
-    status: number;
-    title: string;
-}
 
 export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number, game_id?: number, type: "team" | "person",  children: React.ReactNode }> = ({ updateTeam, id, game_id, type, children }) => {
 
     const [isOpen, setIsOpen] = useState(false)
-
-    const [submitDisabled, setSubmitDisabled] = useState(false)
-
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const { t } = useTranslation("upload_image", { 
@@ -41,7 +33,7 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number,
             api.team.uploadTeamAvatar(game_id ?? 0, {
                 avatar: file,
                 team_id: id
-            }).then((res) => {
+            }).then(() => {
                 toast.success(t("set_avatar_success"))
 
                 if (updateTeam) updateTeam()
@@ -53,7 +45,7 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number,
         if (type == "person") {
             api.user.uploadUserAvatar({
                 avatar: file
-            }).then((res) => {
+            }).then(() => {
                 toast.success(t("set_avatar_success"))
                 setTimeout(() => {
                     setIsOpen(false)

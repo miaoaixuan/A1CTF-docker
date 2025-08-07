@@ -12,10 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Input } from "../../ui/input";
 import { Button } from "../../ui/button";
-import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
-import { useState } from "react";
 import { toast } from 'react-toastify/unstyled';
-import { AxiosError } from "axios";
 import { useTranslation } from "react-i18next";
 import { Save } from "lucide-react";
 import { api } from "utils/ApiHelper";
@@ -47,16 +44,11 @@ export function PasswordView() {
         },
     })
 
-    const [submitDisabled, setSubmitDisabled] = useState(false)
-    const { curProfile, updateProfile } = useGlobalVariableContext()
-
     function onSubmit(values: z.infer<typeof formSchema>) {
-        setSubmitDisabled(true)
-
         api.user.changePassword({
             old_password: values.originalPassword,
             new_password: values.newPassword
-        }).then((res) => {
+        }).then(() => {
             toast.success(t("change_password_success"))
         })
     }

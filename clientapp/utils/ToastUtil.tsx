@@ -1,30 +1,9 @@
 import { Button } from "components/ui/button";
 import dayjs from "dayjs";
-import { AnimatePresence, motion } from "framer-motion";
-import { CalendarClock, CalendarDays, CircleX, FileType2, LetterText, MailCheck, PackageOpen, Text } from "lucide-react";
+import { CalendarClock, CircleX, FileType2, LetterText, MailCheck, PackageOpen, Text } from "lucide-react";
 import { Dispatch, SetStateAction } from "react";
-import { Toaster, toast } from 'sonner'
+import { toast } from 'sonner'
 
-export function toastError({ title, theme }: { title: string, theme: string }) {
-
-    const bgColor =
-        theme === 'light' ? 'rgba(255, 255, 255)' : 'rgba(0, 0, 0)';
-
-    return (
-        toast.error(title)
-    )
-}
-
-export function toastSuccess({ title, theme }: { title: string, theme: string }) {
-
-    const bgColor =
-        theme === 'light' ? 'rgba(255, 255, 255)' : 'rgba(0, 0, 0)';
-
-
-    return (
-        toast.success(title)
-    )
-}
 
 export function toastNewNotice({ title, time, openNotices }: { title: string, time: string, openNotices: Dispatch<SetStateAction<boolean>> }) {
 
@@ -66,7 +45,7 @@ export function toastNewNotice({ title, time, openNotices }: { title: string, ti
 
 }
 
-export function toastNewHint({ challenges, time, openNotices }: { challenges: string[], time: number, openNotices: Dispatch<SetStateAction<boolean>> }) {
+export function toastNewHint({ challenges, time, openNotices: _openNotices }: { challenges: string[], time: number, openNotices: Dispatch<SetStateAction<boolean>> }) {
 
     toast.custom((t) => (
         <div className="bg-background border-2 rounded-2xl w-full relative">

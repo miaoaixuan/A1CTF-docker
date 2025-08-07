@@ -6,7 +6,7 @@ export function useNavigateFrom () : [
 ] {
     const navigate = useNavigate()
     const location = useLocation()
-    const [searchParms, setSearchParms] = useSearchParams()
+    const [searchParms, _setSearchParms] = useSearchParams()
 
     const navigateFrom = (path: string) => {
         let from = location.pathname

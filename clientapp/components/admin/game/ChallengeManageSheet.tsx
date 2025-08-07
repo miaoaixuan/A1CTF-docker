@@ -11,7 +11,7 @@ import { MacScrollbar } from "mac-scrollbar"
 import { ReactNode, useEffect, useState } from "react"
 import { JudgeConfigForm } from "./JudgeConfigForm"
 import { useTheme } from "next-themes"
-import { useForm, useWatch } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { Form } from 'components/ui/form';
 import { GameChallengeSchema } from "./EditGameSchema"
 
@@ -19,15 +19,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { AdminDetailGameChallenge } from "utils/A1API"
 import { api } from "utils/ApiHelper"
-import { Save, X } from "lucide-react"
+import { Save } from "lucide-react"
 import { toast } from 'react-toastify/unstyled';
 import LoadingModule from "components/modules/LoadingModule"
 import ChallengeSettingsSidebar from "./ChallengeSettingsSidebar"
 import { ContainerManageView } from "./ContainerManageView"
 import { GameEventModule } from "./GameEventModule"
 import ChallengeTools from "./ChallengeTools"
-import { EditChallengePage } from "../EditChallengePage"
-import { ChallengeManageForm, ChallengeManageFormWrapper } from "./ChallengeManageForm"
+import { ChallengeManageFormWrapper } from "./ChallengeManageForm"
 
 export default function ChallengeManageSheet(
     {
@@ -68,7 +67,7 @@ export default function ChallengeManageSheet(
     }, [isOpen])
 
     const handleSubmit = (values: z.infer<typeof GameChallengeSchema>) => {
-        api.admin.updateGameChallenge(gameID, challengeID, values as any as AdminDetailGameChallenge).then((res) => {
+        api.admin.updateGameChallenge(gameID, challengeID, values as any as AdminDetailGameChallenge).then(() => {
             toast.success("更新成功")
         })
     }

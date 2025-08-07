@@ -1,20 +1,22 @@
-import { type RouteConfig, index, route } from "@react-router/dev/routes";
-import { redirect } from "react-router";
+import { type RouteConfig, route } from "@react-router/dev/routes";
 
 export default [
     route("", "routes/A1CTFMainPage.tsx"),
-    route("games/", "routes/games/UserGameList.tsx"),
-    route("email-verify", "routes/EmailVerify.tsx"),
+    route("games", "routes/games/UserGameList.tsx"),
 
-    route("games/:id/:module", "routes/games/[id]/UserGameView.tsx"),
+    route("games/:id/:module?", "routes/games/[id]/UserGameView.tsx"),
 
-    route("about/", "routes/about/SystemAboutPage.tsx"),
-    route("version/", "routes/version/SystemVersionPage.tsx"),
+    route("about", "routes/about/SystemAboutPage.tsx"),
+    route("version", "routes/version/SystemVersionPage.tsx"),
 
     route("profile/:action", "routes/profile/UserProfileSettings.tsx"),
 
-    route("login/", "routes/login/UserLoginPage.tsx"),
-    route("signup/", "routes/signup/UserSignupPage.tsx"),
+    // 账户验证模块
+    route("login", "routes/auth/UserLoginPage.tsx"),
+    route("signup", "routes/auth/UserSignupPage.tsx"),
+    route("email-verify", "routes/auth/EmailVerify.tsx"),
+    route("forget-password", "routes/auth/ForgetPassword.tsx"),
+    route("reset-password", "routes/auth/ResetPassword.tsx"),
 
     route("admin", "routes/admin/AdminPageMain.tsx"),
     route("admin/challenges", "routes/admin/challenges/AdminGetChallengeList.tsx"),

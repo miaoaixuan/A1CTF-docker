@@ -28,7 +28,6 @@ import (
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/utils/zaphelper"
 
-	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -183,7 +182,7 @@ func main() {
 		zaphelper.Sugar.Warn("No trusted proxies set, using default. If you are using a reverse proxy, please set the trusted proxies in the config file.")
 	}
 
-	pprof.Register(r)
+	// pprof.Register(r)
 
 	// 启动 Gin 框架性能监控
 	if viper.GetBool("monitoring.enabled") {
@@ -217,6 +216,11 @@ func main() {
 			CheckGameStarted:  false,
 		}), controllers.UserGetGameDetailWithTeamInfo)
 
+		public.GET("/game/:game_id/desc", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+			VisibleAfterEnded: true,
+			CheckGameStarted:  false,
+		}), controllers.UserGetGameDescription)
+
 		fileGroup := public.Group("/file")
 		{
 			fileGroup.GET("/download/:file_id", controllers.DownloadFile)
@@ -229,7 +233,10 @@ func main() {
 		public.POST("/cap/validate", controllers.CapValidateToken)
 
 		// 邮箱验证接口
-		public.POST("/verifyEmailCode", controllers.VerifyEmailCode)
+		public.POST("/account/verifyEmailCode", controllers.VerifyEmailCode)
+
+		public.POST("/account/sendForgetPasswordEmail", controllers.UserForgetPassword)
+		public.POST("/account/resetPassword", controllers.UserVerifyAndResetPassword)
 	}
 
 	// 鉴权接口
@@ -379,7 +386,7 @@ func main() {
 			userGameGroup.GET("/:game_id/challenge/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
-			}), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenge)
+			}), controllers.TeamStatusMiddleware(), controllers.ChallengeStatusCheckMiddleWare(), controllers.UserGetGameChallenge)
 
 			// 比赛通知接口
 			userGameGroup.GET("/:game_id/notices", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
@@ -403,7 +410,7 @@ func main() {
 			userGameGroup.POST("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
-			}), controllers.TeamStatusMiddleware(), controllers.UserCreateGameContainer)
+			}), controllers.TeamStatusMiddleware(), controllers.ChallengeStatusCheckMiddleWare(), controllers.UserCreateGameContainer)
 			userGameGroup.DELETE("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
@@ -411,7 +418,7 @@ func main() {
 			userGameGroup.PATCH("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
-			}), controllers.TeamStatusMiddleware(), controllers.UserExtendGameContainer)
+			}), controllers.TeamStatusMiddleware(), controllers.ChallengeStatusCheckMiddleWare(), controllers.UserExtendGameContainer)
 			userGameGroup.GET("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
@@ -421,7 +428,7 @@ func main() {
 			userGameGroup.POST("/:game_id/flag/:challenge_id", RateLimiter(100, 1*time.Second), controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
-			}), controllers.TeamStatusMiddleware(), controllers.UserGameChallengeSubmitFlag)
+			}), controllers.TeamStatusMiddleware(), controllers.ChallengeStatusCheckMiddleWare(), controllers.UserGameChallengeSubmitFlag)
 			userGameGroup.GET("/:game_id/flag/:judge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,

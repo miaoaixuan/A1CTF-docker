@@ -39,6 +39,7 @@ type RegisterPayload struct {
 
 type AdminUpdateGamePayload struct {
 	models.Game
+	Challenges []models.GameChallenge `json:"challenges"`
 }
 
 type AdminUpdateGameChallengePayload struct {
@@ -221,4 +222,13 @@ type EmailVerifyPayload struct {
 type ChangePasswordPayload struct {
 	OldPassword string `json:"old_password"`
 	NewPassword string `json:"new_password"`
+}
+
+type ForgetPasswordWithVerifyCodePayload struct {
+	Code        string `json:"code"`
+	NewPassword string `json:"new_password"`
+}
+
+type ForgetPasswordSendMailPayload struct {
+	Email string `json:"email"`
 }

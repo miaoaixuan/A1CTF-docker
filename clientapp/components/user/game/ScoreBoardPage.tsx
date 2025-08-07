@@ -1,29 +1,22 @@
-import { ChartArea, CircleArrowLeft, LogOut, X, Download, Calculator, Gift, Ban, AlertTriangle } from 'lucide-react'
+import { ChartArea, Download } from 'lucide-react'
 
-import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
 
-import React, { Dispatch, SetStateAction, useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import dayjs from 'dayjs';
-import ThemeSwitcher from 'components/ToggleTheme';
 import { useTheme } from 'next-themes';
 import { ScoreTable } from 'components/ScoreTable';
 import * as XLSX from 'xlsx-js-style';
 
 import { Tooltip } from 'react-tooltip';
-import { AnimatePresence, motion } from 'framer-motion';
 import { Button } from 'components/ui/button';
 
 import { randomInt } from "mathjs";
-import { Avatar, AvatarFallback, AvatarImage } from 'components/ui/avatar';
-import { Skeleton } from 'components/ui/skeleton';
 import { MacScrollbar } from 'mac-scrollbar';
 import BetterChart from 'components/BetterChart';
 
 import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
 import { api } from 'utils/ApiHelper';
-import { GameScoreboardData, TeamScore, TeamTimeline, UserFullGameInfo, UserSimpleGameChallenge, GameGroupSimple, PaginationInfo } from 'utils/A1API';
-import { LoadingPage } from 'components/LoadingPage';
-import { useLocation, useNavigate } from 'react-router';
+import { GameScoreboardData, TeamScore, UserFullGameInfo, UserSimpleGameChallenge, GameGroupSimple, PaginationInfo } from 'utils/A1API';
 import { useIsMobile } from 'hooks/use-mobile';
 import { ScoreTableMobile } from 'components/ScoreTableMobile';
 import { toast } from 'react-toastify/unstyled';
@@ -42,13 +35,9 @@ export default function ScoreBoardPage(
         :
         { gmid: number }
 ) {
-
-    const [chartData, setChartData] = useState<any>([])
-
-    const { theme, resolvedTheme } = useTheme();
+    const { theme } = useTheme();
 
     const [gameInfo, setGameInfo] = useState<UserFullGameInfo | undefined>(undefined)
-    const [gameStatus, setGameStatus] = useState<string>("")
     const [challenges, setChallenges] = useState<Record<string, UserSimpleGameChallenge[]>>({})
     const [scoreBoardModel, setScoreBoardModel] = useState<GameScoreboardData>()
 
@@ -60,20 +49,14 @@ export default function ScoreBoardPage(
     const [pagination, setPagination] = useState<PaginationInfo | undefined>(undefined)
 
     const lastTimeLine = useRef<string>()
-    const [showGraphy, setShowGraphy] = useState(false)
     const [isChartFullscreen, setIsChartFullscreen] = useState(false)
     const [isChartFloating, setIsChartFloating] = useState(false)
     const [isChartMinimized, setIsChartMinimized] = useState(false)
     const [isNormalChartMinimized, setIsNormalChartMinimized] = useState(false)
     const [isDownloading, setIsDownloading] = useState(false)
-
-    const [chartOption, setChartOpton] = useState<echarts.EChartsOption>()
     const [showUserDetail, setShowUserDetail] = useState<TeamScore>({})
 
     const isMobile = useIsMobile()
-
-    // 加载动画
-    const [loadingVisiblity, setLoadingVisibility] = useState(true)
     // 换页加载状态
     const [pageLoading, setPageLoading] = useState(false)
 
@@ -168,11 +151,6 @@ export default function ScoreBoardPage(
         const groupId = value === "all" ? undefined : parseInt(value);
         setSelectedGroupId(groupId);
         setCurrentPage(1); // 重置到第一页
-    }, []);
-
-    // 分页处理
-    const handlePageChange = useCallback((page: number) => {
-        setCurrentPage(page);
     }, []);
 
     // 页面大小变化处理
@@ -457,7 +435,7 @@ export default function ScoreBoardPage(
                                         ],
                                     },
                         },
-                        ...(res.data.data?.top10_timelines?.map((team) => ({
+                        ...(res.data.data?.top10_timelines?.map((team, index) => ({
                             name: team.team_name,
                             type: 'line',
                             showSymbol: false,
@@ -472,21 +450,41 @@ export default function ScoreBoardPage(
                             },
                             endLabel: {
                                 show: true,
-                                formatter: `${team.team_name} - ${team.scores![team.scores!.length - 1]?.score ?? 0} pts`, // {a} 表示系列名称
-                                color: theme === 'dark' ? '#e2e8f0' : '#1e293b',
+                                formatter: `${team.team_name} - ${team.scores![team.scores!.length - 1]?.score ?? 0} pts`,
+                                color: theme === 'dark' ? '#f1f5f9' : '#0f172a',
                                 fontWeight: 'bold',
-                                fontSize: 14,
-                                distance: 10 // 调整标签与端点的距离
+                                fontSize: 12, // 稍微减小字体避免重叠
+                                distance: 15 + (index % 3) * 8, // 动态调整距离，错开标签位置
+                                verticalAlign: index % 2 === 0 ? 'middle' : (index % 4 < 2 ? 'top' : 'bottom'), // 垂直错开
+                                backgroundColor: theme === 'dark' ? 'rgba(15, 23, 42, 0.9)' : 'rgba(248, 250, 252, 0.95)', // 更好的背景对比度
+                                borderColor: theme === 'dark' ? '#334155' : '#cbd5e1',
+                                borderWidth: 1,
+                                borderRadius: 6,
+                                padding: [4, 8], // 增加内边距提高可读性
+                                shadowBlur: theme === 'dark' ? 8 : 4, // 添加阴影增强层次感
+                                shadowColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.1)',
+                                shadowOffsetX: 0,
+                                shadowOffsetY: 2,
+                                rich: {
+                                    // 富文本样式，用于更好的标签显示
+                                    teamName: {
+                                        fontWeight: 'bold',
+                                        fontSize: 12,
+                                        color: theme === 'dark' ? '#f1f5f9' : '#0f172a'
+                                    },
+                                    score: {
+                                        color: theme === 'dark' ? '#94a3b8' : '#64748b',
+                                        fontSize: 11
+                                    }
+                                }
                             },
                             smooth: true,
                         }) as echarts.SeriesOption) || [])
                     ] as echarts.SeriesOption[]
                 }
-
-                setLoadingVisibility(false)
                 // 结束加载状态
                 setTimeout(() => setPageLoading(false), 200)
-            }).catch(error => {
+            }).catch((_error) => {
                 // 出错时也要结束加载状态
                 setPageLoading(false);
             })
@@ -501,11 +499,7 @@ export default function ScoreBoardPage(
         return () => {
             clearInterval(scoreBoardInter)
         }
-    }, [gameInfo, currentPage, selectedGroupId, pageSize])
-
-    const navigator = useNavigate()
-
-    const gamePath = useLocation().pathname.split("/").slice(0, -1).join("/")
+    }, [gameInfo, currentPage, selectedGroupId, pageSize, theme])
 
     return (
         <>

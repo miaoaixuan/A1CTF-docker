@@ -5,7 +5,6 @@ import (
 	dbtool "a1ctf/src/utils/db_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/utils/zaphelper"
-	"log"
 	"math"
 	"time"
 
@@ -14,138 +13,178 @@ import (
 )
 
 func updateActiveGameScores(game_ids []int64) {
-	if len(game_ids) > 0 {
-
-		// 更新每道题的解题人数
-		if err := dbtool.DB().Exec(`
-			UPDATE game_challenges gc
-			SET solve_count = (
-				SELECT COUNT(*) 
-				FROM solves s 
-				WHERE s.game_id = gc.game_id AND s.challenge_id = gc.challenge_id AND s.solve_status = '"SolveCorrect"'::jsonb
-			)
-			WHERE gc.game_id IN ?;
-		`, game_ids).Error; err != nil {
-			println("Failed to update solve count")
-			return
-		}
-
-		// 更新每道题的分数
-		if err := dbtool.DB().Exec(`
-			UPDATE game_challenges gc
-			SET cur_score = CASE
-				WHEN gc.solve_count = 0 THEN gc.total_score
-				ELSE FLOOR(
-					gc.total_score * (
-						(gc.minimal_score / gc.total_score) +
-						(1 - (gc.minimal_score / gc.total_score)) *
-						EXP((1 - gc.solve_count) / gc.difficulty)
-					)
-				)
-			END
-			WHERE gc.game_id IN ?;
-		`, game_ids).Error; err != nil {
-			println("Failed to update cur_score")
-			return
-		}
-
-		// 更新每支队伍的分数（包含分数修正）
-		if err := dbtool.DB().Exec(`
-			UPDATE teams t
-			SET team_score = COALESCE(team_scores.total_score, 0) + COALESCE(blood_rewards.reward_total, 0) + COALESCE(adjustments.adjustment_total, 0)
-			FROM (
-				SELECT 
-					s.team_id,
-					SUM(gc.cur_score) as total_score
-				FROM solves s
-				LEFT JOIN game_challenges gc ON s.ingame_id = gc.ingame_id
-				WHERE s.game_id IN ? 
-					AND s.solve_status = '"SolveCorrect"'::jsonb
-					AND gc.visible = true
-				GROUP BY s.team_id
-			) team_scores
-			LEFT JOIN (
-				SELECT 
-					s.team_id,
-					SUM(
-						CASE 
-							WHEN s.rank = 1 AND gc.enable_blood_reward THEN gc.cur_score * (g.first_blood_reward / 100.0)
-							WHEN s.rank = 2 AND gc.enable_blood_reward THEN gc.cur_score * (g.second_blood_reward / 100.0)
-							WHEN s.rank = 3 AND gc.enable_blood_reward THEN gc.cur_score * (g.third_blood_reward / 100.0)
-							ELSE 0
-						END
-					) as reward_total
-				FROM solves s
-				JOIN game_challenges gc ON s.ingame_id = gc.ingame_id
-				JOIN games g ON s.game_id = g.game_id
-				WHERE s.game_id IN ?
-					AND s.solve_status = '"SolveCorrect"'::jsonb
-					AND gc.visible = true
-					AND s.rank IN (1, 2, 3)
-				GROUP BY s.team_id
-			) blood_rewards ON team_scores.team_id = blood_rewards.team_id
-			LEFT JOIN (
-				SELECT 
-					sa.team_id,
-					SUM(sa.score_change) as adjustment_total
-				FROM score_adjustments sa
-				WHERE sa.game_id IN ?
-				GROUP BY sa.team_id
-			) adjustments ON team_scores.team_id = adjustments.team_id
-			WHERE t.team_id = team_scores.team_id
-				AND t.game_id IN ?;
-		`, game_ids, game_ids, game_ids, game_ids).Error; err != nil {
-			log.Printf("Failed to update team_score: %v", err)
-		}
-	}
-}
-
-func DebugBloodRewards(gameIDs []int64) {
-	type BloodRewardResult struct {
-		TeamID      int64
-		Rank        int32
-		ChallengeID int64
-		CurScore    float64
-		Reward      float64
-		GameTitle   string
-	}
-
-	var results []BloodRewardResult
-
-	err := dbtool.DB().Raw(`
-        SELECT 
-            s.rank as rank,
-			gc.challenge_id,
-			gc.cur_score as cur_score,
-			CASE 
-				WHEN s.rank = 1 AND gc.enable_blood_reward = true THEN 
-					gc.cur_score * COALESCE(g.first_blood_reward, 5) / 100.0
-				WHEN s.rank = 2 AND gc.enable_blood_reward = true THEN 
-					gc.cur_score * COALESCE(g.second_blood_reward, 3) / 100.0
-				WHEN s.rank = 3 AND gc.enable_blood_reward = true THEN 
-					gc.cur_score * COALESCE(g.third_blood_reward, 1) / 100.0
-				ELSE 0
-			END as reward,
-            g.name as game_title
-        FROM solves s
-        JOIN game_challenges gc ON s.ingame_id = gc.ingame_id
-        JOIN games g ON s.game_id = g.game_id
-        WHERE s.game_id IN ?
-            AND s.solve_status = '"SolveCorrect"'::jsonb
-            AND gc.visible = true
-            AND s.rank IN (1, 2, 3)
-        ORDER BY s.team_id, s.rank
-    `, gameIDs).Scan(&results).Error
-
-	if err != nil {
-		log.Printf("Debug blood rewards error: %v", err)
+	if len(game_ids) == 0 {
 		return
 	}
 
-	log.Printf("Blood rewards debug results (%d records):", len(results))
-	for _, r := range results {
-		log.Printf("TeamID: %d, Rank: %d, Challenge: %d, Score: %.2f, Reward: %.2f, Game: %s",
-			r.TeamID, r.Rank, r.ChallengeID, r.CurScore, r.Reward, r.GameTitle)
+	// 1. 查询所有相关的 GameChallenge
+	var gameChallenges []models.GameChallenge
+	if err := dbtool.DB().Where("game_id IN ?", game_ids).Find(&gameChallenges).Error; err != nil {
+		zaphelper.Logger.Error("Failed to load game challenges", zap.Error(err))
+		return
+	}
+
+	// 2. 查询所有正确的解题记录
+	var solves []models.Solve
+	if err := dbtool.DB().Where("game_id IN ? AND solve_status = ?", game_ids, models.SolveCorrect).Find(&solves).Error; err != nil {
+		zaphelper.Logger.Error("Failed to load solves", zap.Error(err))
+		return
+	}
+
+	// 3. 统计每道题的解题人数
+	solveCountMap := make(map[int64]int32) // ingame_id -> solve_count
+	for _, solve := range solves {
+		solveCountMap[solve.IngameID]++
+	}
+
+	// 4. 更新每道题的解题人数和分数（只更新有变化的）
+	var challengesToUpdate []models.GameChallenge
+	for _, gc := range gameChallenges {
+		solveCount := solveCountMap[gc.IngameID]
+		oldSolveCount := gc.SolveCount
+		oldCurScore := gc.CurScore
+
+		gc.SolveCount = solveCount
+
+		// 计算当前分数
+		var newCurScore float64
+		if solveCount == 0 {
+			newCurScore = gc.TotalScore
+		} else {
+			// 动态分数计算公式
+			minRatio := gc.MinimalScore / gc.TotalScore
+			dynamicRatio := (1 - minRatio) * math.Exp((1-float64(solveCount))/gc.Difficulty)
+			newCurScore = math.Floor(gc.TotalScore * (minRatio + dynamicRatio))
+		}
+		gc.CurScore = newCurScore
+
+		// 只有当解题人数或分数发生变化时才加入更新列表
+		if oldSolveCount != solveCount || oldCurScore != newCurScore {
+			challengesToUpdate = append(challengesToUpdate, gc)
+		}
+	}
+
+	// 批量更新 GameChallenge（只更新有变化的）
+	if len(challengesToUpdate) > 0 {
+		for _, gc := range challengesToUpdate {
+			if err := dbtool.DB().Model(&gc).Select("solve_count", "cur_score").Updates(gc).Error; err != nil {
+				zaphelper.Logger.Error("Failed to update game challenge", zap.Error(err), zap.Int64("ingame_id", gc.IngameID))
+			}
+		}
+	}
+
+	// 5. 查询游戏信息（用于血奖计算）
+	var games []models.Game
+	if err := dbtool.DB().Where("game_id IN ?", game_ids).Find(&games).Error; err != nil {
+		zaphelper.Logger.Error("Failed to load games", zap.Error(err))
+		return
+	}
+	gameMap := make(map[int64]models.Game)
+	for _, game := range games {
+		gameMap[game.GameID] = game
+	}
+
+	// 6. 查询分数调整记录
+	var adjustments []models.ScoreAdjustment
+	if err := dbtool.DB().Where("game_id IN ?", game_ids).Find(&adjustments).Error; err != nil {
+		zaphelper.Logger.Error("Failed to load score adjustments", zap.Error(err))
+		return
+	}
+
+	// 7. 计算每个队伍的总分
+	teamScores := make(map[int64]float64) // team_id -> total_score
+
+	// 7.1 计算基础分数（正确解题分数）
+	gameChallengeMap := make(map[int64]models.GameChallenge)
+	for _, gc := range gameChallenges {
+		// 更新分数信息
+		solveCount := solveCountMap[gc.IngameID]
+		gc.SolveCount = solveCount
+		// 计算当前分数
+		var newCurScore float64
+		if solveCount == 0 {
+			newCurScore = gc.TotalScore
+		} else {
+			// 动态分数计算公式
+			minRatio := gc.MinimalScore / gc.TotalScore
+			dynamicRatio := (1 - minRatio) * math.Exp((1-float64(solveCount))/gc.Difficulty)
+			newCurScore = math.Floor(gc.TotalScore * (minRatio + dynamicRatio))
+		}
+		gc.CurScore = newCurScore
+		gameChallengeMap[gc.IngameID] = gc
+	}
+
+	for _, solve := range solves {
+		if gc, exists := gameChallengeMap[solve.IngameID]; exists && gc.Visible {
+			teamScores[solve.TeamID] += gc.CurScore
+		}
+	}
+
+	// 7.2 计算血奖分数
+	for _, solve := range solves {
+		if gc, exists := gameChallengeMap[solve.IngameID]; exists && gc.Visible && gc.BloodRewardEnabled {
+			if game, gameExists := gameMap[solve.GameID]; gameExists {
+				var rewardPercent int64
+				switch solve.Rank {
+				case 1:
+					rewardPercent = game.FirstBloodReward
+				case 2:
+					rewardPercent = game.SecondBloodReward
+				case 3:
+					rewardPercent = game.ThirdBloodReward
+				}
+				if rewardPercent > 0 {
+					reward := gc.CurScore * float64(rewardPercent) / 100.0
+					teamScores[solve.TeamID] += math.Max(math.Floor(reward), 1)
+				}
+			}
+		}
+	}
+
+	// 7.3 计算分数调整
+	for _, adj := range adjustments {
+		teamScores[adj.TeamID] += adj.ScoreChange
+	}
+
+	// 8. 查询当前队伍分数，只更新有变化的
+	var currentTeams []models.Team
+	var teamIDsToQuery []int64
+	for teamID := range teamScores {
+		teamIDsToQuery = append(teamIDsToQuery, teamID)
+	}
+
+	if len(teamIDsToQuery) > 0 {
+		if err := dbtool.DB().Where("team_id IN ? AND game_id IN ?", teamIDsToQuery, game_ids).Find(&currentTeams).Error; err != nil {
+			zaphelper.Logger.Error("Failed to load current team scores", zap.Error(err))
+			return
+		}
+	}
+
+	// 比较分数，只更新有变化的队伍
+	currentTeamScoreMap := make(map[int64]float64)
+	for _, team := range currentTeams {
+		currentTeamScoreMap[team.TeamID] = team.TeamScore
+	}
+
+	var teamsToUpdate []models.Team
+	for teamID, newScore := range teamScores {
+		currentScore, exists := currentTeamScoreMap[teamID]
+		// 如果队伍不存在或分数发生变化，则需要更新
+		if !exists || currentScore != newScore {
+			team := models.Team{
+				TeamID:    teamID,
+				TeamScore: newScore,
+			}
+			teamsToUpdate = append(teamsToUpdate, team)
+		}
+	}
+
+	if len(teamsToUpdate) > 0 {
+		for _, team := range teamsToUpdate {
+			if err := dbtool.DB().Model(&team).Select("team_score").Updates(team).Error; err != nil {
+				zaphelper.Logger.Error("Failed to update team score", zap.Error(err), zap.Int64("team_id", team.TeamID))
+			}
+		}
 	}
 }
 

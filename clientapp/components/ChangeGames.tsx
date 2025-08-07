@@ -1,5 +1,5 @@
 import { Button } from "./ui/button"
-import { CalendarPlus, CalendarX2, ChevronDown, ChevronsLeft, ChevronsRight, ChevronUp, Dices, Flag, LayoutList, NotebookTabs, PlugZap, Rows4, Swords } from "lucide-react"
+import { CalendarPlus, CalendarX2, ChevronsLeft, ChevronsRight, Dices, Flag, LayoutList, NotebookTabs, PlugZap, Swords } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion";
 
@@ -21,19 +21,13 @@ import {
 import {
     Sheet,
     SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
     SheetTrigger,
 } from "components/ui/sheet"
   
 
-import GameSwitchHover from "./GameSwitchHover";
 // import { DialogTitle } from "components/ui/sheet";
 import { useGameSwitchContext } from "contexts/GameSwitchContext";
 
-import { LoadingPage } from "./LoadingPage";
-import FancyBackground from "./modules/FancyBackground";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
@@ -44,9 +38,6 @@ export function ChangeGames() {
     const curIndexRef = useRef(0)
     const boxHeight = useRef(0)
     const [onTransition, setOnTransition] = useState(false)
-    const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-
-    const [loadingPageVisible, setLoadingPageVisible] = useState(true)
 
     const [width, setWidth] = useState<number>(0)
 
@@ -77,7 +68,6 @@ export function ChangeGames() {
 
     const { theme } = useTheme()
 
-    const [shouldAnime, setShouldAnime] = useState(false)
     const navigate = useNavigate();
 
     // 观察器
@@ -99,10 +89,6 @@ export function ChangeGames() {
 
         api.user.userListGames().then((res) => {
             setCurGames(res.data.data.toSorted((a, b) => dayjs(b.start_time).unix() - dayjs(a.start_time).unix()))
-
-            setTimeout(() => {
-                setLoadingPageVisible(false)
-            }, 200)
         })
 
         setWidth(window.innerWidth)
@@ -335,7 +321,7 @@ export function ChangeGames() {
                                                             <div className={`w-[8px] h-[8px] rounded-full ${getGameFlag(game)}`} /><span className="text-white">{ getGameStatus(game) }</span>
                                                         </div>
                                                         <div className="absolute z-10 bottom-5 right-5 rounded-xl flex items-center justify-center shadow-[var(--tw-shadow-colored)_0_0_5px] shadow-foreground border-foreground/80 bg-background/20 backdrop-blur-sm hover:scale-105 transition-transform duration-300"
-                                                            onClick={(event) => {
+                                                            onClick={() => {
                                                                 handleChangeGame()
                                                             }}
                                                         >
@@ -405,7 +391,7 @@ export function ChangeGames() {
                                     <span className="text-white">{ getGameStatus(curGames[curIndex]) }</span>
                                 </div>
                                 <div className="absolute z-10 bottom-5 right-5 rounded-xl flex items-center justify-center shadow-[var(--tw-shadow-colored)_0_0_5px] shadow-foreground border-foreground/80 bg-background/20 backdrop-blur-sm hover:scale-105 transition-transform duration-300"
-                                    onClick={(event) => {
+                                    onClick={() => {
                                         handleChangeGame()
                                     }}
                                 >

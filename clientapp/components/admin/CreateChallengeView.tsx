@@ -9,14 +9,6 @@ import {
 } from "components/ui/form"
 
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "components/ui/popover"
-
-import { useFieldArray, Controller, useWatch } from "react-hook-form";
-
-import {
     Select,
     SelectContent,
     SelectItem,
@@ -29,324 +21,21 @@ import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "../ui/button";
-import { cn } from "lib/utils";
 
-import { CalendarIcon, CircleArrowLeft, Cloud, FileCode, Github, PlusCircle, Save, ScanBarcode, TableProperties } from "lucide-react"
-import { Textarea } from "../ui/textarea";
+import { CircleArrowLeft, FileCode, Github, Save, ScanBarcode } from "lucide-react"
 
 import CodeEditor from '@uiw/react-textarea-code-editor';
 
 import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
 import { useEffect, useState } from "react";
 import { MacScrollbar } from "mac-scrollbar";
-import { AdminChallengeConfig, ChallengeContainerType, FlagType } from "utils/A1API";
-import { api, ErrorMessage } from "utils/ApiHelper";
+import { AdminChallengeConfig } from "utils/A1API";
+import { api } from "utils/ApiHelper";
 import dayjs from "dayjs";
 import { toast } from 'react-toastify/unstyled';
-import { AxiosError } from "axios";
 import { useNavigate } from "react-router";
 import { useTheme } from "next-themes";
 import ThemedEditor from "components/modules/ThemedEditor";
-
-interface ContainerFormProps {
-    control: any;
-    index: number;
-    removeContainer: (index: number) => void;
-}
-
-interface AttachmentFormProps {
-    control: any;
-    index: number;
-    form: any;
-    removeAttachment: (index: number) => void;
-}
-
-function ContainerForm({ control, index, removeContainer }: ContainerFormProps) {
-    const {
-        fields: portFields,
-        append: appendPort,
-        remove: removePort,
-    } = useFieldArray({
-        control,
-        name: `container_config.${index}.expose_ports`,
-    });
-
-    return (
-        <div className="border p-6 mb-4 rounded-lg hover:shadow-lg transition-shadow duration-300">
-            <div className="flex justify-between items-center mb-2">
-                <span className="font-md font-semibold">容器 {index + 1}</span>
-                <Button variant="destructive" type="button" onClick={() => removeContainer(index)}>
-                    删除容器
-                </Button>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-                <FormField
-                    control={control}
-                    name={`container_config.${index}.name`}
-                    render={({ field }) => (
-                        <FormItem>
-                            <div className="flex items-center h-[20px]">
-                                <FormLabel>容器名称</FormLabel>
-                                <div className="flex-1" />
-                                <FormMessage className="text-[14px]" />
-                            </div>
-                            <FormControl>
-                                <Input {...field} value={field.value ?? ""} />
-                            </FormControl>
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={control}
-                    name={`container_config.${index}.image`}
-                    render={({ field }) => (
-                        <FormItem>
-                            <div className="flex items-center h-[20px]">
-                                <FormLabel>镜像名称</FormLabel>
-                                <div className="flex-1" />
-                                <FormMessage className="text-[14px]" />
-                            </div>
-                            <FormControl>
-                                <Input {...field} value={field.value ?? ""} />
-                            </FormControl>
-                        </FormItem>
-                    )}
-                />
-            </div>
-            <div className="grid grid-cols-2 gap-4 mt-4">
-                <FormField
-                    control={control}
-                    name={`container_config.${index}.command`}
-                    render={({ field }) => (
-                        <FormItem>
-                            <div className="flex items-center h-[20px]">
-                                <FormLabel>启动命令</FormLabel>
-                                <div className="flex-1" />
-                                <FormMessage className="text-[14px]" />
-                            </div>
-                            <FormControl>
-                                <Input {...field} value={field.value ?? ""} />
-                            </FormControl>
-                            <FormDescription>
-                                默认请留空
-                            </FormDescription>
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={control}
-                    name={`container_config.${index}.env`}
-                    render={({ field }) => (
-                        <FormItem>
-                            <div className="flex items-center h-[20px]">
-                                <FormLabel>环境变量</FormLabel>
-                                <div className="flex-1" />
-                                <FormMessage className="text-[14px]" />
-                            </div>
-                            <FormControl>
-                                <Input {...field} value={field.value ?? ""} />
-                            </FormControl>
-                            <FormDescription>
-                                键值对的形式, 用逗号隔开, 如: KEY=VALUE,KEY2=VALUE2, 支持<a className="hover:underline hover:cursor-pointer underline-offset-2 text-red-400">模板变量</a>
-                            </FormDescription>
-                        </FormItem>
-                    )}
-                />
-            </div>
-            <div className="mt-4">
-                <div className="flex items-center mb-3">
-                    <span className="text-md font-semibold">端口暴露</span>
-                    <div className="flex-1" />
-                    <Button
-                        type="button"
-                        variant={"outline"}
-                        className="[&_svg]:size-5"
-                        onClick={() => appendPort({ name: "", port: 0 })}
-                    >
-                        <PlusCircle />
-                        添加端口
-                    </Button>
-                </div>
-                <span className="text-sm text-foreground/50">端口名称是你需要映射出来的端口的名称, 这会显示给选手, 端口号是容器内服务的端口, A1CTF会自动映射随机端口到宿主机上, 注意！一道题的不同容器不能同时暴露相同的端口! 比如: 容器1和容器2同时要求暴露80端口, 这会导致映射出问题! 请你在制作docker的时候选择不同的监听端口</span>
-                <div className="h-4" />
-                {portFields.map((port, portIndex) => (
-                    <div key={port.id} className="flex gap-2 items-end mb-2">
-                        <FormField
-                            control={control}
-                            name={`container_config.${index}.expose_ports.${portIndex}.name`}
-                            render={({ field }) => (
-                                <FormItem className="flex-1">
-                                    <div className="flex items-center w- h-[20px]">
-                                        <FormLabel>端口名称</FormLabel>
-                                        <div className="flex-1" />
-                                        <FormMessage className="text-[14px]" />
-                                    </div>
-                                    <FormControl>
-                                        <Input {...field} value={field.value ?? ""} />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={control}
-                            name={`container_config.${index}.expose_ports.${portIndex}.port`}
-                            render={({ field }) => (
-                                <FormItem className="flex-1">
-                                    <div className="flex items-center w- h-[20px]">
-                                        <FormLabel>端口号</FormLabel>
-                                        <div className="flex-1" />
-                                        <FormMessage className="text-[14px]" />
-                                    </div>
-                                    <FormControl>
-                                        <Input type="number" {...field} value={field.value ?? 0} />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
-                        <Button variant="destructive" type="button" onClick={() => removePort(portIndex)}>
-                            删除端口
-                        </Button>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-function AttachmentForm({ control, index, form, removeAttachment }: AttachmentFormProps) {
-
-    const attachType = useWatch({
-        control,
-        name: `attachments.${index}.attach_type`, // Watch the specific field
-    });
-
-    return (
-        <div className="border p-6 mb-4 rounded-lg hover:shadow-lg transition-shadow duration-300">
-            <div className="flex justify-between items-center mb-2">
-                <span className="font-md font-semibold">附件 {index + 1}</span>
-                <Button variant="destructive" type="button" onClick={() => removeAttachment(index)}>
-                    删除附件
-                </Button>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-                <FormField
-                    control={control}
-                    name={`attachments.${index}.attach_name`}
-                    render={({ field }) => (
-                        <FormItem>
-                            <div className="flex items-center h-[20px]">
-                                <FormLabel>附件名称</FormLabel>
-                                <div className="flex-1" />
-                                <FormMessage className="text-[14px]" />
-                            </div>
-                            <FormControl>
-                                <Input {...field} value={field.value ?? ""} />
-                            </FormControl>
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={control}
-                    name={`attachments.${index}.attach_type`}
-                    render={({ field }) => (
-                        <FormItem>
-                            <div className="flex items-center h-[20px]">
-                                <FormLabel>附件类型</FormLabel>
-                                <div className="flex-1" />
-                                <FormMessage className="text-[14px]" />
-                            </div>
-                            <Select onValueChange={(e) => {
-                                field.onChange(e)
-
-                            }} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="选择附件类型" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent className="w-full flex">
-                                    <SelectContent className="w-full flex">
-                                        <SelectItem value="STATICFILE">
-                                            <div className="w-full flex gap-2 items-center h-[25px]">
-                                                <ScanBarcode />
-                                                <span className="text-[12px] font-bold">静态附件</span>
-                                            </div>
-                                        </SelectItem>
-                                        <SelectItem value="DYNAMICFILE" disabled>
-                                            <div className="w-full flex gap-2 items-center h-[25px]">
-                                                <FileCode />
-                                                <span className="text-[12px] font-bold">动态附件</span>
-                                            </div>
-                                        </SelectItem>
-                                        <SelectItem value="REMOTEFILE">
-                                            <div className="w-full flex gap-2 items-center h-[25px]">
-                                                <Cloud />
-                                                <span className="text-[12px] font-bold">远程附件</span>
-                                            </div>
-                                        </SelectItem>
-                                        <SelectItem value="ATTACHMENTPOOR" disabled>
-                                            <div className="w-full flex gap-2 items-center h-[25px]">
-                                                <TableProperties />
-                                                <span className="text-[12px] font-bold">附件池(随机)</span>
-                                            </div>
-                                        </SelectItem>
-                                    </SelectContent>
-                                </SelectContent>
-                            </Select>
-                            <FormDescription>
-                                请选择一个类别
-                            </FormDescription>
-                        </FormItem>
-                    )}
-                />
-            </div>
-            {attachType == "REMOTEFILE" && (
-                <FormField
-                    control={control}
-                    name={`attachments.${index}.attach_url`}
-                    render={({ field }) => (
-                        <FormItem>
-                            <div className="flex items-center h-[20px]">
-                                <FormLabel>附件下载地址</FormLabel>
-                                <div className="flex-1" />
-                                <FormMessage className="text-[14px]" />
-                            </div>
-                            <FormControl>
-                                <Input {...field} value={field.value ?? ""} />
-                            </FormControl>
-                        </FormItem>
-                    )}
-                />
-            )}
-
-            {attachType == "STATICFILE" && (
-                <div className="grid grid-cols-8 gap-4 items-end">
-                    <div className="col-span-7">
-                        <FormField
-                            control={control}
-                            name={`attachments.${index}.attach_hash`}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <div className="flex items-center h-[20px]">
-                                        <FormLabel>附件哈希</FormLabel>
-                                        <div className="flex-1" />
-                                        <FormMessage className="text-[14px]" />
-                                    </div>
-                                    <FormControl>
-                                        <Input {...field} value={field.value ?? ""} />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                    <Button>
-                        上传附件
-                    </Button>
-                </div>
-            )}
-        </div>
-    );
-}
 
 export function CreateChallengeView() {
 
@@ -411,14 +100,6 @@ export function CreateChallengeView() {
         flag_type: z.enum(["FlagTypeDynamic", "FlagTypeStatic"]),
     });
 
-    const env_to_string = (data: { name: string, value: string }[]) => {
-        let env = ""
-        data.forEach((item) => {
-            env += `${item.name}=${item.value},`
-        })
-        return env.substring(0, env.length - 1)
-    }
-
     const string_to_env = (data: string): { name: string, value: string }[] => {
         const env: { name: string, value: string }[] = []
 
@@ -450,24 +131,6 @@ export function CreateChallengeView() {
         }
     })
 
-    const {
-        fields: containerFields,
-        append: appendContainer,
-        remove: removeContainer,
-    } = useFieldArray({
-        control: form.control,
-        name: "container_config",
-    });
-
-    const {
-        fields: attachmentsFields,
-        append: appendAttachment,
-        remove: removeAttachment,
-    } = useFieldArray({
-        control: form.control,
-        name: "attachments",
-    });
-
     const [showScript, setShowScript] = useState(false);
 
     function onSubmit(values: z.infer<typeof formSchema>) {
@@ -493,7 +156,7 @@ export function CreateChallengeView() {
             flag_type: "FlagTypeDynamic"
         };
 
-        api.admin.createChallenge(finalData as AdminChallengeConfig).then((res) => {
+        api.admin.createChallenge(finalData as AdminChallengeConfig).then(() => {
             toast.success("创建成功")
         })
     }

@@ -20,59 +20,7 @@ import UserPolicySettings from "./UserPolicy";
 import { useTheme } from "next-themes";
 import TemplateSettings from "./TemplateSettings";
 
-// interface SystemSettings {
-//     // 基本信息
-//     systemName: string;
-//     systemLogo: string;
-//     systemSlogan: string;
-//     systemSummary: string;
-//     systemFooter: string;
-//     systemFavicon: string;
-
-//     // 主题设置
-//     themeColor: string;
-//     darkModeDefault: boolean;
-//     allowUserTheme: boolean;
-
-//     // 品牌资源
-//     fancyBackGroundIconWhite: string;
-//     fancyBackGroundIconBlack: string;
-//     defaultBGImage: string;
-//     svgIconLight: string;
-//     svgIconDark: string;
-//     svgAltData: string;
-//     trophysGold: string;
-//     trophysSilver: string;
-//     trophysBronze: string;
-//     schoolLogo: string;
-//     schoolSmallIcon: string;
-//     schoolUnionAuthText: string;
-//     bgAnimation: boolean;
-
-//     // SMTP设置
-//     smtpHost: string;
-//     smtpPort: number;
-//     smtpUsername: string;
-//     smtpPassword: string;
-//     smtpFrom: string;
-//     smtpEnabled: boolean;
-
-//     // Cloudflare Turnstile设置
-//     captchaEnabled: boolean;
-
-//     // 账户激活策略
-//     accountActivationMethod: "auto" | "email" | "admin";
-//     registrationEnabled: boolean;
-
-//     // 其他系统设置
-//     defaultLanguage: string;
-//     timeZone: string;
-//     maxUploadSize: number;
-// }
-
-// 使用Zod定义表单验证模式
 const systemSettingsSchema = z.object({
-    // 基本信息
     systemName: z.string().optional(),
     systemLogo: z.string().optional(),
     systemSlogan: z.string().optional(),
@@ -350,7 +298,6 @@ export const AdminSettingsPage = () => {
                                             {activeModule == "basic" && (
                                                 <BasicSettings
                                                     form={form}
-                                                    onSubmit={onSubmit}
                                                 />
                                             )}
 

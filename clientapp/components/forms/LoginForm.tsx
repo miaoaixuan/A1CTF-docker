@@ -1,18 +1,9 @@
-import { cn } from "lib/utils"
 import { Button } from "components/ui/button"
 import { Input } from "components/ui/input"
 import { Label } from "components/ui/label"
-
-import { FormEventHandler, useRef, useState } from "react";
-import { LoaderCircle } from 'lucide-react';
-
-import { toastError, toastSuccess } from "utils/ToastUtil"
-
+import { useState } from "react";
 import { CapWidget, CapWidgetElement } from '@pitininja/cap-react-widget';
-
-
-import axios, { AxiosError } from 'axios';
-import { useTheme } from "next-themes";
+import { AxiosError } from 'axios';
 
 import {
     Form,
@@ -35,18 +26,9 @@ import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 
-import Turnstile, { useTurnstile } from "react-turnstile";
 import { useNavigateFrom } from "hooks/NavigateFrom";
 
-interface ErrorLoginResponse {
-    title: string;
-    status: number;
-}
-
-export function LoginForm({
-    className,
-    ...props
-}: React.ComponentPropsWithoutRef<"form">) {
+export function LoginForm() {
     const { t } = useTranslation("login_form");
 
     const [token, setToken] = useState<string>("")
@@ -56,18 +38,13 @@ export function LoginForm({
         ele.dispatchEvent("reset")
     }
 
-    const userNameRef = useRef<HTMLInputElement>(null)
-    const passwordRef = useRef<HTMLInputElement>(null)
-
     const router = useNavigate()
 
     const { updateProfile, clientConfig } = useGlobalVariableContext()
 
     const [loading, setLoading] = useState(false)
 
-    const { theme, systemTheme } = useTheme();
-
-    const [navigateFrom, getNavigateFrom] = useNavigateFrom()
+    const [_navigateFrom, getNavigateFrom] = useNavigateFrom()
 
     const formSchema = z.object({
         userName: z.string().nonempty(t("username_not_null")),
@@ -88,7 +65,7 @@ export function LoginForm({
             username: values.userName,
             password: values.password,
             captcha: token
-        }, createSkipGlobalErrorConfig()).then(response => {
+        }, createSkipGlobalErrorConfig()).then(() => {
             updateProfile(() => {
                 router(getNavigateFrom() ?? "/")
 
@@ -117,7 +94,7 @@ export function LoginForm({
                     {t("login_hint")}
                 </p>
             </div>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-4">
                 <FormField
                     control={form.control}
                     name="userName"
@@ -145,8 +122,10 @@ export function LoginForm({
                                 <div className="flex items-center h-[40px]">
                                     <Label htmlFor="password">{t("password")}</Label>
                                     <a
-                                        href="#"
-                                        className="ml-auto text-sm underline-offset-4 hover:underline"
+                                        onClick={() => {
+                                            router("/forget-password")
+                                        }}
+                                        className="ml-auto text-sm underline-offset-4 hover:underline cursor-pointer"
                                     >
                                         {t("forget_password")}
                                     </a>
@@ -173,10 +152,15 @@ export function LoginForm({
                 ) : <></>}
 
                 <div className='h-0' />
-                <Button type="submit" className="transition-all duration-300 w-full" disabled={loading || (clientConfig.captchaEnabled && token == "")}>{t("login")}</Button>
+                <Button 
+                    type="submit" 
+                    className="transition-all duration-300 w-full" 
+                    disabled={loading || (clientConfig.captchaEnabled && token == "")}
+                    onClick={form.handleSubmit(onSubmit)}
+                >{t("login")}</Button>
                 <div className="text-center text-sm">
                     {t("dont_have_account")}{" "}
-                    <a className="underline underline-offset-4" onClick={() => router(`/signup`)}>
+                    <a className="underline underline-offset-4 cursor-pointer" onClick={() => router(`/signup`)}>
                         {t("sign_up_title")}
                     </a>
                 </div>
@@ -205,7 +189,7 @@ export function LoginForm({
                         {t("login_with_zjnu")}
                     </Button> */}
                 </div>
-            </form>
+            </div>
         </Form>
     )
 }

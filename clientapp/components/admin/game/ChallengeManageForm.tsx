@@ -8,13 +8,7 @@ import {
     FormMessage,
 } from "components/ui/form"
 
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "components/ui/popover"
-
-import { useFieldArray, Controller, useWatch } from "react-hook-form";
+import { useFieldArray, useWatch } from "react-hook-form";
 
 import {
     Select,
@@ -29,25 +23,17 @@ import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "components/ui/button";
-import { cn } from "lib/utils";
 
-import { CalendarIcon, CircleArrowLeft, Cloud, FileCode, Github, PlusCircle, Save, ScanBarcode, TableProperties, Upload } from "lucide-react"
-import { Textarea } from "components/ui/textarea";
+import { Cloud, FileCode, Github, PlusCircle, Save, ScanBarcode, TableProperties, Trash2, Upload } from "lucide-react"
 
-import CodeEditor from '@uiw/react-textarea-code-editor';
 
 import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
 import { useEffect, useState } from "react";
-import { MacScrollbar } from "mac-scrollbar";
 import { AdminChallengeConfig } from "utils/A1API";
-import { api, ErrorMessage } from "utils/ApiHelper";
-import dayjs from "dayjs";
+import { api } from "utils/ApiHelper";
 import { toast } from 'react-toastify/unstyled';
-import { AxiosError } from "axios";
-import { useNavigate } from "react-router";
 import { UploadFileDialog } from "components/dialogs/UploadFileDialog";
 import { Switch } from "components/ui/switch";
-import { useTheme } from "next-themes";
 import ThemedEditor from "components/modules/ThemedEditor";
 
 interface ContainerFormProps {
@@ -74,8 +60,17 @@ function ContainerForm({ control, index, removeContainer }: ContainerFormProps) 
         name: `container_config.${index}.expose_ports`,
     });
 
+    const {
+        fields: commands,
+        append: appendCommand,
+        remove: removeCommand,
+    } = useFieldArray({
+        control,
+        name: `container_config.${index}.command`,
+    });
+
     return (
-        <div className="border p-6 mb-4 rounded-lg hover:shadow-lg transition-shadow duration-300">
+        <div className="border p-6 mb-4 rounded-lg hover:shadow-lg transition-shadow duration-300 flex flex-col gap-4">
             <div className="flex justify-between items-center mb-2">
                 <span className="font-md font-semibold">容器 {index + 1}</span>
                 <Button variant="destructive" type="button" onClick={() => removeContainer(index)}>
@@ -116,46 +111,68 @@ function ContainerForm({ control, index, removeContainer }: ContainerFormProps) 
                     )}
                 />
             </div>
-            <div className="grid grid-cols-2 gap-4 mt-4">
-                <FormField
-                    control={control}
-                    name={`container_config.${index}.command`}
-                    render={({ field }) => (
-                        <FormItem>
-                            <div className="flex items-center h-[20px]">
-                                <FormLabel>启动命令</FormLabel>
-                                <div className="flex-1" />
-                                <FormMessage className="text-[14px]" />
-                            </div>
-                            <FormControl>
-                                <Input {...field} value={field.value ?? ""} />
-                            </FormControl>
-                            <FormDescription>
-                                默认请留空
-                            </FormDescription>
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={control}
-                    name={`container_config.${index}.env`}
-                    render={({ field }) => (
-                        <FormItem>
-                            <div className="flex items-center h-[20px]">
-                                <FormLabel>环境变量</FormLabel>
-                                <div className="flex-1" />
-                                <FormMessage className="text-[14px]" />
-                            </div>
-                            <FormControl>
-                                <Input {...field} value={field.value ?? ""} />
-                            </FormControl>
-                            <FormDescription>
-                                键值对的形式, 用逗号隔开, 如: KEY=VALUE,KEY2=VALUE2, 支持<a className="hover:underline hover:cursor-pointer underline-offset-2 text-red-400">模板变量</a>
-                            </FormDescription>
-                        </FormItem>
-                    )}
-                />
+            <FormField
+                control={control}
+                name={`container_config.${index}.env`}
+                render={({ field }) => (
+                    <FormItem>
+                        <div className="flex items-center h-[20px]">
+                            <FormLabel>环境变量</FormLabel>
+                            <div className="flex-1" />
+                            <FormMessage className="text-[14px]" />
+                        </div>
+                        <FormControl>
+                            <Input {...field} value={field.value ?? ""} />
+                        </FormControl>
+                        <FormDescription>
+                            键值对的形式, 用逗号隔开, 如: KEY=VALUE,KEY2=VALUE2, 支持<a className="hover:underline hover:cursor-pointer underline-offset-2 text-red-400">模板变量</a>
+                        </FormDescription>
+                    </FormItem>
+                )}
+            />
+            <div className="flex flex-col gap-2">
+                <div className="flex items-center h-[20px] mb-4">
+                    <FormLabel>启动命令</FormLabel>
+                    <div className="flex-1" />
+                    <Button
+                        variant="outline"
+                        onClick={() => appendCommand("")}
+                    ><PlusCircle />添加启动命令</Button>
+                </div>
+                {commands.length ? (
+                    commands.map((_, commandIndex) => (
+                        <FormField
+                            key={commandIndex}
+                            control={control}
+                            name={`container_config.${index}.command.${commandIndex}`}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormControl>
+                                        <div className="flex w-full gap-1 items-center">
+                                            <Input {...field} value={field.value ?? ""} />
+                                            <div className="flex-1" />
+                                            <Button
+                                                variant="outline" className="text-red-400"
+                                                size="icon"
+                                                onClick={() => {
+                                                    removeCommand(commandIndex)
+                                                }}
+                                            ><Trash2 /></Button>
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage className="text-[14px]" />
+                                </FormItem>
+                            )}
+                        />
+                    ))
+                ) : (
+                    <></>
+                )}
+                <FormDescription>
+                    例如 bash -c "time" 你就需要创建三个 bash, -c, time
+                </FormDescription>
             </div>
+
             {/* <span className="text-md font-semibold mt-4">资源限制</span> */}
             <div className="grid grid-cols-3 gap-4 mt-4">
                 <FormField
@@ -223,7 +240,6 @@ function ContainerForm({ control, index, removeContainer }: ContainerFormProps) 
                     <Button
                         type="button"
                         variant={"outline"}
-                        className="[&_svg]:size-5"
                         onClick={() => appendPort({ name: "", port: 0 })}
                     >
                         <PlusCircle />
@@ -410,6 +426,7 @@ function AttachmentForm({ control, index, form, removeAttachment, onFormSubmit }
                                                 // toast.success("题目信息已自动保存");
                                             } catch (error) {
                                                 toast.error("自动保存失败，请手动保存");
+                                                const _ = error
                                             }
                                         }}
                                     >
@@ -485,7 +502,9 @@ export function ChallengeManageForm({ challengeInfo }: { challengeInfo: AdminCha
             z.object({
                 name: z.string().min(1, { message: "请输入容器名称" }),
                 image: z.string().min(1, { message: "请输入镜像地址" }),
-                command: z.string().nullable(),
+                command: z.array(
+                    z.string()
+                ).nullable(),
                 env: z.string().nullable(),
                 expose_ports: z.array(
                     z.object({
@@ -552,7 +571,7 @@ export function ChallengeManageForm({ challengeInfo }: { challengeInfo: AdminCha
             container_config: challengeInfo?.container_config.map((e) => ({
                 name: e.name,
                 image: e.image,
-                command: e.command,
+                command: e.command || [],
                 env: e.env ? env_to_string(e.env) : "",
                 expose_ports: e.expose_ports.map((e2) => (
                     {
@@ -593,7 +612,7 @@ export function ChallengeManageForm({ challengeInfo }: { challengeInfo: AdminCha
         name: "attachments",
     });
 
-    const [showScript, setShowScript] = useState(false);
+    const [_showScript, setShowScript] = useState(false);
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         const finalData = {
@@ -605,7 +624,7 @@ export function ChallengeManageForm({ challengeInfo }: { challengeInfo: AdminCha
             container_config: values.container_config.map((e) => ({
                 name: e.name,
                 image: e.image,
-                command: e.command != "" ? e.command : null,
+                command: e.command,
                 env: (e.env && e.env != "") ? string_to_env(e.env || "") : [],
                 expose_ports: e.expose_ports,
                 cpu_limit: e.cpu_limit,
@@ -619,14 +638,10 @@ export function ChallengeManageForm({ challengeInfo }: { challengeInfo: AdminCha
             flag_type: values.flag_type
         };
 
-        api.admin.updateChallenge(challengeInfo?.challenge_id!, finalData as AdminChallengeConfig).then((res) => {
+        api.admin.updateChallenge(challengeInfo?.challenge_id ?? 0, finalData as AdminChallengeConfig).then(() => {
             toast.success("更新成功");
         })
     }
-
-    const router = useNavigate()
-
-    const { theme } = useTheme()
 
     return (
         <Form {...form}>
@@ -846,7 +861,6 @@ export function ChallengeManageForm({ challengeInfo }: { challengeInfo: AdminCha
                         <Button
                             type="button"
                             variant={"outline"}
-                            className="[&_svg]:size-5"
                             onClick={() =>
                                 appendContainer({
                                     name: "",
@@ -883,7 +897,6 @@ export function ChallengeManageForm({ challengeInfo }: { challengeInfo: AdminCha
                         <Button
                             type="button"
                             variant={"outline"}
-                            className="[&_svg]:size-5"
                             onClick={() =>
                                 appendAttachment({
                                     attach_hash: null,
@@ -919,6 +932,7 @@ export function ChallengeManageForm({ challengeInfo }: { challengeInfo: AdminCha
                                         },
                                         (errors) => {
                                             reject(new Error('Form validation failed'));
+                                            const _ = errors
                                         }
                                     )();
                                 });

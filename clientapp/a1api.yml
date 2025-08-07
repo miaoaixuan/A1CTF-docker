@@ -130,7 +130,7 @@ paths:
           description: Unauthorized
         '500':
           description: Server Error
-  /api/verifyEmailCode:
+  /api/account/verifyEmailCode:
     post:
       tags: [user]
       operationId: verifyEmailCode
@@ -180,6 +180,73 @@ paths:
                   type: string
               required:
                 - old_password
+                - new_password
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                required:
+                  - code
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server Error
+  /api/account/sendForgetPasswordEmail:
+    post:
+      tags: [user]
+      operationId: sendForgetPasswordEmail
+      summary: send forget password email
+      description: send forget password email
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+              required:
+                - email
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                required:
+                  - code
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server Error
+  /api/account/resetPassword:
+    post:
+      tags: [user]
+      operationId: resetPassword
+      summary: Reset user's password
+      description: Reset user's password
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                new_password:
+                  type: string
+              required:
+                - code
                 - new_password
       responses:
         '200':
@@ -3258,12 +3325,6 @@ paths:
           description: 用户ID
           schema:
             type: string
-        - name: action
-          in: query
-          required: false
-          description: 操作类型
-          schema:
-            type: string
         - name: resource_type
           in: query
           required: false
@@ -3665,7 +3726,9 @@ components:
       type: object
       properties:
         command:
-          type: string
+          type: array
+          items:
+            type: string
           nullable: true
         env:
           type: array
@@ -3859,6 +3922,9 @@ components:
           $ref: '#/components/schemas/JudgeConfig'
         minimal_score:
           type: number
+        difficulty:
+          type: number
+          format: double
         enable_blood_reward:
           type: boolean
     AddGameChallengePayload:
@@ -3929,6 +3995,10 @@ components:
           type: number
         third_blood_reward:
           type: number
+        challenges:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminDetailGameChallenge'
       required:
         - game_id
         - name
@@ -4482,6 +4552,12 @@ components:
           type: string
           format: date-time
           example: "2025-05-03T07:07:34.650351Z"
+        blood_reward:
+          type: number
+          format: float
+          example: 0
+        challenge_name:
+          type: string
 
     TeamScoreAdjustment:
       type: object

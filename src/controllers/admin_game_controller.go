@@ -183,7 +183,50 @@ func AdminGetGame(c *gin.Context) {
 		"second_blood_reward":    game.SecondBloodReward,
 		"third_blood_reward":     game.ThirdBloodReward,
 		"team_policy":            game.TeamPolicy,
+		"challenges":             make([]gin.H, 0),
 	}
+
+	// 查询所有 challenges
+	var gameChallenges []models.GameChallenge
+
+	if err := dbtool.DB().Preload("Challenge").
+		Where("game_id = ?", game.GameID).
+		Find(&gameChallenges).Error; err != nil {
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "Failed to load game challenges",
+		})
+		return
+	}
+
+	// 避免因为更改先后造成顺序变动
+	sort.Slice(gameChallenges, func(i, j int) bool {
+		return gameChallenges[i].Challenge.Name < gameChallenges[j].Challenge.Name
+	})
+
+	for _, gc := range gameChallenges {
+		judgeConfig := gc.JudgeConfig
+		if judgeConfig == nil {
+			judgeConfig = gc.Challenge.JudgeConfig
+		}
+
+		result["challenges"] = append(result["challenges"].([]gin.H), gin.H{
+			"challenge_id":        gc.Challenge.ChallengeID,
+			"challenge_name":      gc.Challenge.Name,
+			"total_score":         gc.TotalScore,
+			"cur_score":           gc.CurScore,
+			"hints":               gc.Hints,
+			"solve_count":         gc.SolveCount,
+			"category":            gc.Challenge.Category,
+			"judge_config":        judgeConfig,
+			"belong_stage":        gc.BelongStage,
+			"visible":             gc.Visible,
+			"minimal_score":       gc.MinimalScore,
+			"enable_blood_reward": gc.BloodRewardEnabled,
+		})
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
 		"data": result,
@@ -211,6 +254,7 @@ func AdminGetGameChallenge(c *gin.Context) {
 		"belong_stage":        gc.BelongStage,
 		"visible":             gc.Visible,
 		"minimal_score":       gc.MinimalScore,
+		"difficulty":          gc.Difficulty,
 		"enable_blood_reward": gc.BloodRewardEnabled,
 	}
 
@@ -328,6 +372,10 @@ func AdminUpdateGameChallenge(c *gin.Context) {
 		updateData["belong_stage"] = belongStage
 		updateFields = append(updateFields, "belong_stage")
 	}
+	if difficulty, ok := payload["difficulty"]; ok {
+		updateData["difficulty"] = difficulty
+		updateFields = append(updateFields, "difficulty")
+	}
 	if minimalScore, ok := payload["minimal_score"]; ok {
 		updateData["minimal_score"] = minimalScore
 		updateFields = append(updateFields, "minimal_score")
@@ -399,6 +447,24 @@ func AdminUpdateGame(c *gin.Context) {
 	game.FirstBloodReward = payload.FirstBloodReward
 	game.SecondBloodReward = payload.SecondBloodReward
 	game.ThirdBloodReward = payload.ThirdBloodReward
+
+	// 更新 Belong stage
+	for _, chal := range payload.Challenges {
+
+		updateModel := models.GameChallenge{
+			BelongStage: chal.BelongStage,
+		}
+
+		if err := dbtool.DB().Model(&models.GameChallenge{}).
+			Select("belong_stage").
+			Where("challenge_id = ? AND game_id = ?", chal.ChallengeID, game.GameID).Updates(updateModel).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    500,
+				"message": "Failed to save challenge",
+			})
+			return
+		}
+	}
 
 	if err := dbtool.DB().Save(&game).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

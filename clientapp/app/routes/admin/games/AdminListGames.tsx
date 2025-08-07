@@ -1,8 +1,6 @@
 import SafeComponent from "components/SafeComponent"
 import { AdminHeader } from "components/admin/AdminHeader";
-import { EditChallengePage } from "components/admin/EditChallengePage";
 import { AdminGameManagePage } from "components/admin/GameManagePage";
-import { useParams } from "react-router";
 
 export default function AdminListGames () {
 

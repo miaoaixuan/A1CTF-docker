@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from 'components/ui/button';
 import { Input } from 'components/ui/input';
 import { Textarea } from 'components/ui/textarea';
@@ -22,7 +22,6 @@ import {
 import {
     Form,
     FormControl,
-    FormDescription,
     FormField,
     FormItem,
     FormLabel,
@@ -34,7 +33,7 @@ import { z } from 'zod';
 import { toast } from 'react-toastify/unstyled';
 import { api } from 'utils/ApiHelper';
 import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
-import { AxiosError } from 'axios';
+import AlertConformer from 'components/modules/AlertConformer';
 
 interface GameGroup {
     group_id: number;
@@ -104,7 +103,7 @@ export function GameGroupManager({ gameId }: GameGroupManagerProps) {
         api.admin.adminCreateGameGroup(gameId, {
             group_name: data.group_name,
             description: data.description || '',
-        }).then((res) => {
+        }).then(() => {
             toast.success('分组创建成功');
             setIsCreateDialogOpen(false);
             createForm.reset();
@@ -119,7 +118,7 @@ export function GameGroupManager({ gameId }: GameGroupManagerProps) {
         api.admin.adminUpdateGameGroup(gameId, editingGroup.group_id, {
             group_name: data.group_name,
             description: data.description || '',
-        }).then((res) => {
+        }).then(() => {
             toast.success('分组更新成功');
             setIsEditDialogOpen(false);
             setEditingGroup(null);
@@ -130,11 +129,7 @@ export function GameGroupManager({ gameId }: GameGroupManagerProps) {
 
     // 删除分组
     const handleDeleteGroup = async (groupId: number) => {
-        if (!confirm('确定要删除这个分组吗？删除后无法恢复。')) {
-            return;
-        }
-
-        api.admin.adminDeleteGameGroup(gameId, groupId).then((res) => {
+        api.admin.adminDeleteGameGroup(gameId, groupId).then(() => {
             toast.success('分组删除成功');
             loadGroups();
         })
@@ -158,7 +153,7 @@ export function GameGroupManager({ gameId }: GameGroupManagerProps) {
                 <h3 className="text-lg font-semibold">参赛分组管理</h3>
                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button size="sm">
+                        <Button variant="outline" size="sm">
                             <PlusCircle className="w-4 h-4 mr-2" />
                             创建分组
                         </Button>
@@ -177,7 +172,9 @@ export function GameGroupManager({ gameId }: GameGroupManagerProps) {
                                     name="group_name"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>分组名称</FormLabel>
+                                            <div className='h-[20px] flex items-center'>
+                                                <FormLabel>分组名称</FormLabel>
+                                            </div>
                                             <FormControl>
                                                 <Input placeholder="例如：本科组、研究生组" {...field} />
                                             </FormControl>
@@ -190,7 +187,9 @@ export function GameGroupManager({ gameId }: GameGroupManagerProps) {
                                     name="description"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>分组描述（可选）</FormLabel>
+                                            <div className='h-[20px] flex items-center'>
+                                                <FormLabel>分组描述（可选）</FormLabel>
+                                            </div>
                                             <FormControl>
                                                 <Textarea
                                                     placeholder="描述这个分组的特点或要求"
@@ -254,15 +253,21 @@ export function GameGroupManager({ gameId }: GameGroupManagerProps) {
                                             >
                                                 <Pencil className="w-4 h-4" />
                                             </Button>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                type="button"
-                                                onClick={() => handleDeleteGroup(group.group_id)}
-                                                className="text-red-600 hover:text-red-700"
+                                            <AlertConformer
+                                                title="确认删除"
+                                                description="确定要删除这个分组吗？删除后无法恢复。"
+                                                type="danger"
+                                                onConfirm={() => handleDeleteGroup(group.group_id)}
                                             >
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    type="button"
+                                                    className="text-red-600 hover:text-red-700"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </AlertConformer>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -288,7 +293,9 @@ export function GameGroupManager({ gameId }: GameGroupManagerProps) {
                                 name="group_name"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>分组名称</FormLabel>
+                                        <div className='h-[20px] flex items-center'>
+                                            <FormLabel>分组名称</FormLabel>
+                                        </div>
                                         <FormControl>
                                             <Input placeholder="例如：本科组、研究生组" {...field} />
                                         </FormControl>
@@ -301,7 +308,9 @@ export function GameGroupManager({ gameId }: GameGroupManagerProps) {
                                 name="description"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>分组描述（可选）</FormLabel>
+                                        <div className='h-[20px] flex items-center'>
+                                            <FormLabel>分组描述（可选）</FormLabel>
+                                        </div>
                                         <FormControl>
                                             <Textarea
                                                 placeholder="描述这个分组的特点或要求"

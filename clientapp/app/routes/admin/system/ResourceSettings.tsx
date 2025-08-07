@@ -1,9 +1,5 @@
 import React, {  } from "react";
-import { Button } from "components/ui/button";
 import { Input } from "components/ui/input";
-import { Label } from "components/ui/label";
-import { Switch } from "components/ui/switch";
-import { Upload } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "components/ui/form";
 import { SystemSettingsValues } from "./AdminSettingsPage";
@@ -97,7 +93,7 @@ export const ResourceSettings = (
                         form.setValue(resource.formValue as any, `/api/file/download/${res.data.data.file_id}`);
                         toast.success(`${resource.name} 上传成功`)
                     }
-                }).catch((err) => {
+                }).catch((_err) => {
                     toast.error(`${resource.name} 上传失败`)
                 })
             }

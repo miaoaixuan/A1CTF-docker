@@ -7,25 +7,14 @@ import {
 
 import { SidebarTrigger } from "components/ui/sidebar"
 import { Button } from "components/ui/button"
-import { AppWindow, Bath, Cable, CircleCheck, CircleX, Loader2, PackageOpen, Presentation, Settings, TriangleAlert, X } from "lucide-react"
-import ToggleTheme from "components/ToggleTheme"
+import { AppWindow, Bath, Cable, Loader2, PackageOpen } from "lucide-react"
 
-import {
-    Avatar,
-    AvatarFallback,
-    AvatarImage,
-} from "components/ui/avatar"
 
 import { Badge } from "components/ui/badge"
-import { Dispatch, SetStateAction, Suspense, useEffect, useState } from "react";
-import dayjs from "dayjs";
-import { GameNotice, NoticeCategory, UserFullGameInfo, UserProfile } from "utils/A1API";
+import { useEffect, useState } from "react";
+import { GameNotice, NoticeCategory } from "utils/A1API";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "components/ui/skeleton";
-import { ProfileUserInfoModel } from "utils/GZApi";
-import AvatarUsername from "../AvatarUsername"
-import { EditTeamDialog } from "components/dialogs/EditTeamDialog"
-import { useNavigate } from "react-router"
 
 import {
     Tooltip,
@@ -33,24 +22,26 @@ import {
     TooltipTrigger,
 } from "components/ui/tooltip"
 import GameTimeCounter from "../game/GameTimeCounter"
+import { useGame } from "hooks/UseGame"
 
 const ChallengesViewHeader = (
     {
-        gameStatus,
-        gameInfo,
+        gameID,
         setNoticeOpened,
         notices,
         wsStatus,
         loadingVisible
     }: {
-        gameStatus: string,
-        gameInfo: UserFullGameInfo | undefined,
+        gameID: number,
         setNoticeOpened: (arg0: boolean) => void,
         notices: GameNotice[],
         wsStatus: "connecting" | "connected" | "disconnected" | "ingore",
         loadingVisible: boolean
     },
 ) => {
+
+    const { gameStatus, gameInfo, isLoading } = useGame(gameID)
+
     const { t } = useTranslation('challenge_view');
     const [wsStatusTooltipVisible, setWsStatusTooltipVisible] = useState(wsStatus != "ingore" ? true : false)
 
@@ -75,6 +66,8 @@ const ChallengesViewHeader = (
         }
     }, [wsStatus])
 
+    if (isLoading) return <></>
+
     return (
         <div className="h-[70px] flex items-center pl-4 pr-4 z-20 w-full bg-transparent border-b-[1px] transition-[border-color] duration-300 flex-none">
             <div className="flex items-center min-w-0 h-[32px]">
@@ -93,9 +86,7 @@ const ChallengesViewHeader = (
                 {!loadingVisible ? (
                     <>
                         <GameTimeCounter 
-                            startTime={gameInfo?.start_time}
-                            endTime={gameInfo?.end_time}
-                            gameStatus={gameStatus}
+                            gameID={gameID}
                         />
                         {gameStatus == "running" ? (
                             <Tooltip open={wsStatusTooltipVisible} onOpenChange={(state) => {
@@ -142,9 +133,7 @@ const ChallengesViewHeader = (
                                 <div className="w-full h-full flex flex-col gap-1">
                                     <DropdownMenuItem>
                                         <GameTimeCounter 
-                                            startTime={gameInfo?.start_time}
-                                            endTime={gameInfo?.end_time}
-                                            gameStatus={gameStatus}
+                                            gameID={gameID}
                                         />
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => setNoticeOpened(true)} disabled={notices.length == 0}>

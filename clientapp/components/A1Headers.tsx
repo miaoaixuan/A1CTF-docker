@@ -1,7 +1,7 @@
 import { Button } from "components/ui/button"
 import ThemeSwitcher from "components/ToggleTheme"
 
-import { ArrowUpToLine, ArrowDownToLine, UserRoundMinus, Settings, Wrench, User } from 'lucide-react'
+import { ArrowUpToLine, UserRoundMinus, Settings, Wrench, User } from 'lucide-react'
 
 import {
     DropdownMenu,
@@ -11,18 +11,14 @@ import {
     DropdownMenuTrigger,
 } from "components/ui/dropdown-menu"
 
-import { House, Flag, UsersRound, Info, NotebookText, KeyRound } from 'lucide-react'
+import { House, Flag, Info, KeyRound } from 'lucide-react'
 
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-import { useCookies } from 'react-cookie';
-import SafeComponent from "./SafeComponent";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import { Skeleton } from "./ui/skeleton";
-import { DropdownMenuLabel } from "@radix-ui/react-dropdown-menu";
-import { api, Role } from "utils/GZApi";
 import { toast } from 'react-toastify/unstyled';
 import { Link, useLocation, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
@@ -36,7 +32,7 @@ const PageHeader = () => {
 
     const curPath = useLocation().pathname;
 
-    const { curProfile, updateProfile, checkLoginStatus, unsetLoginStatus } = useGlobalVariableContext()
+    const { curProfile, checkLoginStatus, unsetLoginStatus } = useGlobalVariableContext()
 
     let path = useLocation().pathname.split("/")[1];
 

@@ -505,10 +505,6 @@ func GetSystemLogs(c *gin.Context) {
 		params.UserID = &userID
 	}
 
-	if action := c.Query("action"); action != "" {
-		params.Action = &action
-	}
-
 	if resourceType := c.Query("resource_type"); resourceType != "" {
 		params.ResourceType = &resourceType
 	}

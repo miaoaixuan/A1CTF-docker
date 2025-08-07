@@ -1,19 +1,17 @@
-import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Button } from "components/ui/button";
-import { CheckCheck, Flag, Loader2, Mail, Send, SendHorizonal, X } from "lucide-react";
-import { Input } from "components/ui/input";
+import { Loader2, Mail, SendHorizonal, X } from "lucide-react";
 
 import {
     animated,
     useTransition,
 } from '@react-spring/web'
-import { JudgeType, UserDetailGameChallenge } from "utils/A1API";
+import { UserDetailGameChallenge } from "utils/A1API";
 import { api } from "utils/ApiHelper";
 import { toast } from 'react-toastify/unstyled';
 import { ChallengeSolveStatus } from "components/user/game/ChallengesView";
-import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 
-const SubmitFlagView = ({ curChallenge, gameID, setChallengeSolved, challengeSolveStatusList, visible, setVisible }: { curChallenge: UserDetailGameChallenge | undefined, gameID: number, setChallengeSolved: (id: number) => void, challengeSolveStatusList: Record<number, ChallengeSolveStatus>, visible: boolean, setVisible: Dispatch<SetStateAction<boolean>> }) => {
+const SubmitFlagView = ({ curChallenge, gameID, setChallengeSolved, challengeSolveStatusList: _challengeSolveStatusList, visible, setVisible }: { curChallenge: UserDetailGameChallenge | undefined, gameID: number, setChallengeSolved: (id: number) => void, challengeSolveStatusList: Record<number, ChallengeSolveStatus>, visible: boolean, setVisible: Dispatch<SetStateAction<boolean>> }) => {
 
     const [flag, setFlag] = useState<string>("");
     const [judgeing, setJudgeing] = useState(false);
@@ -79,7 +77,7 @@ const SubmitFlagView = ({ curChallenge, gameID, setChallengeSolved, challengeSol
                     }, 1000)
                 }
             }
-            ).catch((err) => {
+            ).catch(() => {
                 setJudgeing(false)
             });
     }

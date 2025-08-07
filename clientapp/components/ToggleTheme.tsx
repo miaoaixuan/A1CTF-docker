@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useTheme } from 'next-themes'
 import { motion } from 'framer-motion'
-import { Sun, Moon, WandSparkles, MonitorCog, Shell, Snail, Rabbit } from 'lucide-react'
+import { Sun, Moon, WandSparkles, MonitorCog, Snail, Rabbit } from 'lucide-react'
 import { useSpring, animated } from '@react-spring/web'
 
 import {
@@ -12,12 +12,9 @@ import {
 
 import SkyBackground from './SkyBackground'
 import { Button } from "components/ui/button"
-import { Label } from "components/ui/label"
-
 
 import React from 'react';
 import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
-import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 
 // 记忆化 SkyBackground 组件，防止不必要的重渲染
@@ -47,7 +44,7 @@ const ThemeSwitcher = (
     }
 
     // 创建四个按钮项的动画状态
-    const [themeHovered, setThemeHovered] = useState(false)
+    const [themeHovered, _setThemeHovered] = useState(false)
     const [langHovered, setLangHovered] = useState(false)
     const [sysColorHovered, setSysColorHovered] = useState(false)
     const [bgAnimHovered, setBgAnimHovered] = useState(false)

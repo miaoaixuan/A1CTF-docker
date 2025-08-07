@@ -54,6 +54,8 @@ func InitTaskQueue() {
 
 		mux.HandleFunc(TypeStartContainer, HandleContainerStartTask)
 		mux.HandleFunc(TypeStopContainer, HandleContainerStopTask)
+		mux.HandleFunc(TypeContainerFailedOperation, HandleContainerFailedTask)
+
 		mux.HandleFunc(TypeAntiCheat, HandleFlagAntiCheatTask)
 		mux.HandleFunc(TypeSendMail, HandleSendMailTask)
 
@@ -69,12 +71,13 @@ func CloseTaskQueue() {
 }
 
 const (
-	TypeNewTeamFlag    = "teamFlag:create"
-	TypeNewSystemLog   = "systemLog:create"
-	TypeJudgeFlag      = "judgeFlag:create"
-	TypeCalculateRanks = "ranks:calculate"
-	TypeStartContainer = "container:start"
-	TypeStopContainer  = "container:stop"
-	TypeAntiCheat      = "flag:anticheat"
-	TypeSendMail       = "mail:send"
+	TypeNewTeamFlag              = "teamFlag:create"
+	TypeNewSystemLog             = "systemLog:create"
+	TypeJudgeFlag                = "judgeFlag:create"
+	TypeCalculateRanks           = "ranks:calculate"
+	TypeStartContainer           = "container:start"
+	TypeStopContainer            = "container:stop"
+	TypeContainerFailedOperation = "container:failed"
+	TypeAntiCheat                = "flag:anticheat"
+	TypeSendMail                 = "mail:send"
 )

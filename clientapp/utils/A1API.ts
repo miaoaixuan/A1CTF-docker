@@ -196,7 +196,7 @@ export interface ExposePort {
 }
 
 export interface Container {
-  command?: string | null;
+  command?: string[] | null;
   env?: EnvironmentItem[];
   expose_ports: ExposePort[];
   image: string;
@@ -273,6 +273,8 @@ export interface AdminDetailGameChallenge {
   category?: ChallengeCategory;
   judge_config?: JudgeConfig;
   minimal_score?: number;
+  /** @format double */
+  difficulty?: number;
   enable_blood_reward?: boolean;
 }
 
@@ -307,6 +309,7 @@ export interface AdminFullGameInfo {
   first_blood_reward?: number;
   second_blood_reward?: number;
   third_blood_reward?: number;
+  challenges?: AdminDetailGameChallenge[];
 }
 
 export interface UserGameSimpleInfo {
@@ -583,6 +586,11 @@ export interface SolvedChallenge {
    * @example "2025-05-03T07:07:34.650351Z"
    */
   solve_time?: string;
+  /**
+   * @format float
+   * @example 0
+   */
+  blood_reward?: number;
 }
 
 export interface TeamScoreAdjustment {
@@ -1858,7 +1866,7 @@ export class Api<
      * @tags user
      * @name VerifyEmailCode
      * @summary Verify email code
-     * @request POST:/api/verifyEmailCode
+     * @request POST:/api/account/verifyEmailCode
      */
     verifyEmailCode: (
       data: {
@@ -1872,7 +1880,7 @@ export class Api<
         },
         void
       >({
-        path: `/api/verifyEmailCode`,
+        path: `/api/account/verifyEmailCode`,
         method: "POST",
         body: data,
         type: ContentType.Json,
@@ -1902,6 +1910,63 @@ export class Api<
         void
       >({
         path: `/api/account/changePassword`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description send forget password email
+     *
+     * @tags user
+     * @name SendForgetPasswordEmail
+     * @summary send forget password email
+     * @request POST:/api/account/sendForgetPasswordEmail
+     */
+    sendForgetPasswordEmail: (
+      data: {
+        email: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+        },
+        void
+      >({
+        path: `/api/account/sendForgetPasswordEmail`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Reset user's password
+     *
+     * @tags user
+     * @name ResetPassword
+     * @summary Reset user's password
+     * @request POST:/api/account/resetPassword
+     */
+    resetPassword: (
+      data: {
+        code: string;
+        new_password: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          code: number;
+        },
+        void
+      >({
+        path: `/api/account/resetPassword`,
         method: "POST",
         body: data,
         type: ContentType.Json,
@@ -3445,8 +3510,6 @@ export class Api<
         category?: LogCategory;
         /** 用户ID */
         user_id?: string;
-        /** 操作类型 */
-        action?: string;
         /** 资源类型 */
         resource_type?: string;
         /** 状态 */

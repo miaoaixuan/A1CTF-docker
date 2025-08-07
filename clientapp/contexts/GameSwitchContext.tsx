@@ -1,5 +1,5 @@
 import { UserGameSimpleInfo } from "utils/A1API";
-import React, { createContext, Dispatch, SetStateAction, useContext, useRef, useState } from "react";
+import React, { createContext, Dispatch, SetStateAction, useContext, useState } from "react";
 
 interface TransitionContextType {
     isChangingGame: boolean;

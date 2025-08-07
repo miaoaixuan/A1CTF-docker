@@ -3,9 +3,6 @@ import { Tooltip } from "react-tooltip";
 import { Toaster } from "sonner";
 import { ToastContainer, cssTransition } from 'react-toastify/unstyled';
 import { cn } from "lib/utils";
-import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
-import { useEffect } from "react";
-import { title } from "process";
 
 export function ClientToaster() {
 

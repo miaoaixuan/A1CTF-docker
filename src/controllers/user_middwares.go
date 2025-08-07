@@ -49,7 +49,7 @@ func GameStatusMiddleware(props GameStatusMiddlewareProps) gin.HandlerFunc {
 		user, exists := c.Get("user")
 
 		// 再换一种方式获取登陆状态，给获取比赛信息接口用
-		if c.FullPath() == "/api/game/:game_id" && c.Request.Method == "GET" {
+		if (c.FullPath() == "/api/game/:game_id" && c.Request.Method == "GET") || (c.FullPath() == "/api/game/:game_id/desc" && c.Request.Method == "GET") {
 			claims, errFromJwt := jwtauth.GetJwtMiddleWare().GetClaimsFromJWT(c)
 			if errFromJwt == nil {
 				user_id, userIDExists := claims["UserID"]
@@ -194,6 +194,59 @@ func OperationNotAllowedAfterGameStartMiddleWare() gin.HandlerFunc {
 			c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
 				Code:    403,
 				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "OperationNotAllowedAfterGameStart"}),
+			})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}
+
+func ChallengeStatusCheckMiddleWare() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		game := c.MustGet("game").(models.Game)
+
+		challengeIDStr := c.Param("challenge_id")
+		challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+				Code:    400,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
+			})
+			c.Abort()
+			return
+		}
+
+		gameChallenge, err := ristretto_tool.CachedGameChallengeDetail(game.GameID, challengeID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+				Code:    500,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadChallengeDetails"}),
+			})
+			c.Abort()
+			return
+		}
+
+		c.Set("game_challenge", *gameChallenge)
+		c.Set("challenge_id", challengeID)
+
+		user := c.MustGet("user").(models.User)
+
+		skipCheck := user.Role == models.UserRoleAdmin
+
+		if skipCheck {
+			c.Next()
+			return
+		}
+
+		challengeVisible, _ := ristretto_tool.CachedGameChallengeVisibility(game.GameID, challengeID)
+
+		if !challengeVisible {
+			c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+				Code:    400,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
 			})
 			c.Abort()
 			return

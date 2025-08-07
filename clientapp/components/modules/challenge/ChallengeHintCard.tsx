@@ -1,17 +1,13 @@
 import { Mdx } from "components/MdxCompoents";
-import { Button } from "components/ui/button";
 import dayjs from "dayjs";
-import { BringToFront, CalendarClock, Coins, KeyRound, LockKeyholeOpen } from "lucide-react";
-import { MacScrollbar } from "mac-scrollbar";
+import { BringToFront, CalendarClock } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useState } from "react";
 
 export default function ChallengeHintCard(
     { hint, index, publish_time } : { hint: string, index: number, publish_time: dayjs.Dayjs }
 ) {
 
     const { theme } = useTheme()
-    const [ unlocked, setUnlocked ] = useState(false);
 
     return (
         <div className={

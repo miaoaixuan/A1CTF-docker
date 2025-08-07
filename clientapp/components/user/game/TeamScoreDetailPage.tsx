@@ -53,20 +53,6 @@ export default function TeamScoreDetailPage(
 
     // 颜色配置
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF7C7C', '#8DD1E1', '#D084D0'];
-    const CATEGORY_COLORS: Record<string, string> = {
-        'WEB': '#FF6B6B',
-        'PWN': '#4ECDC4',
-        'REVERSE': '#45B7D1',
-        'CRYPTO': '#96CEB4',
-        'MISC': '#FFEAA7',
-        'FORENSICS': '#DDA0DD',
-        'HARDWARE': '#98D8C8',
-        'MOBILE': '#F7DC6F',
-        'PPC': '#BB8FCE',
-        'AI': '#85C1E9',
-        'PENTENT': '#F8C471',
-        'OSINT': '#82E0AA'
-    };
 
     const getChallenge = (id: number): UserSimpleGameChallenge | undefined => {
         let target: UserSimpleGameChallenge | undefined
@@ -157,7 +143,7 @@ export default function TeamScoreDetailPage(
         showUserDetail.solved_challenges.forEach(solved => {
             const solver = solved.solver || 'Unknown';
             const challenge = getChallenge(solved.challenge_id || 0);
-            memberScores[solver] = (memberScores[solver] || 0) + (challenge?.cur_score || 0);
+            memberScores[solver] = (memberScores[solver] || 0) + (challenge?.cur_score || 0) + (solved.blood_reward || 0);
         });
 
         return Object.entries(memberScores).map(([name, score]) => ({
@@ -174,7 +160,7 @@ export default function TeamScoreDetailPage(
             const challenge = getChallenge(solved.challenge_id || 0);
             return {
                 name: challenge?.challenge_name || 'Unknown',
-                value: challenge?.cur_score || 0,
+                value: (challenge?.cur_score || 0) + (solved.blood_reward || 0),
                 category: challenge?.category || 'MISC'
             };
         }).sort((a, b) => b.value - a.value);

@@ -349,6 +349,7 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 			}
 
 			challengeScore := solve.GameChallenge.CurScore
+			rewardScore := 0.0
 
 			// 这里计算分数了，处理一下三血
 			if solve.GameChallenge.BloodRewardEnabled && solve.Rank <= 3 {
@@ -357,7 +358,6 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 				// 三血对于的奖励分数比例是否开启
 				var rankRewardEnabled bool = false
 
-				rewardScore := 0.0
 				switch solve.Rank {
 				case 3:
 					rewardScore = float64(solve.Game.ThirdBloodReward) * solve.GameChallenge.CurScore / 100
@@ -404,11 +404,13 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 
 			// 插入解题记录
 			teamData.SolvedChallenges = append(teamData.SolvedChallenges, webmodels.TeamSolveItem{
-				ChallengeID: solve.ChallengeID,
-				Score:       challengeScore,
-				Solver:      solve.Solver.Username,
-				Rank:        int64(solve.Rank),
-				SolveTime:   solve.SolveTime,
+				ChallengeID:   solve.ChallengeID,
+				Score:         challengeScore,
+				Solver:        solve.Solver.Username,
+				Rank:          int64(solve.Rank),
+				SolveTime:     solve.SolveTime,
+				BloodReward:   rewardScore,
+				ChallengeName: solve.Challenge.Name,
 			})
 
 			// 更新最后解题时间
@@ -769,28 +771,7 @@ func CachedGameSimpleChallenges(gameID int64) ([]webmodels.UserSimpleGameChallen
 			return gameChallenges[i].Challenge.Name < gameChallenges[j].Challenge.Name
 		})
 
-		// 游戏阶段判断
-		gameStages := game.Stages
-		var curStage = ""
-
-		if gameStages != nil {
-			for _, stage := range *gameStages {
-				if stage.StartTime.Before(time.Now().UTC()) && stage.EndTime.After(time.Now().UTC()) {
-					curStage = stage.StageName
-					break
-				}
-			}
-		}
-
 		for _, gc := range gameChallenges {
-
-			if gc.BelongStage != nil && *gc.BelongStage != curStage {
-				continue
-			}
-
-			if !gc.Visible {
-				continue
-			}
 
 			tmpSimpleGameChallenges = append(tmpSimpleGameChallenges, webmodels.UserSimpleGameChallenge{
 				ChallengeID:   *gc.Challenge.ChallengeID,

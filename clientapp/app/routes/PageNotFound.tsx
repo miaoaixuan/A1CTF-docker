@@ -1,10 +1,8 @@
-import PageHeader from "components/A1Headers";
-import { A1LogoWithoutAnimation } from "components/A1LogoWithoutAnimation";
 import SafeComponent from "components/SafeComponent";
 import { Button } from "components/ui/button";
 import { Accessibility, House } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 
 export default function NotFound() {
     const { t } = useTranslation();

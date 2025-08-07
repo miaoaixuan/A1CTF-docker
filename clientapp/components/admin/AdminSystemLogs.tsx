@@ -11,7 +11,7 @@ import {
     useReactTable,
 } from "@tanstack/react-table"
 
-import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, Filter, Search, RefreshCw, AlertTriangle, CheckCircle, XCircle } from "lucide-react"
+import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, Filter, Search, RefreshCw, AlertTriangle, CheckCircle, XCircle, ScanEye } from "lucide-react"
 
 import * as React from "react"
 
@@ -22,7 +22,6 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "components/ui/dropdown-menu"
 
@@ -51,8 +50,8 @@ import {
     SelectValue,
 } from "components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "components/ui/card";
-import { useTranslation } from "react-i18next"
 import { useTheme } from "next-themes"
+import EditorDialog from "components/modules/EditorDialog"
 
 interface LogTableRow {
     id: string;
@@ -76,7 +75,7 @@ export function AdminSystemLogs() {
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
     const [rowSelection, setRowSelection] = React.useState({})
 
-    const [pageSize, setPageSize] = React.useState(20);
+    const [pageSize, _setPageSize] = React.useState(20);
     const [curPage, setCurPage] = React.useState(0);
     const [totalCount, setTotalCount] = React.useState(0);
     const [searchKeyword, setSearchKeyword] = React.useState("");
@@ -85,9 +84,7 @@ export function AdminSystemLogs() {
     // 筛选条件
     const [categoryFilter, setCategoryFilter] = React.useState<LogCategory | "">("");
     const [statusFilter, setStatusFilter] = React.useState<string>("");
-    const [actionFilter, setActionFilter] = React.useState<string>("");
 
-    const [curPageData, setCurPageData] = React.useState<SystemLogItem[]>([])
     const [isLoading, setIsLoading] = React.useState(false);
     const [stats, setStats] = React.useState<SystemLogStats | null>(null);
 
@@ -126,15 +123,11 @@ export function AdminSystemLogs() {
         if (statusFilter != "") {
             params.status = statusFilter;
         }
-        if (actionFilter != "") {
-            params.action = actionFilter;
-        }
 
         api.admin.adminGetSystemLogs(params).then((response) => {
             if (response.data.code === 200) {
                 const logs = response.data.data.logs;
                 setTotalCount(response.data.data.total);
-                setCurPageData(logs);
 
                 // 转换数据格式
                 const tableData: LogTableRow[] = logs.map((log: SystemLogItem) => ({
@@ -156,7 +149,7 @@ export function AdminSystemLogs() {
         }).finally(() => {
             setIsLoading(false);
         })
-    }, [curPage, pageSize, debouncedSearchKeyword, categoryFilter, statusFilter, actionFilter]);
+    }, [curPage, pageSize, debouncedSearchKeyword, categoryFilter, statusFilter]);
 
     // 页面加载时获取数据
     React.useEffect(() => {
@@ -212,8 +205,6 @@ export function AdminSystemLogs() {
         );
     };
 
-    const { t } = useTranslation("system_logs")
-
     // 表格列定义
     const columns: ColumnDef<LogTableRow>[] = [
         {
@@ -236,12 +227,12 @@ export function AdminSystemLogs() {
             cell: ({ row }) => (
                 <div className="text-sm">
                     <span
-                        // data-tooltip-content={row.getValue("action")}
-                        // data-tooltip-placement="top"
-                        // data-tooltip-id="my-tooltip"
+                    // data-tooltip-content={row.getValue("action")}
+                    // data-tooltip-placement="top"
+                    // data-tooltip-id="my-tooltip"
                     >
                         {/* {t(`${row.getValue("action")}`)} */}
-                        { row.getValue("action") }
+                        {row.getValue("action")}
                     </span>
 
                 </div>
@@ -265,7 +256,7 @@ export function AdminSystemLogs() {
             accessorKey: "ip_address",
             header: "IP地址",
             cell: ({ row }) => (
-                <div className="font-mono text-sm text-gray-600">
+                <div className="font-mono text-sm text-muted-foreground">
                     {row.getValue("ip_address") || "-"}
                 </div>
             ),
@@ -285,7 +276,7 @@ export function AdminSystemLogs() {
                 )
             },
             cell: ({ row }) => (
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                     {new Date(row.getValue("create_time")).toLocaleString('zh-CN')}
                 </div>
             ),
@@ -310,48 +301,80 @@ export function AdminSystemLogs() {
                     </>
                 )
 
+                const getDetailedLog = () => {
+                    const newLog = Object.assign({}, log)
+                    newLog.details = JSON.parse(atob(newLog.details as unknown as string))
+                    return JSON.stringify(newLog, null, 4)
+                }
+
                 return (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">打开菜单</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>操作</DropdownMenuLabel>
-                            {log.user_id && (
-                                <DropdownMenuItem
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(log.user_id || '');
-                                        toast.success('用户ID已复制到剪切板');
-                                    }}
-                                >
-                                    复制用户ID
-                                </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem
-                                onClick={() => {
-                                    const detailsText = atob(log.details as unknown as string);
-                                    navigator.clipboard.writeText(detailsText);
-                                    toast.success('详细信息已复制到剪切板');
-                                }}
+                    <div className="flex gap-2 items-center">
+                        <EditorDialog
+                            value={getDetailedLog()}
+                            onChange={() => {}}
+                            language="json"
+                            title={`查看详细信息`}
+                            options={{
+                                readOnly: true,
+                                wordWrap: "on"
+                            }}
+                        >
+                            <Button variant="ghost" size="icon" className='cursor-pointer'
+                                title="查看详细信息"    
                             >
-                                复制详细信息
-                            </DropdownMenuItem>
-                            {log.error_message && (
+                                <ScanEye />
+                            </Button>
+                        </EditorDialog>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <span className="sr-only">打开菜单</span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>操作</DropdownMenuLabel>
+                                {log.user_id && (
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(log.user_id || '');
+                                            toast.success('用户ID已复制到剪切板');
+                                        }}
+                                    >
+                                        复制用户ID
+                                    </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem
                                     onClick={() => {
-                                        navigator.clipboard.writeText(log.error_message || '');
-                                        toast.success('错误信息已复制到剪切板');
+                                        const detailsText = atob(log.details as unknown as string);
+                                        navigator.clipboard.writeText(detailsText);
+                                        toast.success('详细信息已复制到剪切板');
                                     }}
                                 >
-                                    复制错误信息
+                                    复制详细信息
                                 </DropdownMenuItem>
-                            )}
-                            {log.resource_type == "CONTAINER" && containerOperations}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                                {log.error_message && (
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(log.error_message || '');
+                                            toast.success('错误信息已复制到剪切板');
+                                        }}
+                                    >
+                                        复制错误信息
+                                    </DropdownMenuItem>
+                                )}
+                                {log.resource_type == "CONTAINER" && containerOperations}
+                                <DropdownMenuItem
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(getDetailedLog());
+                                        toast.success('原始数据已复制到剪切板');
+                                    }}
+                                >
+                                    复制Raw
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 );
             },
         },
@@ -438,13 +461,13 @@ export function AdminSystemLogs() {
 
                 {/* 筛选和搜索 */}
                 <div className="flex items-center gap-4 flex-wrap">
-                    <div className="flex items-center gap-2">
-                        <Search className="h-5 w-5 text-gray-500 flex-none" />
+                    <div className="flex items-center gap-4 w-[30%]">
+                        <Search className="h-6 w-6 text-gray-500 flex-none" />
                         <Input
-                            placeholder="搜索日志..."
+                            placeholder="搜索日志。支持用户名, 资源ID, 资源类型, 操作"
                             value={searchKeyword}
                             onChange={(event) => setSearchKeyword(event.target.value)}
-                            className="max-w-sm"
+                            className="flex-1"
                         />
                     </div>
 
@@ -487,19 +510,11 @@ export function AdminSystemLogs() {
                         </SelectContent>
                     </Select>
 
-                    <Input
-                        placeholder="操作类型..."
-                        value={actionFilter}
-                        onChange={(event) => setActionFilter(event.target.value)}
-                        className="max-w-sm"
-                    />
-
                     <Button
                         variant="outline"
                         onClick={() => {
                             setCategoryFilter("");
                             setStatusFilter("");
-                            setActionFilter("");
                             setSearchKeyword("");
                         }}
                     >

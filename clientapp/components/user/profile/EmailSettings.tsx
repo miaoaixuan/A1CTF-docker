@@ -3,9 +3,8 @@ import { Button } from "components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "components/ui/form";
 import { Input } from "components/ui/input";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
-import { cn } from "lib/utils";
 import { BadgeAlert, BadgeCheck, MailPlus, Save } from "lucide-react";
-import { useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from 'react-toastify/unstyled';
 import { api } from "utils/ApiHelper";
@@ -13,7 +12,7 @@ import { z } from "zod"
 
 export default function EmailSettings() {
 
-    const { curProfile, updateProfile } = useGlobalVariableContext()
+    const { curProfile, setCurProfile } = useGlobalVariableContext()
 
     const MailOperationSchema = z.object({
         email: z.string().email({
@@ -28,17 +27,25 @@ export default function EmailSettings() {
         },
     })
 
+    useEffect(() => {
+        form.reset(curProfile as any)
+    }, [curProfile])
+
     function onSubmit(values: z.infer<typeof MailOperationSchema>) {
         api.user.updateEmailAddress({
             email: values.email
-        }).then((res) => {
+        }).then(() => {
             toast.success("邮箱地址已更新")
-            updateProfile()
+            setCurProfile((prev) => ({
+                ...prev,
+                ["email"]: values.email,
+                ["email_verified"]: false
+            }))
         })
     }
 
     function sendVerifyEmail() {
-        api.user.sendVerifyEmail().then((res) => {
+        api.user.sendVerifyEmail().then(() => {
             toast.success("验证邮件已发出")
         })
     }

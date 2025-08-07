@@ -1,14 +1,10 @@
 import { A1GameStatus } from "components/modules/game/GameStatusEnum";
 import ImageLoader from "components/modules/ImageLoader";
 import TimerDisplay from "components/modules/TimerDisplay";
-import { Button } from "components/ui/button";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 import dayjs from "dayjs";
-import { useNavigateFrom } from "hooks/NavigateFrom";
-import { Album, CalendarArrowDown, CalendarArrowUp, CirclePlay, ClockAlert, Dumbbell, Hourglass, IdCard, Key, Lock, Package, PencilLine, Pickaxe, ScanFace, ScanText, Users, UsersRound } from "lucide-react";
-import { useTheme } from "next-themes";
+import { CalendarArrowDown, CalendarArrowUp, CirclePlay, ClockAlert, Dumbbell, Hourglass, Package, UsersRound } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
 import { FastAverageColor } from "fast-average-color";
 import { ParticipationStatus, UserFullGameInfo } from "utils/A1API";
 
@@ -23,14 +19,10 @@ export default function GamePosterInfoModule(
         teamStatus: ParticipationStatus
     }
 ) {
-
     const { clientConfig } = useGlobalVariableContext()
-    const { theme } = useTheme()
 
     const [posterTextPrimaryColor, setPosterTextPrimaryColor] = useState("white")
     const [posterPrimaryColor, setPosterPrimaryColor] = useState([255, 255, 255, 255])
-
-    const [navigateFrom, getNavigateFrom] = useNavigateFrom()
 
     const gameStatusElement = {
         "ended": (

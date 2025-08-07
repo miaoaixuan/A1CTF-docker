@@ -1,8 +1,7 @@
 import { Button } from "components/ui/button"
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "components/ui/table"
 import { Badge } from "components/ui/badge"
 import { MacScrollbar } from "mac-scrollbar"
-import { Captions, TriangleAlert, RefreshCw, AlertCircle, CheckCircle2, XCircle, Clock, Flag, Trophy, User, Users, Plus, X, Filter, Trash, Copy, Shield, MapPin } from "lucide-react"
+import { Captions, TriangleAlert, RefreshCw, AlertCircle, CheckCircle2, XCircle, Clock, Flag, Trophy, User, Users, X, Filter, Trash, Copy, Shield, MapPin } from "lucide-react"
 import { useParams } from "react-router"
 import { useEffect, useState } from "react"
 import dayjs from "dayjs"
@@ -11,8 +10,7 @@ import { AdminSubmitItem, AdminCheatItem } from "utils/A1API"
 import { useTheme } from "next-themes"
 import { toast } from 'react-toastify/unstyled';
 import { Input } from "components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "components/ui/popover"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "components/ui/dialog"
 
 import {
     Select,
@@ -22,6 +20,8 @@ import {
     SelectValue,
 } from "components/ui/select"
 import copy from "copy-to-clipboard"
+import { Switch } from "components/ui/switch"
+import { Label } from "components/ui/label"
 
 export function GameEventModule(
     { GgameID = undefined, GchallengeID = undefined }: {
@@ -104,6 +104,12 @@ export function GameEventModule(
     const [judgeStatuses, setJudgeStatuses] = useState<JudgeStatus[]>([])
     const statusOptions: JudgeStatus[] = ["JudgeAC", "JudgeWA"]
 
+    const [recordAutoUpdate, setRecordAutoUpdate] = useState<boolean>(true)
+    
+    // 初始化状态管理
+    const [isInitialized, setIsInitialized] = useState<boolean>(false)
+    const [challengeIdsReady, setChallengeIdsReady] = useState<boolean>(false)
+    const [cheatsIdsReady, setCheatsIdsReady] = useState<boolean>(false)
 
     // cheats filter state
     const [cheatsChallengeNames, setCheatsChallengeNames] = useState<string[]>([])
@@ -190,26 +196,40 @@ export function GameEventModule(
         })
     }
 
+    // 处理外部传入的challengeID
     useEffect(() => {
         if (GchallengeID) {
-            setChallengeIds(prev => prev.includes(GchallengeID) ? prev : [...prev, GchallengeID])
-            setCheatsChallengeIds(prev => prev.includes(GchallengeID) ? prev : [...prev, GchallengeID])
+            setChallengeIds(prev => {
+                const newIds = prev.includes(GchallengeID) ? prev : [...prev, GchallengeID]
+                setChallengeIdsReady(true)
+                return newIds
+            })
+            setCheatsChallengeIds(prev => {
+                const newIds = prev.includes(GchallengeID) ? prev : [...prev, GchallengeID]
+                setCheatsIdsReady(true)
+                return newIds
+            })
+        } else {
+            setChallengeIdsReady(true)
+            setCheatsIdsReady(true)
         }
-    }, [])
+    }, [GchallengeID])
 
+    // 统一的初始化逻辑
     useEffect(() => {
-        // 初次加载
-        if (gameId) {
+        if (gameId && challengeIdsReady && cheatsIdsReady && !isInitialized) {
             loadSubmissions(1)
             loadCheats()
+            setIsInitialized(true)
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gameId])
+    }, [gameId, challengeIdsReady, cheatsIdsReady, isInitialized])
 
+    // 当作弊记录筛选条件或分页变化时重新加载
     useEffect(() => {
-        // 当作弊记录筛选条件或分页变化时重新加载
-        loadCheats()
-    }, [cheatsCurrentPage, cheatsChallengeNames, cheatsTeamNames, cheatsChallengeIds, cheatsTeamIds, cheatTypes, cheatsStartTime, cheatsEndTime])
+        if (isInitialized) {
+            loadCheats()
+        }
+    }, [cheatsCurrentPage, cheatsChallengeNames, cheatsTeamNames, cheatsChallengeIds, cheatsTeamIds, cheatTypes, cheatsStartTime, cheatsEndTime, isInitialized])
 
     const statusColor = (status: string) => {
         switch (status) {
@@ -245,11 +265,26 @@ export function GameEventModule(
 
     const totalPages = Math.ceil(total / pageSize) || 1
 
-    // 当过滤或分页改变时加载
+    // 当提交记录筛选条件或分页变化时重新加载
     useEffect(() => {
-        loadSubmissions(currentPage)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage, challengeNames, teamNames, judgeStatuses, startTime, endTime, teamIds, challengeIds])
+        if (isInitialized) {
+            loadSubmissions(currentPage)
+        }
+    }, [currentPage, challengeNames, teamNames, judgeStatuses, startTime, endTime, teamIds, challengeIds, isInitialized])
+
+    // 自动更新逻辑
+    useEffect(() => {
+        let updateInter: NodeJS.Timeout | undefined = undefined
+        if (recordAutoUpdate && isInitialized) {
+            updateInter = setInterval(() => {
+                loadSubmissions(currentPage)
+                loadCheats()
+            }, 4000)
+        }
+        return () => {
+            if (updateInter) clearInterval(updateInter)
+        }
+    }, [recordAutoUpdate, isInitialized, currentPage, challengeNames, teamNames, judgeStatuses, startTime, endTime, teamIds, challengeIds, cheatsCurrentPage, cheatsChallengeNames, cheatsTeamNames, cheatsChallengeIds, cheatsTeamIds, cheatTypes, cheatsStartTime, cheatsEndTime])
 
     return (
         <div className="flex flex-col gap-4">
@@ -326,6 +361,11 @@ export function GameEventModule(
                             onClick={() => { if (!loading) { setCurrentPage(1); loadSubmissions(1) } }}
                         />
                         <span className="text-muted-foreground text-sm select-none">共 {total} 条提交</span>
+                        <div className="flex-1" />
+                        <div className="flex items-center space-x-2">
+                            <Switch defaultChecked={recordAutoUpdate} onCheckedChange={setRecordAutoUpdate} />
+                            <Label>Auto Update</Label>
+                        </div>
                     </div>
 
                     {submissions.length === 0 && !loading ? (

@@ -23,7 +23,6 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "components/ui/dropdown-menu"
 
@@ -44,7 +43,7 @@ import { Skeleton } from "../ui/skeleton";
 import { Badge } from "../ui/badge";
 import { AdminListUserItem, UserRole } from "utils/A1API";
 
-import { api, ErrorMessage } from "utils/ApiHelper";
+import { api } from "utils/ApiHelper";
 import { toast } from 'react-toastify/unstyled';
 import {
     AlertDialog,
@@ -117,7 +116,7 @@ export function UserManageView() {
         React.useState<VisibilityState>({})
     const [rowSelection, setRowSelection] = React.useState({})
 
-    const [pageSize, setPageSize] = React.useState(30);
+    const [pageSize, _setPageSize] = React.useState(30);
     const [curPage, setCurPage] = React.useState(0);
     const [totalCount, setTotalCount] = React.useState(0);
     const [searchKeyword, setSearchKeyword] = React.useState("");
@@ -157,7 +156,7 @@ export function UserManageView() {
                     {
                         pending: '正在删除用户...',
                         success: {
-                            render({ data }) {
+                            render() {
                                 fetchUsers(); // 刷新数据
                                 setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                                 return '用户已删除';

@@ -1,17 +1,13 @@
 import { Button } from "components/ui/button";
 import { Input } from "components/ui/input";
-import { Switch } from "components/ui/switch";
 import { UseFormReturn } from "react-hook-form";
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "components/ui/form";
 import { SystemSettingsValues } from "./AdminSettingsPage";
-import { Editor } from "@monaco-editor/react";
 import { Mail } from "lucide-react";
-import ThemedEditor from "components/modules/ThemedEditor";
 import { useState } from "react";
 import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper";
 import { toast } from 'react-toastify/unstyled';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "components/ui/select";
-
 
 export const MailSettings = (
     { form }: {
@@ -175,9 +171,9 @@ export const MailSettings = (
                             api.system.sendSmtpTestMail({
                                 to: smtpTestTarget,
                                 type: "test"
-                            }, createSkipGlobalErrorConfig()).then((res) => {
+                            }, createSkipGlobalErrorConfig()).then((_res) => {
                                 toast.success("测试邮件已发送")
-                            }).catch((err) => {
+                            }).catch((_err) => {
                                 toast.success("测试邮件发送失败，请查看系统日志检查错误")
                             })
                         }}

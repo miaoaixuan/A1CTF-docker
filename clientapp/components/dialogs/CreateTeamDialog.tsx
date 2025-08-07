@@ -31,9 +31,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useEffect, useState } from "react";
 import { Textarea } from "../ui/textarea";
-import { api, ErrorMessage } from "utils/ApiHelper";
+import { api } from "utils/ApiHelper";
 import { toast } from 'react-toastify/unstyled';
-import { AxiosError } from "axios";
 import { useTranslation } from "react-i18next";
 import { GameGroup } from "utils/A1API"
 
@@ -71,7 +70,7 @@ export const CreateTeamDialog: React.FC<{ callback: () => void, gameID: number, 
                 .then((res) => {
                     setGroups(res.data.data || [])
                 })
-                .catch((error) => {
+                .catch(() => {
                     setGroups([])
                 })
                 .finally(() => {
@@ -92,7 +91,7 @@ export const CreateTeamDialog: React.FC<{ callback: () => void, gameID: number, 
             payload.group_id = parseInt(values.groupId)
         }
 
-        api.user.userGameCreateTeam(gameID, payload).then((res) => {
+        api.user.userGameCreateTeam(gameID, payload).then(() => {
             toast.success(t("create_team_success"))
             updateTeam()
             setIsOpen(false)

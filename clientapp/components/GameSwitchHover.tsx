@@ -1,10 +1,7 @@
 import { motion, AnimatePresence, useAnimate } from 'framer-motion';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { useTheme } from 'next-themes';
-
-
+import { useEffect, useState } from 'react';
 import { useGameSwitchContext } from "contexts/GameSwitchContext";
-import { Loader2, LoaderPinwheel } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 export default function GameSwitchHover({ animation } : { animation: boolean }) {
 
@@ -15,7 +12,7 @@ export default function GameSwitchHover({ animation } : { animation: boolean }) 
     const [animeMethod, setAnimeMethod] = useState("easeInOut")
     const [exitAnimationTime, setExitAnimationTime] = useState(0)
 
-    const [scope, animate] = useAnimate()
+    const [scope, _animate] = useAnimate()
 
     useEffect(() => {
         setShouldAnime(true)

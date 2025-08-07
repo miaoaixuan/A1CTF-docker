@@ -6,7 +6,6 @@ import { Input } from "components/ui/input";
 
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
     CardFooter,
@@ -15,7 +14,7 @@ import {
 } from "components/ui/card"
 import { Button } from "components/ui/button";
 import { useState } from "react";
-import { Mails, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { toast } from "react-toastify/unstyled";
 import { api, createSkipGlobalErrorConfig } from "utils/ApiHelper";
 
@@ -35,9 +34,9 @@ export default function TemplateSettings(
         api.system.sendSmtpTestMail({
             to: testEmailReceiver,
             type: type
-        }, createSkipGlobalErrorConfig()).then((res) => {
+        }, createSkipGlobalErrorConfig()).then((_res) => {
             toast.success("测试邮件已发送")
-        }).catch((err) => {
+        }).catch((_err) => {
             toast.success("测试邮件发送失败，请查看系统日志检查错误")
         })
     }

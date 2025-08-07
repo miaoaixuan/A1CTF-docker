@@ -8,7 +8,7 @@ import {
     useLocation,
     useNavigate,
 } from "react-router";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 
 import type { Route } from "./+types/root";
 
@@ -30,37 +30,38 @@ import { I18nextProvider } from "react-i18next";
 
 import i18n from 'i18n';
 import GameSwitchHover from "components/GameSwitchHover";
-import { LoadingPage } from "components/LoadingPage";
-import HydrateFallbackPage from "components/HydrateFallbackPage";
 import ScreenTooSmall from "components/modules/ScreenTooSmall";
 import { isMobile } from "react-device-detect";
 import { useTheme } from "next-themes";
 import { setGlobalNavigate } from "utils/ApiHelper";
 import ClientChecker from "components/modules/ClientChecker";
 
+import { SWRConfig } from 'swr'
+import { Loader2 } from "lucide-react";
+
 export const links: Route.LinksFunction = () => [
-    { rel: "preconnect", href: "https://fonts.googleapis.com" },
-    {
-        rel: "preconnect",
-        href: "https://fonts.gstatic.com",
-        crossOrigin: "anonymous",
-    },
-    {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
-    },
-    {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap",
-    },
-    {
-        rel: "stylesheet",
-        href: "/css/github-markdown-dark.css",
-    },
-    {
-        rel: "stylesheet",
-        href: "/css/github-markdown-light.css",
-    }
+    // { rel: "preconnect", href: "https://fonts.googleapis.com" },
+    // {
+    //     rel: "preconnect",
+    //     href: "https://fonts.gstatic.com",
+    //     crossOrigin: "anonymous",
+    // },
+    // {
+    //     rel: "stylesheet",
+    //     href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+    // },
+    // {
+    //     rel: "stylesheet",
+    //     href: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap",
+    // },
+    // {
+    //     rel: "stylesheet",
+    //     href: "/css/github-markdown-dark.css",
+    // },
+    // {
+    //     rel: "stylesheet",
+    //     href: "/css/github-markdown-light.css",
+    // }
 ];
 
 const AnimationPresent = (path: string) => {
@@ -152,34 +153,53 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <meta charSet="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <title>Loading....</title>
+                { import.meta.env.MODE == "development" ? (
+                    <>
+                        <link rel="preload" as="style" href="/@webfonts/webfonts.css" />
+                        <link rel="stylesheet" href="/@webfonts/webfonts.css"></link>
+                    </>
+                ) : (
+                    <>
+                        <link rel="preload" as="style" href="/assets/webfonts.css" />
+                        <link rel="stylesheet" href="/assets/webfonts.css"></link>
+                    </>
+                )}
                 <Meta />
                 <Links />
             </head>
             <body>
                 <ClientOnly>
-                    {/* <NextIntlClientProvider messages={messages}> */}
-                    <ThemeProvider
-                        attribute="class"
-                        enableSystem
+                    <SWRConfig
+                        value={{
+                            fetcher: (resource, init) => fetch(resource, init).then(res => res.json()),
+                        }}
                     >
-                        <I18nextProvider i18n={i18n}>
-                            <CookiesProvider>
-                                <GlobalVariableProvider>
-                                    <GameSwitchProvider>
-                                        <CanvasProvider>
-                                            <ThemeAwareLinks />
-                                            <ClientToaster />
-                                            <ClientChecker />
-                                            <div className="bg-background absolute top-0 left-0 w-screen h-screen z-[-1]" />
-                                            {animationPresent && <FancyBackground />}
-                                            <GameSwitchHover animation={true} />
-                                            {screenTooSmall ? children : <ScreenTooSmall />}
-                                        </CanvasProvider>
-                                    </GameSwitchProvider>
-                                </GlobalVariableProvider>
-                            </CookiesProvider>
-                        </I18nextProvider>
-                    </ThemeProvider>
+                        {/* <NextIntlClientProvider messages={messages}> */}
+                        <ThemeProvider
+                            attribute="class"
+                            enableSystem
+                        >
+                            <I18nextProvider i18n={i18n}>
+                                <CookiesProvider>
+                                    <GlobalVariableProvider>
+                                        <GameSwitchProvider>
+                                            <CanvasProvider>
+                                                <ThemeAwareLinks />
+                                                <ClientToaster />
+                                                <ClientChecker />
+                                                <div className="bg-background absolute top-0 left-0 w-screen h-screen z-[-1]" />
+                                                {animationPresent && <FancyBackground />}
+                                                <GameSwitchHover animation={true} />
+                                                {screenTooSmall ? (
+                                                    <Suspense>{children}</Suspense>
+                                                ) : <ScreenTooSmall />}
+                                            </CanvasProvider>
+                                        </GameSwitchProvider>
+                                    </GlobalVariableProvider>
+                                </CookiesProvider>
+                            </I18nextProvider>
+                        </ThemeProvider>
+                    </SWRConfig>
                 </ClientOnly>
                 {/* </NextIntlClientProvider> */}
                 <ScrollRestoration />
@@ -195,7 +215,12 @@ export default function App() {
 
 export function HydrateFallback() {
     return (
-        <HydrateFallbackPage />
+        <div className={`w-screen h-screen select-none flex justify-center items-center z-50 absolute bg-background transition-opacity duration-300 ease-in-out overflow-hidden opacity-100`}>
+            <div className="flex">
+                <Loader2 className="animate-spin" />
+                <span className="font-bold ml-3">Page Loading...</span>
+            </div>
+        </div>
     );
 }
 

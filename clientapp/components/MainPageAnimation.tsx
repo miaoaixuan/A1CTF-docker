@@ -1,13 +1,6 @@
-import A1Animation from "./A1Animation";
-import { motion } from "framer-motion";
 import FuzzyText from "./reactbits/FuzzyText/FuzzyText";
 import { useTheme } from "next-themes";
-import BlurText from "./reactbits/BlurText/BlurText";
-import ASCIIText from "./reactbits/ASCIIText/ASCIIText";
-import Ribbons from "components/reactbits/Ribbons/Ribbons";
-import Squares from "./reactbits/Squares/Squares";
 import { useEffect, useState } from "react";
-import FancyBackground from "./modules/FancyBackground";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
 
 export function MainPageAnimation() {

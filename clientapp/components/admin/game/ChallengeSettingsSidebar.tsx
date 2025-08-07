@@ -1,9 +1,8 @@
 import { Button } from "components/ui/button";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
-import { BrickWall, DoorOpen, Flag, Minimize, Package, PocketKnife, Receipt, ReceiptText, Settings } from "lucide-react";
+import { Flag, Minimize, Package, PocketKnife, ReceiptText, Settings } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Dispatch, SetStateAction } from "react";
-import { UserFullGameInfo } from "utils/A1API";
 
 export default function ChallengeSettingsSidebar(
     {

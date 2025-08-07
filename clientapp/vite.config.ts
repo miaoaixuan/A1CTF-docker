@@ -4,6 +4,8 @@ import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { resolve } from 'path'
 import devtoolsJson from 'vite-plugin-devtools-json';
+import ViteWebfontDownload from 'vite-plugin-webfont-dl';
+import oxlintPlugin from 'vite-plugin-oxlint';
 
 export default defineConfig({
   resolve: {
@@ -25,5 +27,22 @@ export default defineConfig({
   css: {
     devSourcemap: true,
   },
-  plugins: [tailwindcss(), devtoolsJson(), reactRouter(), tsconfigPaths()],
+  plugins: [
+    oxlintPlugin(),
+    tailwindcss(),
+    devtoolsJson(),
+    reactRouter(),
+    tsconfigPaths(),
+    ViteWebfontDownload([
+      'https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap',
+      'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap'
+    ], { injectAsStyleTag: true, async: false }),
+  ],
+  build: {
+    rollupOptions: {
+      output: {
+        assetFileNames: (chunkInfo: any) => chunkInfo.name === 'webfonts.css' ? 'assets/webfonts.css' : 'assets/[name]-[hash].[ext]',
+      },
+    },
+  },
 });

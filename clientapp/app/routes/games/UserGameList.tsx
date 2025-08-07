@@ -1,10 +1,6 @@
 import PageHeader from "components/A1Headers"
 import { ChangeGames } from "components/ChangeGames";
-import FancyBackground from "components/modules/FancyBackground";
 import SafeComponent from "components/SafeComponent";
-import { Button } from "components/ui/button";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { re } from "mathjs";
 
 export default function Games() {
 

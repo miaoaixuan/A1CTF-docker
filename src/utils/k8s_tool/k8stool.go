@@ -438,6 +438,36 @@ func DeletePod(podInfo *PodInfo) error {
 	return nil
 }
 
+func ForceDeletePod(podName string) error {
+	clientset, err := GetClient()
+	if err != nil {
+		return err
+	}
+	namespace := "a1ctf-challenges"
+
+	// 忽略所有错误，删除三个组件，防止出问题
+
+	// 删除 Pod
+	_ = clientset.CoreV1().Pods(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
+	// if err != nil {
+	// 	return fmt.Errorf("error deleting pod: %v", err)
+	// }
+
+	// 删除 Service
+	_ = clientset.CoreV1().Services(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
+	// if err != nil {
+	// 	return fmt.Errorf("error deleting service: %v", err)
+	// }
+
+	// 删除 NetworkPolicy
+	_ = clientset.NetworkingV1().NetworkPolicies(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
+	// if err != nil {
+	// 	return fmt.Errorf("error deleting network policy: %v", err)
+	// }
+
+	return nil
+}
+
 func InitNamespace() error {
 	clientset, err := GetClient()
 	if err != nil {

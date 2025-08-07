@@ -1,4 +1,4 @@
-import { Award, Flag, Medal, Trophy } from "lucide-react";
+import { Award, Flag, Medal } from "lucide-react";
 import { MacScrollbar } from "mac-scrollbar";
 import { useTheme } from "next-themes";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
@@ -6,7 +6,7 @@ import { Button } from "./ui/button";
 import dayjs from "dayjs";
 
 import ReactDOMServer from 'react-dom/server';
-import { GameGroupSimple, GameScoreboardData, PaginationInfo, TeamScore, UserSimpleGameChallenge } from "utils/A1API";
+import { GameScoreboardData, PaginationInfo, TeamScore, UserSimpleGameChallenge } from "utils/A1API";
 import AvatarUsername from "./modules/AvatarUsername";
 import { challengeCategoryIcons } from "utils/ClientAssets";
 
@@ -15,7 +15,7 @@ export function ScoreTable(
         scoreBoardModel,
         setShowUserDetail,
         challenges,
-        pageSize,
+        pageSize: _pageSize,
         pagination,
         curPage,
         setCurPage,
@@ -35,18 +35,14 @@ export function ScoreTable(
     const tableRef = useRef<HTMLDivElement | null>(null)
     const isUserEditing = useRef<boolean>(false)
 
-    const [challengeCount, setChallengeCount] = useState(20)
     const [containerWidth, setContainerWidth] = useState(0)
     const [jumpPage, setJumpPage] = useState(1)
 
     const { theme } = useTheme()
 
-    // const [scoreboardItems, setScoreBoardItems] = useState<TeamScore[]>([])
     const [curPageData, setCurPageData] = useState<TeamScore[]>([])
     // const [curPage, setCurPage] = useState(1)
     const [totalPage, setTotalPage] = useState(0)
-
-    const [pageDataLoaded, setPageDataLoaded] = useState(false)
 
     // 计算总列数
     const totalColumns = Object.values(challenges).reduce((sum, challengeList) => sum + challengeList.length, 0)
@@ -84,8 +80,6 @@ export function ScoreTable(
 
         setCurPageData(scoreBoardModel.teams || [])
 
-        setPageDataLoaded(true)
-
         window.addEventListener("resize", handleChangeView)
 
         // 初始化容器宽度
@@ -120,12 +114,6 @@ export function ScoreTable(
         else return (
             <span>{rank}</span>
         )
-    }
-
-    const rankColor = (rank: number) => {
-        if (rank == 1) return "#FFB02E"
-        else if (rank == 2) return "#BEBEBE"
-        else if (rank == 3) return "#D3883E"
     }
 
     const getSolveStatus = (challenge: UserSimpleGameChallenge, target: TeamScore) => {
@@ -379,7 +367,7 @@ export function ScoreTable(
                         </>
                     ) : (
                         <>
-                            {totalPage > 0 && new Array(totalPage).fill(0).map((e, index) => (
+                            {totalPage > 0 && Array.from({ length: totalPage }).fill(0).map((e, index) => (
                                 <Button size={"icon"} key={`pageX-${index + 1}`} variant={curPage == index + 1 ? "default" : "ghost"} onClick={() => { handlePageChange(index + 1) }} disabled={isLoading}>{index + 1}</Button>
                             ))}
                         </>

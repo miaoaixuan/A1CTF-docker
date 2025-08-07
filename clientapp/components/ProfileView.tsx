@@ -4,9 +4,8 @@ import { Button } from "./ui/button";
 import { MacScrollbar } from "mac-scrollbar";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
-import { Accessibility, Eclipse, Ellipsis, KeyRound, Mail, Plus, Save, UserRoundPen } from "lucide-react";
+import { Accessibility, Ellipsis, KeyRound, Mail, UserRoundPen } from "lucide-react";
 import UserBaiscInfo from "./user/profile/UserBaiscInfo";
 import { PasswordView } from "./user/profile/PasswordView";
 import EmailSettings from "./user/profile/EmailSettings";
@@ -15,15 +14,9 @@ import DeleteAccount from "./user/profile/DeleteAccount";
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuPortal,
     DropdownMenuSeparator,
-    DropdownMenuShortcut,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from "components/ui/dropdown-menu"
 
@@ -31,8 +24,6 @@ export function ProfileView() {
 
     const navigate = useNavigate()
     const { action } = useParams();
-
-    const { t } = useTranslation("profile_settings")
 
     const modules = [
         {

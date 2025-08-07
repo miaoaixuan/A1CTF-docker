@@ -17,14 +17,13 @@ interface ChallengeInfo {
 }
 
 export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivElement>> = ({
-    type, name, solved, score, rank, choiced, status, visible, ...props
+    type, name, solved, score, rank: _rank, choiced, status, visible, ...props
 }) => {
 
     let colorClass = "bg-amber-600";
     const [solveStatus, setSolveStatus] = useState(false)
 
     // 解决懒加载重新播放动画的问题
-    const [initHook, setInitHook] = useState(true)
     const [shouldAnime, setShouldAnime] = useState(false)
     const prevStatus = useRef(false)
 
@@ -36,7 +35,6 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
     else colorClass = colorMap["misc"]
 
     useEffect(() => {
-        setInitHook(false)
         setSolveStatus(status)
         prevStatus.current = status
         return () => {

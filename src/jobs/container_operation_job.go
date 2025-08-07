@@ -145,10 +145,10 @@ func UpdateLivingContainers() {
 
 		container := findExistContainer(containers, teamHash, inGameIDInt)
 		if container == nil {
+			// zaphelper.Logger.Info("Stopping container that not found in database", zap.Any("container", container))
+			// k8stool.ForceDeletePod(pod.Name)
 			continue
 		}
-
-		podStatus := pod.Status.Phase
 
 		podInfo := k8stool.PodInfo{
 			Name:       fmt.Sprintf("cl-%d", container.InGameID),
@@ -163,41 +163,74 @@ func UpdateLivingContainers() {
 			AllowDNS: container.Challenge.AllowDNS,
 		}
 
-		if podStatus == v1.PodRunning && container.ContainerStatus == models.ContainerStarting {
-			// 如果远程服务器Pod已经是Running状态，就获取端口并且更新数据库
-			zaphelper.FileLogger.Info("Getting container port", zap.Any("container", container))
-			getContainerPorts(podInfo, container)
-		}
+		podStatus, _ := k8stool.CheckPodStatus(&pod)
+		// zaphelper.Logger.Info("pod status", zap.Any("podStatus", podStatus))
 
-		if podStatus == v1.PodRunning && time.Now().UTC().After(container.ExpireTime) {
-			// 如果远程服务器Pod已经是Running状态，并且已经超时，就删除Pod并且更新数据库
-			zaphelper.FileLogger.Info("Stopping container", zap.Any("container", container))
-			tasks.NewContainerStopTask(*container)
-		}
+		if podStatus.Status == k8stool.CustomPodRunning {
+			if container.ContainerStatus == models.ContainerStarting {
+				// 如果远程服务器Pod已经是Running状态，就获取端口并且更新数据库
+				zaphelper.Logger.Info("Getting container port", zap.Any("container", container))
+				getContainerPorts(podInfo, container)
+			}
 
-		if podStatus == v1.PodRunning && container.ContainerStatus == models.ContainerStopped {
-			zaphelper.FileLogger.Info("Stopping deaded container", zap.Any("container", container))
-			tasks.NewContainerStopTask(*container)
+			// 下面会处理
+			// if time.Now().UTC().After(container.ExpireTime) {
+			// 	// 如果远程服务器Pod已经是Running状态，并且已经超时，就删除Pod并且更新数据库
+			// 	zaphelper.Logger.Info("Stopping container for life over", zap.Any("container", container))
+			// 	tasks.NewContainerStopTask(*container)
+			// }
+
+			if container.ContainerStatus == models.ContainerStopped {
+				zaphelper.Logger.Info("Stopping deaded container", zap.Any("container", container))
+				tasks.NewContainerStopTask(*container)
+			}
+		} else if podStatus.Status == k8stool.CustomPodFailed {
+			zaphelper.Logger.Info("Stopping failed container", zap.Any("container", container), zap.Any("pod_status", podStatus))
+			tasks.NewContainerFailedTask(*container, podStatus)
+		} else {
+			// 等待中的容器
 		}
 	}
 
 	for _, container := range containers {
+		// 处理队列中的容器
 		if container.ContainerStatus == models.ContainerQueueing {
 			if err := dbtool.DB().Model(&container).Update("container_status", models.ContainerStarting).Error; err != nil {
 				zaphelper.Logger.Error("failed to update container status", zap.Error(err), zap.Any("container", container))
 				continue
 			}
-			zaphelper.FileLogger.Info("Starting container", zap.Any("container", container))
+			zaphelper.Logger.Info("Starting container", zap.Any("container", container))
 			tasks.NewContainerStartTask(container)
 		}
 
+		// 处理要求关闭的容器
 		if container.ContainerStatus == models.ContainerStopping {
 			if err := dbtool.DB().Model(&container).Update("container_status", models.ContainerStopped).Error; err != nil {
 				zaphelper.Logger.Error("failed to update container status", zap.Error(err), zap.Any("container", container))
 				continue
 			}
-			zaphelper.FileLogger.Info("Stopping container", zap.Any("container", container))
+			zaphelper.Logger.Info("Stopping container", zap.Any("container", container))
 			tasks.NewContainerStopTask(container)
+		}
+
+		// 到期容器处理
+		if time.Now().UTC().After(container.ExpireTime) &&
+			container.ContainerStatus != models.ContainerStopping {
+			zaphelper.Logger.Info("Deleting expired container", zap.Any("container", container))
+			if err := dbtool.DB().Model(&container).Update("container_status", models.ContainerStopping).Error; err != nil {
+				zaphelper.Logger.Error("failed to update container status", zap.Error(err), zap.Any("container", container))
+				continue
+			}
+		}
+
+		// 处理超时的容器 启动时间超过 10 分钟的
+		if time.Now().UTC().Sub(container.StartTime) > 10*time.Minute &&
+			container.ContainerStatus == models.ContainerStarting {
+			zaphelper.Logger.Info("Deleting timeout starting container", zap.Any("container", container))
+			if err := dbtool.DB().Model(&container).Update("container_status", models.ContainerStopping).Error; err != nil {
+				zaphelper.Logger.Error("failed to update container status", zap.Error(err), zap.Any("container", container))
+				continue
+			}
 		}
 	}
 }

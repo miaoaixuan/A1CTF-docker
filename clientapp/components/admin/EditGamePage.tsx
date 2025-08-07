@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { EditChallengeView } from "./EditChallengeView";
-import { AdminChallengeConfig, AdminFullGameInfo } from "utils/A1API";
+import { AdminFullGameInfo } from "utils/A1API";
 import { api } from "utils/ApiHelper";
 import { EditGameView } from "./EditGameView";
 

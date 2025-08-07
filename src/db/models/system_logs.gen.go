@@ -103,6 +103,7 @@ const (
 	ActionContainerExtended  = "CONTAINER_EXTENDED"
 	ActionContainerDeleting  = "CONTAINER_DELETING"
 	ActionContainerDeleted   = "CONTAINER_DELETED"
+	ActionContainerFailed    = "CONTAINER_FAILED"
 
 	// 用户请求
 	ActionStartContainer  = "START_CONTAINER"

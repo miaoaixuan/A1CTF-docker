@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -15,7 +15,6 @@ import { useTheme } from 'next-themes';
 import { toast } from 'react-toastify/unstyled';
 import dayjs from 'dayjs';
 import {
-    ArrowLeft,
     Plus,
     Edit,
     Trash2,
@@ -29,7 +28,7 @@ import {
 } from 'lucide-react';
 
 import { api } from 'utils/ApiHelper';
-import { ScoreAdjustmentInfo, CreateScoreAdjustmentPayload, UpdateScoreAdjustmentPayload, AdminListTeamItem } from 'utils/A1API';
+import { ScoreAdjustmentInfo, CreateScoreAdjustmentPayload, AdminListTeamItem } from 'utils/A1API';
 
 interface Team {
     team_id: number;
@@ -201,7 +200,7 @@ export function ScoreAdjustmentManagePage() {
 
     // 创建调整记录
     const handleCreate = async () => {
-        api.admin.createScoreAdjustment(gameId, formData).then((res) => {
+        api.admin.createScoreAdjustment(gameId, formData).then(() => {
             toast.success('分数修正创建成功');
             setDialogOpen(false);
             resetForm();
@@ -217,7 +216,7 @@ export function ScoreAdjustmentManagePage() {
             adjustment_type: formData.adjustment_type,
             score_change: formData.score_change,
             reason: formData.reason
-        }).then((res) => {
+        }).then(() => {
             toast.success('分数修正更新成功');
             setDialogOpen(false);
             setEditingAdjustment(null);
@@ -227,7 +226,7 @@ export function ScoreAdjustmentManagePage() {
 
     // 删除调整记录
     const handleDelete = async (adjustmentId: number) => {
-        api.admin.deleteScoreAdjustment(gameId, adjustmentId).then((res) => {
+        api.admin.deleteScoreAdjustment(gameId, adjustmentId).then(() => {
             toast.success('分数修正删除成功');
             loadData();
         })

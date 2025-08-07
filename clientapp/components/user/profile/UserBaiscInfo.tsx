@@ -16,10 +16,9 @@ import { Skeleton } from "components/ui/skeleton"
 import { Input } from "components/ui/input"
 import { useTranslation } from "react-i18next"
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext"
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { toast } from 'react-toastify/unstyled';
-import { api, ErrorMessage } from "utils/ApiHelper"
-import { AxiosError } from "axios"
+import { api } from "utils/ApiHelper"
 import { Button } from "components/ui/button"
 import { Save } from "lucide-react"
 
@@ -27,8 +26,6 @@ export default function UserBaiscInfo() {
 
     const { t } = useTranslation("profile_settings")
     const { curProfile, updateProfile } = useGlobalVariableContext()
-
-    const [submitDisabled, setSubmitDisabled] = useState(false)
 
     const EditUserBaiscProfileSchema = z.object({
         userName: z.string().min(2, {
@@ -60,14 +57,13 @@ export default function UserBaiscInfo() {
     }, [curProfile])
 
     function onSubmit(values: z.infer<typeof EditUserBaiscProfileSchema>) {
-        setSubmitDisabled(true)
         api.user.updateUserProfile({
             "username": values.userName,
             "realname": values.realName,
             "student_number": values.studentNumber,
             "slogan": values.desc,
             "phone": values.phone
-        }).then((res) => {
+        }).then(() => {
             toast.success(t("save_profile_success"))
         })
     }
