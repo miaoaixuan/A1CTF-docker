@@ -309,6 +309,7 @@ export interface AdminFullGameInfo {
   first_blood_reward?: number;
   second_blood_reward?: number;
   third_blood_reward?: number;
+  challenges?: AdminDetailGameChallenge[];
 }
 
 export interface UserGameSimpleInfo {

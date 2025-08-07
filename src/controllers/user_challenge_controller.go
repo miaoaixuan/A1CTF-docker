@@ -36,6 +36,15 @@ func UserGetGameChallenges(c *gin.Context) {
 			return
 		}
 
+		// filter
+		filteredSimpleGameChallenges := make([]webmodels.UserSimpleGameChallenge, 0)
+		for _, challenge := range simpleGameChallenges {
+			challengeVisible, err := ristretto_tool.CachedGameChallengeVisibility(game.GameID, challenge.ChallengeID)
+			if err == nil && challengeVisible {
+				filteredSimpleGameChallenges = append(filteredSimpleGameChallenges, challenge)
+			}
+		}
+
 		// Cache all solves to redis
 
 		solveMap, err := ristretto_tool.CachedSolvedChallengesForGame(game.GameID)
@@ -66,7 +75,7 @@ func UserGetGameChallenges(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"code": 200,
 			"data": gin.H{
-				"challenges":        simpleGameChallenges,
+				"challenges":        filteredSimpleGameChallenges,
 				"solved_challenges": solved_challenges,
 			},
 		})
@@ -76,51 +85,11 @@ func UserGetGameChallenges(c *gin.Context) {
 func UserGetGameChallenge(c *gin.Context) {
 	game := c.MustGet("game").(models.Game)
 	team := c.MustGet("team").(models.Team)
-	user := c.MustGet("user").(models.User)
-
-	challengeIDStr := c.Param("challenge_id")
-	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
-			Code:    400,
-			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
-		})
-		c.Abort()
-		return
-	}
-
-	// 1. 使用缓存检查题目可见性
-	isVisible, err := ristretto_tool.CachedGameChallengeVisibility(game.GameID, challengeID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-			Code:    500,
-			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCheckChallengeVisibility"}),
-		})
-		return
-	}
-
-	// 管理员可以查看到所有题目
-	if !isVisible && user.Role == models.UserRoleUser {
-		c.JSON(http.StatusNotFound, webmodels.ErrorMessage{
-			Code:    404,
-			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeNotFound"}),
-		})
-		return
-	}
-
-	// 2. 使用缓存获取题目详细信息
-	gameChallenge, err := ristretto_tool.CachedGameChallengeDetail(game.GameID, challengeID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-			Code:    500,
-			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadChallengeDetails"}),
-		})
-		return
-	}
+	gameChallenge := c.MustGet("game_challenge").(models.GameChallenge)
 
 	// 5. Flag 处理，对于没有 flag 的队伍，需要添加到 flag 创建队列里，先判断是否是动态 Flag
 	if gameChallenge.Challenge.FlagType == models.FlagTypeDynamic {
-		allFlags, err := ristretto_tool.CachedAllTeamFlags(game.GameID, challengeID)
+		allFlags, err := ristretto_tool.CachedAllTeamFlags(game.GameID, gameChallenge.ChallengeID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 				Code:    500,
@@ -131,7 +100,7 @@ func UserGetGameChallenge(c *gin.Context) {
 
 		if _, exists := allFlags[team.TeamID]; !exists {
 			// 缓存不存在，添加到任务队列
-			_ = tasks.NewTeamFlagCreateTask(*gameChallenge.JudgeConfig.FlagTemplate, team.TeamID, game.GameID, challengeID, team.TeamHash, team.TeamName, gameChallenge.Challenge.FlagType)
+			_ = tasks.NewTeamFlagCreateTask(*gameChallenge.JudgeConfig.FlagTemplate, team.TeamID, game.GameID, gameChallenge.ChallengeID, team.TeamHash, team.TeamName, gameChallenge.Challenge.FlagType)
 		}
 	}
 
@@ -146,7 +115,7 @@ func UserGetGameChallenge(c *gin.Context) {
 	}
 
 	// 4. 使用缓存获取可见提示
-	visibleHints, err := ristretto_tool.CachedChallengeVisibleHints(game.GameID, challengeID)
+	visibleHints, err := ristretto_tool.CachedChallengeVisibleHints(game.GameID, gameChallenge.ChallengeID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
@@ -227,6 +196,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	game := c.MustGet("game").(models.Game)
 	team := c.MustGet("team").(models.Team)
 	user := c.MustGet("user").(models.User)
+	gameChallenge := c.MustGet("game_challenge").(models.GameChallenge)
 
 	var payload webmodels.UserSubmitFlagPayload = webmodels.UserSubmitFlagPayload{}
 	if err := c.ShouldBindJSON(&payload); err != nil {
@@ -237,47 +207,8 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 		return
 	}
 
-	challengeIDStr := c.Param("challenge_id")
-	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
-			Code:    400,
-			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
-		})
-		c.Abort()
-		return
-	}
-
-	// 1. 使用缓存获取题目详细信息
-	gameChallenge, err := ristretto_tool.CachedGameChallengeDetail(game.GameID, challengeID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-			Code:    500,
-			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadChallengeDetails"}),
-		})
-		return
-	}
-
-	// 判断题目是否可见，管理员不检查
-	isVisible, err := ristretto_tool.CachedGameChallengeVisibility(game.GameID, challengeID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-			Code:    500,
-			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCheckChallengeVisibility"}),
-		})
-		return
-	}
-
-	if user.Role != models.UserRoleAdmin && !isVisible {
-		c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
-			Code:    403,
-			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ChallengeNotFound"}),
-		})
-		return
-	}
-
 	// 2. 使用缓存检查是否已解决
-	hasSolved, err := ristretto_tool.CachedTeamSolveStatus(game.GameID, team.TeamID, challengeID)
+	hasSolved, err := ristretto_tool.CachedTeamSolveStatus(game.GameID, team.TeamID, gameChallenge.ChallengeID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
 			Code:    500,
@@ -313,7 +244,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 
 	// 判断是否是动态 Flag，如果是就从 teamFlag 的 map 缓存中拿 flag
 	if gameChallenge.Challenge.FlagType == models.FlagTypeDynamic {
-		teamFlagMap, err := ristretto_tool.CachedAllTeamFlags(game.GameID, challengeID)
+		teamFlagMap, err := ristretto_tool.CachedAllTeamFlags(game.GameID, gameChallenge.ChallengeID)
 		teamFlag, exsist := teamFlagMap[team.TeamID]
 		if !exsist || err != nil {
 			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
@@ -326,6 +257,8 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	} else {
 		newJudge.FlagID = nil
 	}
+
+	challengeIDStr := strconv.FormatInt(gameChallenge.ChallengeID, 10)
 
 	if err := dbtool.DB().Create(&newJudge).Error; err != nil {
 		// 记录失败日志

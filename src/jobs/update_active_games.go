@@ -5,7 +5,6 @@ import (
 	dbtool "a1ctf/src/utils/db_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/utils/zaphelper"
-	"log"
 	"math"
 	"time"
 
@@ -186,55 +185,6 @@ func updateActiveGameScores(game_ids []int64) {
 				zaphelper.Logger.Error("Failed to update team score", zap.Error(err), zap.Int64("team_id", team.TeamID))
 			}
 		}
-	}
-}
-
-func DebugBloodRewards(gameIDs []int64) {
-	type BloodRewardResult struct {
-		TeamID      int64
-		Rank        int32
-		ChallengeID int64
-		CurScore    float64
-		Reward      float64
-		GameTitle   string
-	}
-
-	var results []BloodRewardResult
-
-	err := dbtool.DB().Raw(`
-        SELECT 
-            s.rank as rank,
-			gc.challenge_id,
-			gc.cur_score as cur_score,
-			CASE 
-				WHEN s.rank = 1 AND gc.enable_blood_reward = true THEN 
-					gc.cur_score * COALESCE(g.first_blood_reward, 5) / 100.0
-				WHEN s.rank = 2 AND gc.enable_blood_reward = true THEN 
-					gc.cur_score * COALESCE(g.second_blood_reward, 3) / 100.0
-				WHEN s.rank = 3 AND gc.enable_blood_reward = true THEN 
-					gc.cur_score * COALESCE(g.third_blood_reward, 1) / 100.0
-				ELSE 0
-			END as reward,
-            g.name as game_title
-        FROM solves s
-        JOIN game_challenges gc ON s.ingame_id = gc.ingame_id
-        JOIN games g ON s.game_id = g.game_id
-        WHERE s.game_id IN ?
-            AND s.solve_status = '"SolveCorrect"'::jsonb
-            AND gc.visible = true
-            AND s.rank IN (1, 2, 3)
-        ORDER BY s.team_id, s.rank
-    `, gameIDs).Scan(&results).Error
-
-	if err != nil {
-		log.Printf("Debug blood rewards error: %v", err)
-		return
-	}
-
-	log.Printf("Blood rewards debug results (%d records):", len(results))
-	for _, r := range results {
-		log.Printf("TeamID: %d, Rank: %d, Challenge: %d, Score: %.2f, Reward: %.2f, Game: %s",
-			r.TeamID, r.Rank, r.ChallengeID, r.CurScore, r.Reward, r.GameTitle)
 	}
 }
 

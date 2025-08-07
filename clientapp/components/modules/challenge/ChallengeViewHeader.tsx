@@ -86,9 +86,7 @@ const ChallengesViewHeader = (
                 {!loadingVisible ? (
                     <>
                         <GameTimeCounter 
-                            startTime={gameInfo?.start_time}
-                            endTime={gameInfo?.end_time}
-                            gameStatus={gameStatus}
+                            gameID={gameID}
                         />
                         {gameStatus == "running" ? (
                             <Tooltip open={wsStatusTooltipVisible} onOpenChange={(state) => {
@@ -135,9 +133,7 @@ const ChallengesViewHeader = (
                                 <div className="w-full h-full flex flex-col gap-1">
                                     <DropdownMenuItem>
                                         <GameTimeCounter 
-                                            startTime={gameInfo?.start_time}
-                                            endTime={gameInfo?.end_time}
-                                            gameStatus={gameStatus}
+                                            gameID={gameID}
                                         />
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => setNoticeOpened(true)} disabled={notices.length == 0}>

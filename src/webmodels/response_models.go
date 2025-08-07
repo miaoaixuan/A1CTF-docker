@@ -157,12 +157,13 @@ type TimeLineItem struct {
 }
 
 type TeamSolveItem struct {
-	ChallengeID int64     `json:"challenge_id"`
-	Score       float64   `json:"score"`
-	Solver      string    `json:"solver"`
-	Rank        int64     `json:"rank"`
-	SolveTime   time.Time `json:"solve_time"`
-	BloodReward float64   `json:"blood_reward"`
+	ChallengeID   int64     `json:"challenge_id"`
+	Score         float64   `json:"score"`
+	Solver        string    `json:"solver"`
+	Rank          int64     `json:"rank"`
+	SolveTime     time.Time `json:"solve_time"`
+	BloodReward   float64   `json:"blood_reward"`
+	ChallengeName string    `json:"challenge_name"`
 }
 
 type TeamScoreAdjustmentItem struct {

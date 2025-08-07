@@ -405,7 +405,7 @@ export default function ScoreBoardPage(
 
                 const curTimeLine = JSON.stringify(res.data.data?.top10_timelines)
 
-                if (curTimeLine != lastTimeLine.current) {
+                if (curTimeLine != lastTimeLine.current || true) {
                     lastTimeLine.current = curTimeLine
 
                     serialOptions.current = [

@@ -4,7 +4,7 @@ export default [
     route("", "routes/A1CTFMainPage.tsx"),
     route("games", "routes/games/UserGameList.tsx"),
 
-    route("games/:id/:module", "routes/games/[id]/UserGameView.tsx"),
+    route("games/:id/:module?", "routes/games/[id]/UserGameView.tsx"),
 
     route("about", "routes/about/SystemAboutPage.tsx"),
     route("version", "routes/version/SystemVersionPage.tsx"),

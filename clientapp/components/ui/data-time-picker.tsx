@@ -12,13 +12,18 @@ import {
 } from "components/ui/popover";
 import { ScrollArea, ScrollBar } from "components/ui/scroll-area";
 
-export function DateTimePicker24h({ date, setDate }: { date: Date | undefined, setDate: React.Dispatch<React.SetStateAction<Date>> }) {
+export function DateTimePicker24h({ date, setDate = undefined, onDateSelect = undefined }: { date: Date | undefined, setDate?: React.Dispatch<React.SetStateAction<Date>>, onDateSelect?: (date: Date) => void }) {
     const [isOpen, setIsOpen] = React.useState(false);
 
     const hours = Array.from({ length: 24 }, (_, i) => i);
     const handleDateSelect = (selectedDate: Date | undefined) => {
         if (selectedDate) {
-            setDate(selectedDate);
+            if (setDate) {
+                setDate(selectedDate);
+            }
+            if (onDateSelect) {
+                onDateSelect(selectedDate);
+            }
         }
     };
 
@@ -33,8 +38,12 @@ export function DateTimePicker24h({ date, setDate }: { date: Date | undefined, s
             } else if (type === "minute") {
                 newDate.setMinutes(parseInt(value));
             }
-            console.log(newDate)
-            setDate(newDate);
+            if (setDate) {
+                setDate(newDate);
+            }
+            if (onDateSelect) {
+                onDateSelect(newDate)
+            }
         }
     };
 
@@ -83,7 +92,7 @@ export function DateTimePicker24h({ date, setDate }: { date: Date | undefined, s
                         </ScrollArea>
                         <ScrollArea className="w-64 sm:w-auto">
                             <div className="flex sm:flex-col p-2">
-                                {Array.from({ length: 12 }, (_, i) => i * 5).map((minute) => (
+                                {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
                                     <Button
                                         key={minute}
                                         size="icon"

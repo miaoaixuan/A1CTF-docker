@@ -74,28 +74,28 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                 start_time: dayjs(stage.start_time).toDate(),
                 end_time: dayjs(stage.end_time).toDate(),
             })) : [],
-            // challenges: game_info.challenges?.map((challenge) => ({
-            //     challenge_id: challenge.challenge_id,
-            //     challenge_name: challenge.challenge_name,
-            //     category: challenge.category,
-            //     total_score: challenge.total_score,
-            //     cur_score: challenge.cur_score,
-            //     enable_blood_reward: challenge.enable_blood_reward,
-            //     minimal_score: challenge.minimal_score,
-            //     solve_count: challenge.solve_count || 0,
-            //     hints: challenge.hints?.map((hint) => ({
-            //         content: hint.content,
-            //         create_time: dayjs(hint.create_time).toDate(),
-            //         visible: hint.visible
-            //     })),
-            //     visible: challenge.visible || false,
-            //     belong_stage: challenge.belong_stage!,
-            //     judge_config: {
-            //         judge_type: challenge.judge_config?.judge_type,
-            //         judge_script: challenge.judge_config?.judge_script || "",
-            //         flag_template: challenge.judge_config?.flag_template || "",
-            //     }
-            // }))
+            challenges: game_info.challenges?.map((challenge) => ({
+                challenge_id: challenge.challenge_id,
+                challenge_name: challenge.challenge_name,
+                category: challenge.category,
+                total_score: challenge.total_score,
+                cur_score: challenge.cur_score,
+                enable_blood_reward: challenge.enable_blood_reward,
+                minimal_score: challenge.minimal_score,
+                solve_count: challenge.solve_count || 0,
+                hints: challenge.hints?.map((hint) => ({
+                    content: hint.content,
+                    create_time: dayjs(hint.create_time).toDate(),
+                    visible: hint.visible
+                })),
+                visible: challenge.visible || false,
+                belong_stage: challenge.belong_stage!,
+                judge_config: {
+                    judge_type: challenge.judge_config?.judge_type,
+                    judge_script: challenge.judge_config?.judge_script || "",
+                    flag_template: challenge.judge_config?.flag_template || "",
+                }
+            }))
         }
     })
 
@@ -137,7 +137,7 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
             stages: values.stages,
             visible: values.visible,
             team_policy: values.team_policy,
-            // challenges: values.challenges,
+            challenges: values.challenges,
             first_blood_reward: values.first_blood_reward,
             second_blood_reward: values.second_blood_reward,
             third_blood_reward: values.third_blood_reward
@@ -337,7 +337,6 @@ export function EditGameView({ game_info }: { game_info: AdminFullGameInfo }) {
                                         <h2 className="text-xl font-semibold">时间线与题目分配</h2>
                                     </div>
                                     <GameTimelineEditor
-                                        game_info={game_info}
                                         form={form}
                                     />
                                 </div>

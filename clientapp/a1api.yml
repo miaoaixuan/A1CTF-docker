@@ -3995,6 +3995,10 @@ components:
           type: number
         third_blood_reward:
           type: number
+        challenges:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminDetailGameChallenge'
       required:
         - game_id
         - name
@@ -4552,6 +4556,8 @@ components:
           type: number
           format: float
           example: 0
+        challenge_name:
+          type: string
 
     TeamScoreAdjustment:
       type: object

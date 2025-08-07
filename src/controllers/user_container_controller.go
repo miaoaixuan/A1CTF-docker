@@ -23,30 +23,7 @@ func UserCreateGameContainer(c *gin.Context) {
 	game := c.MustGet("game").(models.Game)
 	team := c.MustGet("team").(models.Team)
 	user := c.MustGet("user").(models.User)
-
-	challengeIDStr := c.Param("challenge_id")
-	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
-			Code:    400,
-			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
-		})
-		c.Abort()
-		return
-	}
-
-	var gameChallenge models.GameChallenge
-
-	if err := dbtool.DB().Preload("Challenge").
-		Where("game_id = ? and game_challenges.challenge_id = ?", game.GameID, challengeID).
-		First(&gameChallenge).Error; err != nil {
-
-		c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
-			Code:    500,
-			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadGameChallenges"}),
-		})
-		return
-	}
+	gameChallenge := c.MustGet("game_challenge").(models.GameChallenge)
 
 	var containers []models.Container
 	if err := dbtool.DB().Where("game_id = ? AND team_id = ? AND (container_status = ? or container_status = ? or container_status = ?)", game.GameID, team.TeamID, models.ContainerRunning, models.ContainerQueueing, models.ContainerStarting).Find(&containers).Error; err != nil {
@@ -147,7 +124,7 @@ func UserCreateGameContainer(c *gin.Context) {
 			"game_id":        game.GameID,
 			"user_id":        user.UserID,
 			"team_id":        team.TeamID,
-			"challenge_id":   challengeID,
+			"challenge_id":   gameChallenge.ChallengeID,
 			"challenge_name": gameChallenge.Challenge.Name,
 		}, err)
 
@@ -163,7 +140,7 @@ func UserCreateGameContainer(c *gin.Context) {
 		"game_id":        game.GameID,
 		"user_id":        user.UserID,
 		"team_id":        team.TeamID,
-		"challenge_id":   challengeID,
+		"challenge_id":   gameChallenge.ChallengeID,
 		"challenge_name": gameChallenge.Challenge.Name,
 		"expire_time":    newContainer.ExpireTime,
 	})
@@ -281,17 +258,7 @@ func UserExtendGameContainer(c *gin.Context) {
 	game := c.MustGet("game").(models.Game)
 	team := c.MustGet("team").(models.Team)
 	user := c.MustGet("user").(models.User)
-
-	challengeIDStr := c.Param("challenge_id")
-	challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
-			Code:    400,
-			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
-		})
-		c.Abort()
-		return
-	}
+	challengeID := c.MustGet("challenge_id").(int64)
 
 	operationName := fmt.Sprintf("%s:containerOperation", user.UserID)
 	locked := redistool.LockForATime(operationName, time.Minute)

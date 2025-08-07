@@ -202,3 +202,56 @@ func OperationNotAllowedAfterGameStartMiddleWare() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+func ChallengeStatusCheckMiddleWare() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		game := c.MustGet("game").(models.Game)
+
+		challengeIDStr := c.Param("challenge_id")
+		challengeID, err := strconv.ParseInt(challengeIDStr, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+				Code:    400,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
+			})
+			c.Abort()
+			return
+		}
+
+		gameChallenge, err := ristretto_tool.CachedGameChallengeDetail(game.GameID, challengeID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, webmodels.ErrorMessage{
+				Code:    500,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadChallengeDetails"}),
+			})
+			c.Abort()
+			return
+		}
+
+		c.Set("game_challenge", *gameChallenge)
+		c.Set("challenge_id", challengeID)
+
+		user := c.MustGet("user").(models.User)
+
+		skipCheck := user.Role == models.UserRoleAdmin
+
+		if skipCheck {
+			c.Next()
+			return
+		}
+
+		challengeVisible, _ := ristretto_tool.CachedGameChallengeVisibility(game.GameID, challengeID)
+
+		if !challengeVisible {
+			c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+				Code:    400,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidChallengeID"}),
+			})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}

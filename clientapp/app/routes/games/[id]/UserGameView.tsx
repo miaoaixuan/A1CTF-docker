@@ -4,7 +4,7 @@ import MyTeamInfomationView from "components/user/game/MyTeamInfomationView";
 import ScoreBoardPage from "components/user/game/ScoreBoardPage";
 import GameViewSidebar from "components/user/game/GameViewSidebar";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router";
+import { redirect, useNavigate, useParams } from "react-router";
 import GameInfoView from "components/user/game/GameInfoView";
 import { useGameSwitchContext } from "contexts/GameSwitchContext";
 import { Panda } from "lucide-react";
@@ -15,6 +15,7 @@ export default function Games() {
     
     const { id } = useParams();
     const { module } = useParams()
+    const navigate = useNavigate()
 
     if (!id) {
         return <div>404</div>
@@ -25,6 +26,7 @@ export default function Games() {
     const { gameStatus, isLoading } = useGame(gameID)
 
     useEffect(() => {
+        if (!module) navigate("/games/" + id + "/info")
         setCurChoicedModule(module || "info")
     }, [module])
 

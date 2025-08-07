@@ -1,5 +1,4 @@
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext"
-import { title } from "process"
 import { useEffect } from "react"
 import { useNavigate } from "react-router"
 import { toast } from "react-toastify/unstyled"

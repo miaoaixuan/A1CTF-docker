@@ -404,12 +404,13 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 
 			// 插入解题记录
 			teamData.SolvedChallenges = append(teamData.SolvedChallenges, webmodels.TeamSolveItem{
-				ChallengeID: solve.ChallengeID,
-				Score:       challengeScore,
-				Solver:      solve.Solver.Username,
-				Rank:        int64(solve.Rank),
-				SolveTime:   solve.SolveTime,
-				BloodReward: rewardScore,
+				ChallengeID:   solve.ChallengeID,
+				Score:         challengeScore,
+				Solver:        solve.Solver.Username,
+				Rank:          int64(solve.Rank),
+				SolveTime:     solve.SolveTime,
+				BloodReward:   rewardScore,
+				ChallengeName: solve.Challenge.Name,
 			})
 
 			// 更新最后解题时间
@@ -770,28 +771,7 @@ func CachedGameSimpleChallenges(gameID int64) ([]webmodels.UserSimpleGameChallen
 			return gameChallenges[i].Challenge.Name < gameChallenges[j].Challenge.Name
 		})
 
-		// 游戏阶段判断
-		gameStages := game.Stages
-		var curStage = ""
-
-		if gameStages != nil {
-			for _, stage := range *gameStages {
-				if stage.StartTime.Before(time.Now().UTC()) && stage.EndTime.After(time.Now().UTC()) {
-					curStage = stage.StageName
-					break
-				}
-			}
-		}
-
 		for _, gc := range gameChallenges {
-
-			if gc.BelongStage != nil && *gc.BelongStage != curStage {
-				continue
-			}
-
-			if !gc.Visible {
-				continue
-			}
 
 			tmpSimpleGameChallenges = append(tmpSimpleGameChallenges, webmodels.UserSimpleGameChallenge{
 				ChallengeID:   *gc.Challenge.ChallengeID,

@@ -386,7 +386,7 @@ func main() {
 			userGameGroup.GET("/:game_id/challenge/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
-			}), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallenge)
+			}), controllers.TeamStatusMiddleware(), controllers.ChallengeStatusCheckMiddleWare(), controllers.UserGetGameChallenge)
 
 			// 比赛通知接口
 			userGameGroup.GET("/:game_id/notices", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
@@ -410,7 +410,7 @@ func main() {
 			userGameGroup.POST("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
-			}), controllers.TeamStatusMiddleware(), controllers.UserCreateGameContainer)
+			}), controllers.TeamStatusMiddleware(), controllers.ChallengeStatusCheckMiddleWare(), controllers.UserCreateGameContainer)
 			userGameGroup.DELETE("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
@@ -418,7 +418,7 @@ func main() {
 			userGameGroup.PATCH("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
-			}), controllers.TeamStatusMiddleware(), controllers.UserExtendGameContainer)
+			}), controllers.TeamStatusMiddleware(), controllers.ChallengeStatusCheckMiddleWare(), controllers.UserExtendGameContainer)
 			userGameGroup.GET("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
@@ -428,7 +428,7 @@ func main() {
 			userGameGroup.POST("/:game_id/flag/:challenge_id", RateLimiter(100, 1*time.Second), controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
-			}), controllers.TeamStatusMiddleware(), controllers.UserGameChallengeSubmitFlag)
+			}), controllers.TeamStatusMiddleware(), controllers.ChallengeStatusCheckMiddleWare(), controllers.UserGameChallengeSubmitFlag)
 			userGameGroup.GET("/:game_id/flag/:judge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
