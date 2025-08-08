@@ -124,6 +124,7 @@ func UserCreateGameTeam(c *gin.Context) {
 
 // TeamJoinRequest 申请加入战队
 func TeamJoinRequest(c *gin.Context) {
+	game := c.MustGet("game").(models.Game)
 	user := c.MustGet("user").(models.User)
 	userID := user.UserID
 
@@ -165,6 +166,15 @@ func TeamJoinRequest(c *gin.Context) {
 			})
 			return
 		}
+	}
+
+	// 检查战队成员数是否已经超过最大限制
+	if len(team.TeamMembers) >= int(game.TeamNumberLimit) {
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+			Code:    400,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamIsFull"}),
+		})
+		return
 	}
 
 	// 检查是否已经有待处理的申请
