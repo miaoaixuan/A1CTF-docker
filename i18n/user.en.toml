@@ -443,3 +443,7 @@ other = "Request too fast, try again after {{.Time}} seconds"
 [ContainerExpireTimeTooShort]
 description = "Container expire time too short, cannot extend"
 other = "Container expire time too short, cannot extend"
+
+[InVisibleDuetoStageOver]
+description = "Challenge is not visible due to stage over"
+other = "Challenge is not visible due to stage over"

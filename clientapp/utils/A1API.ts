@@ -346,6 +346,7 @@ export interface UserSimpleGameChallenge {
   solve_count?: number;
   visible?: boolean;
   category?: ChallengeCategory;
+  belong_stage?: string;
 }
 
 export interface UserSimpleGameSolvedChallenge {
@@ -591,6 +592,7 @@ export interface SolvedChallenge {
    * @example 0
    */
   blood_reward?: number;
+  challenge_name?: string;
 }
 
 export interface TeamScoreAdjustment {

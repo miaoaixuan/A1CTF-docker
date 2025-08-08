@@ -4,6 +4,8 @@ import { FC, useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion";
 import { challengeCategoryColorMap } from "utils/ClientAssets";
 import { useGlobalVariableContext } from "contexts/GlobalVariableContext";
+import { useGame } from "hooks/UseGame";
+import dayjs from "dayjs";
 
 interface ChallengeInfo {
     type: string,
@@ -13,12 +15,18 @@ interface ChallengeInfo {
     rank: number,
     choiced: boolean,
     status: boolean,
-    visible: boolean
+    visible: boolean,
+    belongStage: string | undefined,
+    gameID: number
 }
 
 export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivElement>> = ({
-    type, name, solved, score, rank: _rank, choiced, status, visible, ...props
+    type, name, solved, score, rank: _rank, choiced, status, visible, gameID, belongStage, ...props
 }) => {
+
+    const {
+        gameInfo
+    } = useGame(gameID)
 
     let colorClass = "bg-amber-600";
     const [solveStatus, setSolveStatus] = useState(false)
@@ -55,10 +63,23 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
         }
     }, [status])
 
+    const getCurGameStage = () : string | undefined => {
+        if (gameInfo?.stages) {
+            for (const stage of gameInfo.stages) {
+                if (dayjs(stage.end_time) >= dayjs() && dayjs(stage.start_time) <= dayjs()) {
+                    return stage.stage_name
+                }
+            }
+        }
+        return undefined
+    }
+
     return (
         <div className={
-            `w-full h-[100px] ${isAdmin() && (visible ? "" : "opacity-40")} border-2 rounded-xl relative hover:scale-[1.04] pl-4 pt-4 pr-4 pb-3 select-none overflow-hidden transition-all duration-300 will-change-transform ${solveStatus ? "bg-green-200/[0.3] border-green-300/40" : "bg-background/[0.3]"
-            }`}
+            `w-full h-[100px] ${isAdmin() && (visible ? "" : "opacity-40")} border-2 rounded-xl relative hover:scale-[1.04] pl-4 pt-4 pr-4 pb-3 select-none overflow-hidden transition-all duration-300 will-change-transform 
+            ${solveStatus ? "bg-green-200/[0.3] border-green-300/40" : "bg-background/[0.3]"}
+            ${ getCurGameStage() != belongStage && belongStage && !isAdmin() ? "opacity-40" : "" }
+            `}
             {...props}
         >
             <AnimatePresence>
@@ -105,18 +126,18 @@ export const ChallengeCard: FC<ChallengeInfo & React.HTMLAttributes<HTMLDivEleme
                     </>
                 )}
             </AnimatePresence>
-            <div className={`flex flex-col h-full w-full`}>
-                <div className={`flex items-center gap-1`}>
+            <div className="flex flex-col h-full w-full">
+                <div className="flex items-center gap-1">
                     <div id="card-title" className="flex justify-start items-center gap-2 min-w-0 h-[32px]" >
                         {isAdmin() && !visible ? (
                             <>
                                 <EyeOff size={23} className="flex-none transition-colors duration-300" style={{ color: !choiced ? "" : colorClass }} />
-                                <span className={`font-bold text-ellipsis whitespace-nowrap overflow-hidden transition-colors duration-300`} style={{ color: !choiced ? "" : colorClass }} >{name}</span>
+                                <span className={`font-bold text-ellipsis whitespace-nowrap overflow-hidden transition-colors duration-300`} style={{ color: !choiced ? "" : colorClass }} >{ getCurGameStage() != belongStage && belongStage ? `[${belongStage}]` : "" } {name}</span>
                             </>
                         ) : (
                             <>
                                 <Dices size={23} className="flex-none transition-colors duration-300" style={{ color: !choiced ? "" : colorClass }} />
-                                <span className={`font-bold text-ellipsis whitespace-nowrap overflow-hidden transition-colors duration-300`} style={{ color: !choiced ? "" : colorClass }}>{name}</span>
+                                <span className={`font-bold text-ellipsis whitespace-nowrap overflow-hidden transition-colors duration-300`} style={{ color: !choiced ? "" : colorClass }}>{ getCurGameStage() != belongStage && belongStage ? `[${belongStage}]` : "" } {name}</span>
                             </>
                         )}
 

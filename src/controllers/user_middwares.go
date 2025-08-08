@@ -203,7 +203,7 @@ func OperationNotAllowedAfterGameStartMiddleWare() gin.HandlerFunc {
 	}
 }
 
-func ChallengeStatusCheckMiddleWare() gin.HandlerFunc {
+func ChallengeStatusCheckMiddleWare(accessableAfterStageEnded bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		game := c.MustGet("game").(models.Game)
@@ -241,7 +241,39 @@ func ChallengeStatusCheckMiddleWare() gin.HandlerFunc {
 			return
 		}
 
-		challengeVisible, _ := ristretto_tool.CachedGameChallengeVisibility(game.GameID, challengeID)
+		curTime := time.Now()
+		challengeVisible := false
+		inVisibleDuetoStageOver := false
+
+		if game.Stages != nil && gameChallenge.BelongStage != nil {
+			for _, stage := range *game.Stages {
+				if stage.EndTime.Before(curTime) {
+					// 已经结束的 Stage
+					if stage.StageName == *gameChallenge.BelongStage {
+						if accessableAfterStageEnded {
+							challengeVisible = true
+						} else {
+							inVisibleDuetoStageOver = true
+						}
+					}
+				} else if stage.StartTime.Before(curTime) {
+					if stage.StageName == *gameChallenge.BelongStage {
+						challengeVisible = true
+					}
+				}
+			}
+		} else {
+			challengeVisible = gameChallenge.Visible
+		}
+
+		if inVisibleDuetoStageOver {
+			c.JSON(http.StatusConflict, webmodels.ErrorMessage{
+				Code:    429,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InVisibleDuetoStageOver"}),
+			})
+			c.Abort()
+			return
+		}
 
 		if !challengeVisible {
 			c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{

@@ -386,7 +386,7 @@ func main() {
 			userGameGroup.GET("/:game_id/challenge/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
-			}), controllers.TeamStatusMiddleware(), controllers.ChallengeStatusCheckMiddleWare(), controllers.UserGetGameChallenge)
+			}), controllers.TeamStatusMiddleware(), controllers.ChallengeStatusCheckMiddleWare(true), controllers.UserGetGameChallenge)
 
 			// 比赛通知接口
 			userGameGroup.GET("/:game_id/notices", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
@@ -410,7 +410,7 @@ func main() {
 			userGameGroup.POST("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
-			}), controllers.TeamStatusMiddleware(), controllers.ChallengeStatusCheckMiddleWare(), controllers.UserCreateGameContainer)
+			}), controllers.TeamStatusMiddleware(), controllers.ChallengeStatusCheckMiddleWare(false), controllers.UserCreateGameContainer)
 			userGameGroup.DELETE("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
@@ -418,7 +418,7 @@ func main() {
 			userGameGroup.PATCH("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
-			}), controllers.TeamStatusMiddleware(), controllers.ChallengeStatusCheckMiddleWare(), controllers.UserExtendGameContainer)
+			}), controllers.TeamStatusMiddleware(), controllers.ChallengeStatusCheckMiddleWare(false), controllers.UserExtendGameContainer)
 			userGameGroup.GET("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
@@ -428,7 +428,7 @@ func main() {
 			userGameGroup.POST("/:game_id/flag/:challenge_id", RateLimiter(100, 1*time.Second), controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
-			}), controllers.TeamStatusMiddleware(), controllers.ChallengeStatusCheckMiddleWare(), controllers.UserGameChallengeSubmitFlag)
+			}), controllers.TeamStatusMiddleware(), controllers.ChallengeStatusCheckMiddleWare(false), controllers.UserGameChallengeSubmitFlag)
 			userGameGroup.GET("/:game_id/flag/:judge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
@@ -476,9 +476,10 @@ func main() {
 	r.StaticFile("/css/github-markdown-dark.css", "./clientapp/build/client/css/github-markdown-dark.css")
 	r.StaticFile("/css/github-markdown-light.css", "./clientapp/build/client/css/github-markdown-light.css")
 	r.StaticFile("/favicon.ico", viper.GetString("system.favicon"))
-
+	r.StaticFile("/js/cap_wasm.min.js", "./clientapp/build/client/js/cap_wasm.min.js")
 	r.Static("/images", "./clientapp/build/client/images")
 	r.Static("/locales", "./clientapp/build/client/locales")
+
 	r.NoRoute(func(c *gin.Context) {
 		if clientconfig.ClientConfig.GameActivityMode != "" {
 			if c.Request.RequestURI == "/" || c.Request.RequestURI == "/games" || c.Request.RequestURI == "/games/" {

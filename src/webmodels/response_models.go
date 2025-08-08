@@ -58,6 +58,7 @@ type UserSimpleGameChallenge struct {
 	SolveCount    int32                    `json:"solve_count"`
 	Category      models.ChallengeCategory `json:"category"`
 	Visible       bool                     `json:"visible"`
+	BelongStage   *string                  `json:"belong_stage"`
 }
 
 type ExposePortInfo struct {

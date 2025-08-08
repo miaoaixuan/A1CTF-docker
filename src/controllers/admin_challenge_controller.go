@@ -282,6 +282,7 @@ func AdminGetSimpleGameChallenges(c *gin.Context) {
 			SolveCount:    gc.SolveCount,
 			Category:      gc.Challenge.Category,
 			Visible:       gc.Visible,
+			BelongStage:   gc.BelongStage,
 		})
 	}
 

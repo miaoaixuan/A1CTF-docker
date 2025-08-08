@@ -806,6 +806,7 @@ func CachedGameSimpleChallenges(gameID int64) ([]webmodels.UserSimpleGameChallen
 				SolveCount:    gc.SolveCount,
 				Category:      gc.Challenge.Category,
 				Visible:       gc.Visible,
+				BelongStage:   gc.BelongStage,
 			})
 		}
 

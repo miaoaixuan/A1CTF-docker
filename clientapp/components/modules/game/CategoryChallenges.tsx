@@ -11,6 +11,7 @@ import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
 
 export default function CategoryChallenges({
     category,
+    gameID,
     challengeList,
     curChallenge,
     observeItem,
@@ -19,6 +20,7 @@ export default function CategoryChallenges({
     challengeSolveStatusList
 }: {
     category: string,
+    gameID: number,
     challengeList: UserSimpleGameChallenge[],
     curChallenge: UserDetailGameChallenge | undefined,
     observeItem: (el: HTMLElement, category: string, id: string) => void,
@@ -127,7 +129,9 @@ export default function CategoryChallenges({
                                                 solved={challenge?.solve_count ?? 0}
                                                 score={challenge?.cur_score ?? 0}
                                                 rank={3}
+                                                gameID={gameID}
                                                 visible={challenge?.visible ?? false}
+                                                belongStage={challenge.belong_stage}
                                                 choiced={curChallenge?.challenge_id == challenge.challenge_id}
                                                 onClick={handleChangeChallenge(challenge?.challenge_id ?? 0)}
                                                 status={challengeSolveStatusList[challenge?.challenge_id ?? 0].solved}
