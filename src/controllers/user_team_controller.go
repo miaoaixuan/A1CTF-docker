@@ -379,7 +379,7 @@ func HandleTeamJoinRequest(c *gin.Context) {
 	}
 
 	// 检查战队成员数是否已经超过最大限制
-	if len(team.TeamMembers) >= int(game.TeamNumberLimit) {
+	if len(team.TeamMembers) >= int(game.TeamNumberLimit) && payload.Action == "approve" {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
 			Code:    400,
 			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamIsFull"}),
