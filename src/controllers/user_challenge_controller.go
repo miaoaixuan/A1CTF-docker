@@ -36,15 +36,6 @@ func UserGetGameChallenges(c *gin.Context) {
 			return
 		}
 
-		// filter
-		filteredSimpleGameChallenges := make([]webmodels.UserSimpleGameChallenge, 0)
-		for _, challenge := range simpleGameChallenges {
-			challengeVisible, err := ristretto_tool.CachedGameChallengeVisibility(game.GameID, challenge.ChallengeID)
-			if err == nil && challengeVisible {
-				filteredSimpleGameChallenges = append(filteredSimpleGameChallenges, challenge)
-			}
-		}
-
 		// Cache all solves to redis
 
 		solveMap, err := ristretto_tool.CachedSolvedChallengesForGame(game.GameID)
@@ -75,7 +66,7 @@ func UserGetGameChallenges(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"code": 200,
 			"data": gin.H{
-				"challenges":        filteredSimpleGameChallenges,
+				"challenges":        simpleGameChallenges,
 				"solved_challenges": solved_challenges,
 			},
 		})

@@ -242,7 +242,7 @@ export function ChangeGames() {
                                 <Sheet>
                                     <div className="flex items-center gap-2">
                                         <SheetTrigger asChild>
-                                            <Button className="[&_svg]:size-6 w-[52px] h-[52px]" variant="ghost">
+                                            <Button className="[&_svg]:size-6 w-[52px] h-[52px] z-10" variant="ghost">
                                                 <LayoutList />
                                             </Button>
                                         </SheetTrigger>
