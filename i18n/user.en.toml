@@ -398,6 +398,10 @@ other = "Team info updated"
 description = "Invalid game ID"
 other = "Invalid game ID"
 
+[TeamIsFull]
+description = "Team is full"
+other = "Team is full"
+
 # User Middlewares Error Messages
 
 [GameNotFound]

@@ -398,6 +398,10 @@ other = "战队信息已更新"
 description = "无效的比赛ID"
 other = "无效的比赛ID"
 
+[TeamIsFull]
+description = "队伍成员已满"
+other = "队伍成员已满"
+
 # User Middlewares 错误信息
 
 [GameNotFound]
