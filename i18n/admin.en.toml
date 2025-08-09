@@ -494,4 +494,4 @@ other = "Failed to delete user"
 
 [UserDeleted]
 description = "User deleted"
-other = "User deleted"
+other = "User deleted"
