@@ -138,6 +138,10 @@ other = "加载容器失败"
 description = "无效的请求数据"
 other = "无效的请求数据"
 
+[InvalidRequestPayloadWithErrorMessage]
+description = "无效的请求数据, 错误信息: {{.ErrorMessage}}"
+other = "无效的请求数据, 错误信息: {{.ErrorMessage}}"
+
 [YouHaveAlreadySolvedThisChallenge]
 description = "您已经解决了这道题目"
 other = "您已经解决了这道题目"

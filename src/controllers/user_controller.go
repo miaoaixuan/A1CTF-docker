@@ -67,27 +67,7 @@ func GetProfile(c *gin.Context) {
 }
 
 func Register(c *gin.Context) {
-	var payload webmodels.RegisterPayload
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
-		})
-		return
-	}
-
-	// 检查密码是否满足强度要求
-	if len(payload.Password) < 6 ||
-		!strings.ContainsAny(payload.Password, "0123456789") ||
-		!strings.ContainsAny(payload.Password, "abcdefghijklmnopqrstuvwxyz") ||
-		!strings.ContainsAny(payload.Password, "ABCDEFGHIJKLMNOPQRSTUVWXYZ") ||
-		!strings.ContainsAny(payload.Password, "!@#$%^&*()-_=+[]{}|;:'\",.<>/?") {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "PasswordNotStrongEnough"}),
-		})
-		return
-	}
+	payload := *c.MustGet("payload").(*webmodels.RegisterPayload)
 
 	if clientconfig.ClientConfig.CaptchaEnabled {
 		valid := proofofwork.CapInstance.ValidateToken(c.Request.Context(), payload.Captcha)
@@ -267,14 +247,7 @@ func GetClientConfig(c *gin.Context) {
 }
 
 func UpdateUserProfile(c *gin.Context) {
-	var payload webmodels.UpdateUserProfilePayload
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
-		})
-		return
-	}
+	payload := *c.MustGet("payload").(*webmodels.UpdateUserProfilePayload)
 
 	user := c.MustGet("user").(models.User)
 
@@ -298,14 +271,7 @@ func UpdateUserProfile(c *gin.Context) {
 }
 
 func UpdateUserEmail(c *gin.Context) {
-	var payload webmodels.UpdateUserEmailPayload
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
-		})
-		return
-	}
+	payload := *c.MustGet("payload").(*webmodels.UpdateUserEmailPayload)
 
 	user := c.MustGet("user").(models.User)
 
@@ -374,14 +340,7 @@ func SendVerifyEmail(c *gin.Context) {
 }
 
 func VerifyEmailCode(c *gin.Context) {
-	var payload webmodels.EmailVerifyPayload
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
-		})
-		return
-	}
+	payload := *c.MustGet("payload").(*webmodels.EmailVerifyPayload)
 
 	claims, err := emailjwt.GetEmailVerificationClaims(payload.Code)
 
@@ -420,14 +379,7 @@ func VerifyEmailCode(c *gin.Context) {
 }
 
 func UserChangePassword(c *gin.Context) {
-	var payload webmodels.ChangePasswordPayload
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
-		})
-		return
-	}
+	payload := *c.MustGet("payload").(*webmodels.ChangePasswordPayload)
 
 	user := c.MustGet("user").(models.User)
 
@@ -460,14 +412,7 @@ func UserChangePassword(c *gin.Context) {
 }
 
 func UserForgetPassword(c *gin.Context) {
-	var payload webmodels.ForgetPasswordSendMailPayload
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
-		})
-		return
-	}
+	payload := *c.MustGet("payload").(*webmodels.ForgetPasswordSendMailPayload)
 
 	allUsers, err := ristretto_tool.CachedMemberMap()
 
@@ -504,27 +449,7 @@ func UserForgetPassword(c *gin.Context) {
 }
 
 func UserVerifyAndResetPassword(c *gin.Context) {
-	var payload webmodels.ForgetPasswordWithVerifyCodePayload
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
-		})
-		return
-	}
-
-	// 检查密码是否满足强度要求
-	if len(payload.NewPassword) < 6 ||
-		!strings.ContainsAny(payload.NewPassword, "0123456789") ||
-		!strings.ContainsAny(payload.NewPassword, "abcdefghijklmnopqrstuvwxyz") ||
-		!strings.ContainsAny(payload.NewPassword, "ABCDEFGHIJKLMNOPQRSTUVWXYZ") ||
-		!strings.ContainsAny(payload.NewPassword, "!@#$%^&*()-_=+[]{}|;:'\",.<>/?") {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "PasswordNotStrongEnough"}),
-		})
-		return
-	}
+	payload := *c.MustGet("payload").(*webmodels.ForgetPasswordWithVerifyCodePayload)
 
 	claims, err := emailjwt.GetEmailVerificationClaims(payload.Code)
 

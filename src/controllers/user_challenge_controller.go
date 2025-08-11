@@ -189,14 +189,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	user := c.MustGet("user").(models.User)
 	gameChallenge := c.MustGet("game_challenge").(models.GameChallenge)
 
-	var payload webmodels.UserSubmitFlagPayload = webmodels.UserSubmitFlagPayload{}
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
-			Code:    400,
-			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
-		})
-		return
-	}
+	payload := *c.MustGet("payload").(*webmodels.UserSubmitFlagPayload)
 
 	// 2. 使用缓存检查是否已解决
 	hasSolved, err := ristretto_tool.CachedTeamSolveStatus(game.GameID, team.TeamID, gameChallenge.ChallengeID)

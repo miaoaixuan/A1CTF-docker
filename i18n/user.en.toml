@@ -138,6 +138,10 @@ other = "Failed to load containers"
 description = "Invalid request payload"
 other = "Invalid request payload"
 
+[InvalidRequestPayloadWithErrorMessage]
+description = "Invalid request payload with error message: {{.ErrorMessage}}"
+other = "Invalid request payload with error message: {{.ErrorMessage}}"
+
 [YouHaveAlreadySolvedThisChallenge]
 description = "You have already solved this challenge"
 other = "You have already solved this challenge"

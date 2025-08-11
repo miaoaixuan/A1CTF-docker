@@ -225,3 +225,16 @@ type PaginationInfo struct {
 	TotalCount  int64 `json:"total_count"`
 	TotalPages  int64 `json:"total_pages"`
 }
+
+// 容器详情返回结构
+type AdminContainerItem struct {
+	ContainerID         string                 `json:"container_id"`
+	ContainerName       string                 `json:"container_name"`
+	ContainerStatus     models.ContainerStatus `json:"container_status"`
+	ContainerExpireTime time.Time              `json:"container_expiretime"`
+	ContainerType       string                 `json:"container_type"`
+	ContainerPorts      models.ExposePorts     `json:"container_ports"`
+	TeamName            string                 `json:"team_name"`
+	GameName            string                 `json:"game_name"`
+	ChallengeName       string                 `json:"challenge_name"`
+}

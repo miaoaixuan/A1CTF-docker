@@ -7,12 +7,16 @@ import (
 	i18ntool "a1ctf/src/utils/i18n_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/webmodels"
+	"fmt"
 	"net/http"
+	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
@@ -284,6 +288,35 @@ func ChallengeStatusCheckMiddleWare(accessableAfterStageEnded bool) gin.HandlerF
 			return
 		}
 
+		c.Next()
+	}
+}
+
+func PayloadValidator(model interface{}) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		payload := reflect.New(reflect.TypeOf(model)).Interface()
+
+		if err := c.ShouldBindJSON(payload); err != nil {
+			errors := err.(validator.ValidationErrors)
+			errorMessages := make([]string, 0)
+
+			for _, error := range errors {
+				errorMessages = append(errorMessages, error.Error())
+			}
+
+			errorMessage := fmt.Sprintf("[%s]", strings.Join(errorMessages, ", "))
+
+			c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+				Code: 400,
+				Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayloadWithErrorMessage", TemplateData: map[string]string{
+					"ErrorMessage": errorMessage,
+				}}),
+			})
+			c.Abort()
+			return
+		}
+
+		c.Set("payload", payload)
 		c.Next()
 	}
 }

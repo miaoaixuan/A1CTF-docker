@@ -19,6 +19,7 @@ import (
 	emailjwt "a1ctf/src/modules/jwt_email"
 	"a1ctf/src/modules/monitoring"
 	proofofwork "a1ctf/src/modules/proof_of_work"
+	validatortool "a1ctf/src/modules/validator_tool"
 	"a1ctf/src/tasks"
 	"a1ctf/src/utils"
 	dbtool "a1ctf/src/utils/db_tool"
@@ -27,6 +28,7 @@ import (
 	redistool "a1ctf/src/utils/redis_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/utils/zaphelper"
+	"a1ctf/src/webmodels"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron/v2"
@@ -169,6 +171,9 @@ func main() {
 	r := gin.New()
 	// r := gin.Default()
 
+	// 初始化验证器
+	validatortool.InitValidator()
+
 	// 设置 Trusted Proxies
 	if len(viper.GetStringSlice("system.trusted-proxies")) > 0 {
 		if viper.GetBool("system.forwarded-by-client-ip") && len(viper.GetStringSlice("system.remote-ip-headers")) > 0 {
@@ -203,7 +208,9 @@ func main() {
 	public := r.Group("/api")
 	{
 		public.POST("/auth/login", authMiddleware.LoginHandler)
-		public.POST("/auth/register", controllers.Register)
+		public.POST("/auth/register", controllers.PayloadValidator(
+			webmodels.RegisterPayload{},
+		), controllers.Register)
 
 		public.GET("/game/list", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.UserListGames)
 		public.GET("/game/:game_id/scoreboard", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
@@ -233,10 +240,16 @@ func main() {
 		public.POST("/cap/validate", controllers.CapValidateToken)
 
 		// 邮箱验证接口
-		public.POST("/account/verifyEmailCode", controllers.VerifyEmailCode)
+		public.POST("/account/verifyEmailCode", controllers.PayloadValidator(
+			webmodels.EmailVerifyPayload{},
+		), controllers.VerifyEmailCode)
 
-		public.POST("/account/sendForgetPasswordEmail", controllers.UserForgetPassword)
-		public.POST("/account/resetPassword", controllers.UserVerifyAndResetPassword)
+		public.POST("/account/sendForgetPasswordEmail", controllers.PayloadValidator(
+			webmodels.ForgetPasswordSendMailPayload{},
+		), controllers.UserForgetPassword)
+		public.POST("/account/resetPassword", controllers.PayloadValidator(
+			webmodels.ForgetPasswordWithVerifyCodePayload{},
+		), controllers.UserVerifyAndResetPassword)
 	}
 
 	// 鉴权接口
@@ -252,11 +265,17 @@ func main() {
 		accountGroup := auth.Group("/account")
 		{
 			accountGroup.GET("/profile", controllers.GetProfile)
-			accountGroup.PUT("/profile", controllers.UpdateUserProfile)
+			accountGroup.PUT("/profile", controllers.PayloadValidator(
+				webmodels.UpdateUserProfilePayload{},
+			), controllers.UpdateUserProfile)
 
-			accountGroup.POST("/updateEmail", controllers.UpdateUserEmail)
+			accountGroup.POST("/updateEmail", controllers.PayloadValidator(
+				webmodels.UpdateUserEmailPayload{},
+			), controllers.UpdateUserEmail)
 			accountGroup.POST("/sendVerifyEmail", controllers.SendVerifyEmail)
-			accountGroup.POST("/changePassword", controllers.UserChangePassword)
+			accountGroup.POST("/changePassword", controllers.PayloadValidator(
+				webmodels.ChangePasswordPayload{},
+			), controllers.UserChangePassword)
 		}
 
 		// 用户头像上传接口
@@ -274,7 +293,9 @@ func main() {
 		}))
 		// 专门给 Join 预留的，无需 TeamStatus 验证
 		{
-			teamManagePublicGroup.POST("/join", controllers.TeamJoinRequest)
+			teamManagePublicGroup.POST("/join", controllers.PayloadValidator(
+				webmodels.TeamJoinPayload{},
+			), controllers.TeamJoinRequest)
 		}
 
 		// 这里需要验证比赛状态
@@ -288,7 +309,9 @@ func main() {
 		{
 			// 比赛开始后加入队伍之类的还是允许的
 			teamManageGroup.GET("/:team_id/requests", controllers.GetTeamJoinRequests)
-			teamManageGroup.POST("/request/:request_id/handle", controllers.HandleTeamJoinRequest)
+			teamManageGroup.POST("/request/:request_id/handle", controllers.PayloadValidator(
+				webmodels.HandleJoinRequestPayload{},
+			), controllers.HandleTeamJoinRequest)
 			teamManageGroup.PUT("/:team_id", controllers.UpdateTeamInfo)
 			teamManageGroup.POST("/avatar/upload", controllers.UploadTeamAvatar)
 
@@ -425,7 +448,9 @@ func main() {
 			}), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallengeContainerInfo)
 
 			// 提交 Flag
-			userGameGroup.POST("/:game_id/flag/:challenge_id", RateLimiter(100, 1*time.Second), controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+			userGameGroup.POST("/:game_id/flag/:challenge_id", RateLimiter(100, 1*time.Second), controllers.PayloadValidator(
+				webmodels.UserSubmitFlagPayload{},
+			), controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
 			}), controllers.TeamStatusMiddleware(), controllers.ChallengeStatusCheckMiddleWare(false), controllers.UserGameChallengeSubmitFlag)

@@ -128,17 +128,7 @@ func TeamJoinRequest(c *gin.Context) {
 	user := c.MustGet("user").(models.User)
 	userID := user.UserID
 
-	var payload struct {
-		InviteCode string `json:"invite_code" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
-			Code:    400,
-			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
-		})
-		return
-	}
+	payload := *c.MustGet("payload").(*webmodels.TeamJoinPayload)
 
 	// 根据邀请码查找战队
 	var team models.Team
@@ -313,17 +303,7 @@ func HandleTeamJoinRequest(c *gin.Context) {
 		return
 	}
 
-	var payload struct {
-		Action string `json:"action" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
-			Code:    400,
-			Message: "Invalid request payload",
-		})
-		return
-	}
+	payload := *c.MustGet("payload").(*webmodels.HandleJoinRequestPayload)
 
 	if payload.Action != "approve" && payload.Action != "reject" {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
@@ -465,17 +445,7 @@ func TransferTeamCaptain(c *gin.Context) {
 		return
 	}
 
-	var payload struct {
-		NewCaptainID string `json:"new_captain_id" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
-			Code:    400,
-			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
-		})
-		return
-	}
+	payload := *c.MustGet("payload").(*webmodels.TransferCaptainPayload)
 
 	// 查询队伍
 	var team models.Team
@@ -784,9 +754,7 @@ func UpdateTeamInfo(c *gin.Context) {
 		return
 	}
 
-	var payload struct {
-		TeamSlogan *string `json:"team_slogan"`
-	}
+	var payload webmodels.UpdateTeamInfoPayload
 
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
