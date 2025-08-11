@@ -144,6 +144,9 @@ export function LoginForm() {
                         onSolve={(token) => {
                             setToken(token)
                         }}
+                        customWaspUrl={
+                            "https://cdn.jsdmirror.com/npm/@cap.js/wasm@0.0.6/browser/cap_wasm.min.js"
+                        }      
                         onError={() => {
                             toast.error("获取验证码失败")
                         }}

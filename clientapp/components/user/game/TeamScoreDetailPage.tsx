@@ -376,7 +376,7 @@ export default function TeamScoreDetailPage(
                                                     <div className='flex-1'>
                                                         <h2 className='text-2xl font-bold text-foreground mb-1'>{showUserDetail.team_name}</h2>
                                                         <p className='text-sm text-muted-foreground italic'>
-                                                            "{showUserDetail.team_slogan || "He didn't say anything."}"
+                                                            "{showUserDetail.team_slogan || "They didn't say anything."}"
                                                         </p>
                                                     </div>
                                                 </div>

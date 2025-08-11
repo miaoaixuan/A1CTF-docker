@@ -771,7 +771,32 @@ func CachedGameSimpleChallenges(gameID int64) ([]webmodels.UserSimpleGameChallen
 			return gameChallenges[i].Challenge.Name < gameChallenges[j].Challenge.Name
 		})
 
+		curTime := time.Now()
+
+		passedAndRunningStages := make(map[string]bool, 0)
+
+		if game.Stages != nil {
+			for _, stage := range *game.Stages {
+				if stage.EndTime.Before(curTime) {
+					passedAndRunningStages[stage.StageName] = true
+				} else if stage.StartTime.Before(curTime) {
+					passedAndRunningStages[stage.StageName] = true
+				}
+			}
+		}
+
 		for _, gc := range gameChallenges {
+
+			if !gc.Visible {
+				continue
+			}
+
+			if gc.BelongStage != nil {
+				_, exists := passedAndRunningStages[*gc.BelongStage]
+				if !exists {
+					continue
+				}
+			}
 
 			tmpSimpleGameChallenges = append(tmpSimpleGameChallenges, webmodels.UserSimpleGameChallenge{
 				ChallengeID:   *gc.Challenge.ChallengeID,
@@ -781,6 +806,7 @@ func CachedGameSimpleChallenges(gameID int64) ([]webmodels.UserSimpleGameChallen
 				SolveCount:    gc.SolveCount,
 				Category:      gc.Challenge.Category,
 				Visible:       gc.Visible,
+				BelongStage:   gc.BelongStage,
 			})
 		}
 
@@ -956,42 +982,16 @@ func CachedGameChallengeDetail(gameID int64, challengeID int64) (*models.GameCha
 // CachedGameChallengeVisibility 缓存题目可见性检查
 func CachedGameChallengeVisibility(gameID int64, challengeID int64) (bool, error) {
 	obj, err := GetOrCacheSingleFlight(fmt.Sprintf("challenge_visibility_%d_%d", gameID, challengeID), func() (interface{}, error) {
-		// 获取游戏信息来检查阶段
-		game, err := CachedGameInfo(gameID)
+		gameChallenges, err := CachedGameSimpleChallenges(gameID)
 		if err != nil {
-			return false, err
+			return false, nil
 		}
-
-		// 获取题目详细信息
-		gameChallenge, err := CachedGameChallengeDetail(gameID, challengeID)
-		if err != nil {
-			return false, err
-		}
-
-		// 游戏阶段判断
-		gameStages := game.Stages
-		var curStage = ""
-
-		if gameStages != nil {
-			for _, stage := range *gameStages {
-				if stage.StartTime.Before(time.Now().UTC()) && stage.EndTime.After(time.Now().UTC()) {
-					curStage = stage.StageName
-					break
-				}
+		for _, gc := range gameChallenges {
+			if gc.ChallengeID == challengeID {
+				return true, nil
 			}
 		}
-
-		// 检查题目是否属于当前阶段
-		if gameChallenge.BelongStage != nil && *gameChallenge.BelongStage != curStage {
-			return false, nil
-		}
-
-		// 检查题目是否可见
-		if !gameChallenge.Visible {
-			return false, nil
-		}
-
-		return true, nil
+		return false, nil
 	}, challengeDetailCacheTime, true)
 
 	if err != nil {

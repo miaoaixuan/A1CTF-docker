@@ -4084,6 +4084,8 @@ components:
           type: boolean
         category:
           $ref: '#/components/schemas/ChallengeCategory'
+        belong_stage:
+          type: string
       required:
         - challenge_id
         - challenge_name

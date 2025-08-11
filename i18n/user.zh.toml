@@ -138,6 +138,10 @@ other = "加载容器失败"
 description = "无效的请求数据"
 other = "无效的请求数据"
 
+[InvalidRequestPayloadWithErrorMessage]
+description = "无效的请求数据, 错误信息: {{.ErrorMessage}}"
+other = "无效的请求数据, 错误信息: {{.ErrorMessage}}"
+
 [YouHaveAlreadySolvedThisChallenge]
 description = "您已经解决了这道题目"
 other = "您已经解决了这道题目"
@@ -205,6 +209,10 @@ other = "此邮箱不能使用"
 [EmailAlreadyVerified]
 description = "邮箱已经验证过了"
 other = "邮箱已经验证过了"
+
+[PasswordNotStrongEnough]
+description = "密码强度不足"
+other = "密码强度不足"
 
 # User Game Controller 错误信息
 
@@ -398,6 +406,10 @@ other = "战队信息已更新"
 description = "无效的比赛ID"
 other = "无效的比赛ID"
 
+[TeamIsFull]
+description = "队伍成员已满"
+other = "队伍成员已满"
+
 # User Middlewares 错误信息
 
 [GameNotFound]
@@ -443,3 +455,7 @@ other = "请求过快, 请 {{.Time}} 秒后重试"
 [ContainerExpireTimeTooShort]
 description = "靶机剩余时间超过半小时, 不可延长"
 other = "靶机剩余时间超过半小时, 不可延长"
+
+[InVisibleDuetoStageOver]
+description = "当前阶段不可作答此题"
+other = "当前阶段不可作答此题"
