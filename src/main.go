@@ -19,7 +19,6 @@ import (
 	emailjwt "a1ctf/src/modules/jwt_email"
 	"a1ctf/src/modules/monitoring"
 	proofofwork "a1ctf/src/modules/proof_of_work"
-	validatortool "a1ctf/src/modules/validator_tool"
 	"a1ctf/src/tasks"
 	"a1ctf/src/utils"
 	dbtool "a1ctf/src/utils/db_tool"
@@ -27,6 +26,7 @@ import (
 	k8stool "a1ctf/src/utils/k8s_tool"
 	redistool "a1ctf/src/utils/redis_tool"
 	"a1ctf/src/utils/ristretto_tool"
+	validatortool "a1ctf/src/utils/validator_tool"
 	"a1ctf/src/utils/zaphelper"
 	"a1ctf/src/webmodels"
 
