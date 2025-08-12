@@ -582,7 +582,7 @@ export function ContainerManageView({
                             onChange={(event) => handleSearch(event.target.value)}
                             className="max-w-lg"
                         />
-                        <span className="text-xs text-muted-foreground">支持容器ID, PodID, 容器ID, 队伍名称, 题目名称, 题目ID, 队伍ID</span>
+                        <span className="text-xs text-muted-foreground">支持队伍ID, PodID, 容器ID, 队伍名称, 题目名称, 题目ID, 队伍ID</span>
                     </div>
                     <div className="flex gap-2 ml-auto items-center">
                         <Label className="hover:bg-accent/50 cursor-pointer flex items-start gap-3 rounded-lg border p-[10px] has-[[aria-checked=true]]:border-red-600 has-[[aria-checked=true]]:bg-red-50 dark:has-[[aria-checked=true]]:border-red-900 dark:has-[[aria-checked=true]]:bg-red-950">
