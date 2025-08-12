@@ -324,8 +324,8 @@ export function TeamManageView(
                 return (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <div className="*:data-[slot=avatar]:ring-background cursor-pointer flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:grayscale">
-                                {members.concat(members).concat(members).map((member, index) => (
+                            <div className="*:data-[slot=avatar]:ring-background cursor-pointer flex -space-x-2 *:data-[slot=avatar]:ring-2">
+                                {members.map((member, index) => (
                                     <Avatar key={index}>
                                         <AvatarImage src={member.avatar ?? ""} />
                                         <AvatarFallback className="select-none">{member.user_name.substring(0, 2)}</AvatarFallback>
@@ -336,7 +336,7 @@ export function TeamManageView(
                         <DropdownMenuContent className="bg-background/5 backdrop-blur-sm px-4 py-2 flex flex-col gap-2 mt-2 select-none">
                             <span className="text-sm">成员列表</span>
                             <div className="flex flex-col gap-2">
-                                {members.concat(members).map((member) => (
+                                {members.map((member) => (
                                     <div key={member.user_id} className="flex items-center gap-1">
                                         <Avatar>
                                             <AvatarImage src={member.avatar ?? ""} />
