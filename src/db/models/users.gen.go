@@ -50,6 +50,7 @@ type User struct {
 	RegisterTime  time.Time `gorm:"column:register_time" json:"register_time"`
 	LastLoginTime time.Time `gorm:"column:last_login_time" json:"last_login_time"`
 	LastLoginIP   *string   `gorm:"column:last_login_ip" json:"last_login_ip"`
+	RegisterIP    *string   `gorm:"column:register_ip" json:"register_ip"`
 }
 
 type JWTUser struct {

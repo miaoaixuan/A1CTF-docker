@@ -11,7 +11,7 @@ import {
     useReactTable,
 } from "@tanstack/react-table"
 
-import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, LockIcon, CheckIcon, TrashIcon, UnlockIcon, ClipboardList, RefreshCw } from "lucide-react"
+import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, LockIcon, CheckIcon, TrashIcon, UnlockIcon, ClipboardList, RefreshCw, Copy } from "lucide-react"
 
 import * as React from "react"
 
@@ -53,6 +53,8 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "components/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "components/ui/avatar"
+import { copyWithResult } from "utils/ToastUtil"
 
 export type TeamModel = {
     team_id: number,
@@ -164,7 +166,7 @@ export function TeamManageView(
         toast.promise(apiCall, {
             pending: loadingMessage,
             success: {
-                render({data: _data}) {
+                render({ data: _data }) {
                     fetchTeams(); // 刷新数据
                     return '队伍状态已更新';
                 },
@@ -185,7 +187,7 @@ export function TeamManageView(
                     {
                         pending: '正在删除队伍...',
                         success: {
-                            render({data: _data}) {
+                            render({ data: _data }) {
                                 fetchTeams(); // 刷新数据
                                 setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                                 return '队伍已删除';
@@ -320,20 +322,48 @@ export function TeamManageView(
             cell: ({ row }) => {
                 const members = row.original.members;
                 return (
-                    <div className="flex flex-wrap gap-2">
-                        {members.map((member, index) => (
-                            <div key={index} className="flex items-center gap-1"
-                                data-tooltip-id="my-tooltip"
-                                data-tooltip-content={member.user_name}
-                                data-tooltip-place="top"
-                            >
-                                <AvatarUsername
-                                    avatar_url={member.avatar}
-                                    username={member.user_name}
-                                />
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <div className="*:data-[slot=avatar]:ring-background cursor-pointer flex -space-x-2 *:data-[slot=avatar]:ring-2">
+                                {members.map((member, index) => (
+                                    <Avatar key={index}>
+                                        <AvatarImage src={member.avatar ?? ""} />
+                                        <AvatarFallback className="select-none">{member.user_name.substring(0, 2)}</AvatarFallback>
+                                    </Avatar>
+                                ))}
                             </div>
-                        ))}
-                    </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-background/5 backdrop-blur-sm px-4 py-2 flex flex-col gap-2 mt-2 select-none">
+                            <span className="text-sm">成员列表</span>
+                            <div className="flex flex-col gap-2">
+                                {members.map((member) => (
+                                    <div key={member.user_id} className="flex items-center gap-1">
+                                        <Avatar>
+                                            <AvatarImage src={member.avatar ?? ""} />
+                                            <AvatarFallback className="select-none">{member.user_name.substring(0, 2)}</AvatarFallback>
+                                        </Avatar>
+                                        <span className="text-sm mr-1">{member.user_name}</span>
+                                        <Button variant="outline" size="icon" className="w-6 h-6 rounded-sm [&_svg]:size-3"
+                                            onClick={() => {
+                                                copyWithResult(member.user_name)
+                                            }}
+                                        >
+                                            <Copy />
+                                        </Button>
+                                        <Badge
+                                            variant="outline"
+                                            className="text-xs select-none hover:bg-blue/10 hover:border-blue/30 cursor-pointer transition-all duration-200 rounded-md px-2 py-1 font-mono"
+                                            onClick={() => {
+                                                copyWithResult(member.user_id)
+                                            }}
+                                        >
+                                            #{member.user_id}
+                                        </Badge>
+                                    </div>
+                                ))}
+                            </div>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 )
             },
         },
@@ -501,12 +531,15 @@ export function TeamManageView(
                     </div>
                 </div>
                 <div className="flex items-center">
-                    <Input
-                        placeholder="按队伍名称过滤..."
-                        value={searchKeyword}
-                        onChange={(event) => handleSearch(event.target.value)}
-                        className="max-w-sm"
-                    />
+                    <div className="flex flex-col gap-2">
+                        <Input
+                            placeholder="请输入关键词"
+                            value={searchKeyword}
+                            onChange={(event) => handleSearch(event.target.value)}
+                            className="max-w-sm"
+                        />
+                        <span className="text-xs text-muted-foreground">支持队伍名, 队伍ID, 成员用户名, 成员用户ID, 邀请码, 队伍Hash, 队伍口号</span>
+                    </div>
                     <div className="flex gap-2 ml-auto">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>

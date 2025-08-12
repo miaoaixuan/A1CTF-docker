@@ -309,13 +309,13 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
                     },
                     blur: {
                         lineStyle: {
-                            opacity: 0.3
+                            opacity: 0.1
                         },
                         itemStyle: {
-                            opacity: 0.3
+                            opacity: 0.1
                         },
                         areaStyle: {
-                            opacity: 0.1
+                            opacity: 0
                         }
                     }
                 }))
@@ -359,12 +359,43 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
         color: currentTheme.lineColors,
         grid: {
             left: '60px',
-            right: '60px',
+            right: '50px',
             top: '80px',
-            bottom: '80px',
+            bottom: '105px', // 增加底部边距为图例留出空间
             borderColor: currentTheme.grid,
             borderWidth: 1,
             backgroundColor: 'transparent'
+        },
+        legend: {
+            show: true,
+            type: 'scroll',
+            orient: 'horizontal',
+            left: 'center',
+            bottom: 0,
+            padding: [8, 12],
+            backgroundColor: currentTheme.background,
+            borderColor: currentTheme.grid,
+            borderWidth: 1,
+            borderRadius: 8,
+            textStyle: {
+                color: currentTheme.text,
+                fontSize: 12,
+                fontWeight: 500
+            },
+            itemGap: 15,
+            itemWidth: 14,
+            itemHeight: 14,
+            pageButtonItemGap: 8,
+            pageButtonGap: 10,
+            pageButtonPosition: 'end',
+            pageFormatter: '{current}/{total}',
+            pageTextStyle: {
+                color: currentTheme.textSecondary,
+                fontSize: 11
+            },
+            pageIconColor: currentTheme.text,
+            pageIconInactiveColor: currentTheme.textSecondary,
+            pageIconSize: 12
         },
         tooltip: {
             trigger: 'axis',
@@ -506,7 +537,7 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
                 start: 0,
                 end: 100,
                 height: 20,
-                bottom: 15,
+                bottom: 50, // 调整到图例上方
                 showDetail: false,
                 backgroundColor: 'transparent',
                 borderColor: 'transparent',

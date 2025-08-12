@@ -138,6 +138,10 @@ other = "Failed to load containers"
 description = "Invalid request payload"
 other = "Invalid request payload"
 
+[InvalidRequestPayloadWithErrorMessage]
+description = "Invalid request payload with error message: {{.ErrorMessage}}"
+other = "Invalid request payload with error message: {{.ErrorMessage}}"
+
 [YouHaveAlreadySolvedThisChallenge]
 description = "You have already solved this challenge"
 other = "You have already solved this challenge"
@@ -205,6 +209,10 @@ other = "This email can not be used"
 [EmailAlreadyVerified]
 description = "Email has already been verified"
 other = "Email has already been verified"
+
+[PasswordNotStrongEnough]
+description = "Password not strong enough"
+other = "Password not strong enough"
 
 # User Game Controller Error Messages
 
@@ -398,6 +406,10 @@ other = "Team info updated"
 description = "Invalid game ID"
 other = "Invalid game ID"
 
+[TeamIsFull]
+description = "Team is full"
+other = "Team is full"
+
 # User Middlewares Error Messages
 
 [GameNotFound]
@@ -441,5 +453,9 @@ description = "Request too fast, try again after {{.Time}} seconds"
 other = "Request too fast, try again after {{.Time}} seconds"
 
 [ContainerExpireTimeTooShort]
-description = "Container expire time too short, cannot extend"
-other = "Container expire time too short, cannot extend"
+description = "Container's expiration time too short, cannot extend"
+other = "Container's expiration time too short, cannot extend"
+
+[InVisibleDuetoStageOver]
+description = "Challenge is not visible due to stage over"
+other = "Challenge is not visible due to stage over"

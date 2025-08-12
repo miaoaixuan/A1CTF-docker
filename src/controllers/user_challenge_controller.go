@@ -36,15 +36,6 @@ func UserGetGameChallenges(c *gin.Context) {
 			return
 		}
 
-		// filter
-		filteredSimpleGameChallenges := make([]webmodels.UserSimpleGameChallenge, 0)
-		for _, challenge := range simpleGameChallenges {
-			challengeVisible, err := ristretto_tool.CachedGameChallengeVisibility(game.GameID, challenge.ChallengeID)
-			if err == nil && challengeVisible {
-				filteredSimpleGameChallenges = append(filteredSimpleGameChallenges, challenge)
-			}
-		}
-
 		// Cache all solves to redis
 
 		solveMap, err := ristretto_tool.CachedSolvedChallengesForGame(game.GameID)
@@ -75,7 +66,7 @@ func UserGetGameChallenges(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"code": 200,
 			"data": gin.H{
-				"challenges":        filteredSimpleGameChallenges,
+				"challenges":        simpleGameChallenges,
 				"solved_challenges": solved_challenges,
 			},
 		})
@@ -198,14 +189,7 @@ func UserGameChallengeSubmitFlag(c *gin.Context) {
 	user := c.MustGet("user").(models.User)
 	gameChallenge := c.MustGet("game_challenge").(models.GameChallenge)
 
-	var payload webmodels.UserSubmitFlagPayload = webmodels.UserSubmitFlagPayload{}
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
-			Code:    400,
-			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
-		})
-		return
-	}
+	payload := *c.MustGet("payload").(*webmodels.UserSubmitFlagPayload)
 
 	// 2. 使用缓存检查是否已解决
 	hasSolved, err := ristretto_tool.CachedTeamSolveStatus(game.GameID, team.TeamID, gameChallenge.ChallengeID)

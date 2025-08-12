@@ -4084,6 +4084,8 @@ components:
           type: boolean
         category:
           $ref: '#/components/schemas/ChallengeCategory'
+        belong_stage:
+          type: string
       required:
         - challenge_id
         - challenge_name
@@ -4652,6 +4654,9 @@ components:
           type: string
           format: date-time
           description: The timestamp when the user registered
+        register_ip:
+          type: string
+          description: The IP address of the user's registration
         last_login_time:
           type: string
           format: date-time
@@ -4806,12 +4811,20 @@ components:
           type: string
         container_name:
           type: string
+        team_id:
+          type: integer
+          format: int64
+        challenge_id:
+          type: integer
+          format: int64
         container_status:
           type: string
         container_expiretime:
           type: string
           format: date-time
         container_type:
+          type: string
+        pod_id:
           type: string
         container_ports:
           type: array
@@ -4859,6 +4872,9 @@ components:
         search:
           type: string
           description: 搜索关键词，用于过滤容器名称、队伍名称或游戏名称
+        show_failed:
+          type: boolean
+          description: 是否显示失败的容器
       required:
         - game_id
         - size

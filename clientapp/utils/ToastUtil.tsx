@@ -1,13 +1,15 @@
 import { Button } from "components/ui/button";
+import copy from "copy-to-clipboard";
 import dayjs from "dayjs";
 import { CalendarClock, CircleX, FileType2, LetterText, MailCheck, PackageOpen, Text } from "lucide-react";
 import { Dispatch, SetStateAction } from "react";
-import { toast } from 'sonner'
+import { toast } from "react-toastify/unstyled";
+import { toast as OldToast } from 'sonner'
 
 
 export function toastNewNotice({ title, time, openNotices }: { title: string, time: string, openNotices: Dispatch<SetStateAction<boolean>> }) {
 
-    toast.custom((t) => (
+    OldToast.custom((t) => (
         <div className="bg-background border-2 rounded-2xl w-full relative">
             <div className="flex flex-col justify-center gap-2 p-4 pl-4 pr-4">
                 <div className="flex gap-2 items-center">
@@ -47,7 +49,7 @@ export function toastNewNotice({ title, time, openNotices }: { title: string, ti
 
 export function toastNewHint({ challenges, time, openNotices: _openNotices }: { challenges: string[], time: number, openNotices: Dispatch<SetStateAction<boolean>> }) {
 
-    toast.custom((t) => (
+    OldToast.custom((t) => (
         <div className="bg-background border-2 rounded-2xl w-full relative">
             <div className="flex flex-col justify-center gap-2 p-4 pl-4 pr-4">
                 <div className="flex gap-2 items-center">
@@ -73,3 +75,11 @@ export function toastNewHint({ challenges, time, openNotices: _openNotices }: { 
     })
 
 }
+
+export const copyWithResult = (text: any) => {
+    if (copy(text?.toString() ?? "")) {
+        toast.success("复制成功");
+    } else {
+        toast.error("复制失败");
+    }
+};

@@ -310,6 +310,7 @@ export function CategorySidebar({
                                                     challengeList={challengeList}
                                                     curChallenge={curChallenge}
                                                     observeItem={observeItem}
+                                                    gameID={gameID}
                                                     visibleItems={visibleItems}
                                                     handleChangeChallenge={handleChangeChallenge}
                                                     challengeSolveStatusList={challengeSolveStatusList}

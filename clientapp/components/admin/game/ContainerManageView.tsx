@@ -37,7 +37,7 @@ import {
 } from "components/ui/table"
 
 import { api } from "utils/ApiHelper";
-import { Badge } from "../../ui/badge";
+import { Badge } from "components/ui/badge";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -48,7 +48,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "components/ui/alert-dialog";
-import { AdminContainerItem, ContainerStatus } from "utils/A1API";
+import { AdminContainerItem, AdminListContainersPayload, ContainerStatus } from "utils/A1API";
 import { toast } from 'react-toastify/unstyled';
 import dayjs from "dayjs";
 import {
@@ -57,6 +57,9 @@ import {
     HoverCardTrigger,
 } from "components/ui/hover-card"
 import { AxiosResponse } from "axios"
+import { Label } from "components/ui/label"
+import copy from "copy-to-clipboard"
+import { copyWithResult } from "utils/ToastUtil"
 
 export type ContainerModel = {
     ID: string,
@@ -65,7 +68,8 @@ export type ContainerModel = {
     ChallengeName: string,
     Status: ContainerStatus,
     ExpireTime: Date,
-    Ports: string
+    Ports: string,
+    PodID: string,
 }
 
 interface ConfirmDialogProps {
@@ -106,7 +110,7 @@ export function ContainerManageView({
     gameId: number,
     challengeID?: number | undefined
 }) {
-    const [data, setData] = React.useState<ContainerModel[]>([])
+    const [data, setData] = React.useState<AdminContainerItem[]>([])
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
@@ -115,6 +119,8 @@ export function ContainerManageView({
     const [pageSize, _setPageSize] = React.useState(30);
     const [curPage, setCurPage] = React.useState(0);
     const [totalCount, setTotalCount] = React.useState(0);
+
+    const [showFailedContainer, setShowFailedContainer] = React.useState(false);
 
     const [searchKeyword, setSearchKeyword] = React.useState("");
     const [debouncedSearchKeyword, setDebouncedSearchKeyword] = React.useState("");
@@ -166,7 +172,7 @@ export function ContainerManageView({
     // 处理批量停止容器
     const handleBatchDeleteContainers = () => {
         const selectedRows = table.getFilteredSelectedRowModel().rows;
-        const selectedContainerIds = selectedRows.map(row => row.original.ID);
+        const selectedContainerIds = selectedRows.map(row => row.original.container_id);
 
         if (selectedContainerIds.length === 0) {
             toast.error("请至少选择一个容器");
@@ -236,10 +242,10 @@ export function ContainerManageView({
             {
                 pending: '正在获取容器Flag...',
                 success: {
-                    render({ data: response } : { data: AxiosResponse }) {
+                    render({ data: response }: { data: AxiosResponse }) {
                         const flagContent = response.data.data.flag_content;
                         // 复制到剪贴板
-                        navigator.clipboard.writeText(flagContent);
+                        copy(flagContent);
                         return `Flag已复制到剪贴板`;
                     }
                 },
@@ -270,7 +276,7 @@ export function ContainerManageView({
         }
     };
 
-    const columns: ColumnDef<ContainerModel>[] = [
+    const columns: ColumnDef<AdminContainerItem>[] = [
         {
             id: "select",
             header: ({ table }) => (
@@ -298,8 +304,17 @@ export function ContainerManageView({
             header: "队伍名称",
             cell: ({ row }) => {
                 return (
-                    <div className="flex gap-3 items-center">
-                        {row.getValue("TeamName")}
+                    <div className="flex gap-2 items-center">
+                        {row.original.team_name}
+                        <Badge
+                            variant="outline"
+                            className="text-xs select-none hover:bg-blue/10 hover:border-blue/30 cursor-pointer transition-all duration-200 rounded-md px-2 py-1 font-mono"
+                            onClick={() => {
+                                copyWithResult(row.original.team_id)
+                            }}
+                        >
+                            #{row.original.team_id}
+                        </Badge>
                     </div>
                 )
             },
@@ -308,14 +323,25 @@ export function ContainerManageView({
             accessorKey: "ChallengeName",
             header: "题目名称",
             cell: ({ row }) => (
-                <div>{row.getValue("ChallengeName")}</div>
+                <div className="flex gap-2 items-center">
+                    {row.original.challenge_name}
+                    <Badge
+                        variant="outline"
+                        className="text-xs select-none hover:bg-blue/10 hover:border-blue/30 cursor-pointer transition-all duration-200 rounded-md px-2 py-1 font-mono"
+                        onClick={() => {
+                            copyWithResult(row.original.challenge_id)
+                        }}
+                    >
+                        #{row.original.challenge_id}
+                    </Badge>
+                </div>
             ),
         },
         {
             accessorKey: "Status",
             header: "状态",
             cell: ({ row }) => {
-                const status = row.getValue("Status") as ContainerStatus;
+                const status = row.original.container_status as ContainerStatus;
                 const { color, text } = getStatusColorAndText(status);
                 return (
                     <Badge
@@ -341,20 +367,27 @@ export function ContainerManageView({
                 )
             },
             cell: ({ row }) => {
-                const expireTime = row.getValue("ExpireTime") as Date;
+                const expireTime = row.original.container_expiretime;
                 return <div>{dayjs(expireTime).format('YYYY-MM-DD HH:mm:ss')} ({dayjs(expireTime).diff(dayjs(), 'minutes')}mins)</div>
             },
             sortingFn: (rowA, rowB, columnId) => {
-                const dateA = rowA.getValue(columnId) as Date;
-                const dateB = rowB.getValue(columnId) as Date;
-                return dateA.getTime() - dateB.getTime();
+                const dateA = dayjs(rowA.original.container_expiretime);
+                const dateB = dayjs(rowB.original.container_expiretime);
+                return dateA.isBefore(dateB) ? -1 : 1;
             }
         },
         {
             accessorKey: "Ports",
             header: "访问入口",
             cell: ({ row }) => {
-                const ports = row.getValue("Ports") as string;
+
+                let ports: string[] = []
+                if (row.original.container_ports && row.original.container_ports.length > 0) {
+                    ports = row.original.container_ports.map(port =>
+                        `${port.ip}:${port.port} (${port.port_name})`
+                    );
+                }
+
                 return (
                     <HoverCard openDelay={100} closeDelay={100}>
                         <HoverCardTrigger asChild>
@@ -367,7 +400,7 @@ export function ContainerManageView({
                                 <h4 className="text-sm font-semibold">访问入口</h4>
                                 {ports ? (
                                     <div className="text-sm">
-                                        {ports.split(", ").map((port, index) => (
+                                        {ports.map((port, index) => (
                                             <div key={index} className="flex items-center py-1 border-b border-gray-100 last:border-0">
                                                 <span>{port}</span>
                                                 <Button
@@ -375,8 +408,7 @@ export function ContainerManageView({
                                                     size="icon"
                                                     className="h-6 w-6 ml-auto"
                                                     onClick={() => {
-                                                        navigator.clipboard.writeText(port.split(" ")[0])
-                                                        toast.success("地址已复制到剪贴板")
+                                                        copyWithResult(port.split(" ")[0])
                                                     }}
                                                 >
                                                     <CopyIcon className="h-3 w-3" />
@@ -405,7 +437,7 @@ export function ContainerManageView({
                         <Button
                             variant="ghost"
                             className="h-8 w-8 p-0"
-                            onClick={() => handleGetContainerFlag(container.ID)}
+                            onClick={() => handleGetContainerFlag(container.container_id)}
                             data-tooltip-id="my-tooltip"
                             data-tooltip-content="复制Flag"
                             data-tooltip-place="top"
@@ -416,7 +448,7 @@ export function ContainerManageView({
                         <Button
                             variant="ghost"
                             className="h-8 w-8 p-0 text-red-600"
-                            onClick={() => handleDeleteContainer(container.ID)}
+                            onClick={() => handleDeleteContainer(container.container_id)}
                             data-tooltip-id="my-tooltip"
                             data-tooltip-content="停止容器"
                             data-tooltip-place="top"
@@ -434,13 +466,21 @@ export function ContainerManageView({
                             <DropdownMenuContent align="end" >
                                 <DropdownMenuLabel>操作</DropdownMenuLabel>
                                 <DropdownMenuItem
-                                    onClick={() => navigator.clipboard.writeText(container.ID)}
+                                    onClick={() => {
+                                        copyWithResult(container.container_id)
+                                    }}
                                 >
                                     <ClipboardList className="h-4 w-4 mr-2" />
                                     复制容器ID
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                    onClick={() => submitExtendContainer(container.ID)}
+                                    onClick={() => copyWithResult(container.pod_id)}
+                                >
+                                    <ClipboardList className="h-4 w-4 mr-2" />
+                                    复制PodID
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => submitExtendContainer(container.container_id)}
                                     className="text-blue-600"
                                 >
                                     <ClockIcon className="h-4 w-4 mr-2" />
@@ -456,11 +496,12 @@ export function ContainerManageView({
 
     // 获取容器列表数据
     const fetchContainers = () => {
-        const payload: any = {
+        const payload: AdminListContainersPayload = {
             game_id: gameId,
             size: pageSize,
             offset: pageSize * curPage,
-            challenge_id: challengeID ?? -1
+            challenge_id: challengeID ?? -1,
+            show_failed: showFailedContainer
         };
 
         // 如果有搜索关键词，添加到请求中
@@ -470,26 +511,7 @@ export function ContainerManageView({
 
         api.admin.adminListContainers(payload).then((res: any) => {
             setTotalCount(res.data.total ?? 0);
-            const formattedData: ContainerModel[] = res.data.data.map((item: AdminContainerItem) => {
-                // 格式化端口信息为可读字符串
-                let portsStr = "";
-                if (item.container_ports && item.container_ports.length > 0) {
-                    portsStr = item.container_ports.map(port =>
-                        `${port.ip}:${port.port} (${port.port_name})`
-                    ).join(", ");
-                }
-
-                return {
-                    ID: item.container_id,
-                    TeamName: item.team_name || "未知队伍",
-                    GameName: item.game_name || "未知比赛",
-                    ChallengeName: item.challenge_name || item.container_name || "未知题目",
-                    Status: item.container_status,
-                    ExpireTime: new Date(item.container_expiretime),
-                    Ports: portsStr
-                };
-            });
-            setData(formattedData);
+            setData(res.data.data);
         })
     };
 
@@ -520,7 +542,7 @@ export function ContainerManageView({
     React.useEffect(() => {
         table.setPageSize(pageSize);
         fetchContainers();
-    }, [curPage, pageSize, gameId, debouncedSearchKeyword]);
+    }, [curPage, pageSize, gameId, debouncedSearchKeyword, showFailedContainer]);
 
     return (
         <>
@@ -552,14 +574,32 @@ export function ContainerManageView({
                         </Button>
                     </div>
                 </div>
-                <div className="flex items-center">
-                    <Input
-                        placeholder="按容器或队伍名称过滤..."
-                        value={searchKeyword}
-                        onChange={(event) => handleSearch(event.target.value)}
-                        className="max-w-sm"
-                    />
+                <div className="flex items-center gap-2">
+                    <div className="flex flex-col gap-2">
+                        <Input
+                            placeholder="请输入关键词"
+                            value={searchKeyword}
+                            onChange={(event) => handleSearch(event.target.value)}
+                            className="max-w-lg"
+                        />
+                        <span className="text-xs text-muted-foreground">支持队伍ID, PodID, 容器ID, 队伍名称, 题目名称, 题目ID, 队伍ID</span>
+                    </div>
                     <div className="flex gap-2 ml-auto items-center">
+                        <Label className="hover:bg-accent/50 cursor-pointer flex items-start gap-3 rounded-lg border p-[10px] has-[[aria-checked=true]]:border-red-600 has-[[aria-checked=true]]:bg-red-50 dark:has-[[aria-checked=true]]:border-red-900 dark:has-[[aria-checked=true]]:bg-red-950">
+                            <Checkbox
+                                id="toggle-2"
+                                checked={showFailedContainer}
+                                onCheckedChange={(e) => {
+                                    setShowFailedContainer(e.valueOf() as boolean);
+                                }}
+                                className="data-[state=checked]:border-red-600 data-[state=checked]:bg-red-600 data-[state=checked]:text-white dark:data-[state=checked]:border-red-700 dark:data-[state=checked]:bg-red-700"
+                            />
+                            <div className="grid gap-1.5 font-normal">
+                                <p className="text-sm leading-none font-medium">
+                                    显示错误容器
+                                </p>
+                            </div>
+                        </Label>
                         <Button
                             variant="destructive"
                             className="select-none"

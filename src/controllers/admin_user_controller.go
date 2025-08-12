@@ -7,6 +7,7 @@ import (
 	general "a1ctf/src/utils/general"
 	i18ntool "a1ctf/src/utils/i18n_tool"
 	"a1ctf/src/webmodels"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -26,9 +27,15 @@ func AdminListUsers(c *gin.Context) {
 
 	// 如果有搜索关键词，添加搜索条件
 	if payload.Search != "" {
-		searchPattern := "%" + payload.Search + "%"
-		query = query.Where("username LIKE ? OR email LIKE ? OR realname LIKE ? OR student_number LIKE ?",
-			searchPattern, searchPattern, searchPattern, searchPattern)
+		searchPattern := fmt.Sprintf("%%%s%%", payload.Search)
+		query = query.Where(`username ILIKE ? 
+		OR email ILIKE ? OR realname ILIKE ? 
+		OR student_number ILIKE ?
+		OR slogan ILIKE ?
+		OR user_id::text = ?
+		OR last_login_ip = ?
+		OR register_ip = ?`,
+			searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, payload.Search, payload.Search, payload.Search)
 	}
 
 	var users []models.User
@@ -40,9 +47,15 @@ func AdminListUsers(c *gin.Context) {
 	var count int64
 	countQuery := dbtool.DB().Model(&models.User{})
 	if payload.Search != "" {
-		searchPattern := "%" + payload.Search + "%"
-		countQuery = countQuery.Where("username LIKE ? OR email LIKE ? OR realname LIKE ? OR student_number LIKE ?",
-			searchPattern, searchPattern, searchPattern, searchPattern)
+		searchPattern := fmt.Sprintf("%%%s%%", payload.Search)
+		countQuery = countQuery.Where(`username ILIKE ? 
+		OR email ILIKE ? OR realname ILIKE ? 
+		OR student_number ILIKE ?
+		OR slogan ILIKE ?
+		OR user_id::text = ?
+		OR last_login_ip = ?
+		OR register_ip = ?`,
+			searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, payload.Search, payload.Search, payload.Search)
 	}
 	if err := countQuery.Count(&count).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCountUsers"})})
@@ -66,6 +79,7 @@ func AdminListUsers(c *gin.Context) {
 			Avatar:        user.Avatar,
 			Role:          user.Role,
 			EmailVerified: user.EmailVerified,
+			RegisterIP:    user.RegisterIP,
 		})
 	}
 

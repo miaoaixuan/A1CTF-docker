@@ -124,20 +124,11 @@ func UserCreateGameTeam(c *gin.Context) {
 
 // TeamJoinRequest 申请加入战队
 func TeamJoinRequest(c *gin.Context) {
+	game := c.MustGet("game").(models.Game)
 	user := c.MustGet("user").(models.User)
 	userID := user.UserID
 
-	var payload struct {
-		InviteCode string `json:"invite_code" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
-			Code:    400,
-			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
-		})
-		return
-	}
+	payload := *c.MustGet("payload").(*webmodels.TeamJoinPayload)
 
 	// 根据邀请码查找战队
 	var team models.Team
@@ -165,6 +156,15 @@ func TeamJoinRequest(c *gin.Context) {
 			})
 			return
 		}
+	}
+
+	// 检查战队成员数是否已经超过最大限制
+	if len(team.TeamMembers) >= int(game.TeamNumberLimit) {
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+			Code:    400,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamIsFull"}),
+		})
+		return
 	}
 
 	// 检查是否已经有待处理的申请
@@ -289,6 +289,7 @@ func GetTeamJoinRequests(c *gin.Context) {
 
 // HandleTeamJoinRequest 处理加入申请
 func HandleTeamJoinRequest(c *gin.Context) {
+	game := c.MustGet("game").(models.Game)
 	user := c.MustGet("user").(models.User)
 	userID := user.UserID
 
@@ -302,17 +303,7 @@ func HandleTeamJoinRequest(c *gin.Context) {
 		return
 	}
 
-	var payload struct {
-		Action string `json:"action" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
-			Code:    400,
-			Message: "Invalid request payload",
-		})
-		return
-	}
+	payload := *c.MustGet("payload").(*webmodels.HandleJoinRequestPayload)
 
 	if payload.Action != "approve" && payload.Action != "reject" {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
@@ -363,6 +354,15 @@ func HandleTeamJoinRequest(c *gin.Context) {
 		c.JSON(http.StatusForbidden, webmodels.ErrorMessage{
 			Code:    403,
 			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "OnlyTeamCaptainCanHandleRequests"}),
+		})
+		return
+	}
+
+	// 检查战队成员数是否已经超过最大限制
+	if len(team.TeamMembers) >= int(game.TeamNumberLimit) && payload.Action == "approve" {
+		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
+			Code:    400,
+			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamIsFull"}),
 		})
 		return
 	}
@@ -445,17 +445,7 @@ func TransferTeamCaptain(c *gin.Context) {
 		return
 	}
 
-	var payload struct {
-		NewCaptainID string `json:"new_captain_id" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{
-			Code:    400,
-			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidRequestPayload"}),
-		})
-		return
-	}
+	payload := *c.MustGet("payload").(*webmodels.TransferCaptainPayload)
 
 	// 查询队伍
 	var team models.Team
@@ -764,9 +754,7 @@ func UpdateTeamInfo(c *gin.Context) {
 		return
 	}
 
-	var payload struct {
-		TeamSlogan *string `json:"team_slogan"`
-	}
+	var payload webmodels.UpdateTeamInfoPayload
 
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, webmodels.ErrorMessage{

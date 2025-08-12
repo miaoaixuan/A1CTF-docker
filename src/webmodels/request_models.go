@@ -2,7 +2,6 @@ package webmodels
 
 import (
 	"a1ctf/src/db/models"
-	"time"
 )
 
 // Game challenge payloads
@@ -23,15 +22,15 @@ type UserCreateTeamPayload struct {
 }
 
 type UserSubmitFlagPayload struct {
-	FlagContent string `json:"flag" binding:"required"`
+	FlagContent string `json:"flag" binding:"required,printascii"`
 }
 
 // Authorization payloads
 
 type RegisterPayload struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
-	Email    string `json:"email" binding:"required"`
+	Username string `json:"username" binding:"required,min=2,max=20"`
+	Password string `json:"password" binding:"required,password"`
+	Email    string `json:"email" binding:"required,email"`
 	Captcha  string `json:"captcha"`
 }
 
@@ -101,6 +100,7 @@ type AdminListContainersPayload struct {
 	Offset      int    `json:"offset"`
 	Search      string `json:"search"`
 	ChallengeID int    `json:"challenge_id"`
+	ShowFailed  bool   `json:"show_failed"`
 }
 
 // 容器操作请求参数
@@ -113,19 +113,6 @@ type AdminExtendContainerPayload struct {
 	ContainerID string `json:"container_id" binding:"required"`
 }
 
-// 容器详情返回结构
-type AdminContainerItem struct {
-	ContainerID         string                 `json:"container_id"`
-	ContainerName       string                 `json:"container_name"`
-	ContainerStatus     models.ContainerStatus `json:"container_status"`
-	ContainerExpireTime time.Time              `json:"container_expiretime"`
-	ContainerType       string                 `json:"container_type"`
-	ContainerPorts      models.ExposePorts     `json:"container_ports"`
-	TeamName            string                 `json:"team_name"`
-	GameName            string                 `json:"game_name"`
-	ChallengeName       string                 `json:"challenge_name"`
-}
-
 // Team management payloads
 
 type TeamJoinPayload struct {
@@ -133,7 +120,7 @@ type TeamJoinPayload struct {
 }
 
 type HandleJoinRequestPayload struct {
-	Action string `json:"action" binding:"required"` // "approve" or "reject"
+	Action string `json:"action" binding:"required,oneof=approve reject"` // "approve" or "reject"
 }
 
 type TransferCaptainPayload struct {
@@ -208,27 +195,27 @@ type UpdateUserProfilePayload struct {
 	StudentID *string `json:"student_id"`
 	Phone     *string `json:"phone"`
 	Slogan    *string `json:"slogan"`
-	UserName  *string `json:"username"`
+	UserName  *string `json:"username" binding:"required,min=2,max=20"`
 }
 
 type UpdateUserEmailPayload struct {
-	NewEmail string `json:"email"`
+	NewEmail string `json:"email" binding:"required,email"`
 }
 
 type EmailVerifyPayload struct {
-	Code string `json:"code"`
+	Code string `json:"code" binding:"required"`
 }
 
 type ChangePasswordPayload struct {
-	OldPassword string `json:"old_password"`
-	NewPassword string `json:"new_password"`
+	OldPassword string `json:"old_password" binding:"required,password"`
+	NewPassword string `json:"new_password" binding:"required,password"`
 }
 
 type ForgetPasswordWithVerifyCodePayload struct {
-	Code        string `json:"code"`
-	NewPassword string `json:"new_password"`
+	Code        string `json:"code" binding:"required"`
+	NewPassword string `json:"new_password" binding:"required,password"`
 }
 
 type ForgetPasswordSendMailPayload struct {
-	Email string `json:"email"`
+	Email string `json:"email" binding:"email"`
 }

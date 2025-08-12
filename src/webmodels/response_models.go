@@ -58,6 +58,7 @@ type UserSimpleGameChallenge struct {
 	SolveCount    int32                    `json:"solve_count"`
 	Category      models.ChallengeCategory `json:"category"`
 	Visible       bool                     `json:"visible"`
+	BelongStage   *string                  `json:"belong_stage"`
 }
 
 type ExposePortInfo struct {
@@ -119,6 +120,7 @@ type AdminListUserItem struct {
 	Avatar        *string         `json:"avatar"`
 	Role          models.UserRole `json:"role"`
 	EmailVerified bool            `json:"email_verified"`
+	RegisterIP    *string         `json:"register_ip"`
 }
 
 type AdminSimpleTeamMemberInfo struct {
@@ -223,4 +225,20 @@ type PaginationInfo struct {
 	PageSize    int64 `json:"page_size"`
 	TotalCount  int64 `json:"total_count"`
 	TotalPages  int64 `json:"total_pages"`
+}
+
+// 容器详情返回结构
+type AdminContainerItem struct {
+	ContainerID         string                 `json:"container_id"`
+	ContainerName       string                 `json:"container_name"`
+	ContainerStatus     models.ContainerStatus `json:"container_status"`
+	ContainerExpireTime time.Time              `json:"container_expiretime"`
+	ContainerType       string                 `json:"container_type"`
+	ContainerPorts      models.ExposePorts     `json:"container_ports"`
+	TeamName            string                 `json:"team_name"`
+	GameName            string                 `json:"game_name"`
+	ChallengeName       string                 `json:"challenge_name"`
+	PodID               string                 `json:"pod_id"`
+	TeamID              int64                  `json:"team_id"`
+	ChallengeID         int64                  `json:"challenge_id"`
 }
