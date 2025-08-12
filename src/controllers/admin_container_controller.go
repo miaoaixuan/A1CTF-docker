@@ -5,8 +5,8 @@ import (
 	dbtool "a1ctf/src/utils/db_tool"
 	i18ntool "a1ctf/src/utils/i18n_tool"
 	"a1ctf/src/webmodels"
+	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -27,29 +27,40 @@ func AdminListContainers(c *gin.Context) {
 
 	query := dbtool.DB().Model(&models.Container{})
 
+	query = query.Joins("JOIN challenges challenge ON containers.challenge_id = challenge.challenge_id")
+	query = query.Joins("JOIN teams team ON containers.team_id = team.team_id")
+
 	// 如果提供了游戏ID，则按游戏ID过滤
 	if payload.GameID > 0 {
-		query = query.Where("game_id = ? AND container_status NOT IN ?", payload.GameID, []models.ContainerStatus{models.ContainerStopped})
+		query = query.Where("containers.game_id = ? AND container_status NOT IN ?", payload.GameID, []models.ContainerStatus{models.ContainerStopped})
 	}
 
 	if payload.ChallengeID > 0 {
-		query = query.Where("challenge_id = ?", payload.ChallengeID)
+		query = query.Where("containers.challenge_id = ?", payload.ChallengeID)
 	}
 
 	// 如果有搜索关键词，添加搜索条件
-	// if payload.Search != "" {
-	// 	searchPattern := "%" + payload.Search + "%"
-	// 	query = query.Where("challenge_name LIKE ?", searchPattern)
-	// }
+	if payload.Search != "" {
+		searchPattern := fmt.Sprintf("%%%s%%", payload.Search)
+		query = query.Where(`challenge.name ILIKE ? 
+		OR container_id::text = ? 
+		OR team.team_name ILIKE ? 
+		OR team.team_hash = ? 
+		OR CONCAT('cl-', containers.ingame_id, '-', team.team_hash) = ? 
+		OR containers.challenge_id::text = ? 
+		OR containers.team_id::text = ?`, searchPattern, payload.Search, searchPattern, payload.Search, payload.Search, payload.Search, payload.Search)
+	}
 
-	query = query.Order("team_id ASC")
+	if !payload.ShowFailed {
+		query = query.Where("containers.container_status NOT IN ?", []models.ContainerStatus{models.ContainerError})
+	}
 
 	// 分页查询容器列表
 	var total int64
 	query.Count(&total)
 
 	var containers []models.Container
-	if err := query.Offset(payload.Offset).Limit(payload.Size).Order("start_time ASC").Find(&containers).Error; err != nil {
+	if err := query.Offset(payload.Offset).Limit(payload.Size).Order("start_time DESC").Find(&containers).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToLoadContainers"}),
@@ -108,21 +119,13 @@ func AdminListContainers(c *gin.Context) {
 			gameName = game.Name
 		}
 
-		// 如果有搜索关键词，检查是否匹配队伍名称或游戏名称
-		if payload.Search != "" {
-			searchLower := strings.ToLower(payload.Search)
-			if !strings.Contains(strings.ToLower(container.ChallengeName), searchLower) &&
-				!strings.Contains(strings.ToLower(teamName), searchLower) &&
-				!strings.Contains(strings.ToLower(gameName), searchLower) {
-				continue // 跳过不匹配的容器
-			}
-		}
-
 		// 处理容器端口，返回所有容器的暴露端口信息
 		var containerPorts models.ExposePorts
 		for _, exposeInfo := range container.ContainerExposeInfos {
 			containerPorts = append(containerPorts, exposeInfo.ExposePorts...)
 		}
+
+		podID := fmt.Sprintf("cl-%d-%s", container.InGameID, container.TeamHash)
 
 		containerItems = append(containerItems, webmodels.AdminContainerItem{
 			ContainerID:         container.ContainerID,
@@ -134,6 +137,9 @@ func AdminListContainers(c *gin.Context) {
 			TeamName:            teamName,
 			GameName:            gameName,
 			ChallengeName:       container.ChallengeName,
+			PodID:               podID,
+			TeamID:              container.TeamID,
+			ChallengeID:         container.ChallengeID,
 		})
 	}
 

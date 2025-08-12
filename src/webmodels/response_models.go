@@ -120,6 +120,7 @@ type AdminListUserItem struct {
 	Avatar        *string         `json:"avatar"`
 	Role          models.UserRole `json:"role"`
 	EmailVerified bool            `json:"email_verified"`
+	RegisterIP    *string         `json:"register_ip"`
 }
 
 type AdminSimpleTeamMemberInfo struct {
@@ -237,4 +238,7 @@ type AdminContainerItem struct {
 	TeamName            string                 `json:"team_name"`
 	GameName            string                 `json:"game_name"`
 	ChallengeName       string                 `json:"challenge_name"`
+	PodID               string                 `json:"pod_id"`
+	TeamID              int64                  `json:"team_id"`
+	ChallengeID         int64                  `json:"challenge_id"`
 }

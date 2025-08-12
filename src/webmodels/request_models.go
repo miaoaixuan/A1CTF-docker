@@ -100,6 +100,7 @@ type AdminListContainersPayload struct {
 	Offset      int    `json:"offset"`
 	Search      string `json:"search"`
 	ChallengeID int    `json:"challenge_id"`
+	ShowFailed  bool   `json:"show_failed"`
 }
 
 // 容器操作请求参数

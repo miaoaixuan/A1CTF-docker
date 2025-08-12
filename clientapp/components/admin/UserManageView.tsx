@@ -11,7 +11,7 @@ import {
     useReactTable,
 } from "@tanstack/react-table"
 
-import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, Pencil, KeyIcon, TrashIcon, ClipboardList } from "lucide-react"
+import { ArrowLeft, ArrowRight, ArrowUpDown, ChevronDown, MoreHorizontal, Pencil, KeyIcon, TrashIcon, ClipboardList, RefreshCw } from "lucide-react"
 
 import * as React from "react"
 
@@ -58,6 +58,8 @@ import {
 import { UserEditDialog } from "../dialogs/UserEditDialog";
 import { useTheme } from "next-themes"
 import { AxiosResponse } from "axios"
+import { copyWithResult } from "utils/ToastUtil"
+import copy from "copy-to-clipboard"
 
 export type UserModel = {
     id: string,
@@ -66,7 +68,8 @@ export type UserModel = {
     Username: string,
     StudentID: string,
     RealName: string,
-    IP: string,
+    LastLoginIP: string,
+    RegisterIP: string,
     Phone: string,
     Slogan: string,
     Avatar: string | null,
@@ -185,7 +188,7 @@ export function UserManageView() {
                             render({ data: response } : { data: AxiosResponse }) {
                                 setConfirmDialog(prev => ({ ...prev, isOpen: false }));
                                 // 显示新密码
-                                navigator.clipboard.writeText(response.data.new_password);
+                                copy(response.data.new_password);
                                 return `新密码: ${response.data.new_password}，已复制到剪切板`;
                             }
                         },
@@ -292,10 +295,17 @@ export function UserManageView() {
             cell: ({ row }) => <div className="lowercase">{row.getValue("Email")}</div>,
         },
         {
-            accessorKey: "IP",
-            header: "IP",
+            accessorKey: "RegisterIP",
+            header: "注册IP",
             cell: ({ row }) => (
-                <div>{row.getValue("IP")}</div>
+                <div>{row.getValue("RegisterIP")}</div>
+            ),
+        },
+        {
+            accessorKey: "LastLoginIP",
+            header: "上一次登陆IP",
+            cell: ({ row }) => (
+                <div>{row.getValue("LastLoginIP")}</div>
             ),
         },
         {
@@ -340,7 +350,7 @@ export function UserManageView() {
                             <DropdownMenuContent align="end" >
                                 <DropdownMenuLabel>操作</DropdownMenuLabel>
                                 <DropdownMenuItem
-                                    onClick={() => navigator.clipboard.writeText(user.id)}
+                                    onClick={() => copyWithResult(user.id)}
                                 >
                                     <ClipboardList className="h-4 w-4 mr-2" />
                                     复制用户ID
@@ -389,7 +399,8 @@ export function UserManageView() {
                 Role: user.role,
                 RealName: user.real_name || "",
                 StudentID: user.student_id || "",
-                IP: user.last_login_ip || "",
+                LastLoginIP: user.last_login_ip || "",
+                RegisterIP: user.register_ip || "",
                 Phone: user.phone || "",
                 Slogan: user.slogan || "",
                 Avatar: user.avatar || null,
@@ -464,13 +475,16 @@ export function UserManageView() {
                             </Button>
                         </div>
                     </div>
-                    <div className="flex items-center py-4">
-                        <Input
-                            placeholder="按用户名过滤..."
-                            value={searchKeyword}
-                            onChange={(event) => handleSearch(event.target.value)}
-                            className="max-w-sm"
-                        />
+                    <div className="flex items-center py-4 gap-2">
+                        <div className="flex flex-col gap-2">
+                            <Input
+                                placeholder="请输入关键字"
+                                value={searchKeyword}
+                                onChange={(event) => handleSearch(event.target.value)}
+                                className="max-w-md"
+                            />
+                            <span className="text-xs text-muted-foreground">支持用户名, 邮箱地址, 个人资料信息, 账号Slogan, 用户ID, 上一次登陆IP</span>
+                        </div>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" className="ml-auto">
@@ -497,6 +511,9 @@ export function UserManageView() {
                                     })}
                             </DropdownMenuContent>
                         </DropdownMenu>
+                        <Button variant="outline" size={"icon"} onClick={() => fetchUsers()}>
+                            <RefreshCw />
+                        </Button>
                     </div>
                     <div className="rounded-md border">
                         <Table>

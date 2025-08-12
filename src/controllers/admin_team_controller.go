@@ -6,9 +6,11 @@ import (
 	dbtool "a1ctf/src/utils/db_tool"
 	i18ntool "a1ctf/src/utils/i18n_tool"
 	"a1ctf/src/webmodels"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"gorm.io/gorm"
 )
@@ -28,8 +30,30 @@ func AdminListTeams(c *gin.Context) {
 
 	// 如果有搜索关键词，添加搜索条件
 	if payload.Search != "" {
-		searchPattern := "%" + payload.Search + "%"
-		query = query.Where("team_name LIKE ? OR team_slogan LIKE ?", searchPattern, searchPattern)
+		searchPattern := fmt.Sprintf("%%%s%%", payload.Search)
+
+		if uuid, err := uuid.Parse(payload.Search); err == nil {
+			query = query.Where(`team_name ILIKE ? 
+			OR team_slogan ILIKE ? OR team_id::text = ? 
+			OR team_hash = ? 
+			OR ? = ANY(team_members) 
+			OR invite_code = ?
+			OR EXISTS (
+				SELECT 1 FROM users u 
+				WHERE u.user_id = ANY(teams.team_members) 
+				AND u.username ILIKE ?
+			)`, searchPattern, searchPattern, payload.Search, payload.Search, uuid, payload.Search, searchPattern)
+		} else {
+			query = query.Where(`team_name ILIKE ? 
+			OR team_slogan ILIKE ? 
+			OR team_id::text = ? OR team_hash = ? 
+			OR invite_code = ?
+			OR EXISTS (
+				SELECT 1 FROM users u 
+				WHERE u.user_id = ANY(teams.team_members) 
+				AND u.username ILIKE ?
+			)`, searchPattern, searchPattern, payload.Search, payload.Search, payload.Search, searchPattern)
+		}
 	}
 
 	query = query.Order("team_id ASC")

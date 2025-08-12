@@ -118,6 +118,8 @@ func Register(c *gin.Context) {
 	// avoid attack
 	loweredEmail := strings.ToLower(payload.Email)
 
+	clientIP := c.ClientIP()
+
 	newUser := models.User{
 		UserID:        uuid.New().String(),
 		Username:      payload.Username,
@@ -135,6 +137,7 @@ func Register(c *gin.Context) {
 		EmailVerified: false,
 		JWTVersion:    general.RandomString(16),
 		RegisterTime:  time.Now().UTC(),
+		RegisterIP:    &clientIP,
 	}
 
 	if err := dbtool.DB().Create(&newUser).Error; err != nil {

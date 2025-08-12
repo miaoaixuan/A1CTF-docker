@@ -217,11 +217,9 @@ func CreatePod(podInfo *PodInfo) error {
 
 		containers = append(containers, container)
 	}
-
-	podName := fmt.Sprintf("%s-%s", podInfo.Name, podInfo.TeamHash)
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   podName,
+			Name:   podInfo.Name,
 			Labels: podInfo.Labels,
 		},
 		Spec: corev1.PodSpec{
@@ -253,7 +251,7 @@ func CreatePod(podInfo *PodInfo) error {
 	if len(servicePorts) > 0 {
 		service := &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: podName,
+				Name: podInfo.Name,
 			},
 			Spec: corev1.ServiceSpec{
 				Type:     corev1.ServiceTypeNodePort,
@@ -286,7 +284,7 @@ func CreatePod(podInfo *PodInfo) error {
 		// 创建 network-policy
 		networkPolicy := &networkingv1.NetworkPolicy{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: podName,
+				Name: podInfo.Name,
 			},
 			Spec: networkingv1.NetworkPolicySpec{
 				PodSelector: metav1.LabelSelector{
@@ -375,20 +373,19 @@ func GetPodPorts(podInfo *PodInfo) (*PodPorts, error) {
 		return nil, err
 	}
 	namespace := "a1ctf-challenges"
-	podName := fmt.Sprintf("%s-%s", podInfo.Name, podInfo.TeamHash)
 
 	// 获取 Pod，检查其所在的 Node
-	pod, err := clientset.CoreV1().Pods(namespace).Get(context.Background(), podName, metav1.GetOptions{})
+	pod, err := clientset.CoreV1().Pods(namespace).Get(context.Background(), podInfo.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error getting pod: %v", err)
 	}
 	if pod.Spec.NodeName == "" {
-		return nil, fmt.Errorf("pod %s not scheduled on a node yet", podName)
+		return nil, fmt.Errorf("pod %s not scheduled on a node yet", podInfo.Name)
 	}
 	nodeName := pod.Spec.NodeName
 
 	// 获取对应 Service 信息
-	service, err := clientset.CoreV1().Services(namespace).Get(context.Background(), podName, metav1.GetOptions{})
+	service, err := clientset.CoreV1().Services(namespace).Get(context.Background(), podInfo.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error getting service: %v", err)
 	}
@@ -411,25 +408,24 @@ func DeletePod(podInfo *PodInfo) error {
 		return err
 	}
 	namespace := "a1ctf-challenges"
-	podName := fmt.Sprintf("%s-%s", podInfo.Name, podInfo.TeamHash)
 
 	// 忽略所有错误，删除三个组件，防止出问题
 
 	// 删除 Pod
-	_ = clientset.CoreV1().Pods(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
+	_ = clientset.CoreV1().Pods(namespace).Delete(context.Background(), podInfo.Name, metav1.DeleteOptions{})
 	// if err != nil {
 	// 	return fmt.Errorf("error deleting pod: %v", err)
 	// }
 
 	// 删除 Service
-	_ = clientset.CoreV1().Services(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
+	_ = clientset.CoreV1().Services(namespace).Delete(context.Background(), podInfo.Name, metav1.DeleteOptions{})
 	// if err != nil {
 	// 	return fmt.Errorf("error deleting service: %v", err)
 	// }
 
 	if !podInfo.AllowWAN {
 		// 删除 NetworkPolicy
-		_ = clientset.NetworkingV1().NetworkPolicies(namespace).Delete(context.Background(), podName, metav1.DeleteOptions{})
+		_ = clientset.NetworkingV1().NetworkPolicies(namespace).Delete(context.Background(), podInfo.Name, metav1.DeleteOptions{})
 		// if err != nil {
 		// 	return fmt.Errorf("error deleting network policy: %v", err)
 		// }

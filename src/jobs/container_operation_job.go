@@ -151,7 +151,7 @@ func UpdateLivingContainers() {
 		}
 
 		podInfo := k8stool.PodInfo{
-			Name:       fmt.Sprintf("cl-%d", container.InGameID),
+			Name:       fmt.Sprintf("cl-%d-%s", container.InGameID, container.TeamHash),
 			TeamHash:   container.TeamHash,
 			Containers: container.ContainerConfig,
 			Labels: map[string]string{

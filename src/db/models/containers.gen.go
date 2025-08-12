@@ -79,6 +79,7 @@ type Container struct {
 	ContainerID          string               `gorm:"column:container_id;primaryKey" json:"container_id"`
 	GameID               int64                `gorm:"column:game_id;not null" json:"game_id"`
 	TeamID               int64                `gorm:"column:team_id;not null" json:"team_id"`
+	Team                 Team                 `gorm:"foreignKey:TeamID;references:team_id" json:"-"`
 	FlagID               int64                `gorm:"column:flag_id;not null" json:"flag_id"`
 	ChallengeID          int64                `gorm:"column:challenge_id;not null" json:"challenge_id"`
 	InGameID             int64                `gorm:"column:ingame_id;not null" json:"ingame_id"`

@@ -52,7 +52,7 @@ func UserCreateGameContainer(c *gin.Context) {
 		}
 	}
 
-	if len(containers) > int(game.ContainerNumberLimit) {
+	if len(containers) >= int(game.ContainerNumberLimit) {
 		c.JSON(http.StatusConflict, webmodels.ErrorMessage{
 			Code:    409,
 			Message: i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "YouHaveCreatedTooManyContainers"}),

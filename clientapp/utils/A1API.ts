@@ -646,6 +646,8 @@ export interface AdminListUserItem {
    * @format date-time
    */
   register_time: string;
+  /** The IP address of the user's registration */
+  register_ip?: string;
   /**
    * The timestamp of the user's last login
    * @format date-time
@@ -738,10 +740,15 @@ export interface AdminUserOperationPayload {
 export interface AdminContainerItem {
   container_id: string;
   container_name: string;
+  /** @format int64 */
+  team_id?: number;
+  /** @format int64 */
+  challenge_id?: number;
   container_status: string;
   /** @format date-time */
   container_expiretime: string;
   container_type: string;
+  pod_id?: string;
   container_ports: {
     port_name: string;
     port: number;
@@ -760,6 +767,8 @@ export interface AdminListContainersPayload {
   offset?: number;
   /** 搜索关键词，用于过滤容器名称、队伍名称或游戏名称 */
   search?: string;
+  /** 是否显示失败的容器 */
+  show_failed?: boolean;
 }
 
 export interface AdminContainerOperationPayload {

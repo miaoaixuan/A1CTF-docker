@@ -378,7 +378,7 @@ func unauthorized() func(c *gin.Context, code int, message string) {
 
 type LoginPayload struct {
 	Username string `form:"username" json:"username" binding:"required"`
-	Password string `form:"password" json:"password" binding:"required,password"`
+	Password string `form:"password" json:"password" binding:"required"`
 	CaptCha  string `form:"captcha" json:"captcha"`
 }
 

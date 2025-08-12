@@ -63,7 +63,7 @@ func HandleContainerStartTask(ctx context.Context, t *asynq.Task) error {
 	}
 
 	podInfo := k8stool.PodInfo{
-		Name:       fmt.Sprintf("cl-%d", task.InGameID),
+		Name:       fmt.Sprintf("cl-%d-%s", task.InGameID, task.TeamHash),
 		TeamHash:   task.TeamHash,
 		Containers: task.ContainerConfig,
 		Labels: map[string]string{
@@ -111,7 +111,7 @@ func HandleContainerStopTask(ctx context.Context, t *asynq.Task) error {
 	}
 
 	podInfo := k8stool.PodInfo{
-		Name:       fmt.Sprintf("cl-%d", task.InGameID),
+		Name:       fmt.Sprintf("cl-%d-%s", task.InGameID, task.TeamHash),
 		TeamHash:   task.TeamHash,
 		Containers: task.ContainerConfig,
 		Labels: map[string]string{
@@ -166,7 +166,7 @@ func HandleContainerFailedTask(ctx context.Context, t *asynq.Task) error {
 	podStatus := payload.PodStatus
 
 	podInfo := k8stool.PodInfo{
-		Name:       fmt.Sprintf("cl-%d", task.InGameID),
+		Name:       fmt.Sprintf("cl-%d-%s", task.InGameID, task.TeamHash),
 		TeamHash:   task.TeamHash,
 		Containers: task.ContainerConfig,
 		Labels: map[string]string{

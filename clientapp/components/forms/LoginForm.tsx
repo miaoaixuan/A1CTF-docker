@@ -118,8 +118,8 @@ export function LoginForm() {
                     name="password"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>
-                                <div className="flex items-center h-[40px]">
+                            <FormLabel className="w-full">
+                                <div className="flex items-center h-[40px] w-full">
                                     <Label htmlFor="password">{t("password")}</Label>
                                     <a
                                         onClick={() => {
