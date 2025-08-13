@@ -1,25 +1,27 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
-	"mime"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
-	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"gorm.io/gorm"
 
 	"a1ctf/src/db/models"
 	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
 	i18ntool "a1ctf/src/utils/i18n_tool"
+	imagetool "a1ctf/src/utils/image_tool"
 	"a1ctf/src/utils/ristretto_tool"
+	securitytool "a1ctf/src/utils/security_tool"
 	"a1ctf/src/webmodels"
 )
 
@@ -151,7 +153,21 @@ func DownloadFile(c *gin.Context) {
 		return
 	}
 
-	if _, err := os.Stat(path.Join(uploadRecord.FilePath)); os.IsNotExist(err) {
+	// 安全检查
+	// 获取上传目录的绝对路径
+	uploadDirectionAbs, _ := filepath.Abs("./data/uploads")
+
+	validator := securitytool.NewSecurePathValidator()
+	filePath, err := validator.ValidatePathSafety(uploadDirectionAbs, uploadRecord.FilePath)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{
+			"code":    403,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FileAccessDenied"}),
+		})
+		return
+	}
+
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":    404,
 			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FileNotFoundOnServer"}),
@@ -159,7 +175,7 @@ func DownloadFile(c *gin.Context) {
 		return
 	}
 
-	file, err := os.Open(path.Join(uploadRecord.FilePath))
+	file, err := os.Open(filePath)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -169,10 +185,19 @@ func DownloadFile(c *gin.Context) {
 	}
 	defer file.Close()
 
+	fileState, err := file.Stat()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "ErrorOpeningFile"}),
+		})
+		return
+	}
+
 	// 使用 c.DataFromReader 方法，它会正确设置 Content-Length
 	c.DataFromReader(
 		http.StatusOK,
-		uploadRecord.FileSize,
+		fileState.Size(),
 		uploadRecord.FileType,
 		file,
 		map[string]string{
@@ -182,20 +207,8 @@ func DownloadFile(c *gin.Context) {
 	)
 }
 
-// UploadUserAvatar 处理用户头像上传
 func UploadUserAvatar(c *gin.Context) {
-	// 获取用户信息
-	users, _ := c.Get("UserID")
-	userClaims := users.(*models.JWTUser)
-
-	userID, err := uuid.Parse(userClaims.UserID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidUserID"}),
-		})
-		return
-	}
+	user := c.MustGet("user").(models.User)
 
 	// 获取上传的头像文件
 	file, err := c.FormFile("avatar")
@@ -208,8 +221,8 @@ func UploadUserAvatar(c *gin.Context) {
 	}
 
 	// 检查文件类型是否为图片
-	fileType := file.Header.Get("Content-Type")
-	if !isImageMimeType(fileType) {
+	fileType, err := validateImageFile(file)
+	if err != nil {
 		c.JSON(http.StatusUnsupportedMediaType, gin.H{
 			"code":    415,
 			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "UploadedFileIsNotImage"}),
@@ -217,22 +230,28 @@ func UploadUserAvatar(c *gin.Context) {
 		return
 	}
 
-	// 生成唯一的文件ID
-	var fileID uuid.UUID
-	for {
-		fileID = uuid.New()
-		var existingUpload models.Upload
-		result := dbtool.DB().Where("file_id = ?", fileID).First(&existingUpload)
-		if result.Error == gorm.ErrRecordNotFound {
-			break
-		} else if result.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    500,
-				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "DatabaseQueryFailed"}),
-			})
-			return
-		}
+	// 打开上传的文件
+	src, err := file.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToOpenUploadedFile"}),
+		})
+		return
 	}
+	defer src.Close()
+
+	// 压缩图片为 WebP 格式
+	compressedData, err := imagetool.CompressImageToWebP(src, fileType)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCompressImage"}),
+		})
+		return
+	}
+
+	var fileID uuid.UUID = uuid.New()
 
 	// 创建存储目录
 	now := time.Now().UTC()
@@ -245,9 +264,9 @@ func UploadUserAvatar(c *gin.Context) {
 		return
 	}
 
-	// 保存文件
+	// 保存压缩后的文件（WebP格式）
 	newFilePath := filepath.Join(storePath, fileID.String())
-	if err := c.SaveUploadedFile(file, newFilePath); err != nil {
+	if err := os.WriteFile(newFilePath, compressedData, 0644); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToSaveAvatarFile"}),
@@ -255,32 +274,19 @@ func UploadUserAvatar(c *gin.Context) {
 		return
 	}
 
-	// 设置文件类型（如果为空）
-	if fileType == "" {
-		fileType = mime.TypeByExtension(filepath.Ext(file.Filename))
-		if fileType == "" {
-			fileType = "image/jpeg" // 默认类型
-		}
-	}
-
 	// 创建上传记录
 	newUpload := models.Upload{
 		FileID:     fileID.String(),
-		UserID:     userID.String(),
-		FileName:   file.Filename,
+		UserID:     user.UserID,
+		FileName:   strings.TrimSuffix(file.Filename, filepath.Ext(file.Filename)) + ".webp",
 		FilePath:   newFilePath,
 		FileHash:   "", // 可以添加文件哈希计算
-		FileType:   fileType,
-		FileSize:   file.Size,
+		FileType:   "image/webp",
+		FileSize:   int64(len(compressedData)),
 		UploadTime: now,
 	}
 
-	// 开始数据库事务
-	tx := dbtool.DB().Begin()
-
-	// 保存上传记录
-	if err := tx.Create(&newUpload).Error; err != nil {
-		tx.Rollback()
+	if err := dbtool.DB().Create(&newUpload).Error; err != nil {
 		_ = os.Remove(newFilePath)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -292,24 +298,11 @@ func UploadUserAvatar(c *gin.Context) {
 	// 构建头像URL
 	avatarURL := fmt.Sprintf("/api/file/download/%s", fileID.String())
 
-	// 更新用户头像字段
-	if err := tx.Model(&models.User{}).Where("user_id = ?", userID.String()).Update("avatar", avatarURL).Error; err != nil {
-		tx.Rollback()
+	if err := dbtool.DB().Model(&models.User{}).Where("user_id = ?", user.UserID).Update("avatar", avatarURL).Error; err != nil {
 		_ = os.Remove(newFilePath)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToUpdateUserAvatar"}),
-		})
-		return
-	}
-
-	// 提交事务
-	if err := tx.Commit().Error; err != nil {
-		tx.Rollback()
-		_ = os.Remove(newFilePath)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCommitTransaction"}),
 		})
 		return
 	}
@@ -322,96 +315,34 @@ func UploadUserAvatar(c *gin.Context) {
 	})
 }
 
-// isImageMimeType 检查MIME类型是否为图片
-func isImageMimeType(mimeType string) bool {
-	imageMimeTypes := map[string]bool{
-		"image/jpeg":    true,
-		"image/png":     true,
-		"image/gif":     true,
-		"image/webp":    true,
-		"image/bmp":     true,
-		"image/tiff":    true,
-		"image/svg+xml": true,
-		"image/x-icon":  true,
+func validateImageFile(file *multipart.FileHeader) (string, error) {
+	src, err := file.Open()
+	if err != nil {
+		return "", err
+	}
+	defer src.Close()
+
+	// 读取文件头部字节检测真实文件类型
+	buffer := make([]byte, 512)
+	n, err := src.Read(buffer)
+	if err != nil && err != io.EOF {
+		return "", err
 	}
 
-	return imageMimeTypes[mimeType]
+	// 检测MIME类型
+	detectedType := http.DetectContentType(buffer[:n])
+	if !strings.HasPrefix(detectedType, "image/") {
+		return "", errors.New("not a valid image file")
+	}
+
+	return detectedType, nil
 }
 
-// UploadTeamAvatar 处理团队头像上传
 func UploadTeamAvatar(c *gin.Context) {
-	// 获取用户信息
-	users, _ := c.Get("UserID")
-	userClaims := users.(*models.JWTUser)
+	// 只允许上传自己队伍的头像
+	user := c.MustGet("user").(models.User)
+	team := c.MustGet("team").(models.Team)
 
-	userID, err := uuid.Parse(userClaims.UserID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidUserID"}),
-		})
-		return
-	}
-
-	// 获取团队ID
-	teamIDStr := c.PostForm("team_id")
-	teamID, err := strconv.ParseInt(teamIDStr, 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "InvalidTeamID"}),
-		})
-		return
-	}
-
-	// 检查团队是否存在并验证用户是否是团队成员
-	var teamExists bool
-	var team models.Team
-
-	// 检查团队是否存在
-	if err := dbtool.DB().Raw("SELECT EXISTS(SELECT 1 FROM teams WHERE team_id = ?)", teamID).Scan(&teamExists).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "DatabaseQueryFailed"}),
-		})
-		return
-	}
-
-	if !teamExists {
-		c.JSON(http.StatusNotFound, gin.H{
-			"code":    404,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "TeamNotFound"}),
-		})
-		return
-	}
-
-	// 检查用户是否为团队成员 - 通过team_members数组字段判断
-	if err := dbtool.DB().Where("team_id = ?", teamID).First(&team).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "DatabaseQueryFailed"}),
-		})
-		return
-	}
-
-	// 检查用户ID是否在team_members数组中
-	isMember := false
-	for _, memberID := range team.TeamMembers {
-		if memberID == userID.String() {
-			isMember = true
-			break
-		}
-	}
-
-	if !isMember {
-		c.JSON(http.StatusForbidden, gin.H{
-			"code":    403,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "UserIsNotMemberOfTeam"}),
-		})
-		return
-	}
-
-	// 获取上传的头像文件
 	file, err := c.FormFile("avatar")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -421,9 +352,8 @@ func UploadTeamAvatar(c *gin.Context) {
 		return
 	}
 
-	// 检查文件类型是否为图片
-	fileType := file.Header.Get("Content-Type")
-	if !isImageMimeType(fileType) {
+	fileType, err := validateImageFile(file)
+	if err != nil {
 		c.JSON(http.StatusUnsupportedMediaType, gin.H{
 			"code":    415,
 			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "UploadedFileIsNotImage"}),
@@ -431,26 +361,32 @@ func UploadTeamAvatar(c *gin.Context) {
 		return
 	}
 
-	// 生成唯一的文件ID
-	var fileID uuid.UUID
-	for {
-		fileID = uuid.New()
-		var existingUpload models.Upload
-		result := dbtool.DB().Where("file_id = ?", fileID).First(&existingUpload)
-		if result.Error == gorm.ErrRecordNotFound {
-			break
-		} else if result.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    500,
-				"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "DatabaseQueryFailed"}),
-			})
-			return
-		}
+	// 打开上传的文件
+	src, err := file.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToOpenUploadedFile"}),
+		})
+		return
 	}
+	defer src.Close()
+
+	// 压缩图片为 WebP 格式
+	compressedData, err := imagetool.CompressImageToWebP(src, fileType)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCompressImage"}),
+		})
+		return
+	}
+
+	var fileID uuid.UUID = uuid.New()
 
 	// 创建存储目录
 	now := time.Now().UTC()
-	storePath := filepath.Join("data", "uploads", "team_avatars", fmt.Sprintf("%d", now.Year()), fmt.Sprintf("%d", now.Month()))
+	storePath := filepath.Join("data", "uploads", "avatars", fmt.Sprintf("%d", now.Year()), fmt.Sprintf("%d", now.Month()))
 	if err := os.MkdirAll(storePath, 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -459,9 +395,9 @@ func UploadTeamAvatar(c *gin.Context) {
 		return
 	}
 
-	// 保存文件
+	// 保存压缩后的文件（WebP格式）
 	newFilePath := filepath.Join(storePath, fileID.String())
-	if err := c.SaveUploadedFile(file, newFilePath); err != nil {
+	if err := os.WriteFile(newFilePath, compressedData, 0644); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToSaveAvatarFile"}),
@@ -469,32 +405,19 @@ func UploadTeamAvatar(c *gin.Context) {
 		return
 	}
 
-	// 设置文件类型（如果为空）
-	if fileType == "" {
-		fileType = mime.TypeByExtension(filepath.Ext(file.Filename))
-		if fileType == "" {
-			fileType = "image/jpeg" // 默认类型
-		}
-	}
-
 	// 创建上传记录
 	newUpload := models.Upload{
 		FileID:     fileID.String(),
-		UserID:     userID.String(),
-		FileName:   file.Filename,
+		UserID:     user.UserID,
+		FileName:   strings.TrimSuffix(file.Filename, filepath.Ext(file.Filename)) + ".webp",
 		FilePath:   newFilePath,
 		FileHash:   "", // 可以添加文件哈希计算
-		FileType:   fileType,
-		FileSize:   file.Size,
+		FileType:   "image/webp",
+		FileSize:   int64(len(compressedData)),
 		UploadTime: now,
 	}
 
-	// 开始数据库事务
-	tx := dbtool.DB().Begin()
-
-	// 保存上传记录
-	if err := tx.Create(&newUpload).Error; err != nil {
-		tx.Rollback()
+	if err := dbtool.DB().Create(&newUpload).Error; err != nil {
 		_ = os.Remove(newFilePath)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -506,24 +429,11 @@ func UploadTeamAvatar(c *gin.Context) {
 	// 构建头像URL
 	avatarURL := fmt.Sprintf("/api/file/download/%s", fileID.String())
 
-	// 更新团队头像字段
-	if err := tx.Exec("UPDATE teams SET team_avatar = ? WHERE team_id = ?", avatarURL, teamID).Error; err != nil {
-		tx.Rollback()
+	if err := dbtool.DB().Model(&models.Team{}).Where("team_id = ?", team.TeamID).Update("team_avatar", avatarURL).Error; err != nil {
 		_ = os.Remove(newFilePath)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToUpdateTeamAvatar"}),
-		})
-		return
-	}
-
-	// 提交事务
-	if err := tx.Commit().Error; err != nil {
-		tx.Rollback()
-		_ = os.Remove(newFilePath)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "FailedToCommitTransaction"}),
 		})
 		return
 	}

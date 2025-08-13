@@ -459,3 +459,7 @@ other = "靶机剩余时间超过半小时, 不可延长"
 [InVisibleDuetoStageOver]
 description = "当前阶段不可作答此题"
 other = "当前阶段不可作答此题"
+
+[FileAccessDenied]
+description = "文件访问被拒绝"
+other = "文件访问被拒绝"

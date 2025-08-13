@@ -2599,12 +2599,8 @@ paths:
                   type: string
                   format: binary
                   description: 要上传的团队头像图片文件，支持jpg、png、gif等常见图片格式
-                team_id:
-                  type: integer
-                  description: 团队ID
               required:
                 - avatar
-                - team_id
         required: true
   /api/game/{game_id}/team/join:
     post:

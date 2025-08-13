@@ -25,6 +25,7 @@ require (
 require (
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/chai2010/webp v1.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
@@ -34,6 +35,7 @@ require (
 	github.com/hibiken/asynq v0.25.1 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
+	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/nicksnyder/go-i18n/v2 v2.6.0 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.62.0 // indirect

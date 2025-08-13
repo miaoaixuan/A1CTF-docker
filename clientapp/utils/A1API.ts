@@ -3889,8 +3889,6 @@ export class Api<
          * @format binary
          */
         avatar: File;
-        /** 团队ID */
-        team_id: number;
       },
       params: RequestParams = {},
     ) =>
