@@ -255,8 +255,6 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
 
             let lastestTime = +dayjs(gameInfo.end_time)
 
-            console.log(serialOptions.current)
-
             serialOptions.current.forEach((serie, index) => {
                 (serie.data as [])?.forEach((data, _) => {
                     lastestTime = Math.max(lastestTime, data[0] as number)

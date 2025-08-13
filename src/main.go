@@ -38,6 +38,8 @@ import (
 
 	cache "github.com/chenyahui/gin-cache"
 	"github.com/chenyahui/gin-cache/persist"
+
+	"github.com/gin-contrib/gzip"
 )
 
 func StartLoopEvent() {
@@ -204,6 +206,9 @@ func main() {
 	// 初始化 email jwt
 	emailjwt.InitRSAKeys()
 
+	bestGzipMiddleware := gzip.Gzip(gzip.BestCompression)
+	defaultGzipMiddleware := gzip.Gzip(gzip.DefaultCompression)
+
 	// 公共接口
 	public := r.Group("/api")
 	{
@@ -213,17 +218,17 @@ func main() {
 		), controllers.Register)
 
 		public.GET("/game/list", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.UserListGames)
-		public.GET("/game/:game_id/scoreboard", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+		public.GET("/game/:game_id/scoreboard", bestGzipMiddleware, controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 			VisibleAfterEnded: true,
 			CheckGameStarted:  true,
 		}), controllers.UserGameGetScoreBoard)
 
-		public.GET("/game/:game_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+		public.GET("/game/:game_id", defaultGzipMiddleware, controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 			VisibleAfterEnded: true,
 			CheckGameStarted:  false,
 		}), controllers.UserGetGameDetailWithTeamInfo)
 
-		public.GET("/game/:game_id/desc", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+		public.GET("/game/:game_id/desc", defaultGzipMiddleware, controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 			VisibleAfterEnded: true,
 			CheckGameStarted:  false,
 		}), controllers.UserGetGameDescription)
@@ -233,7 +238,7 @@ func main() {
 			fileGroup.GET("/download/:file_id", controllers.DownloadFile)
 		}
 
-		public.GET("/client-config", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GetClientConfig)
+		public.GET("/client-config", cache.CacheByRequestURI(memoryStore, 1*time.Second), bestGzipMiddleware, controllers.GetClientConfig)
 
 		public.POST("/cap/challenge", controllers.CapCreateChallenge)
 		public.POST("/cap/redeem", controllers.CapRedeemChallenge)
@@ -397,6 +402,7 @@ func main() {
 
 		// 用户比赛访问相关接口
 		userGameGroup := auth.Group("/game")
+		userGameGroup.Use(defaultGzipMiddleware)
 		userGameGroup.Use(controllers.EmailVerifiedMiddleware())
 		{
 			// 获取比赛的题目列表

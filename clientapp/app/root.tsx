@@ -147,6 +147,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         setScreenTooSmall(checkPageMobileShouldVisible())
     }, [href])
 
+    useEffect(() => {
+        (window as any).CAP_CUSTOM_WASM_URL = "https://cdn.jsdmirror.com/npm/@cap.js/wasm@0.0.6/browser/cap_wasm.min.js"
+    }, [])
+
     return (
         <html lang="en" suppressHydrationWarning>
             <head>
