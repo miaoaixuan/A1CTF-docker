@@ -269,6 +269,11 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 		return nil, err
 	}
 
+	var game models.Game
+	if err := dbtool.DB().Where("game_id = ?", gameID).First(&game).Error; err != nil {
+		return nil, errors.New("failed to load game")
+	}
+
 	var finalScoreBoardMap map[int64]webmodels.TeamScoreItem = make(map[int64]webmodels.TeamScoreItem)
 	var timeLines []webmodels.TimeLineItem = make([]webmodels.TimeLineItem, 0)
 
@@ -278,9 +283,11 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 		return nil, errors.New("failed to load teams")
 	}
 
-	// 获取所有解题记录
+	// 获取所有解题记录, 仅在比赛时间内
 	var solves []models.Solve
-	if err := dbtool.DB().Where("game_id = ?", gameID).
+	if err := dbtool.DB().Where(`game_id = ? 
+	AND solve_time >= ? 
+	AND solve_time <= ?`, gameID, game.StartTime, game.EndTime).
 		Preload("GameChallenge").
 		Preload("Solver").
 		Preload("Challenge").
@@ -551,6 +558,16 @@ func CalculateGameScoreBoard(gameID int64) (*webmodels.CachedGameScoreBoardData,
 		sort.Slice(scoreboard.Data, func(i, j int) bool {
 			return scoreboard.Data[i].RecordTime.Before(scoreboard.Data[j].RecordTime)
 		})
+
+		// 过滤掉超出比赛时间的积分榜
+		// filteredScoreboard := make(models.ScoreBoardDatas, 0)
+		// for _, record := range scoreboard.Data {
+		// 	if record.RecordTime.After(game.StartTime) && record.RecordTime.Before(game.EndTime) {
+		// 		filteredScoreboard = append(filteredScoreboard, record)
+		// 	}
+		// }
+
+		// scoreboard.Data = filteredScoreboard
 
 		teamGameScoreboardMap[scoreboard.TeamID] = scoreboard
 	}

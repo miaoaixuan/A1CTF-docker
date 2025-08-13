@@ -401,9 +401,19 @@ export default function ScoreBoardPage(
                 setChallenges(groupedChallenges)
 
                 const current = dayjs()
-                const end = dayjs(gameInfo.end_time).diff(current) > 0 ? current : dayjs(gameInfo.end_time)
+                let end = dayjs(gameInfo.end_time).diff(current) > 0 ? current : dayjs(gameInfo.end_time)
 
                 const curTimeLine = JSON.stringify(res.data.data?.top10_timelines)
+
+                let lastestTime = +dayjs(gameInfo.end_time)
+
+                res.data.data?.top10_timelines?.forEach((data, idx) => {
+                    data.scores?.forEach((score, _) => {
+                        lastestTime = Math.max(lastestTime, +dayjs(score.record_time))
+                    })
+                })
+
+                if (dayjs(lastestTime) > end) end = dayjs(lastestTime)
 
                 if (curTimeLine != lastTimeLine.current || true) {
                     lastTimeLine.current = curTimeLine
@@ -435,51 +445,67 @@ export default function ScoreBoardPage(
                                         ],
                                     },
                         },
-                        ...(res.data.data?.top10_timelines?.map((team, index) => ({
-                            name: team.team_name,
-                            type: 'line',
-                            showSymbol: false,
-                            step: 'end',
-                            data: [
-                                [+new Date(dayjs(gameInfo.start_time).toDate()), 0],
-                                ...(team.scores?.map((item) => [item.record_time || 0, item.score || 0]) || []),
-                                [+end.toDate(), (team.scores && team.scores[team.scores.length - 1]?.score) || 0]
-                            ],
-                            lineStyle: {
-                                width: 4
-                            },
-                            endLabel: {
-                                show: true,
-                                formatter: `${team.team_name} - ${team.scores![team.scores!.length - 1]?.score ?? 0} pts`,
-                                color: theme === 'dark' ? '#f1f5f9' : '#0f172a',
-                                fontWeight: 'bold',
-                                fontSize: 12, // 稍微减小字体避免重叠
-                                distance: 15 + (index % 3) * 8, // 动态调整距离，错开标签位置
-                                verticalAlign: index % 2 === 0 ? 'middle' : (index % 4 < 2 ? 'top' : 'bottom'), // 垂直错开
-                                backgroundColor: theme === 'dark' ? 'rgba(15, 23, 42, 0.9)' : 'rgba(248, 250, 252, 0.95)', // 更好的背景对比度
-                                borderColor: theme === 'dark' ? '#334155' : '#cbd5e1',
-                                borderWidth: 1,
-                                borderRadius: 6,
-                                padding: [4, 8], // 增加内边距提高可读性
-                                shadowBlur: theme === 'dark' ? 8 : 4, // 添加阴影增强层次感
-                                shadowColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.1)',
-                                shadowOffsetX: 0,
-                                shadowOffsetY: 2,
-                                rich: {
-                                    // 富文本样式，用于更好的标签显示
-                                    teamName: {
-                                        fontWeight: 'bold',
-                                        fontSize: 12,
-                                        color: theme === 'dark' ? '#f1f5f9' : '#0f172a'
-                                    },
-                                    score: {
-                                        color: theme === 'dark' ? '#94a3b8' : '#64748b',
-                                        fontSize: 11
+                        ...(res.data.data?.top10_timelines?.map((team, index) => {
+
+                            const lastRecordTime = team.scores?.[team.scores?.length - 1]?.record_time;
+                            const lastScore = team.scores?.[team.scores?.length - 1]?.score || 0;
+
+                            const shouldAddEnd = lastRecordTime && dayjs(lastRecordTime).isBefore(end);
+
+                            let data = [
+                                [+dayjs(gameInfo.start_time).toDate(), 0],
+                                ...(team.scores?.map((item) => [
+                                    +(item.record_time ? dayjs(item.record_time).toDate() : 0),
+                                    item.score || 0
+                                ]) || []),
+                            ];
+
+                            if (shouldAddEnd) {
+                                data.push([+end.toDate(), lastScore]);
+                            }
+
+                            return {
+                                name: team.team_name,
+                                type: 'line',
+                                showSymbol: false,
+                                step: 'end',
+                                data: data,
+                                lineStyle: {
+                                    width: 4
+                                },
+                                endLabel: {
+                                    show: true,
+                                    formatter: `${team.team_name} - ${team.scores![team.scores!.length - 1]?.score ?? 0} pts`,
+                                    color: theme === 'dark' ? '#f1f5f9' : '#0f172a',
+                                    fontWeight: 'bold',
+                                    fontSize: 12, // 稍微减小字体避免重叠
+                                    distance: 15 + (index % 3) * 8, // 动态调整距离，错开标签位置
+                                    verticalAlign: index % 2 === 0 ? 'middle' : (index % 4 < 2 ? 'top' : 'bottom'), // 垂直错开
+                                    backgroundColor: theme === 'dark' ? 'rgba(15, 23, 42, 0.9)' : 'rgba(248, 250, 252, 0.95)', // 更好的背景对比度
+                                    borderColor: theme === 'dark' ? '#334155' : '#cbd5e1',
+                                    borderWidth: 1,
+                                    borderRadius: 6,
+                                    padding: [4, 8], // 增加内边距提高可读性
+                                    shadowBlur: theme === 'dark' ? 8 : 4, // 添加阴影增强层次感
+                                    shadowColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.1)',
+                                    shadowOffsetX: 0,
+                                    shadowOffsetY: 2,
+                                    rich: {
+                                        // 富文本样式，用于更好的标签显示
+                                        teamName: {
+                                            fontWeight: 'bold',
+                                            fontSize: 12,
+                                            color: theme === 'dark' ? '#f1f5f9' : '#0f172a'
+                                        },
+                                        score: {
+                                            color: theme === 'dark' ? '#94a3b8' : '#64748b',
+                                            fontSize: 11
+                                        }
                                     }
-                                }
-                            },
-                            smooth: true,
-                        }) as echarts.SeriesOption) || [])
+                                },
+                                smooth: true,
+                            }
+                        }) || [])
                     ] as echarts.SeriesOption[]
                 }
                 // 结束加载状态
