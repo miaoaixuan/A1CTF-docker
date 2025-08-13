@@ -1,4 +1,4 @@
-import { Radar, MessageSquareLock, Bug, GlobeLock, Binary, FileSearch, HardDrive, Smartphone, SquareCode, Bot, BadgeCent, Github } from 'lucide-react';
+import { Radar, MessageSquareLock, Bug, GlobeLock, Binary, FileSearch, HardDrive, Smartphone, SquareCode, Bot, BadgeCent, Github, Bitcoin, ShieldCheck } from 'lucide-react';
 import * as z from 'zod';
 
 /*
@@ -13,11 +13,12 @@ export const categories: { [key: string]: any } = {
     WEB: <GlobeLock size={21} />,
     REVERSE: <Binary size={21} />,
     FORENSICS: <FileSearch size={21} />,
+    BLOCKCHAIN: <Bitcoin size={21} />,
     HARDWARE: <HardDrive size={21} />,
     MOBILE: <Smartphone size={21} />,
     PPC: <SquareCode size={21} />,
     AI: <Bot size={21} />,
-    PENTENT: <BadgeCent size={21} />,
+    PENTEST: <ShieldCheck size={21} />,
     OSINT: <Github size={21} />,
 };
 

@@ -24,7 +24,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "../ui/button";
 
-import { CircleArrowLeft, Cloud, FileCode, Github, PlusCircle, Save, ScanBarcode, TableProperties, Trash2, Upload } from "lucide-react"
+import { Bitcoin, CircleArrowLeft, Cloud, FileCode, Github, PlusCircle, Save, ScanBarcode, ShieldCheck, TableProperties, Trash2, Upload } from "lucide-react"
 
 import CodeEditor from '@uiw/react-textarea-code-editor';
 
@@ -460,11 +460,12 @@ export function EditChallengeView({ challenge_info }: { challenge_info: AdminCha
         "WEB": <GlobeLock size={21} />,
         "REVERSE": <Binary size={21} />,
         "FORENSICS": <FileSearch size={21} />,
+        "BLOCKCHAIN": <Bitcoin size={21} />,
         "HARDWARE": <HardDrive size={21} />,
         "MOBILE": <Smartphone size={21} />,
         "PPC": <SquareCode size={21} />,
         "AI": <Bot size={21} />,
-        "PENTENT": <BadgeCent size={21} />,
+        "PENTEST": <ShieldCheck size={21} />,
         "OSINT": <Github size={21} />
     };
 

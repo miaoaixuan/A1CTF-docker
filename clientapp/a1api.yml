@@ -3779,11 +3779,12 @@ components:
         - WEB
         - REVERSE
         - FORENSICS
+        - BLOCKCHAIN
         - HARDWARE
         - MOBILE
         - PPC
         - AI
-        - PENTENT
+        - PENTEST
         - OSINT
     FlagType:
       type: string

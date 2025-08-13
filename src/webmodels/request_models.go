@@ -191,8 +191,8 @@ const (
 
 // 用户个人资料更新
 type UpdateUserProfilePayload struct {
-	RealName  *string `json:"real_name"`
-	StudentID *string `json:"student_id"`
+	RealName  *string `json:"realname"`
+	StudentID *string `json:"student_number"`
 	Phone     *string `json:"phone"`
 	Slogan    *string `json:"slogan"`
 	UserName  *string `json:"username" binding:"required,min=2,max=20"`
