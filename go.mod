@@ -9,6 +9,7 @@ require (
 	github.com/chenyahui/gin-cache v1.9.0
 	github.com/dgraph-io/ristretto/v2 v2.2.0
 	github.com/fatih/color v1.18.0
+	github.com/gin-contrib/gzip v1.2.3
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-co-op/gocron/v2 v2.16.1
 	github.com/golang-jwt/jwt/v5 v5.3.0
@@ -36,7 +37,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
-	github.com/gin-contrib/gzip v1.2.3 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

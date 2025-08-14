@@ -24,6 +24,7 @@ import (
 	dbtool "a1ctf/src/utils/db_tool"
 	i18ntool "a1ctf/src/utils/i18n_tool"
 	k8stool "a1ctf/src/utils/k8s_tool"
+	ratelimiter "a1ctf/src/utils/rate_limiter"
 	redistool "a1ctf/src/utils/redis_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	validatortool "a1ctf/src/utils/validator_tool"
@@ -321,7 +322,9 @@ func main() {
 			teamManageGroup.POST("/avatar/upload", controllers.UploadTeamAvatar)
 
 			// 比赛开始后不允许移交队长，删除队员，解散队伍
-			teamManageGroup.POST("/:team_id/transfer-captain", controllers.OperationNotAllowedAfterGameStartMiddleWare(), controllers.TransferTeamCaptain)
+			teamManageGroup.POST("/:team_id/transfer-captain", controllers.OperationNotAllowedAfterGameStartMiddleWare(), controllers.PayloadValidator(
+				webmodels.TransferCaptainPayload{},
+			), controllers.TransferTeamCaptain)
 			teamManageGroup.DELETE("/:team_id/member/:user_id", controllers.OperationNotAllowedAfterGameStartMiddleWare(), controllers.RemoveTeamMember)
 			teamManageGroup.DELETE("/:team_id", controllers.OperationNotAllowedAfterGameStartMiddleWare(), controllers.DeleteTeam)
 		}
@@ -436,7 +439,7 @@ func main() {
 			}), controllers.UserCreateGameTeam)
 
 			// 题目容器
-			userGameGroup.POST("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+			userGameGroup.POST("/:game_id/container/:challenge_id", RateLimiter(100, 100*time.Millisecond), controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
 			}), controllers.TeamStatusMiddleware(), controllers.ChallengeStatusCheckMiddleWare(false), controllers.UserCreateGameContainer)
@@ -454,7 +457,7 @@ func main() {
 			}), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallengeContainerInfo)
 
 			// 提交 Flag
-			userGameGroup.POST("/:game_id/flag/:challenge_id", RateLimiter(100, 1*time.Second), controllers.PayloadValidator(
+			userGameGroup.POST("/:game_id/flag/:challenge_id", ratelimiter.RateLimiter(100, 100*time.Millisecond), controllers.PayloadValidator(
 				webmodels.UserSubmitFlagPayload{},
 			), controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,

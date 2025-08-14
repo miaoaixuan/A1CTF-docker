@@ -1,4 +1,4 @@
-import { Radar, MessageSquareLock, Bug, GlobeLock, Binary, FileSearch, HardDrive, Smartphone, SquareCode, Bot, BadgeCent, Github, Bitcoin, ShieldCheck } from 'lucide-react';
+import { Radar, MessageSquareLock, Bug, GlobeLock, Binary, FileSearch, HardDrive, Smartphone, SquareCode, Bot, Github, Bitcoin, ShieldCheck } from 'lucide-react';
 import * as z from 'zod';
 
 /*

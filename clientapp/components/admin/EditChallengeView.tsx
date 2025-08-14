@@ -28,7 +28,7 @@ import { Bitcoin, CircleArrowLeft, Cloud, FileCode, Github, PlusCircle, Save, Sc
 
 import CodeEditor from '@uiw/react-textarea-code-editor';
 
-import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
+import { Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
 import { useEffect, useState } from "react";
 import { MacScrollbar } from "mac-scrollbar";
 import { AdminChallengeConfig } from "utils/A1API";

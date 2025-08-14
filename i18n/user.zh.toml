@@ -463,3 +463,7 @@ other = "当前阶段不可作答此题"
 [FileAccessDenied]
 description = "文件访问被拒绝"
 other = "文件访问被拒绝"
+
+[TooManyRequests]
+description = "请求过多, 请稍后再试"
+other = "请求过多, 请稍后再试"

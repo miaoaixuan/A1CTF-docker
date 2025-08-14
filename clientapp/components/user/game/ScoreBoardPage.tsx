@@ -407,7 +407,7 @@ export default function ScoreBoardPage(
 
                 let lastestTime = +dayjs(gameInfo.end_time)
 
-                res.data.data?.top10_timelines?.forEach((data, idx) => {
+                res.data.data?.top10_timelines?.forEach((data, _idx) => {
                     data.scores?.forEach((score, _) => {
                         lastestTime = Math.max(lastestTime, +dayjs(score.record_time))
                     })

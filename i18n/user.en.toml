@@ -463,3 +463,7 @@ other = "Challenge is not visible due to stage over"
 [FileAccessDenied]
 description = "File access denied"
 other = "File access denied"
+
+[TooManyRequests]
+description = "Too many requests, please try again later"
+other = "Too many requests, please try again later"

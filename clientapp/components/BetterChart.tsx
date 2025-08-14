@@ -6,8 +6,6 @@ import { useGlobalVariableContext } from 'contexts/GlobalVariableContext';
 import { UserFullGameInfo } from 'utils/A1API';
 import { Maximize2, Minimize2, Move, X, Minus, Download } from 'lucide-react';
 import { Button } from './ui/button';
-import { max, min } from 'date-fns';
-import { number } from 'framer-motion';
 
 interface SmartUpdateChartProps {
     theme?: 'light' | 'dark';
@@ -255,7 +253,7 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
 
             let lastestTime = +dayjs(gameInfo.end_time)
 
-            serialOptions.current.forEach((serie, index) => {
+            serialOptions.current.forEach((serie, _index) => {
                 (serie.data as [])?.forEach((data, _) => {
                     lastestTime = Math.max(lastestTime, data[0] as number)
                 });

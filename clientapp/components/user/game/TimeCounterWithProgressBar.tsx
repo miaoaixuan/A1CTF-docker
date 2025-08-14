@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { ClockFading, Timer } from "lucide-react";
+import { ClockFading } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function TimeCounterWithProgressBar(

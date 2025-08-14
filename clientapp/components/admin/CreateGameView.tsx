@@ -17,7 +17,7 @@ import { Button } from "../ui/button";
 import { ArrowUpDown, Bitcoin, CircleArrowLeft, Github, Save, ShieldCheck } from "lucide-react"
 import { Textarea } from "../ui/textarea";
 
-import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
+import { Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
 import { useEffect, useRef, useState } from "react";
 import { MacScrollbar } from "mac-scrollbar";
 import { AdminFullGameInfo } from "utils/A1API";
