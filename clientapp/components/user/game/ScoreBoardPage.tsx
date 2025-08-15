@@ -413,7 +413,7 @@ export default function ScoreBoardPage(
                     })
                 })
 
-                if (dayjs(lastestTime) > end) end = dayjs(lastestTime)
+                if (dayjs(lastestTime) > end && dayjs(gameInfo.end_time).diff(current) < 0) end = dayjs(lastestTime)
 
                 if (curTimeLine != lastTimeLine.current || true) {
                     lastTimeLine.current = curTimeLine
