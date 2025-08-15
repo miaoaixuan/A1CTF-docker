@@ -24,6 +24,7 @@ import (
 	dbtool "a1ctf/src/utils/db_tool"
 	i18ntool "a1ctf/src/utils/i18n_tool"
 	k8stool "a1ctf/src/utils/k8s_tool"
+	ratelimiter "a1ctf/src/utils/rate_limiter"
 	redistool "a1ctf/src/utils/redis_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	validatortool "a1ctf/src/utils/validator_tool"
@@ -38,6 +39,8 @@ import (
 
 	cache "github.com/chenyahui/gin-cache"
 	"github.com/chenyahui/gin-cache/persist"
+
+	"github.com/gin-contrib/gzip"
 )
 
 func StartLoopEvent() {
@@ -204,6 +207,9 @@ func main() {
 	// 初始化 email jwt
 	emailjwt.InitRSAKeys()
 
+	bestGzipMiddleware := gzip.Gzip(gzip.BestCompression)
+	defaultGzipMiddleware := gzip.Gzip(gzip.DefaultCompression)
+
 	// 公共接口
 	public := r.Group("/api")
 	{
@@ -213,17 +219,17 @@ func main() {
 		), controllers.Register)
 
 		public.GET("/game/list", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.UserListGames)
-		public.GET("/game/:game_id/scoreboard", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+		public.GET("/game/:game_id/scoreboard", bestGzipMiddleware, controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 			VisibleAfterEnded: true,
 			CheckGameStarted:  true,
 		}), controllers.UserGameGetScoreBoard)
 
-		public.GET("/game/:game_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+		public.GET("/game/:game_id", defaultGzipMiddleware, controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 			VisibleAfterEnded: true,
 			CheckGameStarted:  false,
 		}), controllers.UserGetGameDetailWithTeamInfo)
 
-		public.GET("/game/:game_id/desc", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+		public.GET("/game/:game_id/desc", defaultGzipMiddleware, controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 			VisibleAfterEnded: true,
 			CheckGameStarted:  false,
 		}), controllers.UserGetGameDescription)
@@ -233,7 +239,7 @@ func main() {
 			fileGroup.GET("/download/:file_id", controllers.DownloadFile)
 		}
 
-		public.GET("/client-config", cache.CacheByRequestURI(memoryStore, 1*time.Second), controllers.GetClientConfig)
+		public.GET("/client-config", cache.CacheByRequestURI(memoryStore, 1*time.Second), bestGzipMiddleware, controllers.GetClientConfig)
 
 		public.POST("/cap/challenge", controllers.CapCreateChallenge)
 		public.POST("/cap/redeem", controllers.CapRedeemChallenge)
@@ -316,7 +322,9 @@ func main() {
 			teamManageGroup.POST("/avatar/upload", controllers.UploadTeamAvatar)
 
 			// 比赛开始后不允许移交队长，删除队员，解散队伍
-			teamManageGroup.POST("/:team_id/transfer-captain", controllers.OperationNotAllowedAfterGameStartMiddleWare(), controllers.TransferTeamCaptain)
+			teamManageGroup.POST("/:team_id/transfer-captain", controllers.OperationNotAllowedAfterGameStartMiddleWare(), controllers.PayloadValidator(
+				webmodels.TransferCaptainPayload{},
+			), controllers.TransferTeamCaptain)
 			teamManageGroup.DELETE("/:team_id/member/:user_id", controllers.OperationNotAllowedAfterGameStartMiddleWare(), controllers.RemoveTeamMember)
 			teamManageGroup.DELETE("/:team_id", controllers.OperationNotAllowedAfterGameStartMiddleWare(), controllers.DeleteTeam)
 		}
@@ -397,6 +405,7 @@ func main() {
 
 		// 用户比赛访问相关接口
 		userGameGroup := auth.Group("/game")
+		userGameGroup.Use(defaultGzipMiddleware)
 		userGameGroup.Use(controllers.EmailVerifiedMiddleware())
 		{
 			// 获取比赛的题目列表
@@ -430,7 +439,7 @@ func main() {
 			}), controllers.UserCreateGameTeam)
 
 			// 题目容器
-			userGameGroup.POST("/:game_id/container/:challenge_id", controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
+			userGameGroup.POST("/:game_id/container/:challenge_id", RateLimiter(100, 100*time.Millisecond), controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,
 				CheckGameStarted:  true,
 			}), controllers.TeamStatusMiddleware(), controllers.ChallengeStatusCheckMiddleWare(false), controllers.UserCreateGameContainer)
@@ -448,7 +457,7 @@ func main() {
 			}), controllers.TeamStatusMiddleware(), controllers.UserGetGameChallengeContainerInfo)
 
 			// 提交 Flag
-			userGameGroup.POST("/:game_id/flag/:challenge_id", RateLimiter(100, 1*time.Second), controllers.PayloadValidator(
+			userGameGroup.POST("/:game_id/flag/:challenge_id", ratelimiter.RateLimiter(100, 100*time.Millisecond), controllers.PayloadValidator(
 				webmodels.UserSubmitFlagPayload{},
 			), controllers.GameStatusMiddleware(controllers.GameStatusMiddlewareProps{
 				VisibleAfterEnded: false,

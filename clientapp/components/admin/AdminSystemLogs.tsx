@@ -52,6 +52,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "components/ui/card";
 import { useTheme } from "next-themes"
 import EditorDialog from "components/modules/EditorDialog"
+import copy from "copy-to-clipboard"
 
 interface LogTableRow {
     id: string;
@@ -303,7 +304,11 @@ export function AdminSystemLogs() {
 
                 const getDetailedLog = () => {
                     const newLog = Object.assign({}, log)
-                    newLog.details = JSON.parse(atob(newLog.details as unknown as string))
+                    const binaryString = atob(newLog.details as any)
+                    const bytes = Uint8Array.from(binaryString, c => c.charCodeAt(0))
+                    const decodedString = new TextDecoder('utf-8').decode(bytes)
+
+                    newLog.details = JSON.parse(decodedString)
                     return JSON.stringify(newLog, null, 4)
                 }
 
@@ -347,7 +352,9 @@ export function AdminSystemLogs() {
                                 <DropdownMenuItem
                                     onClick={() => {
                                         const detailsText = atob(log.details as unknown as string);
-                                        navigator.clipboard.writeText(detailsText);
+                                        const bytes = Uint8Array.from(detailsText, c => c.charCodeAt(0))
+                                        const decodedString = new TextDecoder('utf-8').decode(bytes);
+                                        copy(decodedString);
                                         toast.success('详细信息已复制到剪切板');
                                     }}
                                 >

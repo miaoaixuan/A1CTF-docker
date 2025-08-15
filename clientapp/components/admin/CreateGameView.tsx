@@ -14,10 +14,10 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "../ui/button";
 
-import { ArrowUpDown, CircleArrowLeft, Github, Save } from "lucide-react"
+import { ArrowUpDown, Bitcoin, CircleArrowLeft, Github, Save, ShieldCheck } from "lucide-react"
 import { Textarea } from "../ui/textarea";
 
-import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
+import { Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
 import { useEffect, useRef, useState } from "react";
 import { MacScrollbar } from "mac-scrollbar";
 import { AdminFullGameInfo } from "utils/A1API";
@@ -136,11 +136,12 @@ export function CreateGameView() {
         "WEB": <GlobeLock size={21} />,
         "REVERSE": <Binary size={21} />,
         "FORENSICS": <FileSearch size={21} />,
+        "BLOCKCHAIN": <Bitcoin size={21} />,
         "HARDWARE": <HardDrive size={21} />,
         "MOBILE": <Smartphone size={21} />,
         "PPC": <SquareCode size={21} />,
         "AI": <Bot size={21} />,
-        "PENTENT": <BadgeCent size={21} />,
+        "PENTEST": <ShieldCheck size={21} />,
         "OSINT": <Github size={21} />
     };
 

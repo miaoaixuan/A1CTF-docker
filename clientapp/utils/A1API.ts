@@ -135,11 +135,12 @@ export enum ChallengeCategory {
   WEB = "WEB",
   REVERSE = "REVERSE",
   FORENSICS = "FORENSICS",
+  BLOCKCHAIN = "BLOCKCHAIN",
   HARDWARE = "HARDWARE",
   MOBILE = "MOBILE",
   PPC = "PPC",
   AI = "AI",
-  PENTENT = "PENTENT",
+  PENTEST = "PENTEST",
   OSINT = "OSINT",
 }
 
@@ -3888,8 +3889,6 @@ export class Api<
          * @format binary
          */
         avatar: File;
-        /** 团队ID */
-        team_id: number;
       },
       params: RequestParams = {},
     ) =>

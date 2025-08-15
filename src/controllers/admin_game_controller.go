@@ -766,8 +766,8 @@ func AdminUploadGamePoster(c *gin.Context) {
 	}
 
 	// 检查文件类型是否为图片
-	fileType := file.Header.Get("Content-Type")
-	if !isImageMimeType(fileType) {
+	fileType, err := validateImageFile(file)
+	if err != nil {
 		c.JSON(http.StatusUnsupportedMediaType, gin.H{
 			"code":    415,
 			"message": i18ntool.Translate(c, &i18n.LocalizeConfig{MessageID: "UploadedFileIsNotAnImage"}),

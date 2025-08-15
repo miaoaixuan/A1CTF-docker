@@ -32,7 +32,6 @@ export const UploadImageDialog: React.FC<{ updateTeam?: () => void, id?: number,
         if (type == "team" && id) {
             api.team.uploadTeamAvatar(game_id ?? 0, {
                 avatar: file,
-                team_id: id
             }).then(() => {
                 toast.success(t("set_avatar_success"))
 

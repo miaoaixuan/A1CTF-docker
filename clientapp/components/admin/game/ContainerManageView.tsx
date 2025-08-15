@@ -370,7 +370,7 @@ export function ContainerManageView({
                 const expireTime = row.original.container_expiretime;
                 return <div>{dayjs(expireTime).format('YYYY-MM-DD HH:mm:ss')} ({dayjs(expireTime).diff(dayjs(), 'minutes')}mins)</div>
             },
-            sortingFn: (rowA, rowB, columnId) => {
+            sortingFn: (rowA, rowB, _columnId) => {
                 const dateA = dayjs(rowA.original.container_expiretime);
                 const dateB = dayjs(rowB.original.container_expiretime);
                 return dateA.isBefore(dateB) ? -1 : 1;

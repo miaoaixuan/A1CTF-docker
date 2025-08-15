@@ -12,6 +12,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+// 往 更新解题数量, 题目当前分数, 队伍分数
 func updateActiveGameScores(game_ids []int64) {
 	if len(game_ids) == 0 {
 		return
@@ -26,7 +27,7 @@ func updateActiveGameScores(game_ids []int64) {
 
 	// 2. 查询所有正确的解题记录
 	var solves []models.Solve
-	if err := dbtool.DB().Where("game_id IN ? AND solve_status = ?", game_ids, models.SolveCorrect).Find(&solves).Error; err != nil {
+	if err := dbtool.DB().Where("game_id IN ? AND solve_status = ?", game_ids, models.SolveCorrect).Preload("Game").Find(&solves).Error; err != nil {
 		zaphelper.Logger.Error("Failed to load solves", zap.Error(err))
 		return
 	}
@@ -34,11 +35,14 @@ func updateActiveGameScores(game_ids []int64) {
 	// 3. 统计每道题的解题人数
 	solveCountMap := make(map[int64]int32) // ingame_id -> solve_count
 	for _, solve := range solves {
-		solveCountMap[solve.IngameID]++
+		if solve.SolveTime.After(solve.Game.StartTime) && solve.SolveTime.Before(solve.Game.EndTime) {
+			solveCountMap[solve.IngameID]++
+		}
 	}
 
 	// 4. 更新每道题的解题人数和分数（只更新有变化的）
 	var challengesToUpdate []models.GameChallenge
+	gameChallengeMap := make(map[int64]models.GameChallenge)
 	for _, gc := range gameChallenges {
 		solveCount := solveCountMap[gc.IngameID]
 		oldSolveCount := gc.SolveCount
@@ -57,6 +61,8 @@ func updateActiveGameScores(game_ids []int64) {
 			newCurScore = math.Floor(gc.TotalScore * (minRatio + dynamicRatio))
 		}
 		gc.CurScore = newCurScore
+
+		gameChallengeMap[gc.IngameID] = gc
 
 		// 只有当解题人数或分数发生变化时才加入更新列表
 		if oldSolveCount != solveCount || oldCurScore != newCurScore {
@@ -94,27 +100,13 @@ func updateActiveGameScores(game_ids []int64) {
 	// 7. 计算每个队伍的总分
 	teamScores := make(map[int64]float64) // team_id -> total_score
 
-	// 7.1 计算基础分数（正确解题分数）
-	gameChallengeMap := make(map[int64]models.GameChallenge)
-	for _, gc := range gameChallenges {
-		// 更新分数信息
-		solveCount := solveCountMap[gc.IngameID]
-		gc.SolveCount = solveCount
-		// 计算当前分数
-		var newCurScore float64
-		if solveCount == 0 {
-			newCurScore = gc.TotalScore
-		} else {
-			// 动态分数计算公式
-			minRatio := gc.MinimalScore / gc.TotalScore
-			dynamicRatio := (1 - minRatio) * math.Exp((1-float64(solveCount))/gc.Difficulty)
-			newCurScore = math.Floor(gc.TotalScore * (minRatio + dynamicRatio))
-		}
-		gc.CurScore = newCurScore
-		gameChallengeMap[gc.IngameID] = gc
-	}
-
 	for _, solve := range solves {
+
+		// 过滤掉非比赛时间的 solves
+		if !(solve.SolveTime.After(solve.Game.StartTime) && solve.SolveTime.Before(solve.Game.EndTime)) {
+			continue
+		}
+
 		if gc, exists := gameChallengeMap[solve.IngameID]; exists && gc.Visible {
 			teamScores[solve.TeamID] += gc.CurScore
 		}
@@ -122,6 +114,12 @@ func updateActiveGameScores(game_ids []int64) {
 
 	// 7.2 计算血奖分数
 	for _, solve := range solves {
+
+		// 过滤掉非比赛时间的 solves
+		if !(solve.SolveTime.After(solve.Game.StartTime) && solve.SolveTime.Before(solve.Game.EndTime)) {
+			continue
+		}
+
 		if gc, exists := gameChallengeMap[solve.IngameID]; exists && gc.Visible && gc.BloodRewardEnabled {
 			if game, gameExists := gameMap[solve.GameID]; gameExists {
 				var rewardPercent int64
@@ -190,9 +188,9 @@ func updateActiveGameScores(game_ids []int64) {
 
 func UpdateActivateGameScore() {
 	var active_games []models.Game
-	query := dbtool.DB().Where("start_time <= ? AND end_time >= ?", time.Now().UTC(), time.Now().UTC())
+	// query := dbtool.DB().Where("start_time <= ? AND end_time >= ?", time.Now().UTC(), time.Now().UTC())
 
-	if err := query.Find(&active_games).Error; err != nil {
+	if err := dbtool.DB().Find(&active_games).Error; err != nil {
 		println("Failed to load active games")
 		return
 	}
@@ -208,6 +206,7 @@ func UpdateActivateGameScore() {
 	updateActiveGameScores(game_ids)
 }
 
+// 更新比赛每个队伍的分数, 往 scoreboard 表里插入当前某个比赛每个队伍的分数(仅在分数变动时候)
 func UpdateActiveGameScoreBoard() {
 	var active_games []models.Game
 	query := dbtool.DB()
@@ -250,7 +249,7 @@ func UpdateActiveGameScoreBoard() {
 
 		// 获取当前比赛的正确解题记录
 		var solves []models.Solve
-		if err := dbtool.DB().Where("game_id = ? AND solve_status = ?", gameID, models.SolveCorrect).Preload("GameChallenge").Preload("Game").Preload("Team").Find(&solves).Error; err != nil {
+		if err := dbtool.DB().Where("game_id = ? AND solve_status = ? AND solve_time BETWEEN ? AND ?", gameID, models.SolveCorrect, game.StartTime, game.EndTime).Preload("GameChallenge").Preload("Game").Preload("Team").Find(&solves).Error; err != nil {
 			zaphelper.Logger.Error("Failed to load solves for game ", zap.Error(err), zap.Int64("game_id", gameID))
 			return
 		}
@@ -411,6 +410,7 @@ func UpdateActiveGameScoreBoard() {
 	}
 }
 
+// 更新曲线
 func UpdateGameScoreBoardCache() {
 	var active_games []models.Game
 	query := dbtool.DB()

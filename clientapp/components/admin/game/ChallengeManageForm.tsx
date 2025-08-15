@@ -24,10 +24,10 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "components/ui/button";
 
-import { Cloud, FileCode, Github, PlusCircle, Save, ScanBarcode, TableProperties, Trash2, Upload } from "lucide-react"
+import { Bitcoin, Cloud, FileCode, Github, PlusCircle, Save, ScanBarcode, ShieldCheck, TableProperties, Trash2, Upload } from "lucide-react"
 
 
-import { BadgeCent, Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
+import { Binary, Bot, Bug, FileSearch, GlobeLock, HardDrive, MessageSquareLock, Radar, Smartphone, SquareCode } from "lucide-react"
 import { useEffect, useState } from "react";
 import { AdminChallengeConfig } from "utils/A1API";
 import { api } from "utils/ApiHelper";
@@ -471,11 +471,12 @@ export function ChallengeManageForm({ challengeInfo }: { challengeInfo: AdminCha
         "WEB": <GlobeLock size={21} />,
         "REVERSE": <Binary size={21} />,
         "FORENSICS": <FileSearch size={21} />,
+        "BLOCKCHAIN": <Bitcoin size={21} />,
         "HARDWARE": <HardDrive size={21} />,
         "MOBILE": <Smartphone size={21} />,
         "PPC": <SquareCode size={21} />,
         "AI": <Bot size={21} />,
-        "PENTENT": <BadgeCent size={21} />,
+        "PENTEST": <ShieldCheck size={21} />,
         "OSINT": <Github size={21} />
     };
 

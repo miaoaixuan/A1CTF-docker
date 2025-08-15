@@ -86,14 +86,19 @@ export function CategorySidebar({
 
             // 根据 Category 分组
 
-            const groupedChallenges: Record<string, UserSimpleGameChallenge[]> = {};
+            const tmpGroupedChallenges: Record<string, UserSimpleGameChallenge[]> = {};
             response.data.challenges.forEach((challenge: UserSimpleGameChallenge) => {
                 const category = challenge.category?.toLowerCase() || "misc";
-                if (!groupedChallenges[category]) {
-                    groupedChallenges[category] = [];
+                if (!tmpGroupedChallenges[category]) {
+                    tmpGroupedChallenges[category] = [];
                 }
-                groupedChallenges[category].push(challenge);
+                tmpGroupedChallenges[category].push(challenge);
             });
+
+            const groupedChallenges = Object.fromEntries(
+                Object.entries(tmpGroupedChallenges).sort(([a], [b]) => a.localeCompare(b))
+            );
+
 
             if (JSON.stringify(prevChallenges.current) == JSON.stringify(groupedChallenges)) return
             prevChallenges.current = groupedChallenges

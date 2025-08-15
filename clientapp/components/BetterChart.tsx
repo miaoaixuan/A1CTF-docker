@@ -251,7 +251,18 @@ const BetterChart: React.FC<SmartUpdateChartProps> = ({
             const chartInstance: ECharts | undefined = chartRef.current?.getEchartsInstance();
             if (!chartInstance) return;
 
+            let lastestTime = +dayjs(gameInfo.end_time)
+
+            serialOptions.current.forEach((serie, _index) => {
+                (serie.data as [])?.forEach((data, _) => {
+                    lastestTime = Math.max(lastestTime, data[0] as number)
+                });
+            });
+
             chartInstance.setOption({
+                xAxis: {
+                    max: dayjs(lastestTime).toDate()
+                },
                 series: serialOptions.current.map((serie, index) => ({
                     ...serie,
                     lineStyle: {

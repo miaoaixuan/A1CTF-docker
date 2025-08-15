@@ -25,7 +25,7 @@ FROM golang:1.24-alpine AS backend-builder
 
 WORKDIR /app
 
-RUN apk add --no-cache git
+RUN apk add --no-cache git libwebp-dev build-base
 
 COPY go.mod go.sum ./
 
@@ -34,11 +34,11 @@ RUN go mod download
 
 COPY src/ ./src/
 
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o app src/main.go
+RUN CGO_ENABLED=1 GOMAXPROCS=0 GOOS=linux go build -ldflags="-s -w" -o app src/main.go
 
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates tzdata
+RUN apk --no-cache add ca-certificates tzdata libwebp-dev
 
 RUN addgroup -g 1001 -S appgroup && \
     adduser -u 1001 -S appuser -G appgroup

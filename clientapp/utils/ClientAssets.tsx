@@ -1,4 +1,4 @@
-import { BadgeCent, Binary, Bot, Bug, FileSearch, Github, GlobeLock, HardDrive, MessageSquareLock, Rabbit, Radar, Smartphone, SquareCode } from "lucide-react"
+import { Binary, Bitcoin, Bot, Bug, FileSearch, Github, GlobeLock, HardDrive, MessageSquareLock, Rabbit, Radar, ShieldCheck, Smartphone, SquareCode } from "lucide-react"
 
 export const challengeCategoryColorMap : { [key: string]: string } = {
     "all": "rgb(32, 201, 151)",
@@ -12,8 +12,9 @@ export const challengeCategoryColorMap : { [key: string]: string } = {
     "mobile": "rgb(240, 101, 149)",
     "ppc": "rgb(34, 184, 207)",
     "ai": "rgb(148, 216, 45)",
-    "pentent": "rgb(204, 93, 232)",
-    "osint": "rgb(255, 146, 43)"
+    "pentest": "rgb(204, 93, 232)",
+    "osint": "rgb(255, 146, 43)",
+    "blockchain": "rgb(75, 192, 192)"
 };
 
 export const challengeCategoryIcons : { [key: string]: any } = {
@@ -24,10 +25,11 @@ export const challengeCategoryIcons : { [key: string]: any } = {
     "web": <GlobeLock size={23} />,
     "reverse": <Binary size={23} />,
     "forensics": <FileSearch size={23} />,
+    "blockchain": <Bitcoin size={21} />,
     "hardware": <HardDrive size={23} />,
     "mobile": <Smartphone size={23} />,
     "ppc": <SquareCode size={23} />,
     "ai": <Bot size={23} />,
-    "pentent": <BadgeCent size={23} />,
+    "pentest": <ShieldCheck size={23} />,
     "osint": <Github size={23} />
 };

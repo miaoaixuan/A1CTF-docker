@@ -4,7 +4,7 @@ import MyTeamInfomationView from "components/user/game/MyTeamInfomationView";
 import ScoreBoardPage from "components/user/game/ScoreBoardPage";
 import GameViewSidebar from "components/user/game/GameViewSidebar";
 import { useEffect, useState } from "react";
-import { redirect, useNavigate, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import GameInfoView from "components/user/game/GameInfoView";
 import { useGameSwitchContext } from "contexts/GameSwitchContext";
 import { Panda } from "lucide-react";
