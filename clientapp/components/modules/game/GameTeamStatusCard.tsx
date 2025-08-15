@@ -12,7 +12,7 @@ export default function GameTeamStatusCard(
     { gameID } : { gameID: number }
 ) {
 
-    const { gameInfo, teamStatus, isLoading, mutateGameInfo } = useGame(gameID)
+    const { gameInfo, teamStatus, isLoading } = useGame(gameID)
 
     const teamStatusElement = {
         "Pending": (
@@ -39,14 +39,18 @@ export default function GameTeamStatusCard(
                 </div>
                 <div className="flex gap-4 pointer-events-auto">
                     <CreateTeamDialog callback={() => {
-                        mutateGameInfo()
+                        // setTimeout(() => {
+                        //     fetchGameInfoWithTeamInfo()
+                        // }, 600)
                     }} gameID={gameInfo?.game_id ?? 0}>
                         <Button variant="outline" className="border-blue-300 hover:hover:bg-blue-300/10" type="button"><Pickaxe />创建队伍</Button>
                     </CreateTeamDialog>
                     <JoinTeamDialog 
                         game_id={gameInfo?.game_id ?? 0}
                         callback={() => {
-                        mutateGameInfo()
+                        // setTimeout(() => {
+                        //     fetchGameInfoWithTeamInfo()
+                        // }, 600)
                     }}>
                         <Button variant="outline" className="border-blue-300 hover:hover:bg-blue-300/10" type="button"><Users />加入队伍</Button>
                     </JoinTeamDialog>
