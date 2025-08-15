@@ -415,7 +415,7 @@ export default function ScoreBoardPage(
 
                 if (dayjs(lastestTime) > end && dayjs(gameInfo.end_time).diff(current) < 0) end = dayjs(lastestTime)
 
-                if (curTimeLine != lastTimeLine.current || true) {
+                if (curTimeLine != lastTimeLine.current) {
                     lastTimeLine.current = curTimeLine
 
                     serialOptions.current = [

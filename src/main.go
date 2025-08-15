@@ -23,7 +23,6 @@ import (
 	"a1ctf/src/utils"
 	dbtool "a1ctf/src/utils/db_tool"
 	i18ntool "a1ctf/src/utils/i18n_tool"
-	k8stool "a1ctf/src/utils/k8s_tool"
 	ratelimiter "a1ctf/src/utils/rate_limiter"
 	redistool "a1ctf/src/utils/redis_tool"
 	"a1ctf/src/utils/ristretto_tool"
@@ -136,9 +135,6 @@ func main() {
 
 	// 初始化 redis 的连接
 	redistool.ConnectToRedis()
-
-	// 初始化 k8s 节点名称和地址映射
-	k8stool.InitNodeAddressMap()
 
 	// 初始化数据库连接
 	dbtool.Init()

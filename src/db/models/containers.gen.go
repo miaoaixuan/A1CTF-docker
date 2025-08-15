@@ -1,7 +1,7 @@
 package models
 
 import (
-	k8stool "a1ctf/src/utils/k8s_tool"
+	dockertool "a1ctf/src/utils/docker_tool"
 	"database/sql/driver"
 	"errors"
 	"time"
@@ -90,7 +90,7 @@ type Container struct {
 	ContainerExposeInfos ContainerExposeInfos `gorm:"column:expose_ports;not null" json:"expose_ports"`
 	ContainerStatus      ContainerStatus      `gorm:"column:container_status;not null" json:"container_status"`
 	TeamFlag             TeamFlag             `gorm:"foreignKey:FlagID;references:flag_id" json:"-"`
-	ContainerConfig      k8stool.A1Containers `gorm:"column:container_config" json:"container_config"`
+	ContainerConfig      dockertool.A1Containers `gorm:"column:container_config" json:"container_config"`
 	ChallengeName        string               `gorm:"column:challenge_name;not null" json:"challenge_name"`
 	TeamHash             string               `gorm:"column:team_hash;not null" json:"team_hash"`
 	SubmiterIP           *string              `gorm:"column:submiter_ip" json:"submiter_ip"`

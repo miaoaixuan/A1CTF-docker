@@ -3,6 +3,7 @@ version: '3.8'
 services:
   app:
     build: .
+    user: root
     image: test-a1ctf:latest
     ports:
       - "8081:7777"
@@ -11,7 +12,7 @@ services:
     volumes:
       - ./appdata:/app/data
       - ./config.yaml:/app/config.yaml:ro
-      - ./k8sconfig.yaml:/app/k8sconfig.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - postgres
       - redis

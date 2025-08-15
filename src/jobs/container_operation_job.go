@@ -4,7 +4,7 @@ import (
 	"a1ctf/src/db/models"
 	"a1ctf/src/tasks"
 	dbtool "a1ctf/src/utils/db_tool"
-	k8stool "a1ctf/src/utils/k8s_tool"
+	dockertool "a1ctf/src/utils/docker_tool"
 	"fmt"
 	"log"
 	"strconv"
@@ -13,7 +13,7 @@ import (
 	"a1ctf/src/utils/zaphelper"
 
 	"go.uber.org/zap"
-	v1 "k8s.io/api/core/v1"
+	"github.com/docker/docker/api/types"
 )
 
 func findExistContainer(containers []models.Container, teamHash string, inGameID int64) *models.Container {
@@ -25,17 +25,18 @@ func findExistContainer(containers []models.Container, teamHash string, inGameID
 	return nil
 }
 
-func findExistPod(podList []v1.Pod, teamHash string, inGameID int64) *v1.Pod {
-	for _, pod := range podList {
-		if pod.Labels["team_hash"] == teamHash && pod.Labels["ingame_id"] == fmt.Sprintf("%d", inGameID) {
-			return &pod
+func findExistDockerContainer(containers []types.Container, teamHash string, inGameID int64) *types.Container {
+	for _, container := range containers {
+		if container.Labels["a1ctf.team_hash"] == teamHash && 
+		   container.Labels["a1ctf.ingame_id"] == fmt.Sprintf("%d", inGameID) {
+			return &container
 		}
 	}
 	return nil
 }
 
-func getContainerPorts(podInfo k8stool.PodInfo, task *models.Container) error {
-	ports, err := k8stool.GetPodPorts(&podInfo)
+func getContainerPorts(containerInfo dockertool.ContainerInfo, task *models.Container) error {
+	ports, err := dockertool.GetContainerPorts(&containerInfo)
 	if err != nil {
 		return fmt.Errorf("getContainerPorts error: %w", err)
 	} else {
@@ -46,17 +47,11 @@ func getContainerPorts(podInfo k8stool.PodInfo, task *models.Container) error {
 				expose_ports := make([]models.ExposePort, 0)
 
 				for _, port := range *ports {
-					if port.Name == port_name {
-
-						address, ok := k8stool.NodeAddressMap[port.NodeName]
-						if !ok {
-							address = port.NodeName
-						}
-
+					if port.Name == port_name || port.Name == fmt.Sprintf("%d/tcp", expose_port.Port) {
 						expose_ports = append(expose_ports, models.ExposePort{
 							PortName: expose_port.Name,
-							Port:     port.NodePort,
-							IP:       address,
+							Port:     port.HostPort,
+							IP:       "localhost", // For Docker, we use localhost since it's single machine
 						})
 					}
 				}
@@ -76,26 +71,26 @@ func getContainerPorts(podInfo k8stool.PodInfo, task *models.Container) error {
 		}
 
 		tasks.LogContainerOperation(nil, nil, models.ActionContainerStarted, task.ContainerID, map[string]interface{}{
-			"team_hash":    task.TeamHash,
-			"ingame_id":    task.InGameID,
-			"pod_name":     podInfo.Name,
-			"container_id": task.ContainerID,
+			"team_hash":      task.TeamHash,
+			"ingame_id":      task.InGameID,
+			"container_name": containerInfo.Name,
+			"container_id":   task.ContainerID,
 		}, nil)
 	}
 
 	return nil
 }
 
-func deleteRunningPod(podInfo k8stool.PodInfo, task *models.Container) error {
-	err := k8stool.DeletePod(&podInfo)
+func deleteRunningContainer(containerInfo dockertool.ContainerInfo, task *models.Container) error {
+	err := dockertool.DeleteContainer(&containerInfo)
 	if err != nil {
 		tasks.LogContainerOperation(nil, nil, models.ActionContainerStopping, task.ContainerID, map[string]interface{}{
-			"team_hash":    task.TeamHash,
-			"ingame_id":    task.InGameID,
-			"pod_name":     podInfo.Name,
-			"container_id": task.ContainerID,
+			"team_hash":      task.TeamHash,
+			"ingame_id":      task.InGameID,
+			"container_name": containerInfo.Name,
+			"container_id":   task.ContainerID,
 		}, err)
-		return fmt.Errorf("DeletePod %+v error: %v", task, err)
+		return fmt.Errorf("DeleteContainer %+v error: %v", task, err)
 	} else {
 		if err := dbtool.DB().Model(&task).Updates(map[string]interface{}{
 			"container_status": models.ContainerStopped,
@@ -105,10 +100,10 @@ func deleteRunningPod(podInfo k8stool.PodInfo, task *models.Container) error {
 	}
 
 	tasks.LogContainerOperation(nil, nil, models.ActionContainerStopped, task.ContainerID, map[string]interface{}{
-		"team_hash":    task.TeamHash,
-		"ingame_id":    task.InGameID,
-		"pod_name":     podInfo.Name,
-		"container_id": task.ContainerID,
+		"team_hash":      task.TeamHash,
+		"ingame_id":      task.InGameID,
+		"container_name": containerInfo.Name,
+		"container_id":   task.ContainerID,
 	}, nil)
 
 	return nil
@@ -123,16 +118,16 @@ func UpdateLivingContainers() {
 		log.Fatalf("Failed to find queued containers: %v\n", err)
 	}
 
-	podList, err := k8stool.ListPods()
+	dockerContainerList, err := dockertool.ListContainers()
 	if err != nil {
-		zaphelper.Logger.Error("Failed to list pods", zap.Error(err))
+		zaphelper.Logger.Error("Failed to list containers", zap.Error(err))
 		return
 	}
 
-	for _, pod := range podList.Items {
-		podLabels := pod.Labels
-		teamHash, exists1 := podLabels["team_hash"]
-		inGameID, exists2 := podLabels["ingame_id"]
+	for _, dockerContainer := range dockerContainerList {
+		containerLabels := dockerContainer.Labels
+		teamHash, exists1 := containerLabels["a1ctf.team_hash"]
+		inGameID, exists2 := containerLabels["a1ctf.ingame_id"]
 
 		if !exists1 || !exists2 {
 			continue
@@ -146,11 +141,11 @@ func UpdateLivingContainers() {
 		container := findExistContainer(containers, teamHash, inGameIDInt)
 		if container == nil {
 			// zaphelper.Logger.Info("Stopping container that not found in database", zap.Any("container", container))
-			// k8stool.ForceDeletePod(pod.Name)
+			// dockertool.ForceDeleteContainer(dockerContainer.Names[0])
 			continue
 		}
 
-		podInfo := k8stool.PodInfo{
+		containerInfo := dockertool.ContainerInfo{
 			Name:       fmt.Sprintf("cl-%d-%s", container.InGameID, container.TeamHash),
 			TeamHash:   container.TeamHash,
 			Containers: container.ContainerConfig,
@@ -163,19 +158,19 @@ func UpdateLivingContainers() {
 			AllowDNS: container.Challenge.AllowDNS,
 		}
 
-		podStatus, _ := k8stool.CheckPodStatus(&pod)
-		// zaphelper.Logger.Info("pod status", zap.Any("podStatus", podStatus))
+		containerStatus, _ := dockertool.CheckContainerStatus(&dockerContainer)
+		// zaphelper.Logger.Info("container status", zap.Any("containerStatus", containerStatus))
 
-		if podStatus.Status == k8stool.CustomPodRunning {
+		if containerStatus.Status == dockertool.CustomContainerRunning {
 			if container.ContainerStatus == models.ContainerStarting {
-				// 如果远程服务器Pod已经是Running状态，就获取端口并且更新数据库
+				// 如果远程服务器Container已经是Running状态，就获取端口并且更新数据库
 				zaphelper.Logger.Info("Getting container port", zap.Any("container", container))
-				getContainerPorts(podInfo, container)
+				getContainerPorts(containerInfo, container)
 			}
 
 			// 下面会处理
 			// if time.Now().UTC().After(container.ExpireTime) {
-			// 	// 如果远程服务器Pod已经是Running状态，并且已经超时，就删除Pod并且更新数据库
+			// 	// 如果远程服务器Container已经是Running状态，并且已经超时，就删除Container并且更新数据库
 			// 	zaphelper.Logger.Info("Stopping container for life over", zap.Any("container", container))
 			// 	tasks.NewContainerStopTask(*container)
 			// }
@@ -184,9 +179,9 @@ func UpdateLivingContainers() {
 				zaphelper.Logger.Info("Stopping deaded container", zap.Any("container", container))
 				tasks.NewContainerStopTask(*container)
 			}
-		} else if podStatus.Status == k8stool.CustomPodFailed {
-			zaphelper.Logger.Info("Stopping failed container", zap.Any("container", container), zap.Any("pod_status", podStatus))
-			tasks.NewContainerFailedTask(*container, podStatus)
+		} else if containerStatus.Status == dockertool.CustomContainerFailed {
+			zaphelper.Logger.Info("Stopping failed container", zap.Any("container", container), zap.Any("container_status", containerStatus))
+			tasks.NewContainerFailedTask(*container, containerStatus)
 		} else {
 			// 等待中的容器
 		}

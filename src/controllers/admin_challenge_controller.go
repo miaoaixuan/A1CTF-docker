@@ -14,8 +14,8 @@ import (
 
 	"a1ctf/src/db/models"
 	dbtool "a1ctf/src/utils/db_tool"
+	dockertool "a1ctf/src/utils/docker_tool"
 	i18ntool "a1ctf/src/utils/i18n_tool"
-	k8stool "a1ctf/src/utils/k8s_tool"
 	"a1ctf/src/utils/ristretto_tool"
 	"a1ctf/src/webmodels"
 )
@@ -121,7 +121,7 @@ func AdminCreateChallenge(c *gin.Context) {
 		return
 	}
 
-	if err := k8stool.ValidContainerConfig(*payload.ContainerConfig); err != nil {
+	if err := dockertool.ValidContainerConfig(*payload.ContainerConfig); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
 			"message": err.Error(),
@@ -213,7 +213,7 @@ func AdminUpdateChallenge(c *gin.Context) {
 	}
 
 	if payload.ContainerConfig != nil {
-		if err := k8stool.ValidContainerConfig(*payload.ContainerConfig); err != nil {
+		if err := dockertool.ValidContainerConfig(*payload.ContainerConfig); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"code":    400,
 				"message": err.Error(),

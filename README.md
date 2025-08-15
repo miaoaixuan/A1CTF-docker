@@ -7,7 +7,7 @@
 [![Go](https://img.shields.io/badge/Go-1.24+-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://golang.org/)
 [![React](https://img.shields.io/badge/React-18+-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)](https://kubernetes.io/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
 
@@ -29,11 +29,15 @@ A1CTF 是一个现代化的 CTF（Capture The Flag）竞赛平台，支持大规
 
 A1CTF is a modern CTF (Capture The Flag) competition platform, supporting large-scale concurrency and dynamic container management.
 
+> **🎉 新特性**: 现已支持 Docker 单机部署！无需复杂的 Kubernetes 集群配置，只需要本地 Docker 即可运行动态题目容器。
+> 
+> **🎉 New Feature**: Now supports single-machine Docker deployment! No complex Kubernetes cluster configuration needed - just local Docker for dynamic challenge containers.
+
 ### ✨ 核心特性 / Key Features
 
 - 🎯 **现代化界面** - 基于 React 18 + TypeScript 的响应式前端
 - ⚡ **高性能后端** - Go 1.24+ 构建的高并发服务
-- 🐳 **容器化部署** - Kubernetes 支持
+- 🐳 **容器化部署** - Docker 单机部署支持
 - 🔄 **实时更新** - WebSocket 实时比分和状态同步
 - 📊 **监控告警** - Prometheus 指标监控
 
@@ -48,7 +52,6 @@ A1CTF is a modern CTF (Capture The Flag) competition platform, supporting large-
 - Go 1.24+
 - PostgreSQL 15+
 - Redis 7+
-- Kubernetes (可选 / Optional)
 
 ### 🔧 安装步骤 / Installation / From prebuilt docker image
 
@@ -60,7 +63,7 @@ A1CTF is a modern CTF (Capture The Flag) competition platform, supporting large-
 
 2. **配置环境 / Configure Environment**
    ```bash
-   cp config.example.yaml config.yaml
+   cp config.yaml config.yaml
    # 编辑 config.yaml 文件，配置数据库和其他服务
    # Edit config.yaml to configure database and other services
    ```
@@ -80,7 +83,7 @@ A1CTF is a modern CTF (Capture The Flag) competition platform, supporting large-
        volumes:
          - ./appdata:/app/data
          - ./config.yaml:/app/config.yaml:ro
-         - ./k8sconfig.yaml:/app/k8sconfig.yaml:ro
+         - /var/run/docker.sock:/var/run/docker.sock
        depends_on:
          - postgres
          - redis
@@ -127,7 +130,7 @@ A1CTF is a modern CTF (Capture The Flag) competition platform, supporting large-
 
 2. **配置环境 / Configure Environment**
    ```bash
-   cp config.example.yaml config.yaml
+   cp config.yaml config.yaml
    # 编辑 config.yaml 文件，配置数据库和其他服务
    # Edit config.yaml to configure database and other services
    ```

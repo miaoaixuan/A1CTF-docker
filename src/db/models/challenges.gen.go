@@ -1,7 +1,7 @@
 package models
 
 import (
-	k8stool "a1ctf/src/utils/k8s_tool"
+	dockertool "a1ctf/src/utils/docker_tool"
 	"database/sql/driver"
 	"errors"
 	"time"
@@ -157,7 +157,7 @@ type Challenge struct {
 	Category        ChallengeCategory      `gorm:"column:category;not null" json:"category" binding:"required,oneof=WEB PWN REVERSE MISC CRYPTO PPC AI BLOCKCHAIN IOT MOBILE OSINT FORENSICS PENTEST OTHER"`
 	Attachments     AttachmentConfigs      `gorm:"column:attachments;not null" json:"attachments"`
 	ContainerType   ChallengeContainerType `gorm:"column:container_type;not null" json:"container_type"`
-	ContainerConfig *k8stool.A1Containers  `gorm:"column:container_config" json:"container_config"`
+	ContainerConfig *dockertool.A1Containers  `gorm:"column:container_config" json:"container_config"`
 	CreateTime      time.Time              `gorm:"column:create_time;not null" json:"create_time"`
 	JudgeConfig     *JudgeConfig           `gorm:"column:judge_config" json:"judge_config"`
 	AllowWAN        bool                   `gorm:"column:allow_wan;not null" json:"allow_wan"`
